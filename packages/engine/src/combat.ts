@@ -126,6 +126,7 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number): numb
   enemy.hex -= stacks;
   const dmg = stacks * 3;
   enemy.hp = Math.max(0, enemy.hp - dmg);
+  state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   if (enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
   // Black Lattice (§9): whenever Hexes detonate, its owner gains 3 Block.

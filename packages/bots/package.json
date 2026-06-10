@@ -1,0 +1,18 @@
+{
+  "name": "@threadbound/bots",
+  "version": "0.1.0",
+  "type": "commonjs",
+  "main": "dist/sim.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@threadbound/engine": "*",
+    "@threadbound/server": "*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10"
+  }
+}

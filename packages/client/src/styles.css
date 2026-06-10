@@ -1,0 +1,68 @@
+/* M1: functional, dark-parchment, typography-forward (§10). Unpolished on purpose. */
+* { box-sizing: border-box; }
+body { margin: 0; background: #14110f; color: #d8cfc0; font-family: Georgia, 'Times New Roman', serif; }
+button { background: #2a241e; color: #d8cfc0; border: 1px solid #5a4f40; padding: 6px 12px; cursor: pointer; font-family: inherit; }
+button:hover:not(:disabled) { background: #3a322a; }
+button:disabled { opacity: 0.4; cursor: default; }
+button.big { font-size: 1.1em; padding: 10px 22px; margin: 6px; }
+input, select { background: #201b16; color: #d8cfc0; border: 1px solid #5a4f40; padding: 6px; font-family: inherit; }
+.app { max-width: 1200px; margin: 0 auto; padding: 8px 16px; }
+header { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #3a322a; padding: 6px 0; font-size: 0.9em; }
+.title { letter-spacing: 0.3em; font-weight: bold; }
+.on { color: #8fd48f; } .off { color: #d4756f; }
+.center { max-width: 760px; margin: 30px auto; text-align: center; }
+.home .panel { margin: 14px auto; }
+.panel { background: #1c1814; border: 1px solid #3a322a; padding: 12px; margin: 8px 0; }
+.muted { color: #8a7f6e; }
+.error { background: #4a2320; color: #f0b0a8; padding: 6px 10px; margin: 6px 0; }
+.hint { background: #2a3a2a; padding: 6px 10px; margin: 4px 0; }
+.enemies { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+.enemy { border: 2px solid; padding: 8px 12px; min-width: 170px; background: #1c1814; }
+.enemy.targetable { cursor: crosshair; box-shadow: 0 0 8px #d4af6f55; }
+.enemy.dead { opacity: 0.25; }
+.ename { font-weight: bold; }
+.intent { color: #e0a060; margin-top: 4px; }
+.bound { font-size: 0.8em; margin-top: 4px; }
+.statuses span { background: #2a241e; padding: 1px 6px; margin-right: 4px; font-size: 0.8em; }
+.statuses .hex { color: #b98fd4; } .fray { color: #d4756f; } .ready { color: #8fd48f; }
+.chain { background: #1a1510; border: 1px solid #5a4f40; padding: 10px; margin: 8px 0; display: flex; gap: 8px; align-items: flex-start; min-height: 130px; overflow-x: auto; }
+.chain-label { writing-mode: vertical-lr; letter-spacing: 0.2em; color: #8a7f6e; font-size: 0.7em; }
+.chaincard { border: 2px solid; padding: 4px; position: relative; }
+.chaincard.fires { box-shadow: 0 0 10px #ffd47055; }
+.chaincard.resonates { box-shadow: 0 0 16px #ff7070aa; }
+.slotnum { position: absolute; top: -2px; right: 2px; color: #8a7f6e; font-size: 0.7em; }
+.linkstate.on { color: #ffd470; } .linkstate.off { color: #6a5f50; font-size: 0.8em; }
+.resonance { color: #ff9a70; font-weight: bold; }
+.target { font-size: 0.75em; color: #e0a060; }
+.reorder button { padding: 0 6px; font-size: 0.8em; }
+.thread-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.thread { color: #d4af6f; font-weight: bold; letter-spacing: 0.1em; }
+.chip { font-size: 0.8em; padding: 2px 8px; margin: 0 2px; }
+.players { display: flex; gap: 12px; margin: 6px 0; }
+.pstat { border: 1px solid; padding: 6px 10px; flex: 1; }
+.hand { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; justify-content: center; }
+.card { width: 160px; background: #221c15; border: 1px solid #5a4f40; padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em; }
+.card.small { width: 130px; font-size: 0.75em; }
+.card.selected { outline: 2px solid #ffd470; }
+.card.disabled { opacity: 0.45; cursor: default; }
+.card.echo { border-style: dashed; border-color: #b98fd4; }
+.cardtop { display: flex; gap: 6px; }
+.cost { background: #3a322a; border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; }
+.cname { font-weight: bold; }
+.ctag { color: #8a7f6e; font-size: 0.85em; }
+.ctext { margin: 4px 0; }
+.clink { color: #d4af6f; border-top: 1px dotted #5a4f40; padding-top: 3px; }
+.tag-Hex .ctag { color: #b98fd4; } .tag-Strike .ctag { color: #d4756f; }
+.tag-Guard .ctag { color: #7fd4ff; } .tag-Surge .ctag { color: #8fd48f; } .tag-Rite .ctag { color: #d4af6f; }
+.actions { display: flex; align-items: center; gap: 12px; }
+.nudge { color: #ffd470; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: 0.4; } }
+.log { background: #16120e; border: 1px solid #2a241e; margin: 10px 0; padding: 8px 12px; max-height: 220px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.8em; text-align: left; }
+.log .witness { color: #b9a8d4; font-style: italic; font-family: Georgia, serif; }
+.log .resonance { color: #ff9a70; }
+.witness { color: #b9a8d4; font-style: italic; }
+.prose { text-align: left; line-height: 1.6; background: #1c1814; padding: 14px 18px; border-left: 3px solid #5a4f40; }
+.crossed { color: #e0a060; }
+.reward-row { display: flex; gap: 14px; justify-content: center; align-items: flex-start; }
+.taken { opacity: 0.35; }
+.event button.big { display: block; margin: 8px auto; }
