@@ -619,6 +619,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           onClick={() => { audio.play(you === 'p1' ? 'ready_p1' : 'ready_p2'); net.act({ type: 'SET_READY', ready: !me.ready } as any); }}>
           {me.ready ? 'Unready' : 'Ready'}
         </button>
+        <span className="muted">turn {combat.turn}</span>
         {state.players[partner].ready && !me.ready && <span className="nudge">your partner is ready</span>}
         <span className="muted">
           draw {state.counts[you].draw} · discard {me.discard.length}
