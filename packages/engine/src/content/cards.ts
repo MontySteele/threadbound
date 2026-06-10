@@ -35,8 +35,8 @@ def({
 });
 def({
   id: 'withering', name: 'Withering', character: 'vess', rarity: 'common', cost: 1, tag: 'Hex',
-  text: 'Apply 2 Hex to ALL enemies.',
-  base: [{ op: 'hexAll', amount: 2, primary: true }],
+  text: 'Apply 3 Hex to ALL enemies.',
+  base: [{ op: 'hexAll', amount: 3, primary: true }], // M2-B1 lever 3 (2nd pass): 2 → 3
   link: { condition: 'Guard', text: 'Also apply 1 Weak to all.', effects: [{ op: 'weakAll', amount: 1 }] },
   mutation: {
     name: 'Cinder-touched Withering', text: 'Apply 1 Hex to ALL enemies. Draw 1.',
@@ -55,7 +55,7 @@ def({
   needsTarget: true,
   text: 'Deal 5.',
   base: [{ op: 'damage', amount: 5, primary: true }],
-  link: { condition: 'Hex', text: 'Apply 2 Hex.', effects: [{ op: 'hex', amount: 2 }] },
+  link: { condition: 'Hex', text: 'Apply 3 Hex.', effects: [{ op: 'hex', amount: 3 }] }, // lever 3 (2nd pass)
 });
 def({
   id: 'thornward', name: 'Thornward', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
