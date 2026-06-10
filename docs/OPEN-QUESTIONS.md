@@ -79,3 +79,30 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     link-placement preferences shifted. Human pairs who deliberately play the
     Vess→Bram detonation game should land comfortably inside; watch the stat in
     Playtest 2 rather than tuning content further on bot evidence alone.
+
+## New in M3 (conservative readings, logged for review)
+
+15. **Audio is procedural WebAudio synthesis**, not CC0 packs (Part C said
+    freesound/Kenney). Rationale: loudness-consistent by construction, zero
+    binary assets, no un-auditioned downloads; the sfx.ts surface is one
+    function per sound, so swapping in curated samples later is mechanical.
+    Flag if the synthesized palette reads too "chiptune" in playtest.
+
+16. **The First-Chain tutorial rides the run's real first combat** (guided
+    overlay, 5 steps, skippable, once per browser) instead of a separate
+    scripted 1v1 vs a Cinder Husk. A scripted solo combat would need engine
+    support for non-run combats; deferred unless the overlay proves confusing.
+
+17. **Thread-action radial menu** (Square/X) is implemented as a focus jump to
+    the THREAD button row rather than a literal radial — same four options,
+    one press. Revisit if the row reads poorly on a TV.
+
+18. **Resolution theater narrates over the final state** rather than stepping
+    intermediate game states (true intermediate frames would require engine
+    replay in the client, which §11 forbids the client to compute). Damage
+    numbers, hitstop, shake, and cord effects all fire per log event; the
+    one visible compromise is that enemy HP bars show end-of-turn values
+    during the narration.
+
+19. **handRetainOne retains the first eligible card** (no picker yet — the
+    M3 plan's retain-picker remains open for a later pass).

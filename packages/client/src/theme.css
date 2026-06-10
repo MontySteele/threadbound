@@ -1,0 +1,56 @@
+/* B0 — Threadbound design tokens. Everything visual reads from these.
+   Dark-parchment ground, two player hues, one ignition hue. */
+
+:root {
+  /* ground */
+  --ink: #14110f;
+  --ink-2: #1a1612;
+  --panel: #1f1a14;
+  --panel-2: #262017;
+  --line: #4a3f31;
+  --line-soft: #322a20;
+
+  /* text */
+  --text: #d8cfc0;
+  --text-dim: #8a7f6e;
+  --text-faint: #5c5347;
+
+  /* player hues (PCOLOR) */
+  --p1: #7fd4ff;
+  --p2: #ffb070;
+
+  /* semantic hues */
+  --ignite: #ff8a5c;       /* Resonance */
+  --thread: #d4af6f;       /* Thread / links */
+  --hex: #b98fd4;
+  --strike: #d4756f;
+  --guard: #7fd4ff;
+  --surge: #8fd48f;
+  --rite: #d4af6f;
+  --danger: #c75450;
+  --danger-bg: #3a1d1a;
+  --good: #8fd48f;
+  --kindled: #ffd470;
+
+  /* type: serif for names/Witness, system workhorse for UI */
+  --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --font-ui: 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+
+  /* shape & rhythm */
+  --radius: 3px;
+  --gap: 8px;
+  --card-w: 158px;
+  --card-w-sm: 128px;
+
+  /* focus ring (controller + keyboard) */
+  --focus: #ffd470;
+
+  /* motion */
+  --beat: 400ms; /* resolution choreography unit (§10) */
+}
+
+/* kill remaining browser-default chrome (B0) */
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }

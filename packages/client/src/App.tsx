@@ -1,6 +1,6 @@
-// Threadbound client (§10/§11), M2 scope per plan Part D5: map screen, shop,
-// relic bar, Fallen/Kindled/Keep states, upgrade + Wedding Knife pickers.
-// Renders server state and sends intents; all rules live in the engine.
+// Threadbound client — M3: controller-first (B1), tooltips (B2), thread cord
+// (B3), chain choreography (B4), enemy presence (B5), sigil art (B6),
+// procedural audio (C), tutorial (D). Renders state, sends intents (§11).
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,10 +8,18 @@ import {
   computeLinksFired, computeResonanceSlots, effectiveDef,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
+import { controller, GLYPHS } from './gamepad';
+import { audio } from './sfx';
+import { Sigil, CharacterSigil } from './sigils';
+import { InspectPanel, inspectElement } from './Tooltip';
+import { ThreadCord } from './ThreadCord';
+import { ResolutionTheater } from './Theater';
+import { StyleScreen } from './StyleScreen';
+import { Tutorial } from './Tutorial';
 
 type Character = 'vess' | 'bram';
 const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
-const PCOLOR: Record<PlayerId, string> = { p1: '#7fd4ff', p2: '#ffb070' };
+const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
   combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦',
@@ -27,6 +35,14 @@ function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
 }
 
+function inspectKeyFor(state: ClientState, owner: PlayerId, id: string): string {
+  const i = inst(state, owner, id);
+  if (!i) return '';
+  if (i.mutated) return `card:${i.defId}:mprev`;
+  if (i.upgraded) return `card:${i.defId}:upgraded`;
+  return `card:${i.defId}`;
+}
+
 // ---------------------------------------------------------------------------
 
 export default function App(): JSX.Element {
@@ -35,6 +51,7 @@ export default function App(): JSX.Element {
   const [error, setError] = useState('');
   const [partnerOn, setPartnerOn] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [, padTick] = useState(0);
   const netRef = useRef<Net | null>(null);
 
   useEffect(() => {
@@ -45,27 +62,91 @@ export default function App(): JSX.Element {
       onPresence: setPartnerOn,
       onConnection: setConnected,
     });
+    controller.onChange = () => padTick((n) => n + 1);
+    controller.onInspect = (el) => inspectElement(el);
+    controller.start();
+    const unlock = () => audio.unlock();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    const refocus = setInterval(() => controller.ensureFocus(), 400);
+    return () => { controller.stop(); clearInterval(refocus); };
   }, []);
+
+  useEffect(() => {
+    audio.setAmbient(state && state.phase !== 'lobby' ? state.map.act : 0);
+  }, [state?.map.act, state?.phase]);
+
   const net = netRef.current;
 
+  if (new URLSearchParams(location.search).has('style')) return <StyleScreen />;
   if (!net || !connected) return <div className="center">Connecting…</div>;
-  if (!joined || !state) return <Home net={net} error={error} />;
 
   return (
-    <div className="app">
-      <header>
-        <span className="title">THREADBOUND</span>
-        <span>
-          {state.phase !== 'lobby' && <b>{ACT_NAME[state.map.act]} · </b>}
-          room <b>{joined.code}</b> · <b style={{ color: PCOLOR[state.you] }}>{CHAR_NAME[state.players[state.you].character]}</b>
-          {' · '}gold <b>{state.gold}</b>
-        </span>
-        <span className={partnerOn ? 'on' : 'off'}>{partnerOn ? 'partner connected' : 'partner disconnected'}</span>
-      </header>
-      <RelicBar state={state} />
-      {error && <div className="error">{error}</div>}
-      <Phase state={state} net={net} partnerOn={partnerOn} />
+    <>
+      <div id="fx-overlay" />
+      <InspectPanel />
+      {!joined || !state ? (
+        <Home net={net} error={error} />
+      ) : (
+        <div className="app">
+          <header>
+            <span className="title">THREADBOUND</span>
+            <span className="header-mid">
+              {state.phase !== 'lobby' && <b>{ACT_NAME[state.map.act]} · </b>}
+              room <b>{joined.code}</b> · <b style={{ color: PCOLOR[state.you] }}>{CHAR_NAME[state.players[state.you].character]}</b>
+              {' · '}gold <b>{state.gold}</b>
+            </span>
+            <span className="header-right">
+              <Settings />
+              <span className={partnerOn ? 'on' : 'off'}>{partnerOn ? '● partner' : '○ partner'}</span>
+            </span>
+          </header>
+          <RelicBar state={state} />
+          {error && <div className="error">{error}</div>}
+          <Phase state={state} net={net} partnerOn={partnerOn} />
+          <ResolutionTheater log={state.log} pname={(p) => state.players[p].character} />
+          <Tutorial state={state} />
+          <HintBar />
+        </div>
+      )}
+    </>
+  );
+}
+
+function HintBar(): JSX.Element | null {
+  if (!controller.active) return null;
+  const g = GLYPHS[controller.flavor];
+  return (
+    <div className="hintbar">
+      <span><b>{g.confirm}</b> select</span>
+      <span><b>{g.cancel}</b> back</span>
+      <span><b>{g.menu}</b> thread</span>
+      <span><b>{g.inspect}</b> inspect</span>
+      <span><b>{g.zone}</b> zones</span>
+      <span><b>{g.reorder}</b> reorder</span>
+      <span><b>{g.ready}</b> ready</span>
     </div>
+  );
+}
+
+function Settings(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [, tick] = useState(0);
+  return (
+    <span className="settings">
+      <button className="chip" data-gp="META" onClick={() => setOpen(!open)}>♪</button>
+      {open && (
+        <div className="settings-pop">
+          {(['master', 'sfx', 'ambient'] as const).map((k) => (
+            <label key={k}>
+              {k}
+              <input type="range" min={0} max={1} step={0.05} value={audio.volumes[k]}
+                onChange={(e) => { audio.setVolume(k, Number(e.target.value)); tick((n) => n + 1); }} />
+            </label>
+          ))}
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -77,7 +158,7 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   return (
     <div className="relicbar">
       {relics.map(({ pid, relic }, i) => (
-        <span key={i} className="relic" style={{ borderColor: PCOLOR[pid] }} title={relic?.text ?? ''}>
+        <span key={i} className="relic" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
           {relic?.name ?? '?'}
         </span>
       ))}
@@ -91,6 +172,9 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
   return (
     <div className="center home">
       <h1>THREADBOUND</h1>
+      <div className="home-sigils">
+        <CharacterSigil who="vess" size={84} /><CharacterSigil who="witness" size={56} /><CharacterSigil who="bram" size={84} />
+      </div>
       <p className="muted">Two spirit-binders, one thread. Bring a friend.</p>
       {error && <div className="error">{error}</div>}
       <div className="panel">
@@ -102,12 +186,12 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
             <option value="bram">Bram, the Cinderfist</option>
           </select>
         </label>
-        <button onClick={() => net.create(character)}>Create room</button>
+        <button data-gp="META" onClick={() => net.create(character)}>Create room</button>
       </div>
       <div className="panel">
         <h3>Join a room</h3>
         <input placeholder="5-letter code" value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-        <button onClick={() => net.join(code)}>Join</button>
+        <button data-gp="META" onClick={() => net.join(code)}>Join</button>
       </div>
     </div>
   );
@@ -120,7 +204,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
         <div className="center">
           <h2>The Undercroft awaits</h2>
           <p>Share the room code. {partnerOn ? 'Your partner is here.' : 'Waiting for your partner…'}</p>
-          {partnerOn && <button className="big" onClick={() => net.start()}>Begin the descent</button>}
+          {partnerOn && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
         </div>
       );
     case 'map':
@@ -157,7 +241,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
 }
 
 // ---------------------------------------------------------------------------
-// Map (M2-B3): both players must pick the same next node.
+// Map
 // ---------------------------------------------------------------------------
 
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -192,11 +276,11 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               return (
                 <button
                   key={n.id}
+                  data-gp="META"
                   className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${myPick ? 'mypick' : ''}`}
                   style={theirPick ? { borderColor: PCOLOR[partner], borderStyle: 'dashed' } : undefined}
                   disabled={!can}
-                  onClick={() => net.act({ type: 'NODE_PICK', nodeId: n.id } as any)}
-                  title={n.kind}
+                  onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
                 >
                   {NODE_ICON[n.kind]} {n.kind}{theirPick ? ' ◄' : ''}
                 </button>
@@ -214,6 +298,14 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 // Combat
 // ---------------------------------------------------------------------------
 
+const TELEGRAPH: Record<string, string> = {
+  attack: 'tel-attack', attack_all: 'tel-attack', attack_momentum: 'tel-attack',
+  attack_drain: 'tel-attack', attack_fray: 'tel-attack',
+  block: 'tel-guard', block_all: 'tel-guard',
+  buff_strength: 'tel-buff', buff_strength_all: 'tel-buff',
+  debuff_weak: 'tel-debuff', debuff_vulnerable: 'tel-debuff', sever: 'tel-debuff',
+};
+
 function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const you = state.you;
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
@@ -229,12 +321,13 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const resonance = useMemo(() => computeResonanceSlots(combat.chain, fired), [combat.chain, fired]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
-  // M2-D4: grey Pulse when the partner has nothing staged that can use it
   const partnerHasPrimary = combat.chain.some(
     (s) => s.owner === partner && JSON.stringify(defFor(state, partner, s.cardInstanceId)).includes('"primary":true'),
   );
+  const cordMode = severed ? 'severed' : anyFallen ? 'slack' : 'normal';
 
   const stage = (cardId: string, targetId?: string) => {
+    audio.play('card_place');
     net.act({ type: 'STAGE_CARD', cardInstanceId: cardId, slot: combat.chain.length, targetId } as any);
     setPendingCard(null);
   };
@@ -257,57 +350,75 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   return (
     <div className="combat">
       {severed && (
-        <div className="severed">
+        <div className="severed" data-inspect="kw:severed_thread">
           THE THREAD IS SEVERED — {combat.severedTurns} turn{combat.severedTurns > 1 ? 's' : ''} remain. No Thread
           actions. Links do not cross between you.
         </div>
       )}
       <div className="enemies">
-        {combat.enemies.map((e) => (
-          <div
-            key={e.id}
-            className={`enemy ${e.hp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''}`}
-            style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : '#666' }}
-            onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
-            title={ENEMIES[e.defId].flavor}
-          >
-            <div className="ename">{ENEMIES[e.defId].name}{ENEMIES[e.defId].elite ? ' ☠' : ENEMIES[e.defId].boss ? ' ♛' : ''}</div>
-            <div>HP {e.hp}/{e.maxHp}{e.block > 0 && ` 🛡${e.block}`}</div>
-            <div className="statuses">
-              {e.hex > 0 && <span className="hex">Hex {e.hex}</span>}
-              {e.weak > 0 && <span>Weak {e.weak}</span>}
-              {e.vulnerable > 0 && <span>Vuln {e.vulnerable}</span>}
-              {e.stun > 0 && <span>Stun {e.stun}</span>}
-              {e.strength > 0 && <span>Str +{e.strength}</span>}
+        {combat.enemies.map((e, i) => {
+          const def = ENEMIES[e.defId];
+          return (
+            <div
+              key={e.id}
+              data-fxid={e.id}
+              data-gp={e.hp > 0 && !e.untargetable ? 'ENEMIES' : undefined}
+              data-inspect={`enemy:${e.defId}`}
+              className={`enemy ${e.hp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
+              style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : 'var(--line)', animationDelay: `${(i * 0.7) % 2}s` }}
+              onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
+            >
+              <Sigil id={e.defId} size={64} aura={def.elite || def.boss} className="enemy-sigil" />
+              <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
+              <div className="hpbar"><div className="hpfill" style={{ width: `${(100 * e.hp) / e.maxHp}%` }} /></div>
+              <div>{e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}</div>
+              {e.hex > 0 && (
+                <div className="hexmotes" data-inspect="kw:hex">
+                  {Array.from({ length: Math.min(e.hex, 9) }, (_, m) => (
+                    <span key={m} className="mote" style={{ animationDelay: `${m * 0.35}s` }} />
+                  ))}
+                  {e.hex > 9 && <span className="motecount">{e.hex}</span>}
+                </div>
+              )}
+              <div className="statuses">
+                {e.weak > 0 && <span data-inspect="kw:weak">Weak {e.weak}</span>}
+                {e.vulnerable > 0 && <span data-inspect="kw:vulnerable">Vuln {e.vulnerable}</span>}
+                {e.stun > 0 && <span data-inspect="kw:stun">Stun {e.stun}</span>}
+                {e.strength > 0 && <span>Str +{e.strength}</span>}
+              </div>
+              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
+              <div className="bound" style={{ color: e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
+                {e.untargetable ? 'unbound — untargetable' : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
+              </div>
             </div>
-            <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
-            <div className="bound" style={{ color: e.boundTo ? PCOLOR[e.boundTo] : '#888' }}>
-              {e.untargetable ? 'unbound — untargetable' : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {(pendingCard || pendingSever) && (
-        <div className="hint">Click an enemy to {pendingSever ? 'sever its binding' : 'target'} (or click the card again to cancel).</div>
+        <div className="hint">
+          Pick an enemy to {pendingSever ? 'sever its binding' : 'target'}.
+          <button className="chip" data-gp-action="cancel" onClick={() => { setPendingCard(null); setPendingSever(false); }}>cancel</button>
+        </div>
       )}
 
       <ChainTrack state={state} fired={fired} resonance={resonance} net={net} />
 
+      <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode}
+        left={state.players.p1.character} right={state.players.p2.character} />
+
       <div className="thread-bar">
-        <span className="thread">THREAD {state.thread}/{state.threadMax}</span>
-        <button disabled={me.ready || me.fallen || severed || anyFallen || !partnerHasPrimary}
-          title={!partnerHasPrimary ? 'your partner has nothing staged that Pulse can boost' : ''}
+        <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || !partnerHasPrimary}
           onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'pulse' } as any)}>
-          Pulse (2): partner’s next card +3
+          Pulse (2)
         </button>
-        <button disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
-        <button disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever Binding (3)…</button>
-        <button disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' } as any)}>Steady (1)</button>
+        <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
+        <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
+        <button data-gp="THREAD" data-inspect="kw:steady" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' } as any)}>Steady (1)</button>
         {combat.threadActions.length > 0 && (
           <span className="declared">
-            declared: {combat.threadActions.map((t, i) => (
-              <button key={i} className="chip" style={{ color: PCOLOR[t.player] }}
+            {combat.threadActions.map((t, i) => (
+              <button key={i} className="chip" data-gp="THREAD" style={{ color: PCOLOR[t.player] }}
                 onClick={() => t.player === you && net.act({ type: 'UNDECLARE_THREAD', kind: t.kind } as any)}>
                 {t.kind}{t.player === you ? ' ✕' : ''}
               </button>
@@ -318,14 +429,15 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
       {reclaimOpen && (
         <div className="panel">
-          <b>Partner’s discard:</b>{' '}
+          <b>Partner’s discard</b> <span className="muted">(Reclaims arrive mutated — inspect to preview)</span>{' '}
           {state.players[partner].discard.length === 0 && <i>empty</i>}
           {state.players[partner].discard.map((id) => (
-            <button key={id} className="chip" onClick={() => {
-              net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
-              setReclaimOpen(false);
-            }}>
-              {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' (mutates)' : ''}
+            <button key={id} className="chip" data-gp="THREAD" data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+              onClick={() => {
+                net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
+                setReclaimOpen(false);
+              }}>
+              {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}
             </button>
           ))}
         </div>
@@ -335,19 +447,19 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         {[you, partner].map((pid) => {
           const p = state.players[pid];
           return (
-            <div key={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
+            <div key={pid} data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
               <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
-              {p.fallen && <b className="fray"> — FALLEN (revives at 1 HP if your partner wins)</b>}
+              {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
               <div>
                 HP {p.hp}/{p.maxHp} · Block {p.block} · Energy {p.energy}
-                {p.kindled > 0 && <span className="kindled"> · Kindled {p.kindled}</span>}
-                {p.momentum > 0 && ` · Momentum ${p.momentum}`}
+                {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · Kindled {p.kindled}</span>}
+                {p.momentum > 0 && <span data-inspect="kw:momentum"> · Momentum {p.momentum}</span>}
               </div>
               <div className="statuses">
-                {p.statuses.frayed > 0 && <span className="fray">Frayed {p.statuses.frayed}</span>}
-                {p.statuses.weak > 0 && <span>Weak {p.statuses.weak}</span>}
-                {p.statuses.vulnerable > 0 && <span>Vuln {p.statuses.vulnerable}</span>}
-                {p.powers.map((pw) => <span key={pw} title={POWERS[pw]?.name}>{POWERS[pw]?.name ?? pw}</span>)}
+                {p.statuses.frayed > 0 && <span className="fray" data-inspect="kw:frayed">Frayed {p.statuses.frayed}</span>}
+                {p.statuses.weak > 0 && <span data-inspect="kw:weak">Weak {p.statuses.weak}</span>}
+                {p.statuses.vulnerable > 0 && <span data-inspect="kw:vulnerable">Vuln {p.statuses.vulnerable}</span>}
+                {p.powers.map((pw) => <span key={pw}>{POWERS[pw]?.name ?? pw}</span>)}
                 {p.ready && <span className="ready">READY</span>}
               </div>
             </div>
@@ -360,6 +472,8 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           const def = defFor(state, you, id);
           return (
             <Card key={id} def={def} echo={!!inst(state, you, id)?.echo}
+              gpZone="HAND"
+              inspect={inspectKeyFor(state, you, id)}
               selected={pendingCard === id}
               disabled={me.ready || me.fallen || def.cost > me.energy}
               onClick={() => !me.ready && !me.fallen && def.cost <= me.energy && onHandClick(id)} />
@@ -369,13 +483,13 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       </div>
 
       <div className="actions">
-        <button className="big" disabled={me.fallen} onClick={() => net.act({ type: 'SET_READY', ready: !me.ready } as any)}>
+        <button className="big" data-gp="META" data-gp-action="ready" disabled={me.fallen}
+          onClick={() => { audio.play(you === 'p1' ? 'ready_p1' : 'ready_p2'); net.act({ type: 'SET_READY', ready: !me.ready } as any); }}>
           {me.ready ? 'Unready' : 'Ready'}
         </button>
         {state.players[partner].ready && !me.ready && <span className="nudge">your partner is ready</span>}
         <span className="muted">
           draw {state.counts[you].draw} · discard {me.discard.length} · partner hand {state.counts[partner].hand}
-          {' · '}unplayed cards discard at end of turn (Keep cards stay)
         </span>
       </div>
 
@@ -398,32 +512,46 @@ function ChainTrack({ state, fired, resonance, net }: {
         const mine = slot.owner === you;
         const target = slot.targetId ? state.combat!.enemies.find((e) => e.id === slot.targetId) : null;
         return (
-          <div key={slot.cardInstanceId} className={`chaincard ${fired[i] ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
-            style={{ borderColor: PCOLOR[slot.owner] }}>
-            <div className="slotnum">{i + 1}</div>
-            <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
-              onClick={() => mine && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
-            {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
-            {def.link && <div className={`linkstate ${fired[i] ? 'on' : 'off'}`}>{fired[i] ? '⚡ link fires' : `link: ${def.link.condition}`}</div>}
-            {resonance.has(i) && <div className="resonance">✦ RESONANCE +50%</div>}
-            {mine && (
-              <div className="reorder">
-                <button onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
-                <button onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.min(chain.length - 1, i + 1) } as any)}>▶</button>
+          <React.Fragment key={slot.cardInstanceId}>
+            {i > 0 && (
+              // B4: link arcs between adjacent staged cards; pre-light when satisfied
+              <div className={`arc ${fired[i] ? 'arc-on' : ''} ${resonance.has(i) ? 'arc-resonance' : ''}`} data-inspect="kw:link">
+                <svg viewBox="0 0 40 24" width="40" height="24"><path d="M 2 22 Q 20 -8 38 22" fill="none" /></svg>
               </div>
             )}
-          </div>
+            <div className={`chaincard ${fired[i] ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
+              style={{ borderColor: PCOLOR[slot.owner] }}>
+              <div className="slotnum">{i + 1}</div>
+              <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
+                gpZone={mine ? 'CHAIN' : undefined}
+                inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
+                onClick={() => mine && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
+              {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
+              {def.link && <div className={`linkstate ${fired[i] ? 'on' : 'off'}`}>{fired[i] ? '⚡ fires' : `link: ${def.link.condition}`}</div>}
+              {resonance.has(i) && <div className="resonance" data-inspect="kw:resonance">✦ RESONANCE</div>}
+              {mine && (
+                <div className="reorder">
+                  <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
+                  <button data-gp-reorder="right" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.min(chain.length - 1, i + 1) } as any)}>▶</button>
+                </div>
+              )}
+            </div>
+          </React.Fragment>
         );
       })}
     </div>
   );
 }
 
-function Card({ def, onClick, small, selected, disabled, echo }: {
+export function Card({ def, onClick, small, selected, disabled, echo, gpZone, inspect }: {
   def: CardDef; onClick?: () => void; small?: boolean; selected?: boolean; disabled?: boolean; echo?: boolean;
+  gpZone?: string; inspect?: string;
 }): JSX.Element {
   return (
-    <div className={`card tag-${def.tag} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''}`}
+    <div
+      className={`card tag-${def.tag} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''}`}
+      data-gp={!disabled && onClick ? gpZone : undefined}
+      data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{def.name}</span></div>
       <div className="ctag">{def.tag}{def.keep ? ' · Keep' : ''}{echo ? ' · Echo' : ''}</div>
@@ -440,20 +568,20 @@ function intentText(intent: any, strength: number): string {
     case 'attack_all': return `⚔ ${s(intent.amount)} BOTH`;
     case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum`;
     case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread`;
-    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS the Thread`;
+    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS`;
     case 'block': return `🛡 ${intent.amount}`;
     case 'block_all': return `🛡 ${intent.amount} ALL`;
-    case 'buff_strength': return `↑ Strength ${intent.amount}`;
-    case 'buff_strength_all': return `↑ Strength ${intent.amount} ALL`;
+    case 'buff_strength': return `↑ Str ${intent.amount}`;
+    case 'buff_strength_all': return `↑ Str ${intent.amount} ALL`;
     case 'debuff_weak': return `☁ Weak ${intent.amount}`;
-    case 'debuff_vulnerable': return `☁ Vulnerable ${intent.amount}`;
+    case 'debuff_vulnerable': return `☁ Vuln ${intent.amount}`;
     case 'sever': return '✂ moves its tether';
     default: return '?';
   }
 }
 
 // ---------------------------------------------------------------------------
-// Reward / Covet (§8) — also serves treasure (no card sets, just spoils)
+// Reward / Event / Rest / Shop (zones: everything META; cards inspectable)
 // ---------------------------------------------------------------------------
 
 function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -466,11 +594,11 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
     <div className="center">
       <h2>Spoils</h2>
       <p className="muted">
-        +{r.gold} gold{r.relic && <> · relic: <b>{RELICS_BY_ID[r.relic]?.name}</b> ({RELICS_BY_ID[r.relic]?.text})</>}
+        +{r.gold} gold{r.relic && <> · relic: <b data-inspect={`relic:${r.relic}`}>{RELICS_BY_ID[r.relic]?.name}</b></>}
       </p>
       {!treasureOnly && (
         <>
-          <p className="muted">Pick from your own set — or skip and Covet what your partner passes over. Covet charges: {me.covetCharges}</p>
+          <p className="muted" data-inspect="kw:covet">Pick from your own set — or skip and Covet. Charges: {me.covetCharges}</p>
           <div className="reward-row">
             {[you, partner].map((pid) => (
               <div key={pid} className="panel" style={{ borderColor: PCOLOR[pid] }}>
@@ -483,10 +611,10 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                       && r.picked[partner] !== defId && me.covetCharges > 0;
                     return (
                       <div key={defId} className={taken ? 'taken' : ''}>
-                        <Card def={CARDS[defId]}
+                        <Card def={CARDS[defId]} gpZone={canPick || canCovet ? 'META' : undefined}
                           onClick={() => {
-                            if (canPick) net.act({ type: 'REWARD_PICK', pick: defId } as any);
-                            else if (canCovet) net.act({ type: 'COVET_PICK', pick: defId } as any);
+                            if (canPick) { audio.play('purchase'); net.act({ type: 'REWARD_PICK', pick: defId } as any); }
+                            else if (canCovet) { audio.play('covet'); net.act({ type: 'COVET_PICK', pick: defId } as any); }
                           }} />
                         {taken && <div className="muted">taken</div>}
                       </div>
@@ -494,7 +622,7 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                   })}
                 </div>
                 {pid === you && r.picked[you] === null && (
-                  <button onClick={() => net.act({ type: 'REWARD_PICK', pick: 'skip' } as any)}>Skip</button>
+                  <button data-gp="META" onClick={() => net.act({ type: 'REWARD_PICK', pick: 'skip' } as any)}>Skip</button>
                 )}
               </div>
             ))}
@@ -503,9 +631,9 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       )}
       <div>
         {!treasureOnly && r.picked[you] !== null && r.coveted[you] === null && me.covetCharges > 0 && r.picked[partner] !== null && (
-          <button onClick={() => net.act({ type: 'COVET_PICK', pick: 'pass' } as any)}>Pass on Coveting</button>
+          <button data-gp="META" onClick={() => net.act({ type: 'COVET_PICK', pick: 'pass' } as any)}>Pass on Coveting</button>
         )}{' '}
-        <button className="big" disabled={(!treasureOnly && (r.picked.p1 === null || r.picked.p2 === null)) || state.advanceReady[you]}
+        <button className="big" data-gp="META" disabled={(!treasureOnly && (r.picked.p1 === null || r.picked.p2 === null)) || state.advanceReady[you]}
           onClick={() => net.act({ type: 'ADVANCE' } as any)}>
           {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
         </button>
@@ -514,10 +642,6 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Events, Rest (upgrade picker + Wedding Knife), Shop
-// ---------------------------------------------------------------------------
 
 function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const you = state.you;
@@ -531,14 +655,14 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       {def.crossed && (
         <p className="crossed">
           Crossed choice: <b style={{ color: PCOLOR[ev.chooser] }}>{state.players[ev.chooser].character}</b> decides
-          what happens to <b style={{ color: PCOLOR[ev.subject] }}>{state.players[ev.subject].character}</b>.
+          for <b style={{ color: PCOLOR[ev.subject] }}>{state.players[ev.subject].character}</b>.
           {youChoose ? ' The choice is yours.' : ' Your fate is in their hands.'}
         </p>
       )}
       {ev.chosen === null ? (
         youChoose ? (
           def.options.map((o) => (
-            <button key={o.id} className="big" onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id } as any)}>
+            <button key={o.id} className="big" data-gp="META" onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id } as any)}>
               {o.label}
             </button>
           ))
@@ -549,7 +673,7 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         <>
           <p className="prose">{ev.resultText}</p>
           <Log log={state.log} state={state} />
-          <button className="big" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
           </button>
         </>
@@ -572,29 +696,27 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       <Log log={state.log} state={state} />
       {chosen === null ? (
         <>
-          <button className="big" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>Rest (heal 30%)</button>
-          <button className="big" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' } as any)}>Upgrade a card</button>
-          <button className="big" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' } as any)}>Barter (+1 Covet charge)</button>
-          <button className="big" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' } as any)}>
+          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>Rest (heal 30%)</button>
+          <button className="big" data-gp="META" data-inspect="kw:upgrade" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' } as any)}>Upgrade a card</button>
+          <button className="big" data-gp="META" data-inspect="kw:covet" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' } as any)}>Barter (+1 Covet charge)</button>
+          <button className="big" data-gp="META" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' } as any)}>
             Re-braid (+1 max Thread, once per run)
           </button>
         </>
       ) : needUpgradePick ? (
         <>
-          <p>Choose a card to upgrade — upgrades tighten the weave (deeper links):</p>
+          <p>Choose a card — upgrades tighten the weave (inspect for the preview):</p>
           <div className="hand">
             {me.deck.filter((c) => !c.upgraded && CARDS[c.defId].upgrade).map((c) => (
-              <div key={c.instanceId}>
-                <Card def={CARDS[c.defId]} small onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)} />
-                <div className="clink">+ {CARDS[c.defId].upgrade!.text}</div>
-              </div>
+              <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META" inspect={`card:${c.defId}:uprev`}
+                onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)} />
             ))}
           </div>
         </>
       ) : (
         <>
           <p>You chose: <b>{chosen}</b>. Partner: <b>{rest.chosen[partner] ?? '…deciding'}</b></p>
-          <button className="big" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
           </button>
         </>
@@ -613,23 +735,23 @@ function Wedding({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   if (w?.done) return <p className="crossed">The Wedding Knife has cut. The trade is sealed.</p>;
   return (
     <div className="panel">
-      <h3>The Wedding Knife</h3>
+      <h3 data-inspect="relic:wedding_knife">The Wedding Knife</h3>
       <p className="muted">Once per rest site: permanently trade one card each. Both must confirm.</p>
-      {!open && !w && <button onClick={() => setOpen(true)}>Offer a trade…</button>}
+      {!open && !w && <button data-gp="META" onClick={() => setOpen(true)}>Offer a trade…</button>}
       {(open || w) && (
         <>
           <div>
             Your offer: <b>{w?.offers[you] ? CARDS[inst(state, you, w.offers[you]!)!.defId].name : '—'}</b>
-            {' · '}Partner’s offer: <b>{w?.offers[partner] ? CARDS[inst(state, partner, w.offers[partner]!)!.defId].name : '—'}</b>
+            {' · '}Partner’s: <b>{w?.offers[partner] ? CARDS[inst(state, partner, w.offers[partner]!)!.defId].name : '—'}</b>
           </div>
           <div className="hand">
             {me.deck.filter((c) => !CARDS[c.defId].starterOnly).map((c) => (
-              <Card key={c.instanceId} def={CARDS[c.defId]} small selected={w?.offers[you] === c.instanceId}
+              <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META" selected={w?.offers[you] === c.instanceId}
                 onClick={() => net.act({ type: 'WEDDING_PICK', cardInstanceId: c.instanceId } as any)} />
             ))}
           </div>
           {w?.offers.p1 && w?.offers.p2 && (
-            <button className="big" disabled={w.confirmed[you]} onClick={() => net.act({ type: 'WEDDING_CONFIRM' } as any)}>
+            <button className="big" data-gp="META" disabled={w.confirmed[you]} onClick={() => net.act({ type: 'WEDDING_CONFIRM' } as any)}>
               {w.confirmed[you] ? 'waiting for partner to confirm…' : 'Confirm the trade (permanent)'}
             </button>
           )}
@@ -657,8 +779,11 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
               {shop.items.filter((i) => i.kind === 'card' && i.forPlayer === pid).map((item) => (
                 <div key={item.id} className={item.sold ? 'taken' : ''}>
                   <Card def={CARDS[item.refId!]} small
+                    gpZone={!item.sold && pid === you && item.price <= state.gold ? 'META' : undefined}
                     disabled={item.sold || item.price > state.gold || pid !== you}
-                    onClick={() => !item.sold && pid === you && net.act({ type: 'SHOP_BUY', itemId: item.id } as any)} />
+                    onClick={() => {
+                      if (!item.sold && pid === you) { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id } as any); }
+                    }} />
                   <div className={item.price > state.gold ? 'muted' : ''}>{item.sold ? 'sold' : `${item.price}g`}</div>
                 </div>
               ))}
@@ -670,8 +795,8 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <h3>Relics & services</h3>
         {shop.items.filter((i) => i.kind === 'relic').map((item) => (
           <div key={item.id} className={item.sold ? 'taken' : ''}>
-            <button disabled={item.sold || item.price > state.gold}
-              onClick={() => net.act({ type: 'SHOP_BUY', itemId: item.id } as any)}>
+            <button data-gp="META" data-inspect={`relic:${item.refId}`} disabled={item.sold || item.price > state.gold}
+              onClick={() => { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id } as any); }}>
               {RELICS_BY_ID[item.refId!]?.name} — {item.sold ? 'sold' : `${item.price}g`}
             </button>
             <span className="muted"> {RELICS_BY_ID[item.refId!]?.text}</span>
@@ -679,7 +804,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         ))}
         {shop.items.filter((i) => i.kind === 'removal').map((item) => (
           <div key={item.id}>
-            <button disabled={item.sold || item.price > state.gold}
+            <button data-gp="META" disabled={item.sold || item.price > state.gold}
               onClick={() => setRemoving(removing === item.id ? null : item.id)}>
               Remove a card — {item.sold ? 'used' : `${item.price}g`}
             </button>
@@ -688,7 +813,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         {removing && (
           <div className="hand">
             {me.deck.map((c) => (
-              <Card key={c.instanceId} def={CARDS[c.defId]} small
+              <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META"
                 onClick={() => {
                   net.act({ type: 'SHOP_REMOVE', itemId: removing, cardInstanceId: c.instanceId } as any);
                   setRemoving(null);
@@ -697,7 +822,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           </div>
         )}
       </div>
-      <button className="big" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+      <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
         {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
       </button>
     </div>
@@ -741,7 +866,7 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'thread_reignited': return 'THE THREAD REIGNITES at full strength.';
     case 'thread_action': return `${pname(e.player)} uses ${e.kind}.`;
     case 'fray': return 'The Thread FRAYS — you both pay for it.';
-    case 'resonance_ignite': return `✦ RESONANCE — the thread ignites through [${e.tags.join(' → ')}]`;
+    case 'resonance_ignite': return `✦ RESONANCE — [${e.tags.join(' → ')}]`;
     case 'relic': return `${pname(e.player)} claims a relic: ${RELICS_BY_ID[e.relic]?.name ?? e.relic}.`;
     case 'info': return e.detail;
     default: return JSON.stringify(e);

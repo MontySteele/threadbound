@@ -9,6 +9,7 @@
 //   - Hex damage share (incl. HexScaling) 20–30%
 
 process.env.PORT = process.env.PORT ?? '0';
+process.env.PERSIST = ''; // sims never persist rooms
 
 import { server } from '@threadbound/server';
 import { Bot, RunResult } from './bot';

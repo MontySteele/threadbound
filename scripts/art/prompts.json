@@ -1,0 +1,119 @@
+{
+  "cinder_husk": {
+    "subject": "Cinder Husk — What remains when a fire is given a body and the body is given nothing else.",
+    "tier": "normal",
+    "act": 1
+  },
+  "tallow_wisp": {
+    "subject": "Tallow Wisp — A votive flame that outlived its prayer and now searches for someone to grieve.",
+    "tier": "normal",
+    "act": 1
+  },
+  "thread_leech": {
+    "subject": "Thread-Leech — It does not want your blood; it wants the thing that binds you, and it is patient.",
+    "tier": "normal",
+    "act": 1
+  },
+  "reliquary_mite": {
+    "subject": "Reliquary Mite — Small enough to live inside a saint's knucklebone, and old enough to have eaten the saint.",
+    "tier": "normal",
+    "act": 1
+  },
+  "sexton": {
+    "subject": "Sexton of the Undercroft — He still digs the graves, though no one has died here in a hundred years who stayed dead.",
+    "tier": "normal",
+    "act": 1
+  },
+  "mourner": {
+    "subject": "The Mourner — It weeps for every soul that fought alone, and it will make mourners of you both if you give it the chance.",
+    "tier": "elite",
+    "act": 1
+  },
+  "votive_throng": {
+    "subject": "Votive Throng — A hundred small flames lit for the dead, still burning long after anyone remained to want them answered.",
+    "tier": "normal",
+    "act": 1
+  },
+  "gravewax_husk": {
+    "subject": "Gravewax Husk — The tallow of old funerals, melted down and poured into the rough shape of someone it half remembers.",
+    "tier": "normal",
+    "act": 1
+  },
+  "pallbearer": {
+    "subject": "Pallbearer — It still carries the coffin, and it has decided, after all these years, that the coffin should not be empty.",
+    "tier": "normal",
+    "act": 1
+  },
+  "warden_of_the_crossing": {
+    "subject": "Warden of the Crossing — It stands where two paths meet and will not say which of you it has come to collect, because it has not decided.",
+    "tier": "elite",
+    "act": 1
+  },
+  "interred_saint": {
+    "subject": "The Interred Saint — They buried her with honors, then with chains, then with the whole of the Undercroft, and none of it was enough.",
+    "tier": "boss",
+    "act": 1
+  },
+  "psalm_eater": {
+    "subject": "Psalm-Eater — It swallowed every prayer this place ever raised, and it is still hungry for whatever passes between you.",
+    "tier": "normal",
+    "act": 2
+  },
+  "bell_husk": {
+    "subject": "Bell Husk — A bell that was rung once too often, now wearing the bellringer, still tolling a note that unravels things.",
+    "tier": "normal",
+    "act": 2
+  },
+  "lectern_wretch": {
+    "subject": "Lectern Wretch — Bent over a book whose pages were eaten centuries ago, it reads your fervor back to you, word for word.",
+    "tier": "normal",
+    "act": 2
+  },
+  "chorister_low": {
+    "subject": "Chorister of the Low Note — It holds the note beneath hearing, the one you feel in the floor of your chest like a second pulse.",
+    "tier": "normal",
+    "act": 2
+  },
+  "chorister_mid": {
+    "subject": "Chorister of the Held Note — It has sustained the same note since the choir died, and it will not breathe until the song is finished.",
+    "tier": "normal",
+    "act": 2
+  },
+  "chorister_high": {
+    "subject": "Chorister of the High Note — The descant that was meant to carry the dead upward, still climbing, with nothing left to carry.",
+    "tier": "normal",
+    "act": 2
+  },
+  "the_cantor": {
+    "subject": "The Cantor — It conducts whether or not anyone sings, and it can hear, precisely, every place your voices fail to meet.",
+    "tier": "elite",
+    "act": 2
+  },
+  "bellkeeper": {
+    "subject": "The Bellkeeper — Each toll names one of you, and it has kept the bell oiled all these years for exactly this occasion.",
+    "tier": "elite",
+    "act": 2
+  },
+  "choirmaster": {
+    "subject": "The Choirmaster — The Choir went hollow the day it demanded one voice from many, and it has been rehearsing you since you arrived.",
+    "tier": "boss",
+    "act": 2
+  },
+  "the_unraveled": {
+    "subject": "The Unraveled — It was bound to someone once, and it remembers the cut better than the binding, and it wants you to remember it too.",
+    "tier": "boss",
+    "act": 3
+  },
+  "character_vess": {
+    "subject": "Vess, the Hexweaver — quiet, precise spirit-binder who stitches curses into things; violet accent",
+    "tier": "character"
+  },
+  "character_bram": {
+    "subject": "Bram, the Cinderfist — loud, kinetic spirit-binder who fights like an argument he is winning; ember accent",
+    "tier": "character"
+  },
+  "character_witness": {
+    "subject": "The Witness — a long-dead spirit bound to a thread, a disdainful long-suffering steward; pale lavender accent",
+    "tier": "character"
+  }
+}

@@ -1,0 +1,246 @@
+// B1 — controller support. Gamepad API polled in a rAF loop; coexists with
+// mouse/keyboard (last device wins). Navigation is DOM-driven: anything
+// interactive carries data-gp="ZONE"; confirm synthesizes a click so the
+// controller reuses the exact mouse handlers on every screen.
+
+export type PadFlavor = 'ps' | 'xbox';
+
+export interface GlyphSet {
+  confirm: string; cancel: string; menu: string; inspect: string;
+  zone: string; reorder: string; ready: string; overview: string;
+}
+
+export const GLYPHS: Record<PadFlavor, GlyphSet> = {
+  ps: { confirm: '✕', cancel: '○', menu: '□', inspect: '△', zone: 'L1/R1', reorder: 'L2/R2', ready: 'Options (hold)', overview: 'Create' },
+  xbox: { confirm: 'A', cancel: 'B', menu: 'X', inspect: 'Y', zone: 'LB/RB', reorder: 'LT/RT', ready: 'Menu (hold)', overview: 'View' },
+};
+
+const ZONE_ORDER = ['ENEMIES', 'CHAIN', 'THREAD', 'HAND', 'META'];
+const READY_HOLD_MS = 300;
+const REPEAT_FIRST_MS = 280;
+const REPEAT_MS = 140;
+
+interface PadState {
+  buttons: boolean[];
+  axes: number[];
+}
+
+export class Controller {
+  flavor: PadFlavor = 'ps';
+  connected = false;
+  active = false; // last input device was the pad
+  focused: HTMLElement | null = null;
+  onChange: (() => void) | null = null; // hint bar re-render
+  onInspect: ((el: HTMLElement | null) => void) | null = null;
+  private prev: PadState = { buttons: [], axes: [] };
+  private repeatTimers: Record<string, number> = {};
+  private readyHeldSince = 0;
+  private readyFired = false;
+  private raf = 0;
+
+  start(): void {
+    const loop = () => {
+      this.poll();
+      this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+    window.addEventListener('mousedown', () => this.setActive(false));
+    window.addEventListener('gamepadconnected', (e) => {
+      this.connected = true;
+      const id = (e as GamepadEvent).gamepad.id.toLowerCase();
+      this.flavor = /054c|dualsense|dualshock|playstation|sony/.test(id) ? 'ps' : 'xbox';
+      this.onChange?.();
+    });
+    window.addEventListener('gamepaddisconnected', () => {
+      this.connected = false;
+      this.setActive(false);
+    });
+  }
+
+  stop(): void {
+    cancelAnimationFrame(this.raf);
+  }
+
+  private setActive(on: boolean): void {
+    if (this.active === on) return;
+    this.active = on;
+    if (!on) this.setFocus(null);
+    document.body.classList.toggle('pad-active', on);
+    this.onChange?.();
+  }
+
+  private pad(): Gamepad | null {
+    for (const p of navigator.getGamepads?.() ?? []) if (p) return p;
+    return null;
+  }
+
+  private poll(): void {
+    const pad = this.pad();
+    if (!pad) return;
+    const now = performance.now();
+    const cur: PadState = {
+      buttons: pad.buttons.map((b) => b.pressed),
+      axes: [...pad.axes],
+    };
+    const pressed = (i: number) => cur.buttons[i] && !this.prev.buttons[i];
+    const anyInput = cur.buttons.some(Boolean) || cur.axes.some((a) => Math.abs(a) > 0.5);
+    if (anyInput) this.setActive(true);
+    if (!this.active) {
+      this.prev = cur;
+      return;
+    }
+
+    // directional: dpad 12-15 + left stick, with hold-repeat
+    const dirDown = {
+      up: cur.buttons[12] || cur.axes[1] < -0.55,
+      down: cur.buttons[13] || cur.axes[1] > 0.55,
+      left: cur.buttons[14] || cur.axes[0] < -0.55,
+      right: cur.buttons[15] || cur.axes[0] > 0.55,
+    };
+    for (const dir of ['up', 'down', 'left', 'right'] as const) {
+      if (dirDown[dir]) {
+        const t = this.repeatTimers[dir] ?? 0;
+        if (t === 0) {
+          this.move(dir);
+          this.repeatTimers[dir] = now + REPEAT_FIRST_MS;
+        } else if (now >= t) {
+          this.move(dir);
+          this.repeatTimers[dir] = now + REPEAT_MS;
+        }
+      } else {
+        this.repeatTimers[dir] = 0;
+      }
+    }
+
+    if (pressed(0)) this.confirm();
+    if (pressed(1)) this.cancel();
+    if (pressed(2)) this.jumpZone('THREAD'); // thread-action menu
+    if (pressed(3)) this.onInspect?.(this.focused);
+    if (pressed(4)) this.cycleZone(-1);
+    if (pressed(5)) this.cycleZone(1);
+    if (pressed(6)) this.reorder('left');
+    if (pressed(7)) this.reorder('right');
+    if (pressed(8) || pressed(17)) this.clickAction('overview'); // Create / touchpad
+
+    // Options: hold-to-ready (B1 — prevents accidents)
+    if (cur.buttons[9]) {
+      if (this.readyHeldSince === 0) this.readyHeldSince = now;
+      if (!this.readyFired && now - this.readyHeldSince >= READY_HOLD_MS) {
+        this.readyFired = true;
+        this.clickAction('ready');
+      }
+    } else {
+      this.readyHeldSince = 0;
+      this.readyFired = false;
+    }
+
+    this.prev = cur;
+  }
+
+  // ---- DOM navigation -------------------------------------------------------
+
+  private items(): HTMLElement[] {
+    return [...document.querySelectorAll<HTMLElement>('[data-gp]')].filter(
+      (el) => !(el as HTMLButtonElement).disabled && el.offsetParent !== null,
+    );
+  }
+
+  private zonesPresent(): string[] {
+    const present = new Set(this.items().map((el) => el.dataset.gp!));
+    return ZONE_ORDER.filter((z) => present.has(z));
+  }
+
+  setFocus(el: HTMLElement | null): void {
+    if (this.focused === el) return;
+    this.focused?.classList.remove('gp-focus');
+    this.focused = el;
+    if (el) {
+      el.classList.add('gp-focus');
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    this.onChange?.();
+  }
+
+  /** Re-acquire focus after re-renders detach the focused node. */
+  ensureFocus(): void {
+    if (!this.active) return;
+    if (this.focused && document.contains(this.focused)) return;
+    const items = this.items();
+    const zone = this.focused?.dataset.gp;
+    const inZone = items.filter((el) => el.dataset.gp === zone);
+    this.setFocus(inZone[0] ?? items[0] ?? null);
+  }
+
+  private move(dir: 'up' | 'down' | 'left' | 'right'): void {
+    const items = this.items();
+    if (items.length === 0) return;
+    if (!this.focused || !document.contains(this.focused)) {
+      this.setFocus(items[0]);
+      return;
+    }
+    const zone = this.focused.dataset.gp!;
+    const inZone = items.filter((el) => el.dataset.gp === zone);
+    // spatial nearest-neighbor within the zone; up/down may leave the zone
+    const from = this.focused.getBoundingClientRect();
+    const fc = { x: from.left + from.width / 2, y: from.top + from.height / 2 };
+    const candidates = (pool: HTMLElement[]) =>
+      pool
+        .filter((el) => el !== this.focused)
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+          const dx = c.x - fc.x;
+          const dy = c.y - fc.y;
+          const along = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy;
+          const across = dir === 'left' || dir === 'right' ? Math.abs(dy) : Math.abs(dx);
+          return { el, along, across };
+        })
+        .filter((c) => c.along > 4)
+        .sort((a, b) => a.along + a.across * 2 - (b.along + b.across * 2));
+    let next = candidates(inZone)[0]?.el;
+    if (!next && (dir === 'up' || dir === 'down')) next = candidates(items)[0]?.el;
+    if (next) this.setFocus(next);
+  }
+
+  private cycleZone(delta: number): void {
+    const zones = this.zonesPresent();
+    if (zones.length === 0) return;
+    const cur = this.focused?.dataset.gp;
+    const idx = Math.max(0, zones.indexOf(cur ?? ''));
+    const zone = zones[(idx + delta + zones.length) % zones.length];
+    this.jumpZone(zone);
+  }
+
+  private jumpZone(zone: string): void {
+    const first = this.items().find((el) => el.dataset.gp === zone);
+    if (first) this.setFocus(first);
+  }
+
+  private confirm(): void {
+    this.ensureFocus();
+    this.focused?.click();
+    queueMicrotask(() => this.ensureFocus());
+  }
+
+  private cancel(): void {
+    this.clickAction('cancel') || this.onInspect?.(null);
+  }
+
+  private reorder(dir: 'left' | 'right'): void {
+    // L2/R2 reorder the focused (own) chain card via its arrow buttons
+    const btn = this.focused?.parentElement?.querySelector<HTMLElement>(`[data-gp-reorder="${dir}"]`)
+      ?? this.focused?.querySelector<HTMLElement>(`[data-gp-reorder="${dir}"]`);
+    btn?.click();
+  }
+
+  private clickAction(action: string): boolean {
+    const el = document.querySelector<HTMLElement>(`[data-gp-action="${action}"]`);
+    if (el && !(el as HTMLButtonElement).disabled) {
+      el.click();
+      return true;
+    }
+    return false;
+  }
+}
+
+export const controller = new Controller();

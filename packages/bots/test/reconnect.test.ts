@@ -39,6 +39,7 @@ class Client {
 describe('reconnection (§11)', () => {
   it('refresh/drop + hello(token) rejoins with identical state', async () => {
     process.env.PORT = '0'; // must be set before the server module loads
+    process.env.PERSIST = '';
     const { server } = await import('@threadbound/server');
     await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
     const addr = server.address();

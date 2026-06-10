@@ -40,7 +40,23 @@ After your runs, run `npm run sim` and compare your felt experience against:
 win rate ≤40% (bots) — you should do better; link-fire Act 1 ~35% / Act 2 ~42%
 (bots) — you should beat both on voice; Hex share 20–30% in a Vess-led pair.
 
-## Known rough edges (M3 scope, don't report these)
+## Known rough edges (don't report these)
 
-Visual polish, animations/audio, retain-picker for the handRetainOne relic,
-onboarding/tutorial, disconnect-mid-resolution edge cases.
+Retain-picker for the handRetainOne relic (auto-retains first card for now);
+AI portrait pass not yet generated (sigil set is the shipped art);
+difficulty calibration (M3 Part A) deliberately waits on this playtest.
+
+## M3 additions to exercise (controller playtest)
+
+- [ ] Full run on the pad, no mouse (M3 Part E sign-off): zones via L1/R1,
+      stage with ✕, inspect with △, hold Options to Ready, L2/R2 reorder.
+- [ ] /?style — review the style sample BEFORE asset generation (cheapest veto
+      point for art direction; sigils are the shipped set).
+- [ ] Does the resolution theater pace right at ~400ms/beat? Is skip (click/○)
+      discoverable?
+- [ ] Tooltips: hover anything confusing — does the keyword panel answer it?
+- [ ] Tutorial: clear localStorage (or new browser) and check the First Chain
+      steps make sense to a fresh player.
+- [ ] Volume sliders (♪, top right) — are the synth SFX tolerable on speakers?
+- [ ] To record your session for calibration: `node packages/server/dist/index.js --human-session`
+      (writes per-run telemetry JSON to ./telemetry/ — bring these to Part A).
