@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
-  computeLinksFired, computeResonanceSlots, effectiveDef,
+  computeLinksFired, computeResonanceSlots, effectiveDef, hasPassive,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { controller, GLYPHS } from './gamepad';
@@ -321,9 +321,32 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const resonance = useMemo(() => computeResonanceSlots(combat.chain, fired), [combat.chain, fired]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
-  const partnerHasPrimary = combat.chain.some(
-    (s) => s.owner === partner && JSON.stringify(defFor(state, partner, s.cardInstanceId)).includes('"primary":true'),
-  );
+  // Pulse bookkeeping (§5 + M2-D4): the bonus lands on the recipient's FIRST
+  // staged card (chain order) whose effective effects carry a primary number;
+  // cards with nothing to boost are skipped. The UI shows the landing spot.
+  const slotHasPrimary = (i: number): boolean => {
+    const slot = combat.chain[i];
+    const def = defFor(state, slot.owner, slot.cardInstanceId);
+    const effects = fired[i] && def.link
+      ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+      : def.base;
+    return effects.some((e) => 'primary' in e && (e as { primary?: boolean }).primary);
+  };
+  const pulseBonus: Record<PlayerId, number> = { p1: 0, p2: 0 };
+  for (const ta of combat.threadActions) {
+    if (ta.kind !== 'pulse') continue;
+    const recipient: PlayerId = ta.player === 'p1' ? 'p2' : 'p1';
+    pulseBonus[recipient] += hasPassive(state.players[ta.player], 'pulsePlusOne') ? 4 : 3;
+  }
+  const pulseLanding: Record<string, number> = {};
+  const pulseWaiting: PlayerId[] = [];
+  for (const pid of ['p1', 'p2'] as PlayerId[]) {
+    if (pulseBonus[pid] === 0) continue;
+    const idx = combat.chain.findIndex((s, i) => s.owner === pid && slotHasPrimary(i));
+    if (idx >= 0) pulseLanding[combat.chain[idx].cardInstanceId] = pulseBonus[pid];
+    else pulseWaiting.push(pid);
+  }
+  const partnerHasPrimary = combat.chain.some((s, i) => s.owner === partner && slotHasPrimary(i));
   const cordMode = severed ? 'severed' : anyFallen ? 'slack' : 'normal';
 
   const stage = (cardId: string, targetId?: string) => {
@@ -402,7 +425,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </div>
       )}
 
-      <ChainTrack state={state} fired={fired} resonance={resonance} net={net} />
+      <ChainTrack state={state} fired={fired} resonance={resonance} net={net} pulseLanding={pulseLanding} />
 
       <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode}
         left={state.players.p1.character} right={state.players.p2.character} />
@@ -415,6 +438,11 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
         <button data-gp="THREAD" data-inspect="kw:steady" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' } as any)}>Steady (1)</button>
+        {pulseWaiting.length > 0 && (
+          <span className="muted pulse-waiting">
+            Pulse waits for {pulseWaiting.map((p) => state.players[p].character).join(' & ')}’s first boostable card
+          </span>
+        )}
         {combat.threadActions.length > 0 && (
           <span className="declared">
             {combat.threadActions.map((t, i) => (
@@ -498,8 +526,8 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   );
 }
 
-function ChainTrack({ state, fired, resonance, net }: {
-  state: ClientState; fired: boolean[]; resonance: Set<number>; net: Net;
+function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
+  state: ClientState; fired: boolean[]; resonance: Set<number>; net: Net; pulseLanding: Record<string, number>;
 }): JSX.Element {
   const you = state.you;
   const chain = state.combat!.chain;
@@ -526,6 +554,9 @@ function ChainTrack({ state, fired, resonance, net }: {
                 gpZone={mine ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
                 onClick={() => mine && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
+              {pulseLanding[slot.cardInstanceId] && (
+                <div className="pulse-badge" data-inspect="kw:pulse">⊕ Pulse +{pulseLanding[slot.cardInstanceId]}</div>
+              )}
               {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
               {def.link && <div className={`linkstate ${fired[i] ? 'on' : 'off'}`}>{fired[i] ? '⚡ fires' : `link: ${def.link.condition}`}</div>}
               {resonance.has(i) && <div className="resonance" data-inspect="kw:resonance">✦ RESONANCE</div>}

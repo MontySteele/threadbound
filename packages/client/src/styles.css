@@ -238,3 +238,6 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* ---- style screen ---- */
 .style-screen h3 { border-bottom: 1px solid var(--line-soft); padding-bottom: 4px; margin-top: 26px; }
+
+.pulse-badge { color: var(--kindled); font-size: 0.78em; font-weight: bold; }
+.pulse-waiting { font-size: 0.8em; }
