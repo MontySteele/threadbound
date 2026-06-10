@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @threadbound/engine && npm run build -w @threadbound/server && npm run build -w @threadbound/bots",
+    "build": "npm run build -w @threadbound/engine && npm run build -w @threadbound/server && npm run build -w @threadbound/bots && npm run build -w @threadbound/client",
     "test": "vitest run",
     "server": "npm run build && node packages/server/dist/index.js",
     "client": "npm run dev -w @threadbound/client",

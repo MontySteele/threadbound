@@ -32,6 +32,7 @@ export class Controller {
   focused: HTMLElement | null = null;
   onChange: (() => void) | null = null; // hint bar re-render
   onInspect: ((el: HTMLElement | null) => void) | null = null;
+  onFeedback: (() => void) | null = null; // L1+R1 chord
   private prev: PadState = { buttons: [], axes: [] };
   private repeatTimers: Record<string, number> = {};
   private readyHeldSince = 0;
@@ -116,8 +117,13 @@ export class Controller {
     if (pressed(1)) this.cancel();
     if (pressed(2)) this.jumpZone('THREAD'); // thread-action menu
     if (pressed(3)) this.onInspect?.(this.focused);
-    if (pressed(4)) this.cycleZone(-1);
-    if (pressed(5)) this.cycleZone(1);
+    // L1+R1 chord = feedback stamp overlay (playtest); single bumpers cycle zones
+    if ((pressed(4) && cur.buttons[5]) || (pressed(5) && cur.buttons[4])) {
+      this.onFeedback?.();
+    } else {
+      if (pressed(4)) this.cycleZone(-1);
+      if (pressed(5)) this.cycleZone(1);
+    }
     if (pressed(6)) this.reorder('left');
     if (pressed(7)) this.reorder('right');
     if (pressed(8) || pressed(17)) this.clickAction('overview'); // Create / touchpad

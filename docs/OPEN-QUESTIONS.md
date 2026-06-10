@@ -106,3 +106,22 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
 
 19. **handRetainOne retains the first eligible card** (no picker yet — the
     M3 plan's retain-picker remains open for a later pass).
+
+## Post-M3-review changes (pre-playtest)
+
+20. **Bots are now deterministic-by-construction where possible** (review
+    finding 1): engine seeds fixed per run (`SEED` env selects the seed set),
+    policy decisions are state-pure hashes (not consumed RNG streams), combat
+    planning is lockstep (p1 acts on even move-counts, p2 on odd; serial once
+    a partner readies), shops are browsed serially, and only p1 may Re-braid.
+    Residual nondeterminism: rare socket arrival-order flips (~3/5 short runs
+    identical byte-for-byte; aggregates at n=50 are stable). Lockstep also
+    RAISED the coordination floor substantially (alternation = more
+    cross-player links; bots now win most runs) — the M2-era gate readings are
+    obsolete, which is fine: M3 Part A re-derives two-sided bands from human
+    uplift over THIS baseline. Do not tune against the old numbers.
+
+21. **Feedback stamps** (review suggestion): `]` good / `[` bad / `\` note
+    (pad: L1+R1 chord) write context-stamped entries (phase/act/turn/node) to
+    the room and, under `--human-session`, to `telemetry/feedback-<room>.jsonl`
+    immediately (crash-safe). Included in the end-of-run telemetry JSON.

@@ -241,3 +241,9 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 .pulse-badge { color: var(--kindled); font-size: 0.78em; font-weight: bold; }
 .pulse-waiting { font-size: 0.8em; }
+
+.toast { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); z-index: 70;
+  background: var(--panel); border: 1px solid var(--thread); border-radius: var(--radius); padding: 6px 16px; }
+.feedback-overlay { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 70;
+  background: var(--panel); border: 1px solid var(--thread); border-radius: var(--radius); padding: 14px;
+  display: grid; gap: 8px; box-shadow: 0 10px 40px #000c; }

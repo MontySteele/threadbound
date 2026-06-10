@@ -18,6 +18,18 @@ export interface Seat {
   socket: WebSocket | null;
 }
 
+export interface FeedbackEntry {
+  ts: number;
+  player: PlayerId;
+  mood: 'good' | 'bad' | 'note';
+  note?: string;
+  // context stamp: where the feeling changed (M3 review — playtest gold)
+  phase: string;
+  act: number;
+  turn?: number;
+  node?: number;
+}
+
 export interface Room {
   code: string;
   state: GameState;
@@ -25,6 +37,7 @@ export interface Room {
   actionLog: Action[];
   lastActivity: number;
   telemetryWritten?: boolean;
+  feedback: FeedbackEntry[];
 }
 
 export interface GameServerOptions {
@@ -129,6 +142,7 @@ export class GameServer {
       seats: Object.fromEntries(
         Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character }]),
       ),
+      feedback: room.feedback,
     }));
     try {
       fs.writeFileSync(this.opts.persistPath, JSON.stringify({ version: 2, rooms: snapshot }));
@@ -149,6 +163,7 @@ export class GameServer {
           actionLog: r.actionLog ?? [],
           lastActivity: r.lastActivity ?? this.now(),
           seats: {},
+          feedback: r.feedback ?? [],
         };
         for (const [pid, seat] of Object.entries(r.seats ?? {}) as [PlayerId, { token: string; character: CharacterId }][]) {
           room.seats[pid] = { token: seat.token, character: seat.character, socket: null };
@@ -178,6 +193,7 @@ export class GameServer {
         seed: room.state.seed,
         telemetry: room.state.telemetry,
         actions: room.actionLog.length,
+        feedback: room.feedback,
       }, null, 2));
       console.log(`human-session telemetry → ${file}`);
     } catch (err) {
@@ -246,6 +262,7 @@ export class GameServer {
           seats: {},
           actionLog: [],
           lastActivity: this.now(),
+          feedback: [],
         };
         this.rooms.set(room.code, room);
         const token = crypto.randomUUID();
@@ -295,7 +312,37 @@ export class GameServer {
         if (!ctx.room || !ctx.pid) return this.send(socket, { type: 'error', message: 'join a room first' });
         if (!ctx.room.seats.p1 || !ctx.room.seats.p2) return this.send(socket, { type: 'error', message: 'waiting for your partner' });
         if (ctx.room.state.phase !== 'lobby') return this.send(socket, { type: 'error', message: 'already started' });
-        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed: crypto.randomInt(2 ** 31) });
+        const seed = Number.isInteger(msg.seed) ? (msg.seed >>> 0) : crypto.randomInt(2 ** 31);
+        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed });
+        return;
+      }
+
+      case 'feedback': {
+        // M3 review: in-the-moment stamps beat post-session recall
+        if (!ctx.room || !ctx.pid) return;
+        const mood = ['good', 'bad', 'note'].includes(msg.mood) ? msg.mood : 'note';
+        const st = ctx.room.state;
+        const entry: FeedbackEntry = {
+          ts: this.now(),
+          player: ctx.pid,
+          mood,
+          note: typeof msg.note === 'string' ? msg.note.slice(0, 500) : undefined,
+          phase: st.phase,
+          act: st.map.act,
+          turn: st.combat?.turn,
+          node: st.map.position,
+        };
+        ctx.room.feedback.push(entry);
+        const dir = this.opts.humanTelemetryDir;
+        if (dir) {
+          try {
+            fs.mkdirSync(dir, { recursive: true });
+            fs.appendFileSync(path.join(dir, `feedback-${ctx.room.code}.jsonl`), JSON.stringify(entry) + '\n');
+          } catch (err) {
+            console.error('feedback write failed', err);
+          }
+        }
+        this.send(socket, { type: 'feedback_ack', mood });
         return;
       }
 

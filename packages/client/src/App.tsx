@@ -52,6 +52,8 @@ export default function App(): JSX.Element {
   const [partnerOn, setPartnerOn] = useState(false);
   const [connected, setConnected] = useState(false);
   const [, padTick] = useState(0);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [toast, setToast] = useState('');
   const netRef = useRef<Net | null>(null);
 
   useEffect(() => {
@@ -61,15 +63,32 @@ export default function App(): JSX.Element {
       onError: (m) => { setError(m); setTimeout(() => setError(''), 4000); },
       onPresence: setPartnerOn,
       onConnection: setConnected,
+      onFeedbackAck: (mood) => {
+        setToast(`stamped: felt ${mood === 'note' ? 'noted' : mood}`);
+        setTimeout(() => setToast(''), 1600);
+      },
     });
     controller.onChange = () => padTick((n) => n + 1);
     controller.onInspect = (el) => inspectElement(el);
+    controller.onFeedback = () => setFeedbackOpen(true);
+    // playtest feedback hotkeys: [ felt bad, ] felt good, \ note (M3 review)
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
+      if (e.key === '[') netRef.current?.feedback('bad');
+      else if (e.key === ']') netRef.current?.feedback('good');
+      else if (e.key === '\\') {
+        const note = window.prompt('Playtest note:');
+        if (note) netRef.current?.feedback('note', note);
+      }
+    };
+    window.addEventListener('keydown', onKey);
     controller.start();
     const unlock = () => audio.unlock();
     window.addEventListener('pointerdown', unlock, { once: true });
     window.addEventListener('keydown', unlock, { once: true });
     const refocus = setInterval(() => controller.ensureFocus(), 400);
-    return () => { controller.stop(); clearInterval(refocus); };
+    return () => { controller.stop(); clearInterval(refocus); window.removeEventListener('keydown', onKey); };
   }, []);
 
   useEffect(() => {
@@ -107,6 +126,15 @@ export default function App(): JSX.Element {
           <ResolutionTheater log={state.log} pname={(p) => state.players[p].character} />
           <Tutorial state={state} />
           <HintBar />
+          {toast && <div className="toast">{toast}</div>}
+          {feedbackOpen && (
+            <div className="feedback-overlay">
+              <div className="tutorial-step">PLAYTEST STAMP</div>
+              <button data-gp="META" onClick={() => { net.feedback('good'); setFeedbackOpen(false); }}>felt good</button>
+              <button data-gp="META" onClick={() => { net.feedback('bad'); setFeedbackOpen(false); }}>felt bad</button>
+              <button data-gp="META" onClick={() => setFeedbackOpen(false)}>cancel</button>
+            </div>
+          )}
         </div>
       )}
     </>
@@ -125,6 +153,7 @@ function HintBar(): JSX.Element | null {
       <span><b>{g.zone}</b> zones</span>
       <span><b>{g.reorder}</b> reorder</span>
       <span><b>{g.ready}</b> ready</span>
+      <span><b>L1+R1</b> stamp</span>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { server } from '@threadbound/server';
 import { Bot, RunResult } from './bot';
 
 const RUNS = Number(process.argv[2] ?? 50);
+const BASE_SEED = Number(process.env.SEED ?? 1000); // fixed seed set → reproducible gates
 const RUN_TIMEOUT_MS = 300_000;
 
 function port(): number {
@@ -23,11 +24,11 @@ function port(): number {
   throw new Error('server not listening');
 }
 
-async function playRun(url: string): Promise<RunResult> {
+async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c) });
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed });
   await new Promise((r) => setTimeout(r, 150));
-  const b = new Bot(url, { joinCode: code });
+  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2 });
   const timeout = new Promise<RunResult>((_, rej) =>
     setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
   );
@@ -49,12 +50,12 @@ interface Gate {
 async function main(): Promise<void> {
   await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
   const url = `ws://localhost:${port()}`;
-  console.log(`sim: bots connecting to ${url}, ${RUNS} runs`);
+  console.log(`sim: bots connecting to ${url}, ${RUNS} runs, seed set ${BASE_SEED}+ (engine + policy seeded; socket timing still jitters slightly)`);
 
   const results: RunResult[] = [];
   for (let run = 1; run <= RUNS; run++) {
     try {
-      const r = await playRun(url);
+      const r = await playRun(url, BASE_SEED + run);
       results.push(r);
       console.log(
         `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
@@ -124,7 +125,7 @@ async function main(): Promise<void> {
     console.log(`${g.pass ? 'PASS' : 'FAIL'}  ${g.name}  →  ${g.value}`);
     if (!g.pass) allPass = false;
   }
-  console.log(allPass ? 'ALL GATES PASS' : 'GATES FAILING — tune per M2 Part C order of operations');
+  console.log(allPass ? 'ALL GATES PASS' : 'GATES PENDING PART A RECALIBRATION — do not tune off this number before the human-uplift bands exist (M3 Part A)');
   console.log('===============================================================');
   server.close();
   process.exit(process.exitCode ?? 0);

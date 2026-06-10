@@ -14,6 +14,7 @@ export interface NetEvents {
   onError: (message: string) => void;
   onPresence: (partnerConnected: boolean) => void;
   onConnection: (up: boolean) => void;
+  onFeedbackAck?: (mood: string) => void;
 }
 
 // Storage keys are namespaced by an optional ?tab= query param so one browser
@@ -53,6 +54,7 @@ export class Net {
           localStorage.setItem(CODE_KEY, msg.code);
           return this.events.onJoined(msg);
         case 'presence': return this.events.onPresence(msg.partnerConnected);
+        case 'feedback_ack': return this.events.onFeedbackAck?.(msg.mood);
         case 'error':
           if (msg.message === 'unknown session') {
             localStorage.removeItem(TOKEN_KEY);
@@ -85,5 +87,10 @@ export class Net {
 
   act(action: Omit<Action, 'player'>): void {
     this.send({ type: 'action', action });
+  }
+
+  /** Playtest feedback stamp ([ bad / ] good / \ note, or pad L1+R1). */
+  feedback(mood: 'good' | 'bad' | 'note', note?: string): void {
+    this.send({ type: 'feedback', mood, note });
   }
 }

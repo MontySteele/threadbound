@@ -23,7 +23,32 @@ Wedding Knife, down-but-not-out revival. Target run length 60–75 minutes.
 3. Either player clicks **Begin the descent**.
 
 Refreshing or dropping the connection is safe: the session token in
-localStorage rejoins the room with no state loss.
+localStorage rejoins the room with no state loss — and the server snapshots
+rooms on shutdown, so even a server restart mid-run only costs a refresh.
+
+### Playing over the internet: use a tunnel, not a port-forward
+
+```bash
+npm run server                              # localhost:8080
+cloudflared tunnel --url http://localhost:8080
+```
+
+`cloudflared` (Cloudflare quick tunnel, no account needed) prints a public
+`https://….trycloudflare.com` URL — send that plus the room code. WebSockets
+and TLS work through it out of the box (the client derives `wss://` from the
+page origin automatically). For recurring sessions, prefer Tailscale
+(`tailscale serve`) or the small-VPS/Fly.io deployment; avoid router
+port-forwarding (CGNAT-hostile, and serves plain `ws://` to the internet).
+
+### Playtest instrumentation
+
+```bash
+node packages/server/dist/index.js --human-session   # per-run telemetry → ./telemetry/
+```
+
+During play, stamp the moment a feeling changes: `]` felt good, `[` felt bad,
+`\` typed note (on a pad: **L1+R1**). Stamps land in the telemetry files with
+act/turn/combat context for the Part A calibration.
 
 **Solo testing (one browser, both seats):** open `http://localhost:8080/` in
 one tab and `http://localhost:8080/?tab=2` in another — the `?tab=` param

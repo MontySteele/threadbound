@@ -33,8 +33,21 @@ function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
   return def;
 }
 
+function hash32(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 export class Bot {
   ws: WebSocket;
+  /** policy seed — decisions are STATE-PURE: hashed from (seed, situation,
+   *  purpose), never a consumed stream, so socket timing and watchdog
+   *  re-decides cannot change what the bot does in a given situation. */
+  private seed = 12345;
   you: PlayerId | null = null;
   token: string | null = null;
   code: string | null = null;
@@ -50,7 +63,11 @@ export class Bot {
   private resolve!: (r: RunResult) => void;
   done: Promise<RunResult>;
 
-  constructor(url: string, private opts: { create?: boolean; joinCode?: string; onCode?: (code: string) => void }) {
+  constructor(url: string, private opts: {
+    create?: boolean; joinCode?: string; onCode?: (code: string) => void;
+    seed?: number; startSeed?: number;
+  }) {
+    this.seed = opts.seed ?? 12345;
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {
@@ -79,7 +96,7 @@ export class Bot {
       case 'presence':
         if (msg.partnerConnected && this.opts.create && !this.startedRun) {
           this.startedRun = true;
-          this.send({ type: 'start' });
+          this.send({ type: 'start', seed: this.opts.startSeed });
         }
         return;
       case 'state':
@@ -99,6 +116,25 @@ export class Bot {
       if (this.lastView) this.decide(this.lastView);
     }, 300);
     this.watchdog.unref?.();
+  }
+
+  /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
+  private roll(view: BotView, purpose: string): number {
+    const combat = view.combat;
+    const key = [
+      this.seed, purpose, view.phase, view.map.act, view.map.position,
+      combat?.turn ?? -1, combat?.chain.length ?? -1,
+      view.players[this.you!].hand.length, view.telemetry.cardsPlayed, view.gold,
+    ].join(':');
+    return hash32(key) / 4294967296;
+  }
+
+  private chance(view: BotView, p: number, purpose: string): boolean {
+    return this.roll(view, purpose) < p;
+  }
+
+  private pickIdx(view: BotView, n: number, purpose: string): number {
+    return Math.floor(this.roll(view, purpose) * n);
   }
 
   private decide(view: BotView): void {
@@ -160,7 +196,16 @@ export class Bot {
 
     const anyFallen = view.players.p1.fallen || view.players.p2.fallen;
     const severed = combat.severedTurns > 0;
-    if (!anyFallen && !severed && this.pulsedTurn !== combat.turn && view.thread >= 4 && Math.random() < 0.35) {
+
+    // Lockstep planning (determinism): moves alternate by parity — p1 acts on
+    // even (chain+thread) counts, p2 on odd — unless the partner has readied,
+    // after which the remaining bot acts serially. Kills arrival-order noise
+    // AND produces the woven interleaving the Chain wants.
+    const partnerIsReady = view.players[you === 'p1' ? 'p2' : 'p1'].ready;
+    const moves = combat.chain.length + combat.threadActions.length;
+    const mySlot = moves % 2 === (you === 'p1' ? 0 : 1);
+    if (!partnerIsReady && !mySlot) return;
+    if (!anyFallen && !severed && this.pulsedTurn !== combat.turn && view.thread >= 4 && this.chance(view, 0.35, 'pulse')) {
       this.pulsedTurn = combat.turn;
       const myEnemies = targetable.filter((e) => e.boundTo === you);
       if (myEnemies.length === living.length && living.length > 1 && view.thread >= 5) {
@@ -229,12 +274,6 @@ export class Bot {
         const score = fires + next + guardBonus + axisBonus + card.def.cost * 0.1;
         if (!best || score > best.score) best = { card, pos, score };
       }
-    }
-    // hold a card whose link can't fire yet: wait for the partner to stage
-    // something that feeds it (table-talk, bot edition)
-    const partnerReady = view.players[you === 'p1' ? 'p2' : 'p1'].ready;
-    if (best!.score < 1.5 && best!.card.def.link && !partnerReady && Math.random() < 0.7) {
-      return; // watchdog re-decides when the partner moves
     }
     const pick = best!.card;
     const text = JSON.stringify(pick.def);
@@ -317,7 +356,7 @@ export class Bot {
     const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
     if (reward.picked[you] === null && reward.sets[you].length > 0) {
       const ranked = [...reward.sets[you]].sort((a, b) => this.draftScore(b) - this.draftScore(a));
-      const pick = this.draftScore(ranked[0]) >= 3 || Math.random() < 0.5 ? ranked[0] : 'skip';
+      const pick = this.draftScore(ranked[0]) >= 3 || this.chance(view, 0.5, 'draft') ? ranked[0] : 'skip';
       this.act({ type: 'REWARD_PICK', player: you, pick } as Action);
       return;
     }
@@ -328,7 +367,7 @@ export class Bot {
       const leftovers = reward.sets[partner]
         .filter((c) => c !== reward.picked[partner])
         .sort((a, b) => this.draftScore(b) - this.draftScore(a));
-      if (leftovers.length > 0 && this.draftScore(leftovers[0]) >= 4 && Math.random() < 0.7) {
+      if (leftovers.length > 0 && this.draftScore(leftovers[0]) >= 4 && this.chance(view, 0.7, 'covet')) {
         this.act({ type: 'COVET_PICK', player: you, pick: leftovers[0] } as Action);
         return;
       }
@@ -342,7 +381,7 @@ export class Bot {
     if (ev.chosen === null) {
       if (ev.chooser !== you) return;
       const options = EVENTS[ev.eventId].options;
-      const opt = options[Math.floor(Math.random() * options.length)];
+      const opt = options[this.pickIdx(view, options.length, 'event:' + ev.eventId)];
       this.act({ type: 'EVENT_CHOOSE', player: you, optionId: opt.id } as Action);
       return;
     }
@@ -357,9 +396,9 @@ export class Bot {
       // heal when hurt, otherwise upgrade; sprinkle barter/rebraid
       const hurt = me.hp < me.maxHp * 0.6;
       const option = hurt ? 'rest'
-        : Math.random() < 0.85 ? 'upgrade'
-        : Math.random() < 0.5 ? 'barter'
-        : !view.rebraidUsed ? 'rebraid' : 'rest';
+        : this.chance(view, 0.85, 'rest:upgrade') ? 'upgrade'
+        : this.chance(view, 0.5, 'rest:barter') ? 'barter'
+        : !view.rebraidUsed && you === 'p1' ? 'rebraid' : 'rest';
       this.act({ type: 'REST_CHOOSE', player: you, option } as Action);
       return;
     }
@@ -386,6 +425,7 @@ export class Bot {
 
   private playShop(view: BotView): void {
     const you = this.you!;
+    if (you === 'p2' && !view.advanceReady.p1) return; // deterministic serial shopping
     const shop = view.shop!;
     const affordable = shop.items.filter((i) => !i.sold && i.price <= view.gold);
     const myCard = affordable.find((i) => i.kind === 'card' && i.forPlayer === you);
@@ -401,14 +441,14 @@ export class Bot {
       this.act({ type: 'SHOP_BUY', player: you, itemId: myCard.id } as Action);
       return;
     }
-    if (relic && Math.random() < 0.4) {
+    if (relic && this.chance(view, 0.4, 'shop:relic')) {
       this.act({ type: 'SHOP_BUY', player: you, itemId: relic.id } as Action);
       return;
     }
     const removal = affordable.find((i) => i.kind === 'removal');
     const me = view.players[you];
     const starter = me.deck.find((c) => CARDS[c.defId].starterOnly);
-    if (removal && starter && me.deck.length > 8 && Math.random() < 0.4) {
+    if (removal && starter && me.deck.length > 8 && this.chance(view, 0.4, 'shop:remove')) {
       this.act({ type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId } as Action);
       return;
     }
