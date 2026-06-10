@@ -1,47 +1,87 @@
-# M1 Content Audit — Covenant (§3) & Pool Rules (§2.3)
+# M2 Content Audit — Covenant (§3) & Pool Rules (§2.3), Full Pool
 
-Audited centrally against the design doc, 2026-06-10. This audit is also enforced
-mechanically by `packages/engine/test/covenant.test.ts`, which runs in CI — content
-changes that violate these rules fail the build.
+Audited centrally 2026-06-10 over the complete M2 content (agent-drafted pools
+included — two duplicate-id collisions were the only defects found and were
+renamed). Mechanically enforced by `packages/engine/test/covenant.test.ts`
+(14 checks, run in CI); content changes that violate these rules fail the build.
 
-## Pool shape
+## Pool shape (M2-B1 targets met)
 
-| | Vess | Bram |
-|---|---|---|
-| Total | 20 (10C / 7U / 3R) | 20 (10C / 7U / 3R) |
-| Strike | 5 (knife, stitchblade, lashing_coil, seamripper, final_word) | 8 (opener, rendcall, hammerfall, followthrough, haymaker, pyre_vault, stamp_out, avalanche) |
-| Guard | 4 | 4 |
-| Hex | 6 | 1 (spark) |
-| Surge | 3 | 4 |
-| Rite | 4 (incl. 2 powers) | 3 (incl. 2 powers) |
+| | Vess | Bram | Neutral |
+|---|---|---|---|
+| Total | 55 (25C/20U/10R) | 55 (25C/20U/10R) | 15 (8C/5U/2R) |
+| Heavy tag share | Hex ~33% | Strike ~38% | — |
+| Commons per broad tag | all ≥3 | all ≥3 | all 5 tags ≥1 |
 
-- §4 "each pool ~35% its heavy tag": Vess Hex 6/20 = 30%, Bram Strike 8/20 = 40%. ✔ (within placeholder tolerance)
-- §4 "every broad tag appears at common rarity in both pools": ✔ — Vess commons cover Hex (needlework, pinprick, withering), Strike (patient_knife, stitchblade), Guard (thornward, wardknot), Surge (loose_stitch, quickening), Rite (mendthread). Bram commons cover Strike (opener, rendcall, hammerfall, followthrough), Guard (crossguard, brace), Hex (spark), Surge (bellows, second_wind), Rite (kindle).
+Starter-only cards (Hatpin, Patchwork, Jab, Brace-Up) are additional, excluded
+from every pool/reward/shop surface, and mechanically barred from acquisition.
 
 ## Rule-by-rule
 
-**Covenant 1 — every card playable standalone.** ✔ All 40 cards have non-empty base effects with no Link dependency; Link clauses are pure upside. Mechanically enforced. Worst-case draft outcome reviewed card-by-card: nothing is dead without partner cooperation.
+**Covenant 1 — standalone playability.** ✔ All 125 pool cards + 4 starters have
+non-empty bases; Link clauses pure upside. Enforced.
 
-**Covenant 2 — common/uncommon links read broad tags only.** ✔ Every common/uncommon Link condition is one of {Strike, Guard, Hex, Surge, Rite, any}. The narrow `Link (Partner's card)` condition appears only on rares (Gravebloom, Avalanche, Call and Answer) per §2.2. Mechanically enforced.
+**Covenant 2 — broad-tag links at common/uncommon.** ✔ Enforced, including on
+**upgrade overlays** (an upgrade cannot smuggle a narrow condition onto a
+common/uncommon). `partner` conditions: rares only — Vess (gravebloom,
+funeral_lace, widows_arithmetic, eye_of_the_loom), Bram (avalanche, final_bell,
+immovable, share_the_fire), neutral (two_as_one, crossing_blow).
 
-**Covenant 3 — cross-pollination pull-based and consensual.** ✔ The only M1 cross-deck flows are Reclaim (the receiving player chooses; temporary Echo; §5) and Covet (the receiving player spends a charge on a card the partner explicitly passed over; §8). Nothing is ever pushed into a deck. The Cold Lantern's `gainCard` adds a card from the subject's *own* pool.
+**Covenant 3 — pull-based cross-pollination.** ✔ Reclaim (Echo, consensual),
+Covet (charge spent on passed-over cards), and now the **Wedding Knife** (§7):
+both players must offer AND confirm; changing an offer resets consent; starter
+cards can't be traded. Nothing is ever pushed.
 
-**Covenant 4 — no archetype disable-able by partner behavior.** Audit question asked per build-around ("what partner play pattern turns this off?"):
-- *Vess Hex/detonation*: Vess detonates on her own terms via Final Word and benefits from any link; Bram not playing Rendcall/Stamp Out merely removes upside. ✔
-- *Bram Momentum*: entirely self-contained (Opener/Bellows/Stoke generate, Haymaker spends). Reliquary Mite's Momentum-feeding attack is answerable by Sever Binding either direction — a puzzle, not a disable. ✔
-- *`partner`-condition rares*: turn off only if the partner stages literally nothing before them — not a natural pattern, and the bases stand alone. ✔
+**Covenant 4 — no partner-disableable archetypes.** Asked per build-around:
+Hex/detonation now has ~6 detonators spread across both pools + 1 neutral, so
+neither player gates the axis; Momentum self-contained; chainReader enemies
+punish *both* players' slack links, not one archetype. ✔
 
-**Covenant 5 — draft is an open conversation.** ✔ Reward screen shows both sets to both players (client renders partner's set face-up); Covet picks happen after the partner's pick, on the shared screen.
+**Covenant 5 — open-conversation draft.** ✔ Shared reward screen, shop is one
+screen with shared gold, Covet after-partner-picks rule enforced.
 
-**§2.3 — no self-similar cards at common; scarce at uncommon.** ✔ Mechanically enforced. Self-similar cards in M1 (all uncommon, all §9 samples): Inheritance (Rite→Rite), Haymaker (Strike→Strike), Dig In (Guard→Guard). Count: Vess 1, Bram 2 — within "scarce" (≤2/char). No rares are self-similar in M1.
-- *Note:* `Link (any)` on a card is treated as **not** self-similar (it can be fed by any tag, so it cannot drive mono-tag spam). Needlework (Hex, Link any), Wardknot (Guard, Link any), Second Wind (Surge, Link any) audited under this reading — logged in OPEN-QUESTIONS #2.
+**§2.3 self-similarity.** ✔ Zero at common (enforced). Uncommons: Vess 2
+(inheritance, braided_malice), Bram 3 (haymaker, dig_in, drumbeat), neutral 1
+(linked_shields) — all within the scaled ≤4/char bound.
 
-**§2.3 — cross-player Resonance requirement.** ✔ Engine-enforced: solo streaks earn link bonuses but never ignite (unit-tested).
+**Mutations (§7).** ✔ Every common/uncommon (incl. neutrals) has a hand-authored
+deterministic mutation; rares may omit (Echo arrives unmutated). Enforced.
 
-## Mutations (§7)
+**Upgrades (M2-B6).** ✔ Every card has one; house rule honored — upgrades deepen
+the link (widen toward `any`, bigger payoffs, links added to linkless cards);
+cost cuts only on linkless powers where link-deepening is impossible.
 
-Hand-authored, deterministic: Needlework→Cinder Needlework, Withering→Cinder-touched Withering (Vess→Bram), Rendcall→Stitched Rendcall (Bram→Vess). Cards without an authored variant arrive as unmutated Echoes in M1 (basic implementation per M1 scope; full mutation coverage is M2 content work and must pass this audit when added).
+**Kindled (M2-A2).** ✔ No `energy` op exists anywhere in content (enforced);
+all energy effects are Kindled grants, link clauses included.
+
+## Relics (M2-B2)
+
+28 relics, **13 co-op/Thread-specific** (≥8 required). Wedding Knife present
+with exact §7 text. Each engine passive used at most once. Hook amounts within
+the agreed bands (turnStart 1–2, event hooks 2–4, combatStart 3–8). Every relic's
+display text matches its hooks. Enforced: count, coop count, id uniqueness,
+knife presence.
+
+## World content (M2-B3/B5)
+
+21 enemies total across the acts (6 M1 + 15 M2) including 2 elites + boss per
+act, the Chorister chorus-pool trio, and The Unraveled (severTurns: 2,
+hp [200,220]). Every elite/boss interacts with a co-op system (binding
+manipulation via `sever`, chain-reading, Mourner mechanic, Thread attrition).
+12 events, 5 crossed, crossed tone split 3 consequence / 2 comedy (= 60/40).
+Witness pools cover all M2-B5 contexts incl. partner_fallen, revival, shop,
+map_disagree; no-repeat-within-run preserved; line uniqueness verified.
+
+## Tuning applied under audit (Part C levers, in order)
+
+1. Detonator access widened in content (lever 1 — drafted in).
+2. Detonation 3 → 4 per stack (lever 2, `DETONATION_DAMAGE`).
+3. Common Hex application strengthened: Needlework 3→4, Pinprick 2→3 (link 3→4),
+   Spark 2→3 (lever 3).
+
+Result: Hex damage share 21.2% (gate: 20–30%) at 25-run sim.
 
 ## Verdict
 
-M1 card list **complies** with §3 and §2.3. Two interpretation questions logged in `docs/OPEN-QUESTIONS.md` (#2 Link-any self-similarity, #3 Momentum application) for the designer.
+Full M2 pool **complies** with §3/§2.3 and all M2-B1 scaling rules. New
+judgment calls logged in `docs/OPEN-QUESTIONS.md`.

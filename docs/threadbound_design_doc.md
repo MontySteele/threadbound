@@ -1,4 +1,4 @@
-# THREADBOUND — Design Document (Draft 2)
+# THREADBOUND — Design Document (Draft 3 — M2 revisions folded in; see §14 changelog)
 
 *A two-player cooperative deckbuilding roguelike, played in the browser.*
 
@@ -26,15 +26,15 @@
 
 Each combat turn has three phases:
 
-1. **Draw & Intents.** Each player draws to 5. Enemy intents are revealed (StS-style icons), including which player each enemy is **Bound** to (§6).
+1. **Draw & Intents.** Each player draws to 5 (carried cards count toward the 5; hand cap 10). Enemy intents are revealed (StS-style icons), including which player each enemy is **Bound** to (§6).
 2. **Planning (simultaneous).** Both players stage cards from hand onto the shared **Chain track** — a row of numbered slots visible to both. You may place, remove, and reorder *your own* cards freely. You see your partner's staged cards live (face-up, with full text). Either player hits **Ready**; when both are Ready, the turn commits. Thread actions (§5) are also declared during planning.
-3. **Resolution.** The Chain resolves slot 1 → N in order, then enemies act.
+3. **Resolution.** The Chain resolves slot 1 → N in order, then enemies act. At the end of resolution, each player discards every card that was in hand when the turn committed; cards **drawn during resolution** are kept and carried into the next turn's hand. Cards with **Keep** are never discarded this way. *(M2 ruling, supersedes Draft 2's persistent hands.)*
 
 There is no hard time limit on planning (a soft "your partner is ready" nudge appears after 45s). Friends on voice chat are the target context, but the staged-card visibility means the game is fully playable over text or in silence.
 
 ### 2.2 Energy
 
-Each player has **3 energy per turn** (modified by relics/powers). Cards cost 0–3. Energy is personal, not shared — the shared resource is the Thread (§5).
+Each player has **3 energy per turn** (modified by relics/powers). Cards cost 0–3. Energy is personal, not shared — the shared resource is the Thread (§5). Energy effects on cards grant **Kindled (N)**: gain N energy at the start of your next turn (banks, stacks, clears on use) — under simultaneous planning, mid-resolution energy can only ever be next turn's energy. *(M2 ruling.)*
 
 ### 2.3 The Chain and Link clauses
 
@@ -90,6 +90,8 @@ Design target: each character's pool is ~35% their heavy tag, but **every broad 
 - **Hex (N)** — a charge placed on enemies. Inert until **detonated** (each stack deals 3 damage when detonated; some cards consume Hexes for other effects). The set-up/payoff status.
 - **Momentum (N)** — player buff; your next Strike deals +N, then Momentum halves. Bram's engine.
 - **Frayed** — both players take +25% damage this turn. The Thread overdraft penalty (§5).
+- **Kindled (N)** — gain N energy at the start of your next turn (M2).
+- **Keep** — this card is not discarded at end of turn (M2).
 - Standard fare: **Weak**, **Vulnerable**, **Stun** (rare, enemies skip a turn).
 
 ---
@@ -185,6 +187,8 @@ Sample cards:
 - **Second Wind** — 1 — Surge. Gain 1 energy, draw 1. **Link (any):** also gain 1 Thread.
 - **Stoke** — 1 — Rite (Power). At the start of your turn, gain 2 Momentum.
 
+**Starter decks (M2):** 10 dedicated starter-only cards per character (weak, mostly linkless: Vess 4× Hatpin / 3× Patchwork + pinprick, loose stitch, mendthread; Bram 4× Jab / 3× Brace-Up + opener, second wind, kindle). Starter-only cards never appear in rewards; removal services are their pressure valve. Link-fire rate is expected to start below the 40–60% band and climb over a run.
+
 **Pool targets:** ~55 cards per character (25 common / 20 uncommon / 10 rare) + ~15 neutral. ~28 relics (8 of which are Thread/co-op-specific). All numbers above are placeholder-grade and expected to move in tuning.
 
 ---
@@ -240,10 +244,24 @@ Sample cards:
 3. **Crossed choices:** ~60% consequence / ~40% comedy.
 4. **Drafting:** Covet charge system (start 1, +1 per elite, max 2, Barter at rest sites) replaces open cross-picking.
 5. **Tone:** somber-wry base + the Witness as sarcastic narrator.
-6. **Failure friction:** full roguelike, death = fresh run (no meta-progression in v1).
+6. **Failure friction:** full roguelike, death = fresh run (no meta-progression in v1). **Down-but-not-out (M2):** a player at 0 HP in combat is **Fallen** — no turns, Powers dormant, their enemies rebind to the survivor, the Thread goes slack (no regen/actions; the Covenant's standalone floor is what the survivor lives on). If the survivor wins, the Fallen revives at 1 HP; if the survivor also falls, the run ends. Outside combat, HP loss cannot reduce below 1.
 
 **Still open (low-stakes, can resolve during M1):**
 
 1. **Covet cadence tuning:** the start-1 / +1-per-elite / max-2 numbers are a first guess; telemetry + playtest 1 will say whether Covets feel scarce-and-precious or annoyingly stingy.
 2. **Resonance degeneracy watch:** levers in order — (a) self-similar card scarcity (in effect, §2.3), (b) cross-player streak requirement (in effect, §2.3), (c) require ≥2 unique cards/tags in the streak (back pocket), (d) raise threshold to 4 links. Bot telemetry tracks tag diversity within Resonance streaks to detect mono-tag dominance.
 3. **The Witness's volume:** confirmed default — every event and crossed choice, ~25% of combats, all deaths. Lines are drawn from large per-context pools with no-repeat-within-run tracking, so commentary never becomes an echoed catchphrase.
+
+
+---
+
+## 14. Changelog — Draft 3 (M2 rules revisions)
+
+Each change traces to a designer ruling on `docs/OPEN-QUESTIONS.md` (2026-06), specified in `docs/threadbound_M2_plan.md` Part A:
+
+1. **Hands discard at end of turn** (OQ#1 ruling → M2-A1): supersedes Draft 2 §2.1's persistent hands. Cards drawn during resolution carry; **Keep** keyword added as retention design space.
+2. **Kindled energy banking** (OQ#4 ruling → M2-A2): replaces M1's planning-budget energy; link-clause energy grants are meaningful again.
+3. **Down-but-not-out** (OQ#8 ruling → M2-A3): Fallen state replaces either-death-ends-run; Thread slack while a player is down; revival at 1 HP on combat win.
+4. **Confirmed as-is** (M2-A4): Link (any) not self-similar; Momentum once per multi-hit Strike (per-hit is rare link design space); detonation ignores Block; Steady semantics; Mourner same-turn; seeded chooser for standard events.
+5. **Dedicated starter decks** (OQ#9 ruling → M2-A5): starter-only cards excluded from pools; per-act link-fire telemetry tracks the draft climb.
+6. **Detonation damage 3 → 4 per stack** (M2-B1 Hex rebalance lever 2) and stronger common Hex application (lever 3), tuned against the Part C telemetry gates.

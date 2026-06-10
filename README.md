@@ -1,7 +1,7 @@
 # Threadbound
 
 A two-player cooperative deckbuilding roguelike, played in the browser.
-Design: `docs/threadbound_design_doc.md` · M1 plan: `docs/M1-PLAN.md`
+Design: `docs/threadbound_design_doc.md` (Draft 3) · M2 plan: `docs/threadbound_M2_plan.md` · Playtest checklist: `docs/PLAYTEST-2.md`
 
 ## Play (two people, two machines)
 
@@ -10,6 +10,10 @@ npm install
 npm run build
 npm run server        # serves game + client on http://localhost:8080
 ```
+
+Full game: two acts (The Undercroft, The Hollow Choir) and the finale (The
+Last Braid / The Unraveled) — branching maps, shops, relics, upgrades, the
+Wedding Knife, down-but-not-out revival. Target run length 60–75 minutes.
 
 1. **Player 1** opens `http://localhost:8080` (or the deployed URL), picks a
    character, clicks **Create room**, and reads out the 5-letter code.
@@ -30,7 +34,7 @@ reconnects after refresh). An incognito window works too.
 
 ```bash
 npm test              # engine unit tests, Covenant audit, fuzz+replay, reconnection
-npm run sim           # 50-combat headless bot simulation + telemetry summary
+npm run sim           # 50-run headless bot simulation + M2 telemetry gates
 npm run check         # everything above
 npm run client        # vite dev server (proxies ws to :8080)
 ```

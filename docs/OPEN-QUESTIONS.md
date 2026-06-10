@@ -1,68 +1,66 @@
 # Open Questions for the Designer
 
-Where the design doc was ambiguous, M1 implements the most conservative reading
-and logs the question here (per working agreement). Each entry: question →
-what M1 does today.
+Conservative-reading + log protocol (working agreement). M1 entries were ruled on
+2026-06 — rulings live in `docs/threadbound_M2_plan.md` Part A and are folded into
+the design doc (§14 changelog). This file now carries the **M2 judgment calls**.
 
-1. **Hand persistence.** §2.1 says "each player draws **to** 5", implying hands
-   persist between turns (and draw effects matter beyond the current turn).
-   → M1: hands persist; unplayed cards are kept; draw-to-5 tops up; hand cap 10.
-   Without this, Reclaim (resolves before the Chain, §5) and all draw effects
-   would be dead letters under simultaneous planning.
+## Resolved (designer rulings, 2026-06)
 
-2. **Is `Link (any)` self-similar?** §2.3 bans "tag X with Link (X)" at common.
-   A `Link (any)` card technically includes its own tag but can be fed by every
-   tag, so it can't drive mono-keyword spam. → M1: `Link (any)` is allowed at
-   common (Needlework, Wardknot, Second Wind). Flag if you want it stricter.
+M1 OQ#1 (hands) → discard at end of turn, drawn-cards carry, Keep keyword (M2-A1).
+OQ#2 (Link-any) → not self-similar, confirmed. OQ#3 (Momentum) → once per
+multi-hit; per-hit is rare link space. OQ#4 (energy) → Kindled (M2-A2). OQ#5
+(detonation vs Block) → ignores Block, confirmed. OQ#6 (Steady) → confirmed.
+OQ#7 (Mourner timing) → same-turn, confirmed. OQ#8 (death) → down-but-not-out
+(M2-A3). OQ#9 (starters) → dedicated starter-only cards (M2-A5). OQ#10
+(upgrades) → shipped (M2-B6). OQ#11 (standard event chooser) → seeded random,
+confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
 
-3. **Momentum application.** §4: "your next Strike deals +N, then Momentum
-   halves." For multi-hit Strikes (Avalanche), does +N apply per hit or once?
-   → M1: once, on the first hit (conservative). Halving (floor) occurs after the
-   Strike resolves; Wildfire Heart / linked Haymaker skip the halving.
+## New in M2 (conservative readings, logged for review)
 
-4. **Energy gained during resolution.** Under simultaneous planning, energy
-   gained mid-resolution can't be spent (planning is over). → M1: `gain energy`
-   ops on *base* effects raise that player's staging budget during planning
-   (Second Wind, Spindle Step effectively read "this turn you may stage 1 more
-   energy's worth"). Two link-clause energy grants were redesigned to partner-draw
-   (Quickening, Call and Answer) because link-granted energy would do nothing.
+1. **Event `loseHp` caps at 1 HP** — the M2 plan stated this as the preferred
+   option and delegated the call; taken as written (M2-A3).
 
-5. **Detonation vs Block.** §4 doesn't say whether Hex detonation damage is
-   absorbed by enemy Block. → M1: detonation ignores Block (poison-idiom,
-   protects the set-up/payoff fantasy). Flip in one line if undesired.
+2. **Per-hit Momentum rare** — the plan's Avalanche rewrite was an "e.g.";
+   Avalanche keeps its `Link (Partner)` identity and the new Bram rare
+   **Relentless** (Deal 5×4; Link (Surge): Momentum applies to every hit)
+   carries the mechanic instead (M2-A4).
 
-6. **Steady's "remove a Frayed stack."** From whom? → M1: removes one stack from
-   *both* players (Fray is always applied to both), else banks a shield that
-   prevents the next Fray this turn.
+3. **Relic sources** — unspecified in the plan: elite/boss kills (random relic,
+   random owner), treasure nodes, and shop stock. Wedding Knife is excluded
+   from random drops until the pool is otherwise exhausted, so it stays a
+   discovered-in-shop/treasure story beat... actually it can drop randomly last;
+   flag if it should be shop-only.
 
-7. **The Mourner's timing.** "Gains strength each turn the Chain contains 4+
-   consecutive cards from the same player" — before or after it acts that turn?
-   → M1: immediately after Chain resolution, so the punishment bites the same
-   turn. (This is the *harsher* reading; chosen because the elite's lesson is
-   the point. Flag if it should lag a turn.)
+4. **Sever Binding vs Choristers** (§6 "one is always unbound") — severing any
+   chorister **rotates**: the unbound body takes the target's binding and
+   becomes targetable; the target goes unbound/untargetable. Normal p1↔p2
+   severing doesn't apply inside the chorus.
 
-8. **Player death.** Does the run end when one player falls? → M1: yes — either
-   player at 0 HP ends the run (full roguelike, §13.6). Down-but-not-out
-   mechanics would be new design.
+5. **Unbound Chorister behavior** — it can't attack a player it isn't bound to,
+   so it **harmonizes**: +1 Strength to the chorus each turn. Pressure to sever
+   onto it, which is the §6 intent.
 
-9. **Starter decks.** Not specified in the design doc. → M1: 10-card starters
-   composed from each character's common pool (see `cards.ts`). Dedicated
-   starter-only cards (StS-style Strikes/Defends) are an M2 decision.
+6. **Mutation × upgrade stacking** — Echoes of upgraded cards mutate from the
+   **base** form. Mutations are hand-authored against one shape; combinatorial
+   variants would dodge the audit.
 
-10. **Rest-site Upgrade.** §8 lists "standard rest/upgrade" but M1 has no card
-    upgrades. → M1 rest options: Rest (heal 30%), Barter (+1 Covet), Re-braid
-    (+1 max Thread, once/run). Upgrades arrive with M2 content.
+7. **`handRetainOne` relic** — retains the first eligible card in the committed
+   hand (no player choice). A retain-picker UI is M3 polish.
 
-11. **Standard (non-crossed) event chooser.** §8 doesn't say who decides at a
-    standard event. → M1: a seeded-random player is both subject and chooser.
+8. **Shop removal escalation** — per-shop (3 slots at 75/100/125 gold), not
+   per-run cumulative. Flag if removal should get globally scarcer.
 
-12. **Bot link-fire telemetry.** Greedy bots land at ~38–42% link-fire rate —
-    at/under the 40–60% design band (§11). Humans coordinating on voice should
-    land higher (bots can't plan around each other's unstaged hands). Watch in
-    Playtest 1 before touching content.
+9. **Wedding Knife flow** — an optional sub-flow at any rest site once a player
+   owns the relic (offer → both confirm), on top of the normal rest choice, not
+   replacing it. Changing an offer resets both confirmations.
 
-13. **Difficulty.** Greedy bots win 100% of runs (52/52 combats in the 50-combat
-    sim) without ever using Steady defensively or alpha-ordering the Chain.
-    Act 1's first third should probably threaten more. §9 calls all numbers
-    placeholder-grade — recommend +15–20% enemy HP/damage after Playtest 1
-    confirms the bots aren't just outplaying humans.
+10. **Treasure nodes** — §8 lists treasure; the M2 plan didn't spec it. Gives
+    30–50 gold + a random relic to a random player, shown on the spoils screen.
+
+11. **Boss rewards** — boss kills grant +1 Covet charge (like elites), a relic,
+    and 70–85 gold, then card rewards before the next act. Not specified
+    anywhere; mirror-of-elite seemed safest.
+
+12. **Bot reorder pass** — bots now run one REORDER optimization before
+    readying (fix own unfired links). This is presentation-level link
+    bookkeeping (same computation the UI shows humans), not an engine oracle.

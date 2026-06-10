@@ -66,3 +66,17 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .reward-row { display: flex; gap: 14px; justify-content: center; align-items: flex-start; }
 .taken { opacity: 0.35; }
 .event button.big { display: block; margin: 8px auto; }
+
+/* ---- M2 additions ---- */
+.relicbar { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0; }
+.relic { border: 1px solid; padding: 1px 8px; font-size: 0.75em; background: #1c1814; cursor: help; }
+.map { display: flex; flex-direction: column-reverse; gap: 10px; align-items: center; }
+.maplayer { display: flex; gap: 14px; }
+.mapnode { padding: 8px 14px; opacity: 0.45; }
+.mapnode.can { opacity: 1; box-shadow: 0 0 8px #d4af6f44; }
+.mapnode.here { outline: 2px solid #d8cfc0; opacity: 0.8; }
+.mapnode.mypick { outline: 2px solid #ffd470; }
+.severed { background: #3a1a1a; color: #f0b0a8; padding: 8px 12px; margin: 6px 0; letter-spacing: 0.06em; text-align: center; }
+.enemy.untargetable { opacity: 0.55; border-style: dotted; cursor: default; }
+.pstat.fallen { opacity: 0.6; background: #241418; }
+.kindled { color: #ffd470; }
