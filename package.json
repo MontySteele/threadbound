@@ -1,0 +1,20 @@
+{
+  "name": "threadbound",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @threadbound/engine && npm run build -w @threadbound/server && npm run build -w @threadbound/bots",
+    "test": "vitest run",
+    "server": "npm run build && node packages/server/dist/index.js",
+    "client": "npm run dev -w @threadbound/client",
+    "sim": "npm run build && node packages/bots/dist/sim.js 50",
+    "check": "npm run test && npm run sim"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  }
+}
