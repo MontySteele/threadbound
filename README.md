@@ -21,6 +21,11 @@ npm run server        # serves game + client on http://localhost:8080
 Refreshing or dropping the connection is safe: the session token in
 localStorage rejoins the room with no state loss.
 
+**Solo testing (one browser, both seats):** open `http://localhost:8080/` in
+one tab and `http://localhost:8080/?tab=2` in another — the `?tab=` param
+namespaces the session token so the tabs hold independent seats (each still
+reconnects after refresh). An incognito window works too.
+
 ## Development
 
 ```bash
