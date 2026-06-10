@@ -52,6 +52,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     players: { p1: mkPlayer('p1'), p2: mkPlayer('p2') },
     combat: null, reward: null, event: null, rest: null, shop: null,
     advanceReady: { p1: false, p2: false },
+    concede: { p1: false, p2: false },
     witnessSaid: [],
     log: [],
     telemetry: emptyTelemetry(),
@@ -61,7 +62,12 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
 export function emptyTelemetry(): Telemetry {
   return {
     cardsPlayed: 0, linksFired: 0, resonances: 0,
-    resonanceTagCounts: {}, damageByTag: {}, turns: 0, actStats: {},
+    resonanceTagCounts: {}, damageByTag: {},
+    damageByPlayer: { p1: 0, p2: 0 },
+    detonatedStacks: 0,
+    covetsSpent: { p1: 0, p2: 0 },
+    biggestTurn: { damage: 0, turn: 0, act: 0 },
+    turns: 0, actStats: {},
   };
 }
 
@@ -235,6 +241,7 @@ function apply(state: GameState, action: Action): void {
         assert(reward.sets[partner].includes(action.pick), "not in your partner's set");
         assert(reward.picked[partner] !== action.pick, 'your partner took that one');
         p.covetCharges--;
+        state.telemetry.covetsSpent[action.player]++;
         addCardToDeck(state, action.player, action.pick);
         sayWitness(state, 'covet_pick');
         runHooks(state, action.player, 'covet');
@@ -380,6 +387,16 @@ function apply(state: GameState, action: Action): void {
       item.sold = true;
       shop.removalsBought++;
       state.log.push({ e: 'info', detail: `${p.character} pays to forget ${CARDS[removed.defId].name}.` });
+      return;
+    }
+
+    case 'CONCEDE': {
+      assert(!['lobby', 'game_over', 'victory'].includes(state.phase), 'nothing to concede');
+      state.concede[action.player] = action.confirm;
+      if (state.concede.p1 && state.concede.p2) {
+        state.log.push({ e: 'info', detail: 'You set the thread down together and walk back toward the light.' });
+        gameOver(state); // routes through the summary + epitaph like any death
+      }
       return;
     }
 

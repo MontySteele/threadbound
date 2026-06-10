@@ -133,3 +133,15 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     always derivable). Partner hand shows collapsed under their panel; the
     Deck overlay (header button / `d` / pad Create) shows tag summaries
     (Covenant 5), your draw/discard/exhaust contents, and both full decks.
+
+23. **Downtime-list additions** (pre-playtest sidechat): phase-aware eviction
+    (live runs survive 7 days idle; lobbies 24h; finished 1h after both leave —
+    the Tuesday→Thursday run is safe, no save-button needed); end-of-run
+    summary screen (per-player damage, biggest turn, detonations, Covets, seed,
+    Witness epitaph — screenshot = playtest data); 6 contextual one-time hints;
+    title/lobby cord motif with rude Witness greeting; both-confirm concede
+    (routes through the summary, retractable until both agree). Colorblind
+    check: player hues are cyan #7fd4ff / orange #ffb070 — already the safe
+    pairing, no change needed; gold focus ring distinct from both. Explicitly
+    NOT done per the skip list: balance levers, new content, mulligans, damage
+    previews, art beyond the title treatment.

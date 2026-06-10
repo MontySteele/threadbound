@@ -193,13 +193,16 @@ function hitEnemy(state: GameState, attacker: PlayerState, enemy: EnemyState, ra
 }
 
 /** Detonation (§4): 3 damage per stack, ignores Block (OQ#5 confirmed). */
-function detonate(state: GameState, enemy: EnemyState, maxStacks?: number): number {
+function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: PlayerId): number {
   const stacks = Math.min(enemy.hex, maxStacks ?? enemy.hex);
   if (stacks <= 0) return 0;
   enemy.hex -= stacks;
   const dmg = stacks * DETONATION_DAMAGE;
   applyEnemyHpLoss(state, enemy, dmg, 'detonate');
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
+  state.telemetry.detonatedStacks += stacks;
+  if (by) state.telemetry.damageByPlayer[by] += dmg;
+  turnDamage += dmg;
   state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   runHooks(state, 'p1', 'detonate');
   runHooks(state, 'p2', 'detonate');
@@ -272,9 +275,14 @@ function scale(ctx: CardContext, amount: number, primary: boolean | undefined): 
   return v;
 }
 
-function dmgTelemetry(state: GameState, tag: string, dealt: number): void {
+function dmgTelemetry(state: GameState, tag: string, dealt: number, player?: PlayerId): void {
   state.telemetry.damageByTag[tag] = (state.telemetry.damageByTag[tag] ?? 0) + dealt;
+  if (player) state.telemetry.damageByPlayer[player] += dealt;
+  turnDamage += dealt;
 }
+
+/** accumulator for the biggest-single-turn stat; reset/flushed by resolveTurn */
+let turnDamage = 0;
 
 function applyMomentum(ctx: CardContext, amt: number, hitIndex: number): number {
   const { owner, def } = ctx;
@@ -302,7 +310,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
         const target = retarget(state, first.id);
         if (!target) return;
         const amt = applyMomentum(ctx, scale(ctx, eff.amount, eff.primary), t);
-        dmgTelemetry(state, tag, hitEnemy(state, owner, target, amt));
+        dmgTelemetry(state, tag, hitEnemy(state, owner, target, amt), owner.id);
       }
       break;
     }
@@ -315,7 +323,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
           amt += owner.momentum;
           used = true;
         }
-        dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, amt));
+        dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, amt), owner.id);
       }
       if (used) ctx.momentumSpent = true;
       break;
@@ -325,13 +333,13 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
       if (!enemy) return;
       const amt = applyMomentum(ctx, scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), 0);
       // M2-B1: hex-scaling damage gets its own attribution bucket
-      dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt));
+      dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt), owner.id);
       break;
     }
     case 'momentumStrikeBonus': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy) return;
-      dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, owner.momentum * eff.mult));
+      dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, owner.momentum * eff.mult), owner.id);
       if (eff.keepMomentum) ctx.keepMomentum = true;
       ctx.momentumSpent = true;
       break;
@@ -379,16 +387,16 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     }
     case 'detonate': {
       const enemy = retarget(state, ctx.targetId);
-      if (enemy) ctx.detonatedStacks += detonate(state, enemy, eff.max);
+      if (enemy) ctx.detonatedStacks += detonate(state, enemy, eff.max, ctx.owner.id);
       break;
     }
     case 'detonateAllEnemies':
-      for (const enemy of livingEnemies(state)) ctx.detonatedStacks += detonate(state, enemy);
+      for (const enemy of livingEnemies(state)) ctx.detonatedStacks += detonate(state, enemy, undefined, ctx.owner.id);
       break;
     case 'damagePerDetonated': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy || ctx.detonatedStacks <= 0) return;
-      dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, ctx.detonatedStacks * eff.per));
+      dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, ctx.detonatedStacks * eff.per), owner.id);
       break;
     }
     case 'weak': {
@@ -453,6 +461,7 @@ export function resolveTurn(state: GameState): void {
   const combat = state.combat!;
   state.log = [];
   const act = state.map.act;
+  turnDamage = 0;
 
   // M2-A1: snapshot hands at commit; survivors discard at end of resolution
   combat.handSnapshot = { p1: [...state.players.p1.hand], p2: [...state.players.p2.hand] };
@@ -575,6 +584,10 @@ export function resolveTurn(state: GameState): void {
 
   combat.chain = [];
   combat.threadActions = [];
+
+  if (turnDamage > state.telemetry.biggestTurn.damage) {
+    state.telemetry.biggestTurn = { damage: turnDamage, turn: combat.turn, act };
+  }
 
   // M2-A1: discard what was in hand at commit (Keep cards and retained card stay)
   for (const pid of ['p1', 'p2'] as PlayerId[]) {

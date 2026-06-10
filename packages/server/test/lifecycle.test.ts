@@ -36,24 +36,30 @@ afterEach(() => {
   for (const s of servers.splice(0)) s.close();
 });
 
-describe('room eviction (M2-D3 / M3-D)', () => {
-  it('evicts idle rooms after 24h and finished rooms after 1h, cleaning tokens', () => {
+describe('room eviction (M2-D3 / M3-D, multi-day windows)', () => {
+  it('lobbies die at 24h, finished rooms at 1h after both leave, live runs survive a week', () => {
     const t0 = 1_000_000_000_000;
     const gs = mkServer({ now: () => t0 });
-    const fresh = fakeRoom('FRESH', t0 - HOUR);
-    const stale = fakeRoom('STALE', t0 - 25 * HOUR);
+    const freshLobby = fakeRoom('FRESH', t0 - HOUR);
+    const staleLobby = fakeRoom('STALE', t0 - 25 * HOUR);
     const done = fakeRoom('DONEZ', t0 - 2 * HOUR, 'game_over');
     const doneFresh = fakeRoom('DONEF', t0 - HOUR / 2, 'game_over');
-    for (const r of [fresh, stale, done, doneFresh]) {
+    // the Tuesday→Thursday case: a live run idle for 3 days must survive
+    const midRun = fakeRoom('MIDRN', t0 - 3 * 24 * HOUR);
+    midRun.state.phase = 'map';
+    // …but an abandoned run goes after a week
+    const abandoned = fakeRoom('GHOST', t0 - 8 * 24 * HOUR);
+    abandoned.state.phase = 'combat';
+    for (const r of [freshLobby, staleLobby, done, doneFresh, midRun, abandoned]) {
       gs.rooms.set(r.code, r);
       gs.tokenIndex.set(r.seats.p1!.token, { room: r, pid: 'p1' });
       gs.tokenIndex.set(r.seats.p2!.token, { room: r, pid: 'p2' });
     }
     gs.evictRooms(t0);
-    expect([...gs.rooms.keys()].sort()).toEqual(['DONEF', 'FRESH']);
-    expect(gs.tokenIndex.has(stale.seats.p1!.token)).toBe(false);
-    expect(gs.tokenIndex.has(done.seats.p2!.token)).toBe(false);
-    expect(gs.tokenIndex.has(fresh.seats.p1!.token)).toBe(true);
+    expect([...gs.rooms.keys()].sort()).toEqual(['DONEF', 'FRESH', 'MIDRN']);
+    expect(gs.tokenIndex.has(staleLobby.seats.p1!.token)).toBe(false);
+    expect(gs.tokenIndex.has(abandoned.seats.p1!.token)).toBe(false);
+    expect(gs.tokenIndex.has(midRun.seats.p1!.token)).toBe(true);
   });
 });
 

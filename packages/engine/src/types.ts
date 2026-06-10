@@ -432,6 +432,7 @@ export interface GameState {
   rest: RestState | null;
   shop: ShopState | null;
   advanceReady: Record<PlayerId, boolean>;
+  concede: Record<PlayerId, boolean>;
   witnessSaid: string[];
   log: GameEvent[];
   telemetry: Telemetry;
@@ -451,6 +452,11 @@ export interface Telemetry {
   resonanceTagCounts: Record<string, number>;
   /** damage attribution; 'HexScaling' bucket for hex-scaling Strike damage (M2-B1) */
   damageByTag: Record<string, number>;
+  /** end-of-run summary fodder (M3 downtime list) */
+  damageByPlayer: Record<PlayerId, number>;
+  detonatedStacks: number;
+  covetsSpent: Record<PlayerId, number>;
+  biggestTurn: { damage: number; turn: number; act: number };
   turns: number;
   /** per-act link-fire climb + difficulty gates (M2-A5/C) */
   actStats: Record<number, ActStats>;
@@ -478,6 +484,8 @@ export type Action =
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }
   | { type: 'SHOP_BUY'; player: PlayerId; itemId: string } // M2-B4
   | { type: 'SHOP_REMOVE'; player: PlayerId; itemId: string; cardInstanceId: string }
-  | { type: 'ADVANCE'; player: PlayerId };
+  | { type: 'ADVANCE'; player: PlayerId }
+  /** abandon the run — both must confirm; even quitting is co-op */
+  | { type: 'CONCEDE'; player: PlayerId; confirm: boolean };
 
 export class IllegalAction extends Error {}

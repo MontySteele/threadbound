@@ -17,6 +17,8 @@ import { ResolutionTheater } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
+import { RunSummary } from './Summary';
+import { Hints } from './Hints';
 
 type Character = 'vess' | 'bram';
 const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
@@ -55,6 +57,7 @@ export default function App(): JSX.Element {
   const [, padTick] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [deckOpen, setDeckOpen] = useState(false);
+  const [concedeOpen, setConcedeOpen] = useState(false);
   const [toast, setToast] = useState('');
   const netRef = useRef<Net | null>(null);
 
@@ -124,6 +127,11 @@ export default function App(): JSX.Element {
                   Deck (d)
                 </button>
               )}
+              {!['lobby', 'game_over', 'victory'].includes(state.phase) && (
+                <button className="chip" data-gp="META" onClick={() => setConcedeOpen(!concedeOpen)}>
+                  abandon…
+                </button>
+              )}
               <Settings />
               <span className={partnerOn ? 'on' : 'off'}>{partnerOn ? '● partner' : '○ partner'}</span>
             </span>
@@ -133,8 +141,23 @@ export default function App(): JSX.Element {
           <Phase state={state} net={net} partnerOn={partnerOn} />
           <ResolutionTheater log={state.log} pname={(p) => state.players[p].character} />
           <Tutorial state={state} />
+          <Hints state={state} />
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
+          {concedeOpen && !['lobby', 'game_over', 'victory'].includes(state.phase) && (
+            <div className="feedback-overlay">
+              <div className="tutorial-step">ABANDON RUN</div>
+              <p className="muted">Both of you must agree — even quitting is co-op.</p>
+              <p>
+                You: <b>{state.concede[state.you] ? 'ready to walk away' : 'undecided'}</b>
+                {' · '}Partner: <b>{state.concede[state.you === 'p1' ? 'p2' : 'p1'] ? 'ready to walk away' : 'undecided'}</b>
+              </p>
+              <button data-gp="META" onClick={() => net.act({ type: 'CONCEDE', confirm: !state.concede[state.you] } as any)}>
+                {state.concede[state.you] ? 'no — keep fighting' : 'yes, set the thread down'}
+              </button>
+              <button data-gp="META" onClick={() => setConcedeOpen(false)}>close</button>
+            </div>
+          )}
           {toast && <div className="toast">{toast}</div>}
           {feedbackOpen && (
             <div className="feedback-overlay">
@@ -204,15 +227,36 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   );
 }
 
+function TitleCord({ left, right }: { left: boolean; right: boolean }): JSX.Element {
+  return (
+    <div className="title-cord">
+      <div className={`title-frame ${left ? 'filled' : ''}`}>
+        {left ? <CharacterSigil who="vess" size={84} /> : <span className="title-empty">?</span>}
+      </div>
+      <svg width="220" height="56" viewBox="0 0 220 56" aria-hidden>
+        <path className={`cord-line ${left && right ? '' : 'cord-dim'}`} d="M 0 20 Q 110 52 220 20" fill="none" />
+      </svg>
+      <div className={`title-frame ${right ? 'filled' : ''}`}>
+        {right ? <CharacterSigil who="bram" size={84} /> : <span className="title-empty">?</span>}
+      </div>
+    </div>
+  );
+}
+
+const LOBBY_GREETINGS = [
+  'Ah. It brought a friend. The thread shudders with delight, presumably.',
+  'Two of you now. The arithmetic of disappointment doubles.',
+  'The second one arrives. Fashionably late to its own funeral.',
+  'Oh good, reinforcements. The Undercroft was getting worried.',
+];
+
 function Home({ net, error }: { net: Net; error: string }): JSX.Element {
   const [code, setCode] = useState('');
   const [character, setCharacter] = useState<Character>('vess');
   return (
     <div className="center home">
-      <h1>THREADBOUND</h1>
-      <div className="home-sigils">
-        <CharacterSigil who="vess" size={84} /><CharacterSigil who="witness" size={56} /><CharacterSigil who="bram" size={84} />
-      </div>
+      <h1 className="game-title">THREADBOUND</h1>
+      <TitleCord left={false} right={false} />
       <p className="muted">Two spirit-binders, one thread. Bring a friend.</p>
       {error && <div className="error">{error}</div>}
       <div className="panel">
@@ -237,14 +281,18 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
 
 function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partnerOn: boolean }): JSX.Element {
   switch (state.phase) {
-    case 'lobby':
+    case 'lobby': {
+      const greeting = LOBBY_GREETINGS[(state.seed >>> 3) % LOBBY_GREETINGS.length];
       return (
         <div className="center">
           <h2>The Undercroft awaits</h2>
-          <p>Share the room code. {partnerOn ? 'Your partner is here.' : 'Waiting for your partner…'}</p>
+          <TitleCord left={true} right={partnerOn} />
+          <p>{partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
+          {partnerOn && <p className="witness">THE WITNESS: “{greeting}”</p>}
           {partnerOn && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
         </div>
       );
+    }
     case 'map':
       return <MapView state={state} net={net} />;
     case 'combat':
@@ -260,17 +308,17 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
     case 'victory':
       return (
         <div className="center">
-          <h2>The Unraveled lies still. The braid holds.</h2>
-          <Log log={state.log} state={state} />
-          <p className="muted">A full clear. Create a new room to descend again.</p>
+          <h2>The Unraveled lies still.</h2>
+          <RunSummary state={state} won={true} />
+          <p className="muted">A full clear. Create a new room to descend again — and screenshot this for the calibration pile.</p>
         </div>
       );
     case 'game_over':
       return (
         <div className="center">
-          <h2>The thread goes slack.</h2>
-          <Log log={state.log} state={state} />
-          <p className="muted">Death is a fresh run. Create a new room to descend again.</p>
+          <h2>The descent ends here.</h2>
+          <RunSummary state={state} won={false} />
+          <p className="muted">Death is a fresh run. Create a new room to descend again — and screenshot this for the calibration pile.</p>
         </div>
       );
     default:

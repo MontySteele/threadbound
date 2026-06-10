@@ -299,6 +299,21 @@ describe('The Mourner & chain shapes (§6)', () => {
   });
 });
 
+describe('concede (M3 downtime list)', () => {
+  it('requires both confirmations, is retractable, and routes through game_over', () => {
+    let s = combatState(13);
+    s = reduce(s, { type: 'CONCEDE', player: 'p1', confirm: true });
+    expect(s.phase).toBe('combat'); // one vote is not a decision
+    s = reduce(s, { type: 'CONCEDE', player: 'p1', confirm: false }); // changed our mind
+    s = reduce(s, { type: 'CONCEDE', player: 'p2', confirm: true });
+    expect(s.phase).toBe('combat');
+    s = reduce(s, { type: 'CONCEDE', player: 'p1', confirm: true });
+    expect(s.phase).toBe('game_over'); // both agreed — summary + epitaph route
+    expect(s.log.some((e) => e.e === 'witness')).toBe(true);
+    expect(() => reduce(s, { type: 'CONCEDE', player: 'p1', confirm: true })).toThrow();
+  });
+});
+
 describe('run flow (§8, M2-B4/B6)', () => {
   it('combat victory yields reward sets, gold, and Covet rules hold', () => {
     let s = combatState(11);

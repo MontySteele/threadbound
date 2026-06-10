@@ -116,12 +116,18 @@ export class GameServer {
 
   // ---- room lifecycle (M2-D3 / M3-D) --------------------------------------
 
+  /** Eviction windows by room state: a half-finished run must survive a
+   *  multi-day pause (you stop Tuesday, finish Thursday). Lobbies that never
+   *  started get a day; finished runs an hour after both leave; live runs a
+   *  week. Persistence carries them across restarts regardless. */
   evictRooms(now = this.now()): void {
     for (const [code, room] of this.rooms) {
       const idle = now - room.lastActivity;
       const finished = room.state.phase === 'game_over' || room.state.phase === 'victory';
+      const inLobby = room.state.phase === 'lobby';
       const bothClosed = !room.seats.p1?.socket && !room.seats.p2?.socket;
-      if (idle > 24 * HOUR || (finished && bothClosed && idle > HOUR)) {
+      const limit = finished ? HOUR : inLobby ? 24 * HOUR : 7 * 24 * HOUR;
+      if ((finished ? bothClosed && idle > limit : idle > limit)) {
         for (const seat of Object.values(room.seats)) {
           if (seat) this.tokenIndex.delete(seat.token);
           seat?.socket?.close();

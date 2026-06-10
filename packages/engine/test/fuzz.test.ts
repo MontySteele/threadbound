@@ -43,6 +43,7 @@ function randomAction(state: GameState, die: Die): Action | null {
       return { type: 'NODE_PICK', player: pid, nodeId };
     }
     case 'combat': {
+      if (die.chance(0.002)) return { type: 'CONCEDE', player: pid, confirm: die.chance(0.7) };
       const combat = state.combat!;
       const living = combat.enemies.filter((e) => e.hp > 0);
       const targetable = living.filter((e) => !e.untargetable);

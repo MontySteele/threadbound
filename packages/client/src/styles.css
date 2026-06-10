@@ -255,3 +255,20 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .deck-section { color: var(--thread); font-size: 0.85em; margin-top: 10px; letter-spacing: 0.06em; }
 .deck-row { justify-content: flex-start; }
 .partner-hand { margin-top: 4px; }
+
+.game-title { font-size: 2.6em; letter-spacing: 0.4em; margin-bottom: 4px; text-shadow: 0 0 24px color-mix(in srgb, var(--thread) 30%, transparent); }
+.title-cord { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 14px; }
+.title-frame { width: 100px; height: 100px; border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--ink-2); transition: box-shadow 0.6s, border-color 0.6s; }
+.title-frame.filled { border-color: var(--thread); box-shadow: 0 0 18px color-mix(in srgb, var(--thread) 35%, transparent); }
+.title-empty { color: var(--text-faint); font-size: 1.6em; font-family: var(--font-display); }
+.cord-dim { opacity: 0.25; stroke-dasharray: 5 6; }
+.summary { max-width: 560px; margin: 12px auto; }
+.summary-verdict { font-family: var(--font-display); letter-spacing: 0.25em; color: var(--thread); margin-bottom: 10px; }
+.summary-table { width: 100%; border-collapse: collapse; text-align: left; }
+.summary-table td { padding: 4px 10px; border-bottom: 1px solid var(--line-soft); }
+.summary-table td:first-child { width: 42%; }
+.summary-epitaph { margin-top: 14px; font-size: 1.05em; }
+.hint-pop { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 68; max-width: 480px;
+  background: var(--panel); border: 1px solid var(--thread); border-radius: var(--radius); padding: 10px 16px;
+  box-shadow: 0 8px 30px #000b; font-size: 0.92em; }
+.hint-pop-tag { color: var(--thread); }
