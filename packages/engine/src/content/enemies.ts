@@ -11,7 +11,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     act: 1,
     hp: [22, 26],
     script: [
-      { kind: 'attack', amount: 7 },
+      { kind: 'attack', amount: 6 }, // Part C: act 1 softened one notch
       { kind: 'attack', amount: 7 },
       { kind: 'block', amount: 6 },
     ],
@@ -62,7 +62,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     script: [
       { kind: 'attack', amount: 9 },
       { kind: 'block', amount: 8 },
-      { kind: 'attack_all', amount: 6 },
+      { kind: 'attack_all', amount: 5 }, // Part C softening
       { kind: 'attack', amount: 9 },
     ],
     flavor: 'He still digs the graves, though no one has died here in a hundred years who stayed dead.',

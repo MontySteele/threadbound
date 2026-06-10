@@ -61,7 +61,7 @@ def({
   id: 'thornward', name: 'Thornward', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
   text: 'Gain 6 Block.',
   base: [{ op: 'block', amount: 6, primary: true }],
-  link: { condition: 'Hex', text: 'Apply 1 Hex to all enemies.', effects: [{ op: 'hexAll', amount: 1 }] },
+  link: { condition: 'Hex', text: 'Apply 2 Hex to all enemies.', effects: [{ op: 'hexAll', amount: 2 }] }, // lever 3 (3rd pass)
 });
 def({
   id: 'wardknot', name: 'Wardknot', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
@@ -79,7 +79,7 @@ def({
   id: 'quickening', name: 'Quickening', character: 'vess', rarity: 'common', cost: 1, tag: 'Surge',
   text: 'Draw 2.',
   base: [{ op: 'draw', amount: 2 }],
-  link: { condition: 'Rite', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] },
+  link: { condition: 'any', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: Rite too sparse for a common link
 });
 def({
   id: 'mendthread', name: 'Mendthread', character: 'vess', rarity: 'common', cost: 1, tag: 'Rite',
@@ -101,7 +101,7 @@ def({
   base: [{ op: 'power', power: 'black_lattice' }],
 });
 def({
-  id: 'saturate', name: 'Saturate', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Hex',
+  id: 'saturate', name: 'Saturate', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Hex', // lever 3: cost 2 → 1
   needsTarget: true,
   text: 'Double the target’s Hex.',
   base: [{ op: 'doubleHex' }],
@@ -111,7 +111,7 @@ def({
   id: 'lashing_coil', name: 'Lashing Coil', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Strike',
   text: 'Deal 4 to ALL enemies.',
   base: [{ op: 'damageAll', amount: 4, primary: true }],
-  link: { condition: 'Hex', text: 'Apply 2 Hex to all enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
+  link: { condition: 'Hex', text: 'Apply 3 Hex to all enemies.', effects: [{ op: 'hexAll', amount: 3 }] }, // lever 3 (3rd pass)
 });
 def({
   id: 'seamripper', name: 'Seamripper', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Strike',

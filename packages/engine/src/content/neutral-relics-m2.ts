@@ -70,7 +70,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'stolen_breath', name: 'Stolen Breath', character: 'neutral', rarity: 'common', cost: 0, tag: 'Surge',
     text: 'Draw 1.',
     base: [{ op: 'draw', amount: 1 }],
-    link: { condition: 'Rite', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
+    link: { condition: 'any', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Held Breath', text: 'Draw 1. Gain 2 Block.',
       base: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 2 }],
@@ -110,13 +110,13 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'candle_watch', name: 'Candle Watch', character: 'neutral', rarity: 'common', cost: 1, tag: 'Guard',
     text: 'Gain 4 Block. Your partner gains 2 Block.',
     base: [{ op: 'block', amount: 4, primary: true }, { op: 'partnerBlock', amount: 2 }],
-    link: { condition: 'Rite', text: 'Gain 3 more Block.', effects: [{ op: 'block', amount: 3 }] },
+    link: { condition: 'Strike', text: 'Gain 3 more Block.', effects: [{ op: 'block', amount: 3 }] }, // §4: widened from Rite
     mutation: {
       name: 'Lone Candle', text: 'Gain 3 Block. Draw 1.',
       base: [{ op: 'block', amount: 3, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'Rite', text: 'You and your partner each gain 3 more Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
+      link: { condition: 'Strike', text: 'You and your partner each gain 3 more Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
     },
   },
   {
@@ -194,13 +194,13 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'shared_sigil', name: 'Shared Sigil', character: 'neutral', rarity: 'uncommon', cost: 1, tag: 'Hex',
     text: 'Apply 2 Hex to ALL enemies.',
     base: [{ op: 'hexAll', amount: 2, primary: true }],
-    link: { condition: 'Rite', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] },
+    link: { condition: 'any', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Split Sigil', text: 'Apply 1 Hex to ALL enemies. Draw 1.',
       base: [{ op: 'hexAll', amount: 1, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'Rite', text: 'Your partner draws 1 and gains 2 Block.', effects: [{ op: 'partnerDraw', amount: 1 }, { op: 'partnerBlock', amount: 2 }] },
+      link: { condition: 'any', text: 'Your partner draws 1 and gains 2 Block.', effects: [{ op: 'partnerDraw', amount: 1 }, { op: 'partnerBlock', amount: 2 }] },
     },
   },
 

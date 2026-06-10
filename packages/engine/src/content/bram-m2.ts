@@ -46,14 +46,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Deal 11.',
     base: [{ op: 'damage', amount: 11, primary: true }],
-    link: { condition: 'Rite', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
+    link: { condition: 'Surge', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Stitched Bellringer', text: 'Deal 8. Gain 1 Thread.',
       base: [{ op: 'damage', amount: 8, primary: true }, { op: 'thread', amount: 1 }],
     },
     upgrade: {
       text: 'Deal 11. Link (Rite): gain Kindled 1 and draw 1.',
-      link: { condition: 'Rite', text: 'Gain Kindled 1 and draw 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'draw', amount: 1 }] },
+      link: { condition: 'Surge', text: 'Gain Kindled 1 and draw 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'draw', amount: 1 }] },
     },
   },
   {
@@ -119,14 +119,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     id: 'forearm_wall', name: 'Forearm Wall', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
     text: 'Gain 6 Block.',
     base: [{ op: 'block', amount: 6, primary: true }],
-    link: { condition: 'Rite', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
+    link: { condition: 'Strike', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Hexbound Forearm Wall', text: 'Gain 5 Block. Apply 1 Hex to ALL enemies.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hexAll', amount: 1 }],
     },
     upgrade: {
       text: 'Gain 6 Block. Link (Rite): gain Kindled 1 and 1 Thread.',
-      link: { condition: 'Rite', text: 'Gain Kindled 1 and 1 Thread.', effects: [{ op: 'kindled', amount: 1 }, { op: 'thread', amount: 1 }] },
+      link: { condition: 'Strike', text: 'Gain Kindled 1 and 1 Thread.', effects: [{ op: 'kindled', amount: 1 }, { op: 'thread', amount: 1 }] },
     },
   },
   {
@@ -300,7 +300,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Gain 11 Block. Bind the target enemy to you.',
     base: [{ op: 'block', amount: 11, primary: true }, { op: 'taunt' }],
-    link: { condition: 'Rite', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+    link: { condition: 'Strike', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] }, // §4: widened from Rite
     mutation: {
       name: 'Hexbound Stand Fast', text: 'Gain 9 Block. Apply 2 Hex to ALL enemies.',
       base: [{ op: 'block', amount: 9, primary: true }, { op: 'hexAll', amount: 2 }],

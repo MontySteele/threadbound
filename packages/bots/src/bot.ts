@@ -42,6 +42,7 @@ export class Bot {
   private startedRun = false;
   private pulsedTurn = -1;
   private reorderedTurn = -1;
+  private reorderCount = 0;
   private combatsWon = 0;
   private lastPhase = '';
   private lastView: BotView | null = null;
@@ -176,8 +177,12 @@ export class Bot {
     if (affordable.length === 0) {
       // before committing: one weaving pass — REORDER an own card whose link
       // isn't firing into a slot where it would (what humans do while talking)
-      if (this.reorderedTurn !== combat.turn && this.tryReorder(view)) {
+      if (this.reorderedTurn !== combat.turn) {
         this.reorderedTurn = combat.turn;
+        this.reorderCount = 0;
+      }
+      if (this.reorderCount < 3 && this.tryReorder(view)) {
+        this.reorderCount++;
         return;
       }
       this.act({ type: 'SET_READY', player: you, ready: true } as Action);
@@ -196,7 +201,7 @@ export class Bot {
 
     // pick best (card, position): fire own link, enable the next card's link,
     // never break a link that currently fires
-    const lowHp = me.hp < me.maxHp * 0.4;
+    const lowHp = me.hp < me.maxHp * 0.55;
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
@@ -212,15 +217,23 @@ export class Bot {
           if (firedBefore && !firesAfter) next = -3; // never break a firing link
           else if (!firedBefore && firesAfter) next = 1.5; // enable the next card
         }
-        const guardBonus = lowHp && card.def.tag === 'Guard' ? 2 : 0;
-        const score = fires + next + guardBonus + card.def.cost * 0.1;
+        const guardBonus = lowHp && card.def.tag === 'Guard' ? 2.5 : 0;
+        // keep the Hex→detonate axis alive even when other links outshine it
+        const cardText = JSON.stringify(card.def.base) + JSON.stringify(card.def.link?.effects ?? []);
+        const isVess = view.players[you].character === 'vess';
+        const bigPile = targetable.some((e) => e.hex >= 4);
+        const axisBonus =
+          (isVess && (cardText.includes("'hex'") || cardText.includes('hexAll') || cardText.includes('doubleHex')) ? 0.9 : 0) +
+          (cardText.includes('detonate') && bigPile ? 1.3 : 0) +
+          (cardText.includes('damagePerHex') && targetable.some((e) => e.hex >= 3) ? 1.2 : 0);
+        const score = fires + next + guardBonus + axisBonus + card.def.cost * 0.1;
         if (!best || score > best.score) best = { card, pos, score };
       }
     }
     // hold a card whose link can't fire yet: wait for the partner to stage
     // something that feeds it (table-talk, bot edition)
     const partnerReady = view.players[you === 'p1' ? 'p2' : 'p1'].ready;
-    if (best!.score < 1.5 && best!.card.def.link && !partnerReady && Math.random() < 0.55) {
+    if (best!.score < 1.5 && best!.card.def.link && !partnerReady && Math.random() < 0.7) {
       return; // watchdog re-decides when the partner moves
     }
     const pick = best!.card;
@@ -290,8 +303,9 @@ export class Bot {
     const heavy = character === 'vess' ? 'Hex' : 'Strike';
     if (def.tag === heavy) score += 2;
     const text = JSON.stringify(def.base) + JSON.stringify(def.link?.effects ?? []);
-    if (text.includes('detonate')) score += 4;
+    if (text.includes('detonate')) score += 5;
     if (text.includes("'hex'") || text.includes('hexAll')) score += character === 'vess' ? 3 : 0;
+    if (text.includes('damagePerHex')) score += character === 'vess' ? 3 : 0;
     if (def.rarity === 'rare') score += 1;
     if (def.cost <= 2) score += 1;
     return score;
@@ -303,7 +317,7 @@ export class Bot {
     const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
     if (reward.picked[you] === null && reward.sets[you].length > 0) {
       const ranked = [...reward.sets[you]].sort((a, b) => this.draftScore(b) - this.draftScore(a));
-      const pick = this.draftScore(ranked[0]) >= 4 || Math.random() < 0.4 ? ranked[0] : 'skip';
+      const pick = this.draftScore(ranked[0]) >= 3 || Math.random() < 0.5 ? ranked[0] : 'skip';
       this.act({ type: 'REWARD_PICK', player: you, pick } as Action);
       return;
     }
@@ -343,7 +357,7 @@ export class Bot {
       // heal when hurt, otherwise upgrade; sprinkle barter/rebraid
       const hurt = me.hp < me.maxHp * 0.6;
       const option = hurt ? 'rest'
-        : Math.random() < 0.7 ? 'upgrade'
+        : Math.random() < 0.85 ? 'upgrade'
         : Math.random() < 0.5 ? 'barter'
         : !view.rebraidUsed ? 'rebraid' : 'rest';
       this.act({ type: 'REST_CHOOSE', player: you, option } as Action);

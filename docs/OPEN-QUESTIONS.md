@@ -64,3 +64,18 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
 12. **Bot reorder pass** — bots now run one REORDER optimization before
     readying (fix own unfired links). This is presentation-level link
     bookkeeping (same computation the UI shows humans), not an engine oracle.
+
+13. **Rite-condition link scarcity (§4)** — the drafted pool had 14 links
+    reading Rite, the deliberately sparse tag, which structurally under-fire.
+    Common-rarity Rite-readers were widened to broader conditions (Surge/
+    Strike/Guard/any); six uncommon Thread-flavored Rite payoffs remain as
+    deliberate build-arounds (Inheritance, Knotward Veil, Slow Burn, Measured
+    Cut, Martyr's Knot +1). Flag if Rite links should instead become more
+    common alongside more Rite cards.
+
+14. **Hex-share gate sits near a bot behavioral bifurcation** — the 20–30%
+    gate passed at 20.3% (50 runs) only after the bot staging policy got an
+    explicit Hex-axis bonus; the share whipsawed 15–24% across earlier sims as
+    link-placement preferences shifted. Human pairs who deliberately play the
+    Vess→Bram detonation game should land comfortably inside; watch the stat in
+    Playtest 2 rather than tuning content further on bot evidence alone.

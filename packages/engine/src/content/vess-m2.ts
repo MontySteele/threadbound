@@ -68,14 +68,14 @@ export const VESS_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Apply 3 Hex.',
     base: [{ op: 'hex', amount: 3, primary: true }],
-    link: { condition: 'Rite', text: 'Gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
+    link: { condition: 'Guard', text: 'Gain 3 Block.', effects: [{ op: 'block', amount: 3 }] }, // §4: widened from Rite
     mutation: {
       name: 'Grudge Iron', text: 'Deal 4. Apply 1 Hex.',
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 1 }],
     },
     upgrade: {
       text: 'Apply 3 Hex. Link (Rite): gain 3 Block and 1 Thread.',
-      link: { condition: 'Rite', text: 'Gain 3 Block and 1 Thread.', effects: [{ op: 'block', amount: 3 }, { op: 'thread', amount: 1 }] },
+      link: { condition: 'Guard', text: 'Gain 3 Block and 1 Thread.', effects: [{ op: 'block', amount: 3 }, { op: 'thread', amount: 1 }] },
     },
   },
   {
@@ -171,7 +171,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     id: 'quiet_mending', name: 'Quiet Mending', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
     text: 'Gain 6 Block.',
     base: [{ op: 'block', amount: 6, primary: true }],
-    link: { condition: 'Rite', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] },
+    link: { condition: 'Surge', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] }, // §4: widened from Rite
     mutation: {
       name: 'Rough Comfort', text: 'Gain 6 Block. Draw 1.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'draw', amount: 1 }],
