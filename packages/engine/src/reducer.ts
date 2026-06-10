@@ -1,14 +1,19 @@
 // The authoritative reducer (§11): reduce(state, action) -> state. Pure —
 // clones the input, mutates the clone, returns it. Throws IllegalAction on
-// invalid intents (the server converts these into error messages).
+// invalid intents. M2: branching maps, shops, treasure, relics, upgrades,
+// Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardInstance, CharacterId, GameState, IllegalAction, PlayerId, PlayerState, Telemetry,
+  Action, CardInstance, CharacterId, GameState, IllegalAction, MapNode, PlayerId, PlayerState,
+  Rarity, RestOption, Telemetry,
 } from './types';
-import { CARDS, STARTER_DECKS, cardsForCharacter } from './content/cards';
-import { ENCOUNTERS, M1_MAP } from './content/encounters';
-import { EVENTS } from './content/events';
-import { effectiveDef, findInstance, otherPlayer, resolveTurn, startCombat, startTurn } from './combat';
+import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID } from './content/registry';
+import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
+import { ENCOUNTERS } from './content/encounters';
+import {
+  effectiveDef, findInstance, hasPassive, otherPlayer, resolveTurn, runHooks, startCombat, startTurn,
+} from './combat';
+import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -24,25 +29,28 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     return {
       id, character,
       hp: STARTING_HP[character], maxHp: STARTING_HP[character],
-      block: 0, energy: 3, energyMax: 3, momentum: 0,
+      block: 0, energy: 3, energyMax: 3, kindled: 0, momentum: 0,
+      fallen: false,
       statuses: { weak: 0, vulnerable: 0, frayed: 0 },
-      powers: [],
+      powers: [], relics: [],
       deck, draw: [], hand: [], discard: [], exhaust: [], combatCards: [],
-      covetCharges: 1, // §8
+      covetCharges: 1,
       ready: false, pendingFray: 0, pulseBonus: 0,
     };
   };
   return {
-    version: 1,
+    version: 2,
     seed,
     rng: seed >>> 0,
     phase: 'lobby',
-    nodeIndex: -1,
+    map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
+    gold: 40,
+    pendingThread: 0,
     thread: 6,
-    threadMax: 10, // §5
+    threadMax: 10,
     rebraidUsed: false,
     players: { p1: mkPlayer('p1'), p2: mkPlayer('p2') },
-    combat: null, reward: null, event: null, rest: null,
+    combat: null, reward: null, event: null, rest: null, shop: null,
     advanceReady: { p1: false, p2: false },
     witnessSaid: [],
     log: [],
@@ -51,32 +59,14 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
 }
 
 export function emptyTelemetry(): Telemetry {
-  return { cardsPlayed: 0, linksFired: 0, resonances: 0, resonanceTagCounts: {}, damageByTag: {}, turns: 0 };
+  return {
+    cardsPlayed: 0, linksFired: 0, resonances: 0,
+    resonanceTagCounts: {}, damageByTag: {}, turns: 0, actStats: {},
+  };
 }
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new IllegalAction(msg);
-}
-
-/** Planning energy budget: 3 + base-effect energy of this player's staged cards. */
-function energyBudget(state: GameState, pid: PlayerId): { budget: number; spent: number } {
-  const p = state.players[pid];
-  let budget = p.energyMax;
-  let spent = 0;
-  for (const slot of state.combat!.chain) {
-    if (slot.owner !== pid) continue;
-    const def = effectiveDef(findInstance(p, slot.cardInstanceId)!);
-    spent += def.cost;
-    for (const eff of def.base) if (eff.op === 'energy') budget += eff.amount;
-  }
-  return { budget, spent };
-}
-
-function syncEnergyDisplay(state: GameState): void {
-  for (const pid of ['p1', 'p2'] as PlayerId[]) {
-    const { budget, spent } = energyBudget(state, pid);
-    state.players[pid].energy = budget - spent;
-  }
 }
 
 export function reduce(prev: GameState, action: Action): GameState {
@@ -84,6 +74,10 @@ export function reduce(prev: GameState, action: Action): GameState {
   state.log = [];
   apply(state, action);
   return state;
+}
+
+function covetMax(p: PlayerState): number {
+  return hasPassive(p, 'covetMaxPlusOne') ? 3 : 2;
 }
 
 function apply(state: GameState, action: Action): void {
@@ -95,14 +89,40 @@ function apply(state: GameState, action: Action): void {
         p2: state.players.p2.character,
       });
       Object.assign(state, fresh, { log: state.log });
-      state.nodeIndex = 0;
-      enterNode(state);
+      const gen = generateActMap(state.rng, 1);
+      state.rng = gen.rng;
+      state.map = gen.map;
+      state.phase = 'map';
+      return;
+    }
+
+    case 'NODE_PICK': {
+      assert(state.phase === 'map', 'not at the map');
+      const options = pickableNodes(state.map);
+      assert(options.includes(action.nodeId), 'node not reachable');
+      state.map.picks[action.player] = action.nodeId;
+      const { p1, p2 } = state.map.picks;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          state.map.position = p1;
+          state.map.picks = { p1: null, p2: null };
+          state.map.mismatchStreak = 0;
+          enterNode(state);
+        } else {
+          // M2-B3: the path is a negotiation; M2-B5: the Witness enjoys the bickering
+          state.map.mismatchStreak++;
+          state.map.picks = { p1: null, p2: null };
+          if (state.map.mismatchStreak >= 3) sayWitness(state, 'map_disagree');
+          state.log.push({ e: 'info', detail: 'You pointed different ways. Pick the same door.' });
+        }
+      }
       return;
     }
 
     case 'STAGE_CARD': {
       const combat = requireCombat(state);
       const p = state.players[action.player];
+      assert(!p.fallen, 'you are Fallen');
       assert(!p.ready, 'unready first');
       assert(p.hand.includes(action.cardInstanceId), 'card not in hand');
       assert(!combat.chain.some((s) => s.cardInstanceId === action.cardInstanceId), 'already staged');
@@ -110,18 +130,20 @@ function apply(state: GameState, action: Action): void {
       const inst = findInstance(p, action.cardInstanceId)!;
       const def = effectiveDef(inst);
       if (def.needsTarget) {
-        assert(action.targetId && combat.enemies.some((e) => e.id === action.targetId && e.hp > 0), 'needs living target');
+        assert(
+          action.targetId &&
+            combat.enemies.some((e) => e.id === action.targetId && e.hp > 0 && !e.untargetable),
+          'needs a living, targetable enemy',
+        );
       }
-      const { budget, spent } = energyBudget(state, action.player);
-      assert(spent + def.cost <= budget, 'not enough energy');
+      assert(def.cost <= p.energy, 'not enough energy');
+      p.energy -= def.cost;
       combat.chain.splice(action.slot, 0, {
         cardInstanceId: action.cardInstanceId,
         owner: action.player,
         targetId: def.needsTarget ? action.targetId : undefined,
       });
-      // staged cards leave the hand (visible to both on the Chain track, §2.1)
       p.hand.splice(p.hand.indexOf(action.cardInstanceId), 1);
-      syncEnergyDisplay(state);
       return;
     }
 
@@ -134,14 +156,7 @@ function apply(state: GameState, action: Action): void {
       assert(combat.chain[idx].owner === action.player, 'not your card');
       const removed = combat.chain.splice(idx, 1)[0];
       p.hand.push(removed.cardInstanceId);
-      const { budget, spent } = energyBudget(state, action.player);
-      if (spent > budget) {
-        // removing an energy-granting card would strand staged costs — refuse
-        combat.chain.splice(idx, 0, removed);
-        p.hand.splice(p.hand.indexOf(removed.cardInstanceId), 1);
-        throw new IllegalAction('unstage other cards first (energy)');
-      }
-      syncEnergyDisplay(state);
+      p.energy += effectiveDef(findInstance(p, removed.cardInstanceId)!).cost;
       return;
     }
 
@@ -160,6 +175,9 @@ function apply(state: GameState, action: Action): void {
     case 'DECLARE_THREAD': {
       const combat = requireCombat(state);
       const p = state.players[action.player];
+      assert(!p.fallen, 'you are Fallen');
+      assert(!state.players.p1.fallen && !state.players.p2.fallen, 'the Thread is slack'); // M2-A3
+      assert(combat.severedTurns === 0, 'the Thread is severed'); // §6 Unraveled
       assert(!p.ready, 'unready first');
       assert(combat.threadActions.length < 10, 'too many declared thread actions');
       if (action.kind === 'sever') {
@@ -184,6 +202,7 @@ function apply(state: GameState, action: Action): void {
 
     case 'SET_READY': {
       requireCombat(state);
+      assert(!state.players[action.player].fallen || action.ready, 'the Fallen rest');
       state.players[action.player].ready = action.ready;
       if (state.players.p1.ready && state.players.p2.ready) {
         resolveTurn(state);
@@ -209,7 +228,7 @@ function apply(state: GameState, action: Action): void {
       const reward = state.reward!;
       const p = state.players[action.player];
       const partner = otherPlayer(action.player);
-      assert(reward.picked[partner] !== null, 'wait for your partner to pick first'); // §8
+      assert(reward.picked[partner] !== null, 'wait for your partner to pick first');
       assert(reward.coveted[action.player] === null, 'already decided');
       if (action.pick !== 'pass') {
         assert(p.covetCharges > 0, 'no Covet charges');
@@ -218,6 +237,7 @@ function apply(state: GameState, action: Action): void {
         p.covetCharges--;
         addCardToDeck(state, action.player, action.pick);
         sayWitness(state, 'covet_pick');
+        runHooks(state, action.player, 'covet');
       }
       reward.coveted[action.player] = action.pick;
       return;
@@ -227,38 +247,15 @@ function apply(state: GameState, action: Action): void {
       assert(state.phase === 'event' && state.event, 'not in event');
       const ev = state.event!;
       assert(ev.chosen === null, 'already chosen');
-      assert(action.player === ev.chooser, 'this choice is not yours to make'); // §8 crossed choices
+      assert(action.player === ev.chooser, 'this choice is not yours to make');
       const def = EVENTS[ev.eventId];
       const opt = def.options.find((o) => o.id === action.optionId);
       assert(opt, 'no such option');
       ev.chosen = opt.id;
       ev.resultText = opt.resultText;
       const subject = state.players[ev.subject];
-      for (const eff of opt.effects) {
-        switch (eff.op) {
-          case 'heal':
-            subject.hp = Math.min(subject.maxHp, subject.hp + eff.amount);
-            break;
-          case 'loseHp':
-            subject.hp = Math.max(0, subject.hp - eff.amount);
-            break;
-          case 'gainCard': {
-            const pool = cardsForCharacter(subject.character).filter((c) => c.rarity === 'uncommon');
-            const r = rngInt(state.rng, pool.length);
-            state.rng = r.state;
-            addCardToDeck(state, ev.subject, pool[r.value].id);
-            state.log.push({ e: 'info', detail: `${ev.subject} gains ${pool[r.value].name}.` });
-            break;
-          }
-          case 'pendingFray':
-            subject.pendingFray += eff.amount;
-            break;
-          case 'nothing':
-            break;
-        }
-      }
+      for (const eff of opt.effects) applyEventEffect(state, subject, eff);
       state.log.push({ e: 'witness', line: opt.witness });
-      if (subject.hp <= 0) gameOver(state);
       return;
     }
 
@@ -267,49 +264,155 @@ function apply(state: GameState, action: Action): void {
       const rest = state.rest!;
       assert(rest.chosen[action.player] === null, 'already chosen');
       const p = state.players[action.player];
-      switch (action.option) {
+      const option: RestOption = action.option;
+      switch (option) {
         case 'rest':
           p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * 0.3));
           break;
-        case 'barter': // §8: gain 1 Covet charge instead of resting
-          p.covetCharges = Math.min(2, p.covetCharges + 1);
+        case 'barter':
+          p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1);
           break;
-        case 'rebraid': // §8: permanently +1 max Thread, once per run
+        case 'rebraid':
           assert(!state.rebraidUsed, 'the Thread has already been re-braided this run');
           state.rebraidUsed = true;
           state.threadMax++;
           break;
+        case 'upgrade':
+          assert(p.deck.some((c) => !c.upgraded && CARDS[c.defId].upgrade), 'nothing to upgrade');
+          break; // must UPGRADE_PICK before advancing (M2-B6)
+        case 'wedding':
+          throw new IllegalAction('the Wedding Knife is used via its own picks, not a rest choice');
       }
-      rest.chosen[action.player] = action.option;
+      rest.chosen[action.player] = option;
+      return;
+    }
+
+    case 'UPGRADE_PICK': {
+      assert(state.phase === 'rest' && state.rest, 'not at a rest site');
+      const rest = state.rest!;
+      assert(rest.chosen[action.player] === 'upgrade', 'you did not choose to upgrade');
+      assert(!rest.upgradePicked[action.player], 'already upgraded');
+      const p = state.players[action.player];
+      const inst = p.deck.find((c) => c.instanceId === action.cardInstanceId);
+      assert(inst, 'no such card in your deck');
+      assert(!inst.upgraded, 'already upgraded');
+      assert(CARDS[inst.defId].upgrade, 'that card has no upgrade');
+      inst.upgraded = true;
+      rest.upgradePicked[action.player] = true;
+      state.log.push({ e: 'info', detail: `${p.character} upgrades ${CARDS[inst.defId].name} — the weave tightens.` });
+      return;
+    }
+
+    case 'WEDDING_PICK': {
+      assert(state.phase === 'rest' && state.rest, 'not at a rest site');
+      assert(
+        state.players.p1.relics.includes('wedding_knife') || state.players.p2.relics.includes('wedding_knife'),
+        'no one carries the Wedding Knife',
+      );
+      const rest = state.rest!;
+      if (!rest.wedding) {
+        rest.wedding = { offers: { p1: null, p2: null }, confirmed: { p1: false, p2: false }, done: false };
+      }
+      assert(!rest.wedding.done, 'the trade is sealed');
+      const p = state.players[action.player];
+      const inst = p.deck.find((c) => c.instanceId === action.cardInstanceId);
+      assert(inst, 'no such card in your deck');
+      assert(!CARDS[inst.defId].starterOnly, 'starter scraps are no dowry');
+      rest.wedding.offers[action.player] = action.cardInstanceId;
+      rest.wedding.confirmed = { p1: false, p2: false }; // changing an offer resets consent
+      return;
+    }
+
+    case 'WEDDING_CONFIRM': {
+      assert(state.phase === 'rest' && state.rest?.wedding, 'no trade on the table');
+      const w = state.rest!.wedding!;
+      assert(!w.done, 'the trade is sealed');
+      assert(w.offers.p1 && w.offers.p2, 'both must offer a card first');
+      w.confirmed[action.player] = true;
+      if (w.confirmed.p1 && w.confirmed.p2) {
+        // §7: the only permanent cross-deck flow — explicit, named, both confirmed
+        const c1 = state.players.p1.deck.findIndex((c) => c.instanceId === w.offers.p1);
+        const c2 = state.players.p2.deck.findIndex((c) => c.instanceId === w.offers.p2);
+        assert(c1 >= 0 && c2 >= 0, 'offered cards vanished');
+        const [card1] = state.players.p1.deck.splice(c1, 1);
+        const [card2] = state.players.p2.deck.splice(c2, 1);
+        state.players.p1.deck.push(card2);
+        state.players.p2.deck.push(card1);
+        w.done = true;
+        state.log.push({ e: 'info', detail: `The Wedding Knife cuts: ${CARDS[card1.defId].name} for ${CARDS[card2.defId].name}. No take-backs.` });
+      }
+      return;
+    }
+
+    case 'SHOP_BUY': {
+      assert(state.phase === 'shop' && state.shop, 'not at a shop');
+      const shop = state.shop!;
+      const item = shop.items.find((i) => i.id === action.itemId);
+      assert(item, 'no such item');
+      assert(!item.sold, 'sold out');
+      assert(item.kind !== 'removal', 'use SHOP_REMOVE for the removal service');
+      assert(state.gold >= item.price, 'not enough gold');
+      if (item.kind === 'card') {
+        assert(item.forPlayer === action.player, 'that card is cut for your partner');
+        addCardToDeck(state, action.player, item.refId!);
+      } else {
+        const p = state.players[action.player];
+        assert(!p.relics.includes(item.refId!) && !state.players[otherPlayer(action.player)].relics.includes(item.refId!), 'already owned');
+        grantRelic(state, action.player, item.refId!);
+      }
+      state.gold -= item.price;
+      item.sold = true;
+      return;
+    }
+
+    case 'SHOP_REMOVE': {
+      assert(state.phase === 'shop' && state.shop, 'not at a shop');
+      const shop = state.shop!;
+      const item = shop.items.find((i) => i.id === action.itemId);
+      assert(item && item.kind === 'removal' && !item.sold, 'removal unavailable');
+      assert(state.gold >= item.price, 'not enough gold');
+      const p = state.players[action.player];
+      const idx = p.deck.findIndex((c) => c.instanceId === action.cardInstanceId);
+      assert(idx >= 0, 'no such card in your deck');
+      assert(p.deck.length > 5, 'your deck is thin enough');
+      const [removed] = p.deck.splice(idx, 1);
+      state.gold -= item.price;
+      item.sold = true;
+      shop.removalsBought++;
+      state.log.push({ e: 'info', detail: `${p.character} pays to forget ${CARDS[removed.defId].name}.` });
       return;
     }
 
     case 'ADVANCE': {
-      assert(['reward', 'event', 'rest', 'map'].includes(state.phase), 'cannot advance now');
+      assert(['reward', 'event', 'rest', 'shop'].includes(state.phase), 'cannot advance now');
       if (state.phase === 'reward') {
         const r = state.reward!;
         assert(r.picked.p1 !== null && r.picked.p2 !== null, 'both players must pick first');
       }
       if (state.phase === 'event') assert(state.event!.chosen !== null, 'choose first');
       if (state.phase === 'rest') {
-        assert(state.rest!.chosen[action.player] !== null, 'choose first');
+        const rest = state.rest!;
+        assert(rest.chosen[action.player] !== null, 'choose first');
+        if (rest.chosen[action.player] === 'upgrade') {
+          assert(rest.upgradePicked[action.player], 'pick a card to upgrade first');
+        }
       }
       state.advanceReady[action.player] = true;
       if (state.advanceReady.p1 && state.advanceReady.p2) {
-        // a player who never explicitly coveted implicitly passes
         if (state.reward) {
           if (state.reward.coveted.p1 === null) state.reward.coveted.p1 = 'pass';
           if (state.reward.coveted.p2 === null) state.reward.coveted.p2 = 'pass';
         }
+        const wasBoss = currentNode(state)?.kind === 'boss';
         state.advanceReady = { p1: false, p2: false };
         state.reward = null;
         state.event = null;
         state.rest = null;
-        state.nodeIndex++;
-        if (state.nodeIndex >= M1_MAP.length) {
-          state.phase = 'victory';
+        state.shop = null;
+        if (wasBoss) {
+          advanceAct(state);
         } else {
-          enterNode(state);
+          state.phase = 'map';
         }
       }
       return;
@@ -317,27 +420,139 @@ function apply(state: GameState, action: Action): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+
 function requireCombat(state: GameState) {
   assert(state.phase === 'combat' && state.combat, 'not in combat');
   return state.combat!;
 }
 
+function currentNode(state: GameState): MapNode | undefined {
+  return state.map.nodes.find((n) => n.id === state.map.position);
+}
+
 function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   const p = state.players[pid];
   assert(CARDS[defId], 'unknown card');
-  p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_n${state.nodeIndex}`, defId });
+  assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
+  p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
 }
 
+function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
+  const p = state.players[pid];
+  if (p.relics.includes(relicId)) return;
+  p.relics.push(relicId);
+  state.log.push({ e: 'relic', player: pid, relic: relicId });
+  const def = RELICS_BY_ID[relicId];
+  for (const eff of def?.onPickup ?? []) {
+    // pickup grants run through the hook-op interpreter
+    // (import indirection avoided: simple ops only)
+    if (eff.op === 'heal') p.hp = Math.min(p.maxHp, p.hp + eff.amount);
+    else if (eff.op === 'block') void 0; // block outside combat is meaningless
+    else if (eff.op === 'thread') state.pendingThread += eff.amount;
+    else if (eff.op === 'draw') void 0;
+    else if (eff.op === 'kindled') p.kindled += eff.amount;
+    else if (eff.op === 'momentum') void 0;
+    else if (eff.op === 'partnerHeal') {
+      const partner = state.players[otherPlayer(pid)];
+      partner.hp = Math.min(partner.maxHp, partner.hp + eff.amount);
+    }
+  }
+}
+
+function randomUnownedRelic(state: GameState): string | null {
+  const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
+  const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
+  const weddable = ALL_RELICS.filter((r) => !owned.has(r.id));
+  const usable = pool.length > 0 ? pool.concat(weddable.filter((r) => r.passives?.includes('wedding_knife'))) : weddable;
+  if (usable.length === 0) return null;
+  const r = rngInt(state.rng, usable.length);
+  state.rng = r.state;
+  return usable[r.value].id;
+}
+
+function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: string; [k: string]: unknown }): void {
+  switch (eff.op) {
+    case 'heal':
+      subject.hp = Math.min(subject.maxHp, subject.hp + (eff.amount as number));
+      break;
+    case 'loseHp':
+      // M2-A3 ruling: events wound, never kill
+      subject.hp = Math.max(1, subject.hp - (eff.amount as number));
+      break;
+    case 'maxHp':
+      subject.maxHp = Math.max(10, subject.maxHp + (eff.amount as number));
+      subject.hp = Math.max(1, Math.min(subject.maxHp, subject.hp + Math.max(0, eff.amount as number)));
+      break;
+    case 'gainCard': {
+      const pool = [...cardsForCharacter(subject.character), ...neutralCards()].filter((c) => c.rarity === (eff.pool as Rarity));
+      if (pool.length === 0) break;
+      const r = rngInt(state.rng, pool.length);
+      state.rng = r.state;
+      addCardToDeck(state, subject.id, pool[r.value].id);
+      state.log.push({ e: 'info', detail: `${subject.id} gains ${pool[r.value].name}.` });
+      break;
+    }
+    case 'gainRelic': {
+      const relic = randomUnownedRelic(state);
+      if (relic) grantRelic(state, subject.id, relic);
+      break;
+    }
+    case 'gold':
+      state.gold = Math.max(0, state.gold + (eff.amount as number));
+      break;
+    case 'covetCharge':
+      subject.covetCharges = Math.min(covetMax(subject), subject.covetCharges + (eff.amount as number));
+      break;
+    case 'pendingFray':
+      subject.pendingFray += eff.amount as number;
+      break;
+    case 'thread':
+      state.pendingThread += eff.amount as number;
+      break;
+    case 'upgradeRandom': {
+      const candidates = subject.deck.filter((c) => !c.upgraded && CARDS[c.defId].upgrade);
+      if (candidates.length === 0) break;
+      const r = rngInt(state.rng, candidates.length);
+      state.rng = r.state;
+      candidates[r.value].upgraded = true;
+      state.log.push({ e: 'info', detail: `${CARDS[candidates[r.value].defId].name} is upgraded.` });
+      break;
+    }
+    case 'removeRandomStarter': {
+      const starters = subject.deck.filter((c) => CARDS[c.defId].starterOnly);
+      if (starters.length === 0) break;
+      const r = rngInt(state.rng, starters.length);
+      state.rng = r.state;
+      const removed = starters[r.value];
+      subject.deck.splice(subject.deck.findIndex((c) => c.instanceId === removed.instanceId), 1);
+      state.log.push({ e: 'info', detail: `${CARDS[removed.defId].name} unravels and is gone.` });
+      break;
+    }
+    case 'nothing':
+      break;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Node entry / act flow
+// ---------------------------------------------------------------------------
+
 function enterNode(state: GameState): void {
-  const node = M1_MAP[state.nodeIndex];
+  const node = currentNode(state)!;
   switch (node.kind) {
     case 'combat':
-    case 'elite': {
+    case 'elite':
+    case 'boss': {
       const enc = ENCOUNTERS[node.encounterId!];
       startCombat(state, enc.enemies);
-      if (node.kind === 'elite') sayWitness(state, 'elite_mourner_intro');
-      else maybeSayWitness(state, 'combat_start', 25); // §13.3
-      syncEnergyDisplay(state);
+      if (state.pendingThread > 0) {
+        state.thread = Math.min(state.threadMax, state.thread + state.pendingThread);
+        state.pendingThread = 0;
+      }
+      if (enc.id === 'a1_elite_mourner') sayWitness(state, 'elite_mourner_intro');
+      else if (node.kind !== 'combat') sayWitness(state, 'combat_start');
+      else maybeSayWitness(state, 'combat_start', 25);
       return;
     }
     case 'event': {
@@ -348,50 +563,131 @@ function enterNode(state: GameState): void {
       state.event = {
         eventId: def.id,
         subject,
-        chooser: def.crossed ? otherPlayer(subject) : subject, // §8 crossed choices
+        chooser: def.crossed ? otherPlayer(subject) : subject,
         chosen: null,
       };
       state.phase = 'event';
       return;
     }
     case 'rest':
-      state.rest = { chosen: { p1: null, p2: null } };
+      state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
       state.phase = 'rest';
       sayWitness(state, 'rest_site');
       return;
+    case 'shop':
+      state.shop = generateShop(state);
+      state.phase = 'shop';
+      sayWitness(state, 'shop');
+      return;
+    case 'treasure': {
+      // instant spoils, shown on the reward screen with no card sets
+      const goldRoll = rngInt(state.rng, 21);
+      state.rng = goldRoll.state;
+      const gold = 30 + goldRoll.value;
+      state.gold += gold;
+      const relic = randomUnownedRelic(state);
+      const ownerRoll = rngInt(state.rng, 2);
+      state.rng = ownerRoll.state;
+      const owner: PlayerId = ownerRoll.value === 0 ? 'p1' : 'p2';
+      if (relic) grantRelic(state, owner, relic);
+      state.reward = {
+        sets: { p1: [], p2: [] },
+        picked: { p1: 'skip', p2: 'skip' },
+        coveted: { p1: 'pass', p2: 'pass' },
+        gold,
+        relic: relic ?? undefined,
+      };
+      state.phase = 'reward';
+      return;
+    }
   }
 }
 
+function advanceAct(state: GameState): void {
+  if (state.map.act === 1) {
+    const gen = generateActMap(state.rng, 2);
+    state.rng = gen.rng;
+    state.map = gen.map;
+    state.phase = 'map';
+    sayWitness(state, 'act2_start');
+  } else if (state.map.act === 2) {
+    state.map = generateFinaleMap();
+    state.phase = 'map';
+    sayWitness(state, 'finale_start');
+  } else {
+    state.phase = 'victory';
+    sayWitness(state, 'victory_screen');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Post-resolution flow
+// ---------------------------------------------------------------------------
+
 function afterResolution(state: GameState): void {
-  // deaths first (§13.3: the Witness always remarks on deaths)
-  if (state.players.p1.hp <= 0 || state.players.p2.hp <= 0) {
+  const combat = state.combat!;
+  // M2-A3: the run ends only when BOTH are down
+  if (state.players.p1.fallen && state.players.p2.fallen) {
     gameOver(state);
     return;
   }
-  const combat = state.combat!;
   if (combat.enemies.every((e) => e.hp <= 0)) {
-    const node = M1_MAP[state.nodeIndex];
+    const node = currentNode(state)!;
     maybeSayWitness(state, 'combat_victory', 25);
-    if (node.kind === 'elite') {
-      // §8: +1 Covet charge per elite defeated, max 2 held
-      state.players.p1.covetCharges = Math.min(2, state.players.p1.covetCharges + 1);
-      state.players.p2.covetCharges = Math.min(2, state.players.p2.covetCharges + 1);
+
+    // M2-A3: the survivor carries the Fallen out — revive at 1 HP
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      const p = state.players[pid];
+      if (p.fallen) {
+        p.fallen = false;
+        p.hp = 1;
+        state.log.push({ e: 'revived', player: pid });
+        sayWitness(state, 'revival');
+      }
     }
+
+    const goldRoll = rngInt(state.rng, 16);
+    state.rng = goldRoll.state;
+    const gold =
+      node.kind === 'boss' ? 70 + goldRoll.value
+      : node.kind === 'elite' ? 45 + goldRoll.value
+      : 20 + goldRoll.value;
+    state.gold += gold;
+
+    let relic: string | undefined;
+    if (node.kind === 'elite' || node.kind === 'boss') {
+      for (const pid of ['p1', 'p2'] as PlayerId[]) {
+        const p = state.players[pid];
+        p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1); // §8: +1 per elite
+      }
+      const r = randomUnownedRelic(state);
+      if (r) {
+        const ownerRoll = rngInt(state.rng, 2);
+        state.rng = ownerRoll.state;
+        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', r);
+        relic = r;
+      }
+    }
+
     endCombatCleanup(state);
-    if (state.nodeIndex === M1_MAP.length - 1) {
-      state.phase = 'victory';
+
+    if (state.map.act === 3 && node.kind === 'boss') {
+      // The Unraveled is down. The braid holds.
+      advanceAct(state);
       return;
     }
+
     state.reward = {
       sets: { p1: rollRewardSet(state, 'p1'), p2: rollRewardSet(state, 'p2') },
       picked: { p1: null, p2: null },
       coveted: { p1: null, p2: null },
+      gold,
+      relic,
     };
     state.phase = 'reward';
     return;
   }
   startTurn(state);
-  syncEnergyDisplay(state);
 }
 
 function endCombatCleanup(state: GameState): void {
@@ -399,9 +695,10 @@ function endCombatCleanup(state: GameState): void {
   for (const pid of ['p1', 'p2'] as PlayerId[]) {
     const p = state.players[pid];
     p.hand = []; p.draw = []; p.discard = []; p.exhaust = [];
-    p.combatCards = []; // Echoes exhaust at end of combat (§5)
-    p.block = 0; p.momentum = 0; p.powers = []; p.ready = false; p.pulseBonus = 0;
+    p.combatCards = [];
+    p.block = 0; p.momentum = 0; p.kindled = 0; p.powers = []; p.ready = false; p.pulseBonus = 0;
     p.energy = p.energyMax;
+    p.fallen = false;
     p.statuses = { weak: 0, vulnerable: 0, frayed: 0 };
   }
 }
@@ -412,20 +709,59 @@ function gameOver(state: GameState): void {
   state.phase = 'game_over';
 }
 
-/** §8: each combat offers each player a set of 3 from their own pool. */
+/** §8: reward sets of 3 from your own pool; M2-B1 adds a neutral splash. */
 function rollRewardSet(state: GameState, pid: PlayerId): string[] {
-  const pool = cardsForCharacter(state.players[pid].character);
+  const character = cardsForCharacter(state.players[pid].character);
+  const neutrals = neutralCards();
   const out: string[] = [];
   let guard = 0;
   while (out.length < 3 && guard++ < 100) {
     const rar = rngInt(state.rng, 100);
     state.rng = rar.state;
-    const rarity = rar.value < 60 ? 'common' : rar.value < 90 ? 'uncommon' : 'rare';
-    const sub = pool.filter((c) => c.rarity === rarity && !out.includes(c.id));
-    if (sub.length === 0) continue;
-    const pick = rngInt(state.rng, sub.length);
+    const rarity: Rarity = rar.value < 60 ? 'common' : rar.value < 90 ? 'uncommon' : 'rare';
+    const neutralRoll = rngInt(state.rng, 100);
+    state.rng = neutralRoll.state;
+    const pool = (neutralRoll.value < 18 ? neutrals : character).filter((c) => c.rarity === rarity && !out.includes(c.id));
+    if (pool.length === 0) continue;
+    const pick = rngInt(state.rng, pool.length);
     state.rng = pick.state;
-    out.push(sub[pick.value].id);
+    out.push(pool[pick.value].id);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Shop (M2-B4)
+// ---------------------------------------------------------------------------
+
+function generateShop(state: GameState) {
+  const items: GameState['shop'] extends infer _ ? import('./types').ShopItem[] : never = [];
+  let n = 0;
+  const price = (base: number, spread: number): number => {
+    const r = rngInt(state.rng, spread);
+    state.rng = r.state;
+    return base + r.value;
+  };
+  for (const pid of ['p1', 'p2'] as PlayerId[]) {
+    const set = rollRewardSet(state, pid);
+    for (const defId of set) {
+      const rarity = CARDS[defId].rarity;
+      items.push({
+        id: `item${n++}`,
+        kind: 'card',
+        forPlayer: pid,
+        refId: defId,
+        price: rarity === 'rare' ? price(135, 31) : rarity === 'uncommon' ? price(68, 15) : price(45, 11),
+        sold: false,
+      });
+    }
+  }
+  for (let i = 0; i < 2; i++) {
+    const relic = randomUnownedRelic(state);
+    if (relic) items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+  }
+  items.push({ id: `item${n++}`, kind: 'removal', price: 75, sold: false });
+  items.push({ id: `item${n++}`, kind: 'removal', price: 100, sold: false });
+  items.push({ id: `item${n++}`, kind: 'removal', price: 125, sold: false });
+  return { items, removalsBought: 0 };
 }

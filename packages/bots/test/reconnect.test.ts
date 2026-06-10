@@ -56,6 +56,11 @@ describe('reconnection (§11)', () => {
     expect(joinedB.playerId).toBe('p2');
 
     a.send({ type: 'start' });
+    // M2: runs open at the map — both players pick the same layer-0 node
+    const mapState = await a.next('state', (m) => m.state.phase === 'map');
+    const entry = mapState.state.map.nodes.filter((n: any) => n.layer === 0)[0].id;
+    a.send({ type: 'action', action: { type: 'NODE_PICK', nodeId: entry } });
+    b.send({ type: 'action', action: { type: 'NODE_PICK', nodeId: entry } });
     const stateA = await a.next('state', (m) => m.state.phase === 'combat');
 
     // p1 stages a card, then drops mid-planning

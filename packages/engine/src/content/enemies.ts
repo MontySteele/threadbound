@@ -8,6 +8,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   cinder_husk: {
     id: 'cinder_husk',
     name: 'Cinder Husk',
+    act: 1,
     hp: [22, 26],
     script: [
       { kind: 'attack', amount: 7 },
@@ -19,6 +20,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   tallow_wisp: {
     id: 'tallow_wisp',
     name: 'Tallow Wisp',
+    act: 1,
     hp: [16, 20],
     script: [
       { kind: 'debuff_weak', amount: 1 },
@@ -30,6 +32,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   thread_leech: {
     id: 'thread_leech',
     name: 'Thread-Leech',
+    act: 1,
     hp: [20, 24],
     script: [
       { kind: 'attack_drain', amount: 4, threadDrain: 1 },
@@ -42,6 +45,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   reliquary_mite: {
     id: 'reliquary_mite',
     name: 'Reliquary Mite',
+    act: 1,
     hp: [18, 22],
     script: [
       { kind: 'attack_momentum', base: 4, perMomentum: 2 }, // "who holds this one" puzzle (§6)
@@ -53,6 +57,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   sexton: {
     id: 'sexton',
     name: 'Sexton of the Undercroft',
+    act: 1,
     hp: [38, 44],
     script: [
       { kind: 'attack', amount: 9 },
@@ -65,6 +70,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   mourner: {
     id: 'mourner',
     name: 'The Mourner',
+    act: 1,
     elite: true,
     hp: [70, 78],
     mournerMechanic: { strengthPerTrigger: 2 }, // §6: punishes 4+ same-player runs

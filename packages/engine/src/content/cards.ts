@@ -18,8 +18,8 @@ function def(card: CardDef): void {
 def({
   id: 'needlework', name: 'Needlework', character: 'vess', rarity: 'common', cost: 1, tag: 'Hex',
   needsTarget: true,
-  text: 'Apply 3 Hex.',
-  base: [{ op: 'hex', amount: 3, primary: true }],
+  text: 'Apply 4 Hex.',
+  base: [{ op: 'hex', amount: 4, primary: true }], // M2-B1 lever 3: 3 → 4
   link: { condition: 'any', text: 'Apply 1 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 1 }] },
   mutation: {
     name: 'Cinder Needlework', text: 'Apply 2 Hex. Gain 2 Momentum.',
@@ -29,9 +29,9 @@ def({
 def({
   id: 'pinprick', name: 'Pinprick', character: 'vess', rarity: 'common', cost: 0, tag: 'Hex',
   needsTarget: true,
-  text: 'Apply 2 Hex.',
-  base: [{ op: 'hex', amount: 2, primary: true }],
-  link: { condition: 'Strike', text: 'Apply 3 instead.', effects: [{ op: 'hex', amount: 3, primary: true }], replace: true },
+  text: 'Apply 3 Hex.',
+  base: [{ op: 'hex', amount: 3, primary: true }], // M2-B1 lever 3: 2 → 3
+  link: { condition: 'Strike', text: 'Apply 4 instead.', effects: [{ op: 'hex', amount: 4, primary: true }], replace: true },
 });
 def({
   id: 'withering', name: 'Withering', character: 'vess', rarity: 'common', cost: 1, tag: 'Hex',
@@ -129,8 +129,8 @@ def({
 def({
   id: 'spindle_step', name: 'Spindle Step', character: 'vess', rarity: 'uncommon', cost: 0, tag: 'Surge',
   exhaust: true,
-  text: 'Gain 1 energy. Exhaust.',
-  base: [{ op: 'energy', amount: 1 }],
+  text: 'Gain Kindled 1. Exhaust.',
+  base: [{ op: 'kindled', amount: 1 }],
   link: { condition: 'Guard', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
 });
 
@@ -191,8 +191,8 @@ def({
 });
 def({
   id: 'second_wind', name: 'Second Wind', character: 'bram', rarity: 'common', cost: 1, tag: 'Surge',
-  text: 'Gain 1 energy. Draw 1.',
-  base: [{ op: 'energy', amount: 1 }, { op: 'draw', amount: 1 }],
+  text: 'Gain Kindled 1. Draw 1.',
+  base: [{ op: 'kindled', amount: 1 }, { op: 'draw', amount: 1 }],
   link: { condition: 'any', text: 'Also gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
 });
 def({
@@ -205,8 +205,8 @@ def({
 def({
   id: 'spark', name: 'Spark', character: 'bram', rarity: 'common', cost: 0, tag: 'Hex',
   needsTarget: true,
-  text: 'Apply 2 Hex.',
-  base: [{ op: 'hex', amount: 2, primary: true }],
+  text: 'Apply 3 Hex.',
+  base: [{ op: 'hex', amount: 3, primary: true }], // M2-B1 lever 3: 2 → 3
   link: { condition: 'Strike', text: 'Deal 3.', effects: [{ op: 'damage', amount: 3 }] },
 });
 def({
@@ -292,24 +292,66 @@ def({
   id: 'call_and_answer', name: 'Call and Answer', character: 'bram', rarity: 'rare', cost: 1, tag: 'Surge',
   text: 'Draw 2.',
   base: [{ op: 'draw', amount: 2 }],
-  link: { condition: 'partner', text: 'Link (Partner’s card): your partner draws 2.', effects: [{ op: 'partnerDraw', amount: 2 }] },
+  // M2-A2: link energy is meaningful again as Kindled
+  link: { condition: 'partner', text: 'Link (Partner’s card): gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
 });
 
 // ---------------------------------------------------------------------------
-// Starter decks (10 cards each, drawn from the common pool — see OPEN-QUESTIONS)
+// Starter-only cards (M2-A5): weak, mostly linkless commons so early decks are
+// genuinely poor and drafting matters. Never appear in rewards/shops/events.
 // ---------------------------------------------------------------------------
 
+def({
+  id: 'hatpin', name: 'Hatpin', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
+  starterOnly: true, needsTarget: true,
+  text: 'Deal 4.',
+  base: [{ op: 'damage', amount: 4, primary: true }],
+  mutation: { name: 'Heated Hatpin', text: 'Deal 3. Gain 1 Momentum.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
+  upgrade: { text: 'Deal 5. Link (Hex): apply 1 Hex.', base: [{ op: 'damage', amount: 5, primary: true }], link: { condition: 'Hex', text: 'Apply 1 Hex.', effects: [{ op: 'hex', amount: 1 }] } },
+});
+def({
+  id: 'patchwork', name: 'Patchwork', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
+  starterOnly: true,
+  text: 'Gain 4 Block.',
+  base: [{ op: 'block', amount: 4, primary: true }],
+  mutation: { name: 'Riveted Patchwork', text: 'Gain 3 Block. Gain 1 Momentum.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
+  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+});
+def({
+  id: 'jab', name: 'Jab', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
+  starterOnly: true, needsTarget: true,
+  text: 'Deal 5.',
+  base: [{ op: 'damage', amount: 5, primary: true }],
+  mutation: { name: 'Needled Jab', text: 'Deal 4. Apply 1 Hex.', base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 1 }] },
+  upgrade: { text: 'Deal 6. Link (Surge): gain 1 Momentum.', base: [{ op: 'damage', amount: 6, primary: true }], link: { condition: 'Surge', text: 'Gain 1 Momentum.', effects: [{ op: 'momentum', amount: 1 }] } },
+});
+def({
+  id: 'brace_up', name: 'Brace-Up', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
+  starterOnly: true,
+  text: 'Gain 4 Block.',
+  base: [{ op: 'block', amount: 4, primary: true }],
+  mutation: { name: 'Stitched Brace-Up', text: 'Gain 3 Block. Gain 1 Thread.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'thread', amount: 1 }] },
+  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+});
+
+// M2-A5 starter decks
 export const STARTER_DECKS: Record<CharacterId, string[]> = {
   vess: [
-    'needlework', 'needlework', 'pinprick', 'withering', 'stitchblade', 'stitchblade',
-    'wardknot', 'wardknot', 'loose_stitch', 'mendthread',
+    'hatpin', 'hatpin', 'hatpin', 'hatpin', 'patchwork', 'patchwork', 'patchwork',
+    'pinprick', 'loose_stitch', 'mendthread',
   ],
   bram: [
-    'opener', 'opener', 'rendcall', 'followthrough', 'crossguard', 'crossguard',
-    'brace', 'bellows', 'second_wind', 'kindle',
+    'jab', 'jab', 'jab', 'jab', 'brace_up', 'brace_up', 'brace_up',
+    'opener', 'second_wind', 'kindle',
   ],
 };
 
+/** The draftable pool: starter-only cards are excluded (M2-A5). */
 export function cardsForCharacter(character: CharacterId): CardDef[] {
-  return Object.values(CARDS).filter((c) => c.character === character);
+  return Object.values(CARDS).filter((c) => c.character === character && !c.starterOnly);
+}
+
+/** Neutral pool (M2-B1) — draftable by either character. */
+export function neutralCards(): CardDef[] {
+  return Object.values(CARDS).filter((c) => c.character === 'neutral');
 }

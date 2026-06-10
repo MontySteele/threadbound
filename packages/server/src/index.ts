@@ -24,10 +24,31 @@ interface Room {
   state: GameState;
   seats: Partial<Record<PlayerId, Seat>>;
   actionLog: Action[]; // replay/debug record (§11 determinism)
+  lastActivity: number;
 }
 
 const rooms = new Map<string, Room>();
 const tokenIndex = new Map<string, { room: Room; pid: PlayerId }>();
+
+// M2-D3: rooms don't live forever. Evict after 24h idle, or 1h after the game
+// ended with both sockets closed; clean the token index with them.
+const HOUR = 3_600_000;
+function evictRooms(now = Date.now()): void {
+  for (const [code, room] of rooms) {
+    const idle = now - room.lastActivity;
+    const finished = room.state.phase === 'game_over' || room.state.phase === 'victory';
+    const bothClosed = !room.seats.p1?.socket && !room.seats.p2?.socket;
+    if (idle > 24 * HOUR || (finished && bothClosed && idle > HOUR)) {
+      for (const seat of Object.values(room.seats)) {
+        if (seat) tokenIndex.delete(seat.token);
+        seat?.socket?.close();
+      }
+      rooms.delete(code);
+    }
+  }
+}
+const evictTimer = setInterval(evictRooms, HOUR);
+evictTimer.unref?.();
 
 function makeCode(): string {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O — they read as 1/0
@@ -92,6 +113,7 @@ function handleMessage(socket: WebSocket, ctx: { room: Room | null; pid: PlayerI
         state: initialState(crypto.randomInt(2 ** 31), { p1: character, p2: character === 'vess' ? 'bram' : 'vess' }),
         seats: {},
         actionLog: [],
+        lastActivity: Date.now(),
       };
       rooms.set(room.code, room);
       const token = crypto.randomUUID();
@@ -163,6 +185,7 @@ function handleMessage(socket: WebSocket, ctx: { room: Room | null; pid: PlayerI
 }
 
 function applyAction(room: Room, sender: WebSocket, action: Action): void {
+  room.lastActivity = Date.now();
   try {
     room.state = reduce(room.state, action);
     room.actionLog.push(action);

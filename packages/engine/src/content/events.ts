@@ -7,6 +7,7 @@ export const EVENTS: Record<string, EventDef> = {
   cold_lantern: {
     id: 'cold_lantern',
     name: 'The Cold Lantern',
+    act: 1,
     crossed: false,
     prose:
       'The lantern stands upright in the silt, as if set down by someone who meant to return. ' +
@@ -34,6 +35,7 @@ export const EVENTS: Record<string, EventDef> = {
   basin: {
     id: 'basin',
     name: 'The Basin',
+    act: 1,
     crossed: true, // §8: the chooser picks the outcome their PARTNER receives
     prose:
       'The basin is older than the walls around it, stone worn smooth by hands long gone to dust. ' +
