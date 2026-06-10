@@ -125,3 +125,11 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     (pad: L1+R1 chord) write context-stamped entries (phase/act/turn/node) to
     the room and, under `--human-session`, to `telemetry/feedback-<room>.jsonl`
     immediately (crash-safe). Included in the end-of-run telemetry JSON.
+
+22. **Hands are open information** (designer request, this session): the server
+    no longer redacts the partner's hand — §2.1 only ever specified that staged
+    cards are public, and hiding hands in a voice-chat co-op game was friction,
+    not stakes. The one remaining secret is draw-pile ORDER (contents were
+    always derivable). Partner hand shows collapsed under their panel; the
+    Deck overlay (header button / `d` / pad Create) shows tag summaries
+    (Covenant 5), your draw/discard/exhaust contents, and both full decks.

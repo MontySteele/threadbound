@@ -16,6 +16,7 @@ import { ThreadCord } from './ThreadCord';
 import { ResolutionTheater } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
+import { DeckOverlay } from './DeckOverlay';
 
 type Character = 'vess' | 'bram';
 const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
@@ -53,6 +54,7 @@ export default function App(): JSX.Element {
   const [connected, setConnected] = useState(false);
   const [, padTick] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [deckOpen, setDeckOpen] = useState(false);
   const [toast, setToast] = useState('');
   const netRef = useRef<Net | null>(null);
 
@@ -75,7 +77,8 @@ export default function App(): JSX.Element {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
-      if (e.key === '[') netRef.current?.feedback('bad');
+      if (e.key === 'd') setDeckOpen((o) => !o);
+      else if (e.key === '[') netRef.current?.feedback('bad');
       else if (e.key === ']') netRef.current?.feedback('good');
       else if (e.key === '\\') {
         const note = window.prompt('Playtest note:');
@@ -116,6 +119,11 @@ export default function App(): JSX.Element {
               {' · '}gold <b>{state.gold}</b>
             </span>
             <span className="header-right">
+              {state.phase !== 'lobby' && (
+                <button className="chip" data-gp="META" data-gp-action="overview" onClick={() => setDeckOpen(!deckOpen)}>
+                  Deck (d)
+                </button>
+              )}
               <Settings />
               <span className={partnerOn ? 'on' : 'off'}>{partnerOn ? '● partner' : '○ partner'}</span>
             </span>
@@ -126,6 +134,7 @@ export default function App(): JSX.Element {
           <ResolutionTheater log={state.log} pname={(p) => state.players[p].character} />
           <Tutorial state={state} />
           <HintBar />
+          {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {toast && <div className="toast">{toast}</div>}
           {feedbackOpen && (
             <div className="feedback-overlay">
@@ -340,6 +349,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
   const me = state.players[you];
   const combat = state.combat!;
+  const [partnerHandOpen, setPartnerHandOpen] = useState(false);
   const [pendingCard, setPendingCard] = useState<string | null>(null);
   const [pendingSever, setPendingSever] = useState(false);
   const [reclaimOpen, setReclaimOpen] = useState(false);
@@ -519,6 +529,23 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {p.powers.map((pw) => <span key={pw}>{POWERS[pw]?.name ?? pw}</span>)}
                 {p.ready && <span className="ready">READY</span>}
               </div>
+              {pid === partner && (
+                <div className="partner-hand">
+                  <button className="chip" data-gp="META" onClick={() => setPartnerHandOpen(!partnerHandOpen)}>
+                    hand ({p.hand.length}) {partnerHandOpen ? '▴' : '▾'}
+                  </button>
+                  {partnerHandOpen && (
+                    <div className="hand">
+                      {p.hand.map((id) => (
+                        <Card key={id} def={defFor(state, partner, id)} small
+                          echo={!!inst(state, partner, id)?.echo}
+                          inspect={inspectKeyFor(state, partner, id)} />
+                      ))}
+                      {p.hand.length === 0 && <i className="muted">empty</i>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -546,7 +573,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </button>
         {state.players[partner].ready && !me.ready && <span className="nudge">your partner is ready</span>}
         <span className="muted">
-          draw {state.counts[you].draw} · discard {me.discard.length} · partner hand {state.counts[partner].hand}
+          draw {state.counts[you].draw} · discard {me.discard.length}
         </span>
       </div>
 

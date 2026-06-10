@@ -212,6 +212,9 @@ export class GameServer {
     return code;
   }
 
+  /** Hands are open information (designer ruling, OQ#22) — co-op has no
+   *  hidden-hand stakes and you'd say it on voice anyway. Only the draw
+   *  piles stay redacted: their ORDER is the one true unknown. */
   private redactFor(state: GameState, viewer: PlayerId): unknown {
     const clone: GameState = structuredClone(state);
     const other: PlayerId = viewer === 'p1' ? 'p2' : 'p1';
@@ -219,7 +222,6 @@ export class GameServer {
       [viewer]: { hand: clone.players[viewer].hand.length, draw: clone.players[viewer].draw.length },
       [other]: { hand: clone.players[other].hand.length, draw: clone.players[other].draw.length },
     };
-    clone.players[other].hand = [];
     clone.players.p1.draw = [];
     clone.players.p2.draw = [];
     return { ...clone, counts, you: viewer };
