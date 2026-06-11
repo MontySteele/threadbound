@@ -8,6 +8,19 @@ export interface KeywordDef {
   flavor?: string;
 }
 
+/** S2.2 — one glyph set for every keyword, used identically on cards, enemy
+ *  intents, and status bars (feeds the same tooltip registry). Art only:
+ *  encodes nothing the text doesn't already say. */
+export const GLYPH: Record<string, string> = {
+  // broad tags (card frames + damage attribution)
+  Strike: '⚔', Guard: '🛡', Hex: '✸', Surge: '↯', Rite: '✛',
+  // statuses & mechanics
+  weak: '☁', vulnerable: '⊘', stun: '✶', strength: '↑',
+  momentum: '➤', kindled: '❋', frayed: '〰', block: '🛡',
+  link: '⚡', resonance: '✦', detonate: '✺', pulse: '⊕',
+  fallen: '⤓', sever: '✂', echo: '◌', mutated: '◈', upgraded: '✧',
+};
+
 export const KEYWORDS: Record<string, KeywordDef> = {};
 function kw(k: KeywordDef): void {
   KEYWORDS[k.id] = k;

@@ -1,0 +1,501 @@
+// Bot decision policy (§11, S1): pure state → intent, shared by every bot
+// transport (the ws sim bot in @threadbound/bots and the server's in-process
+// solo partner). Lives in the engine so the server can host a bot without a
+// bots↔server package cycle. Reads engine CONTENT for lookups but never
+// computes outcomes.
+//
+// Modes:
+//   'sim'  — the paired-bot coordination floor. Its behavior is the seeded
+//            50-run baseline (M3 review); DO NOT change sim-mode decisions or
+//            roll purposes without re-baselining.
+//   'solo' — S1.2 etiquette for partnering a human: stages early, readies
+//            last, follows the human's map pick, takes the lower-variance
+//            crossed choice, respects a shop gold floor, never initiates the
+//            Wedding Knife.
+
+import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
+import { CARDS, EVENTS } from './content/registry';
+
+export interface BotView extends GameState {
+  you: PlayerId;
+  counts: Record<PlayerId, { hand: number; draw: number }>;
+}
+
+export interface BotPolicyOptions {
+  seed?: number;
+  mode?: 'sim' | 'solo';
+  /** sim-mode only: parity-gated planning. Defaults on (the determinism
+   *  device for bot pairs); turn OFF when the sim policy partners a
+   *  non-lockstep peer (e.g. the human seat in solo tests) or both sides
+   *  stall waiting for each other's slot. */
+  lockstep?: boolean;
+}
+
+function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
+  const p = view.players[owner];
+  const inst =
+    p.deck.find((c) => c.instanceId === instanceId) ??
+    p.combatCards.find((c) => c.instanceId === instanceId);
+  const def = CARDS[inst!.defId];
+  if (inst!.mutated && def.mutation) return { ...def, base: def.mutation.base, link: def.mutation.link };
+  if (inst!.upgraded && def.upgrade) {
+    return { ...def, cost: def.upgrade.cost ?? def.cost, base: def.upgrade.base ?? def.base, link: def.upgrade.link !== undefined ? def.upgrade.link : def.link };
+  }
+  return def;
+}
+
+function hash32(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+export class BotPolicy {
+  /** policy seed — decisions are STATE-PURE: hashed from (seed, situation,
+   *  purpose), never a consumed stream, so transport timing and watchdog
+   *  re-decides cannot change what the bot does in a given situation. */
+  seed: number;
+  readonly mode: 'sim' | 'solo';
+  private lockstep: boolean;
+  private pulsedTurn = -1;
+  private reorderedTurn = -1;
+  private reorderCount = 0;
+  /** solo: the turn on which we granted the post-human-ready re-evaluation pass */
+  private finalPassTurn = -1;
+  /** solo: items WE bought at the current shop (anything else sold = the human spent) */
+  private myShopBuys = new Set<string>();
+  private shopKey = '';
+  combatsWon = 0;
+  private lastPhase = '';
+
+  constructor(opts: BotPolicyOptions = {}) {
+    this.seed = opts.seed ?? 12345;
+    this.mode = opts.mode ?? 'sim';
+    this.lockstep = opts.lockstep ?? true;
+  }
+
+  /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
+  private roll(view: BotView, purpose: string): number {
+    const combat = view.combat;
+    const key = [
+      this.seed, purpose, view.phase, view.map.act, view.map.position,
+      combat?.turn ?? -1, combat?.chain.length ?? -1,
+      view.players[view.you].hand.length, view.telemetry.cardsPlayed, view.gold,
+    ].join(':');
+    return hash32(key) / 4294967296;
+  }
+
+  private chance(view: BotView, p: number, purpose: string): boolean {
+    return this.roll(view, purpose) < p;
+  }
+
+  private pickIdx(view: BotView, n: number, purpose: string): number {
+    return Math.floor(this.roll(view, purpose) * n);
+  }
+
+  /** Next intent for this view, or null to wait. At most one action per call;
+   *  transports re-invoke on every new state (plus a watchdog). */
+  decide(view: BotView): Action | null {
+    const you = view.you;
+    if (view.phase !== 'combat' && this.lastPhase === 'combat') this.combatsWon++;
+    if (view.phase === 'game_over' && this.lastPhase === 'combat') this.combatsWon--;
+    this.lastPhase = view.phase;
+
+    switch (view.phase) {
+      case 'map': {
+        if (this.mode === 'solo') {
+          // S1.2: the human navigates; the bot always follows their pick
+          const human = otherOf(you);
+          const theirs = view.map.picks[human];
+          if (theirs !== null && view.map.picks[you] !== theirs) {
+            return { type: 'NODE_PICK', player: you, nodeId: theirs };
+          }
+          return null;
+        }
+        // both sim bots take the lowest-id reachable node → instant agreement (M2-B3)
+        if (view.map.picks[you] === null) {
+          const options = this.pickable(view);
+          if (options.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+        }
+        return null;
+      }
+      case 'combat':
+        return this.playCombat(view);
+      case 'reward':
+        return this.playReward(view);
+      case 'event':
+        return this.playEvent(view);
+      case 'rest':
+        return this.playRest(view);
+      case 'shop':
+        return this.playShop(view);
+      default:
+        return null; // lobby / victory / game_over — nothing to decide
+    }
+  }
+
+  private pickable(view: BotView): number[] {
+    const map = view.map;
+    if (map.position === -1) return map.nodes.filter((n) => n.layer === 0).map((n) => n.id);
+    return map.nodes.find((n) => n.id === map.position)?.edges ?? [];
+  }
+
+  private playCombat(view: BotView): Action | null {
+    const you = view.you;
+    const me = view.players[you];
+    if (me.ready || me.fallen) return null;
+    const combat = view.combat!;
+    const living = combat.enemies.filter((e) => e.hp > 0);
+    const targetable = living.filter((e) => !e.untargetable);
+    if (living.length === 0 || targetable.length === 0) {
+      return { type: 'SET_READY', player: you, ready: true };
+    }
+
+    const anyFallen = view.players.p1.fallen || view.players.p2.fallen;
+    const severed = combat.severedTurns > 0;
+    const partnerIsReady = view.players[otherOf(you)].ready;
+
+    if (this.mode === 'sim' && this.lockstep) {
+      // Lockstep planning (determinism): moves alternate by parity — p1 acts on
+      // even (chain+thread) counts, p2 on odd — unless the partner has readied,
+      // after which the remaining bot acts serially. Kills arrival-order noise
+      // AND produces the woven interleaving the Chain wants.
+      const moves = combat.chain.length + combat.threadActions.length;
+      const mySlot = moves % 2 === (you === 'p1' ? 0 : 1);
+      if (!partnerIsReady && !mySlot) return null;
+    }
+    // solo: no parity gate — stage early so the human can plan around us (S1.2)
+
+    if (!anyFallen && !severed && this.pulsedTurn !== combat.turn && view.thread >= 4 && this.chance(view, 0.35, 'pulse')) {
+      this.pulsedTurn = combat.turn;
+      const myEnemies = targetable.filter((e) => e.boundTo === you);
+      if (myEnemies.length === living.length && living.length > 1 && view.thread >= 5) {
+        return { type: 'DECLARE_THREAD', player: you, kind: 'sever', targetId: myEnemies[0].id };
+      }
+      return { type: 'DECLARE_THREAD', player: you, kind: 'pulse' };
+    }
+
+    const affordable = me.hand
+      .map((id) => ({ id, def: defOf(view, you, id) }))
+      .filter((c) => c.def.cost <= me.energy);
+    if (affordable.length === 0) {
+      // before committing: one weaving pass — REORDER an own card whose link
+      // isn't firing into a slot where it would (what humans do while talking)
+      if (this.reorderedTurn !== combat.turn) {
+        this.reorderedTurn = combat.turn;
+        this.reorderCount = 0;
+      }
+      // solo: when the human readies, grant ONE fresh re-evaluation pass in
+      // response to their final chain, then ready within the driver's delay
+      if (this.mode === 'solo' && partnerIsReady && this.finalPassTurn !== combat.turn) {
+        this.finalPassTurn = combat.turn;
+        this.reorderCount = 0;
+      }
+      if (this.reorderCount < 3) {
+        const reorder = this.tryReorder(view);
+        if (reorder) {
+          this.reorderCount++;
+          return reorder;
+        }
+      }
+      if (this.mode === 'solo' && !partnerIsReady) return null; // readies last (S1.2)
+      return { type: 'SET_READY', player: you, ready: true };
+    }
+
+    // The same link bookkeeping the human UI previews: where would links fire?
+    const chainDefs = combat.chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
+    const satisfies = (def: CardDef, prevDef: CardDef | null, prevOwner: PlayerId | null, owner: PlayerId): boolean => {
+      if (!def.link || !prevDef || prevOwner === null) return false;
+      if (severed && prevOwner !== owner) return false;
+      if (def.link.condition === 'partner') return prevOwner !== owner;
+      if (def.link.condition === 'any') return true;
+      return prevDef.tag === def.link.condition;
+    };
+
+    // pick best (card, position): fire own link, enable the next card's link,
+    // never break a link that currently fires
+    const lowHp = me.hp < me.maxHp * 0.55;
+    let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
+    for (const card of affordable) {
+      for (let pos = 0; pos <= combat.chain.length; pos++) {
+        const prevDef = pos > 0 ? chainDefs[pos - 1] : null;
+        const prevOwner = pos > 0 ? combat.chain[pos - 1].owner : null;
+        const fires = satisfies(card.def, prevDef, prevOwner, you) ? 2 : 0;
+        let next = 0;
+        if (pos < combat.chain.length) {
+          const nextSlot = combat.chain[pos];
+          const nextDef = chainDefs[pos];
+          const firedBefore = satisfies(nextDef, prevDef, prevOwner, nextSlot.owner);
+          const firesAfter = satisfies(nextDef, card.def, you, nextSlot.owner);
+          if (firedBefore && !firesAfter) next = -3; // never break a firing link
+          else if (!firedBefore && firesAfter) next = 1.5; // enable the next card
+        }
+        const guardBonus = lowHp && card.def.tag === 'Guard' ? 2.5 : 0;
+        // keep the Hex→detonate axis alive even when other links outshine it
+        const cardText = JSON.stringify(card.def.base) + JSON.stringify(card.def.link?.effects ?? []);
+        const isVess = view.players[you].character === 'vess';
+        const bigPile = targetable.some((e) => e.hex >= 4);
+        const axisBonus =
+          (isVess && (cardText.includes("'hex'") || cardText.includes('hexAll') || cardText.includes('doubleHex')) ? 0.9 : 0) +
+          (cardText.includes('detonate') && bigPile ? 1.3 : 0) +
+          (cardText.includes('damagePerHex') && targetable.some((e) => e.hex >= 3) ? 1.2 : 0);
+        const score = fires + next + guardBonus + axisBonus + card.def.cost * 0.1;
+        if (!best || score > best.score) best = { card, pos, score };
+      }
+    }
+    const pick = best!.card;
+    const text = JSON.stringify(pick.def);
+    const hexed = [...targetable].sort((a, b) => b.hex - a.hex)[0];
+    // detonators and hex-appliers converge on the same pile (the co-op axis)
+    const target =
+      (text.includes('detonate') && hexed) ||
+      (text.includes("'hex'") && hexed && hexed.hex > 0 && hexed) ||
+      targetable.find((e) => e.boundTo === you) ||
+      targetable[0];
+    return {
+      type: 'STAGE_CARD', player: you, cardInstanceId: pick.id,
+      slot: best!.pos, targetId: pick.def.needsTarget ? target.id : undefined,
+    };
+  }
+
+  private tryReorder(view: BotView): Action | null {
+    const you = view.you;
+    const combat = view.combat!;
+    const chain = combat.chain;
+    if (chain.length < 2) return null;
+    const severed = combat.severedTurns > 0;
+    const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
+    const firesAt = (order: number[]): number => {
+      let n = 0;
+      for (let i = 1; i < order.length; i++) {
+        const def = defs[order[i]];
+        const prev = chain[order[i - 1]];
+        const prevDef = defs[order[i - 1]];
+        const owner = chain[order[i]].owner;
+        if (!def.link) continue;
+        if (severed && prev.owner !== owner) continue;
+        if (def.link.condition === 'partner' ? prev.owner !== owner
+          : def.link.condition === 'any' ? true
+          : prevDef.tag === def.link.condition) n++;
+      }
+      return n;
+    };
+    const identity = chain.map((_, i) => i);
+    const baseline = firesAt(identity);
+    let best: { from: number; to: number; gain: number } | null = null;
+    for (let from = 0; from < chain.length; from++) {
+      if (chain[from].owner !== you) continue; // own cards only (§2.1)
+      for (let to = 0; to < chain.length; to++) {
+        if (to === from) continue;
+        const order = identity.filter((i) => i !== from);
+        order.splice(to, 0, from);
+        const gain = firesAt(order) - baseline;
+        if (gain > 0 && (!best || gain > best.gain)) best = { from, to, gain };
+      }
+    }
+    if (!best) return null;
+    return { type: 'REORDER', player: you, cardInstanceId: chain[best.from].cardInstanceId, slot: best.to };
+  }
+
+  /** Draft scoring: the bots are a coordination floor — they draft like a pair
+   *  that wants links to fire and the Hex→detonate axis to exist. */
+  private draftScore(view: BotView, defId: string): number {
+    const def = CARDS[defId];
+    const character = view.players[view.you].character;
+    let score = 0;
+    if (def.link) score += 3;
+    if (def.link?.condition === 'any') score += 1;
+    const heavy = character === 'vess' ? 'Hex' : 'Strike';
+    if (def.tag === heavy) score += 2;
+    const text = JSON.stringify(def.base) + JSON.stringify(def.link?.effects ?? []);
+    if (text.includes('detonate')) score += 5;
+    if (text.includes("'hex'") || text.includes('hexAll')) score += character === 'vess' ? 3 : 0;
+    if (text.includes('damagePerHex')) score += character === 'vess' ? 3 : 0;
+    if (def.rarity === 'rare') score += 1;
+    if (def.cost <= 2) score += 1;
+    return score;
+  }
+
+  private playReward(view: BotView): Action | null {
+    const you = view.you;
+    const reward = view.reward!;
+    const partner = otherOf(you);
+    if (reward.picked[you] === null && reward.sets[you].length > 0) {
+      const ranked = [...reward.sets[you]].sort((a, b) => this.draftScore(view, b) - this.draftScore(view, a));
+      const pick = this.draftScore(view, ranked[0]) >= 3 || this.chance(view, 0.5, 'draft') ? ranked[0] : 'skip';
+      return { type: 'REWARD_PICK', player: you, pick };
+    }
+    if (
+      reward.coveted[you] === null && reward.picked[partner] !== null && reward.sets[partner].length > 0 &&
+      view.players[you].covetCharges > 0
+    ) {
+      const leftovers = reward.sets[partner]
+        .filter((c) => c !== reward.picked[partner])
+        .sort((a, b) => this.draftScore(view, b) - this.draftScore(view, a));
+      if (leftovers.length > 0 && this.draftScore(view, leftovers[0]) >= 4 && this.chance(view, 0.7, 'covet')) {
+        return { type: 'COVET_PICK', player: you, pick: leftovers[0] };
+      }
+    }
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+
+  /** S1.2 crossed choices: crude variance score per option — the bot chooses
+   *  for the human, biased to the predictable outcome. (Refine post-playtest.) */
+  private optionRisk(opt: EventOptionDef): number {
+    let risk = 0;
+    for (const eff of opt.effects) {
+      switch (eff.op) {
+        case 'loseHp': risk += 2 + eff.amount * 0.2; break;
+        case 'pendingFray': risk += 2.5 * eff.amount; break;
+        case 'gainCard': risk += 0.75; break; // random card = variance
+        case 'gainRelic': risk += 0.75; break;
+        case 'upgradeRandom': risk += 0.5; break;
+        case 'removeRandomStarter': risk += 0.5; break;
+        case 'maxHp': risk += eff.amount < 0 ? 3 : 0; break;
+        case 'gold': risk += eff.amount < 0 ? 1 : 0; break;
+      }
+    }
+    return risk;
+  }
+
+  private playEvent(view: BotView): Action | null {
+    const you = view.you;
+    const ev = view.event!;
+    if (ev.chosen === null) {
+      if (ev.chooser !== you) return null;
+      const options = EVENTS[ev.eventId].options;
+      let opt: EventOptionDef;
+      if (this.mode === 'solo') {
+        const minRisk = Math.min(...options.map((o) => this.optionRisk(o)));
+        const safest = options.filter((o) => this.optionRisk(o) === minRisk);
+        opt = safest[this.pickIdx(view, safest.length, 'event:' + ev.eventId)];
+      } else {
+        opt = options[this.pickIdx(view, options.length, 'event:' + ev.eventId)];
+      }
+      return { type: 'EVENT_CHOOSE', player: you, optionId: opt.id };
+    }
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+
+  /** S1.2 Wedding Knife: never initiates. If the human has offered, accept
+   *  (offer our lowest-value tradeable card, then confirm) iff the draft score
+   *  favors the trade; otherwise decline by silence — there is no decline
+   *  action, and an unanswered offer IS the mechanic working. */
+  private weddingMove(view: BotView): Action | null {
+    if (this.mode !== 'solo') return null;
+    const you = view.you;
+    const human = otherOf(you);
+    const w = view.rest?.wedding;
+    if (!w || w.done) return null;
+    const humanOffer = w.offers[human];
+    if (!humanOffer) return null;
+    const humanCard = view.players[human].deck.find((c) => c.instanceId === humanOffer);
+    if (!humanCard) return null;
+    const tradeable = view.players[you].deck
+      .filter((c) => !CARDS[c.defId].starterOnly)
+      .sort((a, b) => this.draftScore(view, a.defId) - this.draftScore(view, b.defId));
+    if (tradeable.length === 0) return null;
+    const give = tradeable[0];
+    if (this.draftScore(view, humanCard.defId) <= this.draftScore(view, give.defId)) return null; // decline
+    if (w.offers[you] !== give.instanceId) {
+      return { type: 'WEDDING_PICK', player: you, cardInstanceId: give.instanceId };
+    }
+    if (!w.confirmed[you]) return { type: 'WEDDING_CONFIRM', player: you };
+    return null;
+  }
+
+  private playRest(view: BotView): Action | null {
+    const you = view.you;
+    const rest = view.rest!;
+    const me = view.players[you];
+    const wedding = this.weddingMove(view);
+    if (wedding) return wedding;
+    if (rest.chosen[you] === null) {
+      // heal when hurt, otherwise upgrade; sprinkle barter/rebraid
+      const hurt = me.hp < me.maxHp * 0.6;
+      const option = hurt ? 'rest'
+        : this.chance(view, 0.85, 'rest:upgrade') ? 'upgrade'
+        : this.chance(view, 0.5, 'rest:barter') ? 'barter'
+        : !view.rebraidUsed && you === 'p1' ? 'rebraid' : 'rest';
+      return { type: 'REST_CHOOSE', player: you, option };
+    }
+    if (rest.chosen[you] === 'upgrade' && !rest.upgradePicked[you]) {
+      const candidates = me.deck
+        .filter((c) => !c.upgraded && CARDS[c.defId].upgrade)
+        .sort((a, b) => {
+          const widen = (defId: string): number => {
+            const d = CARDS[defId];
+            if (!d.upgrade?.link) return 0;
+            if (d.upgrade.link.condition === 'any' && d.link?.condition !== 'any') return 2;
+            if (!d.link) return 2;
+            return 1;
+          };
+          return widen(b.defId) - widen(a.defId);
+        });
+      if (candidates.length > 0) {
+        return { type: 'UPGRADE_PICK', player: you, cardInstanceId: candidates[0].instanceId };
+      }
+    }
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+
+  private playShop(view: BotView): Action | null {
+    const you = view.you;
+    if (this.mode === 'sim' && you === 'p2' && !view.advanceReady.p1) return null; // deterministic serial shopping
+    const shop = view.shop!;
+
+    // S1.2 courtesy floor: the bot may spend, but never below 50% of current
+    // gold unless the human has spent first this shop. (Detected from the
+    // view: any sold item we didn't buy ourselves. Crude; refine post-playtest.)
+    let allowed = (price: number): boolean => price <= view.gold;
+    if (this.mode === 'solo') {
+      const key = `${view.map.act}:${view.map.position}`;
+      if (key !== this.shopKey) {
+        this.shopKey = key;
+        this.myShopBuys.clear();
+      }
+      const humanSpent = shop.items.some((i) => i.sold && !this.myShopBuys.has(i.id));
+      allowed = (price) => price <= view.gold && (humanSpent || price * 2 <= view.gold);
+    }
+    const note = (action: Action & { itemId?: string }): Action => {
+      if (this.mode === 'solo' && action.itemId) this.myShopBuys.add(action.itemId);
+      return action;
+    };
+
+    const affordable = shop.items.filter((i) => !i.sold && allowed(i.price));
+    const myCard = affordable.find((i) => i.kind === 'card' && i.forPlayer === you);
+    const relic = affordable.find((i) => i.kind === 'relic');
+    const removal0 = affordable.find((i) => i.kind === 'removal');
+    const me0 = view.players[you];
+    const starter0 = me0.deck.find((c) => CARDS[c.defId].starterOnly);
+    if (removal0 && starter0) {
+      return note({ type: 'SHOP_REMOVE', player: you, itemId: removal0.id, cardInstanceId: starter0.instanceId });
+    }
+    if (myCard && this.draftScore(view, myCard.refId!) >= 5) {
+      return note({ type: 'SHOP_BUY', player: you, itemId: myCard.id });
+    }
+    if (relic && this.chance(view, 0.4, 'shop:relic')) {
+      return note({ type: 'SHOP_BUY', player: you, itemId: relic.id });
+    }
+    const removal = affordable.find((i) => i.kind === 'removal');
+    const me = view.players[you];
+    const starter = me.deck.find((c) => CARDS[c.defId].starterOnly);
+    if (removal && starter && me.deck.length > 8 && this.chance(view, 0.4, 'shop:remove')) {
+      return note({ type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId });
+    }
+    // solo: linger until the human advances — they may still want the gold
+    if (this.mode === 'solo' && !view.advanceReady[otherOf(you)]) return null;
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+}
+
+function otherOf(p: PlayerId): PlayerId {
+  return p === 'p1' ? 'p2' : 'p1';
+}

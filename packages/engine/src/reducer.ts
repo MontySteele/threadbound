@@ -19,7 +19,7 @@ import { maybeSayWitness, sayWitness } from './witness-draw';
 
 export const STARTING_HP: Record<CharacterId, number> = { vess: 68, bram: 78 };
 
-export function initialState(seed: number, characters: Record<PlayerId, CharacterId>): GameState {
+export function initialState(seed: number, characters: Record<PlayerId, CharacterId>, botSeat?: PlayerId): GameState {
   const mkPlayer = (id: PlayerId): PlayerState => {
     const character = characters[id];
     const deck: CardInstance[] = STARTER_DECKS[character].map((defId, i) => ({
@@ -43,6 +43,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     seed,
     rng: seed >>> 0,
     phase: 'lobby',
+    ...(botSeat ? { botSeat } : {}),
     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
     gold: 40,
     pendingThread: 0,
@@ -93,7 +94,7 @@ function apply(state: GameState, action: Action): void {
       const fresh = initialState(action.seed, {
         p1: state.players.p1.character,
         p2: state.players.p2.character,
-      });
+      }, state.botSeat);
       Object.assign(state, fresh, { log: state.log });
       const gen = generateActMap(state.rng, 1);
       state.rng = gen.rng;
@@ -243,7 +244,7 @@ function apply(state: GameState, action: Action): void {
         p.covetCharges--;
         state.telemetry.covetsSpent[action.player]++;
         addCardToDeck(state, action.player, action.pick);
-        sayWitness(state, 'covet_pick');
+        sayWitness(state, state.botSeat ? 'covet_solo' : 'covet_pick');
         runHooks(state, action.player, 'covet');
       }
       reward.coveted[action.player] = action.pick;
@@ -263,6 +264,10 @@ function apply(state: GameState, action: Action): void {
       const subject = state.players[ev.subject];
       for (const eff of opt.effects) applyEventEffect(state, subject, eff);
       state.log.push({ e: 'witness', line: opt.witness });
+      // S2.1: a crossed choice the bot made FOR the human gets its own gloat
+      if (state.botSeat && def.crossed && action.player === state.botSeat) {
+        sayWitness(state, 'crossed_choice_made');
+      }
       return;
     }
 
@@ -569,7 +574,8 @@ function enterNode(state: GameState): void {
       }
       if (enc.id === 'a1_elite_mourner') sayWitness(state, 'elite_mourner_intro');
       else if (node.kind !== 'combat') sayWitness(state, 'combat_start');
-      else maybeSayWitness(state, 'combat_start', 25);
+      // solo profile is chattier (S2.1); co-op keeps the sparse 25%
+      else maybeSayWitness(state, 'combat_start', state.botSeat ? 40 : 25);
       return;
     }
     case 'event': {
@@ -633,7 +639,7 @@ function advanceAct(state: GameState): void {
     sayWitness(state, 'finale_start');
   } else {
     state.phase = 'victory';
-    sayWitness(state, 'victory_screen');
+    sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
 
@@ -650,7 +656,7 @@ function afterResolution(state: GameState): void {
   }
   if (combat.enemies.every((e) => e.hp <= 0)) {
     const node = currentNode(state)!;
-    maybeSayWitness(state, 'combat_victory', 25);
+    maybeSayWitness(state, 'combat_victory', state.botSeat ? 40 : 25);
 
     // M2-A3: the survivor carries the Fallen out — revive at 1 HP
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
@@ -659,7 +665,7 @@ function afterResolution(state: GameState): void {
         p.fallen = false;
         p.hp = 1;
         state.log.push({ e: 'revived', player: pid });
-        sayWitness(state, 'revival');
+        sayWitness(state, state.botSeat ? 'revive_either' : 'revival');
       }
     }
 
@@ -721,7 +727,7 @@ function endCombatCleanup(state: GameState): void {
 }
 
 function gameOver(state: GameState): void {
-  sayWitness(state, 'player_death');
+  sayWitness(state, state.botSeat ? 'solo_defeat' : 'player_death');
   endCombatCleanup(state);
   state.phase = 'game_over';
 }

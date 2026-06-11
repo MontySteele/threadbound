@@ -12,3 +12,5 @@ export { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards'
 export { POWERS } from './content/powers';
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';
 export { WITNESS_POOLS } from './witness-draw';
+export { BotPolicy } from './bot-policy';
+export type { BotView, BotPolicyOptions } from './bot-policy';

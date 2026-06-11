@@ -4,10 +4,11 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
+  CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   computeLinksFired, computeResonanceSlots, effectiveDef, hasPassive,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
+import { GLYPH } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
@@ -101,6 +102,13 @@ export default function App(): JSX.Element {
     audio.setAmbient(state && state.phase !== 'lobby' ? state.map.act : 0);
   }, [state?.map.act, state?.phase]);
 
+  // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
+  useEffect(() => {
+    const act = state && state.phase !== 'lobby' ? state.map.act : 0;
+    document.body.classList.remove('act-1', 'act-2', 'act-3');
+    if (act) document.body.classList.add(`act-${act}`);
+  }, [state?.map.act, state?.phase]);
+
   const net = netRef.current;
 
   if (new URLSearchParams(location.search).has('style')) return <StyleScreen />;
@@ -132,8 +140,10 @@ export default function App(): JSX.Element {
                   abandon…
                 </button>
               )}
-              <Settings />
-              <span className={partnerOn ? 'on' : 'off'}>{partnerOn ? '● partner' : '○ partner'}</span>
+              <Settings net={net} solo={!!state.botSeat} />
+              <span className={partnerOn ? 'on' : 'off'}>
+                {state.botSeat ? '● the Witness' : partnerOn ? '● partner' : '○ partner'}
+              </span>
             </span>
           </header>
           <RelicBar state={state} />
@@ -190,9 +200,12 @@ function HintBar(): JSX.Element | null {
   );
 }
 
-function Settings(): JSX.Element {
+function Settings({ net, solo }: { net: Net; solo: boolean }): JSX.Element {
   const [open, setOpen] = useState(false);
   const [, tick] = useState(0);
+  const [botSpeed, setBotSpeed] = useState<'paced' | 'instant'>(
+    new URLSearchParams(location.search).get('botspeed') === 'instant' ? 'instant' : 'paced',
+  );
   return (
     <span className="settings">
       <button className="chip" data-gp="META" onClick={() => setOpen(!open)}>♪</button>
@@ -205,6 +218,19 @@ function Settings(): JSX.Element {
                 onChange={(e) => { audio.setVolume(k, Number(e.target.value)); tick((n) => n + 1); }} />
             </label>
           ))}
+          {solo && (
+            <label>
+              bot speed
+              <select value={botSpeed} onChange={(e) => {
+                const speed = e.target.value as 'paced' | 'instant';
+                setBotSpeed(speed);
+                net.setBotSpeed(speed);
+              }}>
+                <option value="paced">paced</option>
+                <option value="instant">instant (testing)</option>
+              </select>
+            </label>
+          )}
         </div>
       )}
     </span>
@@ -227,17 +253,19 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   );
 }
 
-function TitleCord({ left, right }: { left: boolean; right: boolean }): JSX.Element {
+function TitleCord({ left, right }: {
+  left: 'vess' | 'bram' | 'witness' | null; right: 'vess' | 'bram' | 'witness' | null;
+}): JSX.Element {
   return (
     <div className="title-cord">
       <div className={`title-frame ${left ? 'filled' : ''}`}>
-        {left ? <CharacterSigil who="vess" size={84} /> : <span className="title-empty">?</span>}
+        {left ? <CharacterSigil who={left} size={84} /> : <span className="title-empty">?</span>}
       </div>
       <svg width="220" height="56" viewBox="0 0 220 56" aria-hidden>
         <path className={`cord-line ${left && right ? '' : 'cord-dim'}`} d="M 0 20 Q 110 52 220 20" fill="none" />
       </svg>
       <div className={`title-frame ${right ? 'filled' : ''}`}>
-        {right ? <CharacterSigil who="bram" size={84} /> : <span className="title-empty">?</span>}
+        {right ? <CharacterSigil who={right} size={84} /> : <span className="title-empty">?</span>}
       </div>
     </div>
   );
@@ -253,10 +281,12 @@ const LOBBY_GREETINGS = [
 function Home({ net, error }: { net: Net; error: string }): JSX.Element {
   const [code, setCode] = useState('');
   const [character, setCharacter] = useState<Character>('vess');
+  const [soloCharacter, setSoloCharacter] = useState<Character>('vess');
+  const [botCharacter, setBotCharacter] = useState<Character>('bram');
   return (
     <div className="center home">
       <h1 className="game-title">THREADBOUND</h1>
-      <TitleCord left={false} right={false} />
+      <TitleCord left={null} right={null} />
       <p className="muted">Two spirit-binders, one thread. Bring a friend.</p>
       {error && <div className="error">{error}</div>}
       <div className="panel">
@@ -275,6 +305,25 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
         <input placeholder="5-letter code" value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} />
         <button data-gp="META" onClick={() => net.join(code)}>Join</button>
       </div>
+      <div className="panel">
+        <h3>Descend alone</h3>
+        <p className="muted">The Witness will assist. He is thrilled.</p>
+        <label>
+          You{' '}
+          <select value={soloCharacter} onChange={(e) => setSoloCharacter(e.target.value as Character)}>
+            <option value="vess">Vess, the Hexweaver</option>
+            <option value="bram">Bram, the Cinderfist</option>
+          </select>
+        </label>{' '}
+        <label>
+          The Witness plays{' '}
+          <select value={botCharacter} onChange={(e) => setBotCharacter(e.target.value as Character)}>
+            <option value="bram">Bram, the Cinderfist</option>
+            <option value="vess">Vess, the Hexweaver</option>
+          </select>
+        </label>
+        <button data-gp="META" onClick={() => net.createSolo(soloCharacter, botCharacter)}>Descend alone</button>
+      </div>
     </div>
   );
 }
@@ -282,15 +331,20 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
 function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partnerOn: boolean }): JSX.Element {
   switch (state.phase) {
     case 'lobby': {
-      const greeting = LOBBY_GREETINGS[(state.seed >>> 3) % LOBBY_GREETINGS.length];
+      const solo = !!state.botSeat;
+      // S2.1: in solo the Witness resents being drafted; co-op keeps its greeting
+      const soloPool = WITNESS_POOLS.solo_greeting ?? LOBBY_GREETINGS;
+      const greeting = solo
+        ? soloPool[(state.seed >>> 3) % soloPool.length]
+        : LOBBY_GREETINGS[(state.seed >>> 3) % LOBBY_GREETINGS.length];
       return (
         <div className="center">
           <h2>The Undercroft awaits</h2>
-          <TitleCord left={true} right={partnerOn} />
-          <p>{partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
+          <TitleCord left={state.players.p1.character} right={solo ? 'witness' : partnerOn ? state.players.p2.character : null} />
+          <p>{solo ? 'The Witness holds the other end. Reluctantly.' : partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
           <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
-          {partnerOn && <p className="witness">THE WITNESS: “{greeting}”</p>}
-          {partnerOn && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
+          {(partnerOn || solo) && <p className="witness">THE WITNESS: “{greeting}”</p>}
+          {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
         </div>
       );
     }
@@ -308,7 +362,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
       return <Shop state={state} net={net} />;
     case 'victory':
       return (
-        <div className="center">
+        <div className="center end-screen end-victory">
+          <TitleCord left={state.players.p1.character} right={state.botSeat ? 'witness' : state.players.p2.character} />
           <h2>The Unraveled lies still.</h2>
           <RunSummary state={state} won={true} />
           <p className="muted">A full clear — screenshot this for the calibration pile.</p>
@@ -317,7 +372,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
       );
     case 'game_over':
       return (
-        <div className="center">
+        <div className="center end-screen end-defeat">
           <h2>The descent ends here.</h2>
           <RunSummary state={state} won={false} />
           <p className="muted">Death is a fresh run — screenshot this for the calibration pile first.</p>
@@ -345,12 +400,23 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     map.position === -1
       ? map.nodes.filter((n) => n.layer === 0).map((n) => n.id)
       : map.nodes.find((n) => n.id === map.position)?.edges ?? [];
-  const layers = new Map<number, MapNode[]>();
-  for (const n of map.nodes) {
-    if (!layers.has(n.layer)) layers.set(n.layer, []);
-    layers.get(n.layer)!.push(n);
-  }
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+
+  // S2.2: nodes as knots on branching cord paths (the B3/B4 motif continued).
+  // Pure layout math from layer/lane — no game data the old grid didn't show.
+  const layerCount = Math.max(...map.nodes.map((n) => n.layer)) + 1;
+  const laneCounts = new Map<number, number>();
+  for (const n of map.nodes) laneCounts.set(n.layer, (laneCounts.get(n.layer) ?? 0) + 1);
+  const maxLanes = Math.max(...laneCounts.values());
+  const COL = 168, ROW = 92;
+  const W = maxLanes * COL, H = layerCount * ROW;
+  const pos = (n: MapNode): { x: number; y: number } => {
+    const offset = ((maxLanes - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
+    return { x: offset + (n.lane + 0.5) * COL, y: H - (n.layer + 0.5) * ROW };
+  };
+  const hereLayer = map.nodes.find((n) => n.id === map.position)?.layer ?? -1;
+  const byId = new Map(map.nodes.map((n) => [n.id, n]));
+
   return (
     <div className="center">
       <h2>{ACT_NAME[map.act]}</h2>
@@ -367,38 +433,62 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           {state.players[partner].character}: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
         </span>
       </p>
-      <div className="map">
-        {[...layers.keys()].sort((a, b) => a - b).map((layer) => (
-          <div key={layer} className="maplayer">
-            {layers.get(layer)!.map((n) => {
-              const here = n.id === map.position;
-              const can = pickable.includes(n.id);
-              const myPick = map.picks[you] === n.id;
-              const theirPick = map.picks[partner] === n.id;
+      <div className={`mapwrap act-${map.act}`} style={{ width: W, height: H }}>
+        <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+          {map.nodes.flatMap((n) => {
+            const from = pos(n);
+            return n.edges.map((toId) => {
+              const target = byId.get(toId);
+              if (!target) return null;
+              const to = pos(target);
+              const cleared = n.layer < hereLayer; // walked-past cords dim
+              const live = n.id === map.position && pickable.includes(toId);
+              // a cord sags toward the midpoint — knots ride a hung thread
+              const mx = (from.x + to.x) / 2 + (from.x === to.x ? 0 : (to.x - from.x) * 0.08);
+              const my = (from.y + to.y) / 2 + 10;
               return (
-                <button
-                  key={n.id}
-                  data-gp="META"
-                  className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
-                  style={{
-                    ...(myPick ? { outlineColor: PCOLOR[you] } : {}),
-                    ...(theirPick ? { boxShadow: `0 0 14px ${PCOLOR[partner]}`, borderColor: PCOLOR[partner] } : {}),
-                  }}
-                  disabled={!can}
-                  onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
-                >
-                  {NODE_ICON[n.kind]} {n.kind}
-                  {(myPick || theirPick) && (
-                    <span className="pick-tags">
-                      {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
-                      {theirPick && <span className="pick-tag" style={{ background: PCOLOR[partner] }}>{state.players[partner].character}</span>}
-                    </span>
-                  )}
-                </button>
+                <path key={`${n.id}-${toId}`}
+                  className={`map-cord ${cleared ? 'cord-cleared' : ''} ${live ? 'cord-live' : ''}`}
+                  d={`M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`} fill="none" />
               );
-            })}
-          </div>
-        ))}
+            });
+          })}
+          {map.nodes.map((n) => {
+            const { x, y } = pos(n);
+            const cleared = n.layer < hereLayer;
+            return <circle key={n.id} className={`map-knot ${cleared ? 'knot-cleared' : ''}`} cx={x} cy={y} r={5} />;
+          })}
+        </svg>
+        {map.nodes.map((n) => {
+          const { x, y } = pos(n);
+          const here = n.id === map.position;
+          const can = pickable.includes(n.id);
+          const cleared = n.layer < hereLayer && !here;
+          const myPick = map.picks[you] === n.id;
+          const theirPick = map.picks[partner] === n.id;
+          return (
+            <button
+              key={n.id}
+              data-gp="META"
+              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
+              style={{
+                left: x, top: y,
+                ...(myPick ? { outlineColor: PCOLOR[you] } : {}),
+                ...(theirPick ? { boxShadow: `0 0 14px ${PCOLOR[partner]}`, borderColor: PCOLOR[partner] } : {}),
+              }}
+              disabled={!can}
+              onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
+            >
+              {NODE_ICON[n.kind]} {n.kind}
+              {(myPick || theirPick) && (
+                <span className="pick-tags">
+                  {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
+                  {theirPick && <span className="pick-tag" style={{ background: PCOLOR[partner] }}>{state.players[partner].character}</span>}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
       <Log log={state.log} state={state} />
     </div>
@@ -493,17 +583,21 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       <div className="enemies">
         {combat.enemies.map((e, i) => {
           const def = ENEMIES[e.defId];
+          // S2.2 boss presence: bigger composite sigils; the Unraveled's mark
+          // visibly frays and parts while its sever phase holds
+          const sigilSize = def.boss ? 104 : def.elite ? 82 : 64;
+          const fraying = severed && !!def.unraveled;
           return (
             <div
               key={e.id}
               data-fxid={e.id}
               data-gp={e.hp > 0 && !e.untargetable ? 'ENEMIES' : undefined}
               data-inspect={`enemy:${e.defId}`}
-              className={`enemy ${e.hp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
+              className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${fraying ? 'sigil-fraying' : ''} ${e.hp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
               style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : 'var(--line)', animationDelay: `${(i * 0.7) % 2}s` }}
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
-              <Sigil id={e.defId} size={64} aura={def.elite || def.boss} className="enemy-sigil" />
+              <Sigil id={e.defId} size={sigilSize} aura={def.elite || def.boss} className="enemy-sigil" />
               <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar"><div className="hpfill" style={{ width: `${(100 * e.hp) / e.maxHp}%` }} /></div>
               <div>{e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}</div>
@@ -516,10 +610,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 </div>
               )}
               <div className="statuses">
-                {e.weak > 0 && <span data-inspect="kw:weak">Weak {e.weak}</span>}
-                {e.vulnerable > 0 && <span data-inspect="kw:vulnerable">Vuln {e.vulnerable}</span>}
-                {e.stun > 0 && <span data-inspect="kw:stun">Stun {e.stun}</span>}
-                {e.strength > 0 && <span>Str +{e.strength}</span>}
+                {e.weak > 0 && <span data-inspect="kw:weak">{GLYPH.weak} Weak {e.weak}</span>}
+                {e.vulnerable > 0 && <span data-inspect="kw:vulnerable">{GLYPH.vulnerable} Vuln {e.vulnerable}</span>}
+                {e.stun > 0 && <span data-inspect="kw:stun">{GLYPH.stun} Stun {e.stun}</span>}
+                {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
               <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
               <div className="bound" style={{ color: e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
@@ -589,16 +683,17 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           return (
             <div key={pid} data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
               <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
+              {pid === state.botSeat && <span className="muted"> · the Witness</span>}
               {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
               <div>
-                HP {p.hp}/{p.maxHp} · Block {p.block} · Energy {p.energy}
-                {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · Kindled {p.kindled}</span>}
-                {p.momentum > 0 && <span data-inspect="kw:momentum"> · Momentum {p.momentum}</span>}
+                HP {p.hp}/{p.maxHp} · {GLYPH.block} {p.block} · Energy {p.energy}
+                {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · {GLYPH.kindled} Kindled {p.kindled}</span>}
+                {p.momentum > 0 && <span data-inspect="kw:momentum"> · {GLYPH.momentum} Momentum {p.momentum}</span>}
               </div>
               <div className="statuses">
-                {p.statuses.frayed > 0 && <span className="fray" data-inspect="kw:frayed">Frayed {p.statuses.frayed}</span>}
-                {p.statuses.weak > 0 && <span data-inspect="kw:weak">Weak {p.statuses.weak}</span>}
-                {p.statuses.vulnerable > 0 && <span data-inspect="kw:vulnerable">Vuln {p.statuses.vulnerable}</span>}
+                {p.statuses.frayed > 0 && <span className="fray" data-inspect="kw:frayed">{GLYPH.frayed} Frayed {p.statuses.frayed}</span>}
+                {p.statuses.weak > 0 && <span data-inspect="kw:weak">{GLYPH.weak} Weak {p.statuses.weak}</span>}
+                {p.statuses.vulnerable > 0 && <span data-inspect="kw:vulnerable">{GLYPH.vulnerable} Vuln {p.statuses.vulnerable}</span>}
                 {p.powers.map((pw) => <span key={pw}>{POWERS[pw]?.name ?? pw}</span>)}
                 {p.ready && <span className="ready">READY</span>}
               </div>
@@ -612,6 +707,8 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                       {p.hand.map((id) => (
                         <Card key={id} def={defFor(state, partner, id)} small
                           echo={!!inst(state, partner, id)?.echo}
+                          upgraded={!!inst(state, partner, id)?.upgraded}
+                          mutated={!!inst(state, partner, id)?.mutated}
                           inspect={inspectKeyFor(state, partner, id)} />
                       ))}
                       {p.hand.length === 0 && <i className="muted">empty</i>}
@@ -629,6 +726,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           const def = defFor(state, you, id);
           return (
             <Card key={id} def={def} echo={!!inst(state, you, id)?.echo}
+              upgraded={!!inst(state, you, id)?.upgraded} mutated={!!inst(state, you, id)?.mutated}
               gpZone="HAND"
               inspect={inspectKeyFor(state, you, id)}
               selected={pendingCard === id}
@@ -681,6 +779,8 @@ function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
               style={{ borderColor: PCOLOR[slot.owner] }}>
               <div className="slotnum">{i + 1}</div>
               <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
+                upgraded={!!inst(state, slot.owner, slot.cardInstanceId)?.upgraded}
+                mutated={!!inst(state, slot.owner, slot.cardInstanceId)?.mutated}
                 gpZone={mine ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
                 onClick={() => mine && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
@@ -704,20 +804,22 @@ function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
   );
 }
 
-export function Card({ def, onClick, small, selected, disabled, echo, gpZone, inspect }: {
+export function Card({ def, onClick, small, selected, disabled, echo, upgraded, mutated, gpZone, inspect }: {
   def: CardDef; onClick?: () => void; small?: boolean; selected?: boolean; disabled?: boolean; echo?: boolean;
+  /** S2.2 frame treatments — presentation only, the def already carries the rules */
+  upgraded?: boolean; mutated?: boolean;
   gpZone?: string; inspect?: string;
 }): JSX.Element {
   return (
     <div
-      className={`card tag-${def.tag} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''}`}
+      className={`card tag-${def.tag} r-${def.rarity ?? 'common'} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''} ${upgraded ? 'upgraded' : ''} ${mutated ? 'mutated' : ''}`}
       data-gp={!disabled && onClick ? gpZone : undefined}
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
-      <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{def.name}</span></div>
-      <div className="ctag">{def.tag}{def.keep ? ' · Keep' : ''}{echo ? ' · Echo' : ''}</div>
+      <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
+      <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       <div className="ctext">{def.text}</div>
-      {def.link && <div className="clink"><b>Link ({def.link.condition}):</b> {def.link.text}</div>}
+      {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {def.link.text}</div>}
     </div>
   );
 }
@@ -732,11 +834,11 @@ function intentText(intent: any, strength: number): string {
     case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS`;
     case 'block': return `🛡 ${intent.amount}`;
     case 'block_all': return `🛡 ${intent.amount} ALL`;
-    case 'buff_strength': return `↑ Str ${intent.amount}`;
-    case 'buff_strength_all': return `↑ Str ${intent.amount} ALL`;
-    case 'debuff_weak': return `☁ Weak ${intent.amount}`;
-    case 'debuff_vulnerable': return `☁ Vuln ${intent.amount}`;
-    case 'sever': return '✂ moves its tether';
+    case 'buff_strength': return `${GLYPH.strength} Str ${intent.amount}`;
+    case 'buff_strength_all': return `${GLYPH.strength} Str ${intent.amount} ALL`;
+    case 'debuff_weak': return `${GLYPH.weak} Weak ${intent.amount}`;
+    case 'debuff_vulnerable': return `${GLYPH.vulnerable} Vuln ${intent.amount}`;
+    case 'sever': return `${GLYPH.sever} moves its tether`;
     default: return '?';
   }
 }

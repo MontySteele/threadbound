@@ -77,6 +77,17 @@ export class Net {
     this.send({ type: 'create', character });
   }
 
+  /** S1: solo room — the server seats its in-process bot at p2. The human
+   *  picks both characters. ?botspeed=instant is the designer's testing gear. */
+  createSolo(character: 'vess' | 'bram', botCharacter: 'vess' | 'bram'): void {
+    const botSpeed = new URLSearchParams(location.search).get('botspeed') === 'instant' ? 'instant' : 'paced';
+    this.send({ type: 'create', character, solo: true, botCharacter, botSpeed });
+  }
+
+  setBotSpeed(speed: 'paced' | 'instant'): void {
+    this.send({ type: 'botspeed', speed });
+  }
+
   join(code: string): void {
     this.send({ type: 'join', code });
   }

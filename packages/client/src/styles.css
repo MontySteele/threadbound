@@ -3,6 +3,25 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-ui); font-size: 15px; }
+
+/* ---- per-act atmosphere (S2.2): CSS-only — gradient ground, parchment
+   grain, vignette. Nothing here that fights a future commissioned pass. ---- */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% -10%, var(--act-glow, transparent) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 115%, #000 0%, transparent 45%),
+    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff03 5px 6px),
+    linear-gradient(180deg, var(--act-sky, var(--ink)) 0%, var(--ink) 60%);
+  transition: background 1.2s;
+}
+body::after { /* vignette */
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  box-shadow: inset 0 0 18vmin 4vmin #000a;
+}
+body.act-1 { --act-sky: #16120e; --act-glow: #2a221422; }   /* the Undercroft: lamplit earth */
+body.act-2 { --act-sky: #121016; --act-glow: #221a2e2e; }   /* the Hollow Choir: bruised violet */
+body.act-3 { --act-sky: #170f10; --act-glow: #33161628; }   /* the Last Braid: ember dark */
 h1, h2, h3, .title, .cname, .ename, .witness, .prose { font-family: var(--font-display); }
 button {
   background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
@@ -54,12 +73,21 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   box-shadow: 0 0 12px color-mix(in srgb, var(--focus) 50%, transparent);
 }
 
-/* ---- map ---- */
-.map { display: flex; flex-direction: column-reverse; gap: 10px; align-items: center; }
-.maplayer { display: flex; gap: 14px; }
-.mapnode { padding: 8px 14px; opacity: 0.4; }
-.mapnode.can { opacity: 1; box-shadow: 0 0 8px color-mix(in srgb, var(--thread) 30%, transparent); }
-.mapnode.here { outline: 2px solid var(--text); opacity: 0.8; }
+/* ---- map (S2.2): knots on branching cord paths ---- */
+.mapwrap { position: relative; margin: 0 auto; }
+.mapwrap.act-1 { filter: sepia(0.06); }
+.mapwrap.act-2 { filter: hue-rotate(8deg) saturate(0.96); }
+.mapwrap.act-3 { filter: saturate(1.08); }
+.map-cords { position: absolute; inset: 0; }
+.map-cord { stroke: color-mix(in srgb, var(--thread) 38%, transparent); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.map-cord.cord-live { stroke: var(--thread); stroke-width: 2.2; stroke-dasharray: none; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
+.map-cord.cord-cleared { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
+.map-knot { fill: var(--ink-2); stroke: var(--thread); stroke-width: 1.4; }
+.map-knot.knot-cleared { stroke: var(--line-soft); opacity: 0.5; }
+.mapnode { padding: 7px 12px; opacity: 0.45; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
+.mapnode.can { opacity: 1; box-shadow: 0 0 8px color-mix(in srgb, var(--thread) 30%, transparent); border-color: var(--thread); }
+.mapnode.here { outline: 2px solid var(--text); opacity: 0.85; }
+.mapnode.cleared { opacity: 0.22; }
 .mapnode.mypick { outline: 2px solid var(--focus); }
 
 /* ---- enemies (B5) ---- */
@@ -70,6 +98,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 }
 @keyframes idle-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 .enemy.dead { opacity: 0.22; animation: none; }
+/* S2.2 boss presence: weightier frames; the Unraveled's sigil frays and
+   parts while its sever phase holds */
+.enemy.elite { min-width: 196px; }
+.enemy.boss { min-width: 224px; padding: 12px 16px; border-width: 3px; }
+.enemy.boss .ename { font-size: 1.15em; letter-spacing: 0.06em; }
+.enemy.sigil-fraying .enemy-sigil { animation: sigil-fray 1.6s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--danger)); }
+@keyframes sigil-fray {
+  0%, 100% { transform: translateX(0) scaleX(1); opacity: 1; }
+  22% { transform: translateX(-2.5px) scaleX(1.05) skewX(-2deg); opacity: 0.75; }
+  48% { transform: translateX(2px) scaleX(0.94); opacity: 0.9; }
+  71% { transform: translateX(-1.5px) scaleX(1.08) skewX(2deg); opacity: 0.62; }
+}
 .enemy.untargetable { opacity: 0.55; border-style: dotted; cursor: default; }
 .enemy.targetable { cursor: crosshair; box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 40%, transparent); }
 .enemy.tel-attack { box-shadow: inset 0 -3px 0 var(--strike); }
@@ -171,6 +211,26 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .card.selected { outline: 2px solid var(--focus); }
 .card.disabled { opacity: 0.45; cursor: default; }
 .card.echo { border-style: dashed; border-color: var(--hex); }
+
+/* ---- S2.2 card frames: rarity treatments, upgrade gilding, mutation mark.
+   Presentation only — every distinction here is already in the rules text. */
+.card.r-common { border-color: var(--line); }
+.card.r-uncommon {
+  border-color: #5e718a;
+  background: linear-gradient(170deg, #232732, var(--panel));
+}
+.card.r-rare {
+  border-color: color-mix(in srgb, var(--thread) 75%, #fff 8%);
+  background:
+    repeating-linear-gradient(118deg, transparent 0 9px, #d4af6f08 9px 11px),
+    linear-gradient(170deg, #2c2516, var(--panel));
+  box-shadow: 0 0 7px color-mix(in srgb, var(--thread) 22%, transparent);
+}
+.card.upgraded { border-width: 1px; border-color: var(--kindled); }
+.card.upgraded .cname { color: var(--kindled); }
+.card.upgraded .cardtop { border-bottom: 1px solid color-mix(in srgb, var(--kindled) 45%, transparent); padding-bottom: 2px; }
+.card.mutated .ctag { color: var(--hex); }
+.card.mutated { box-shadow: 0 0 8px color-mix(in srgb, var(--hex) 30%, transparent); }
 .cardtop { display: flex; gap: 6px; align-items: center; }
 .cost { background: var(--ink-2); border: 1px solid var(--line); border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 18px; }
 .cname { font-weight: bold; }
@@ -238,6 +298,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* ---- style screen ---- */
 .style-screen h3 { border-bottom: 1px solid var(--line-soft); padding-bottom: 4px; margin-top: 26px; }
+.glyph-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.glyph-row b { color: var(--thread); }
 
 .pulse-badge { color: var(--kindled); font-size: 0.78em; font-weight: bold; }
 .pulse-waiting { font-size: 0.8em; }
@@ -262,6 +324,15 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .title-frame.filled { border-color: var(--thread); box-shadow: 0 0 18px color-mix(in srgb, var(--thread) 35%, transparent); }
 .title-empty { color: var(--text-faint); font-size: 1.6em; font-family: var(--font-display); }
 .cord-dim { opacity: 0.25; stroke-dasharray: 5 6; }
+/* ---- S2.2 victory / defeat ---- */
+.end-screen { padding: 18px 22px 26px; border: 1px solid var(--line-soft); border-radius: var(--radius); margin-top: 38px; }
+.end-screen h2 { font-size: 1.7em; letter-spacing: 0.12em; margin: 8px 0 2px; }
+.end-victory { background: radial-gradient(ellipse at 50% 0%, #d4af6f14 0%, transparent 60%), var(--panel); border-color: color-mix(in srgb, var(--thread) 45%, transparent); box-shadow: 0 0 40px color-mix(in srgb, var(--thread) 14%, transparent); }
+.end-victory h2 { color: var(--thread); text-shadow: 0 0 18px color-mix(in srgb, var(--thread) 45%, transparent); }
+.end-defeat { background: radial-gradient(ellipse at 50% 0%, #c7545012 0%, transparent 60%), var(--panel); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.end-defeat h2 { color: var(--danger); }
+.end-defeat .summary-verdict { color: var(--danger); }
+
 .summary { max-width: 560px; margin: 12px auto; }
 .summary-verdict { font-family: var(--font-display); letter-spacing: 0.25em; color: var(--thread); margin-bottom: 10px; }
 .summary-table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -275,7 +346,6 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* map pick coordination */
 .map-picks { font-size: 0.95em; }
-.mapnode { position: relative; }
 .mapnode.mypick { outline: 3px solid; outline-offset: 2px; }
 .mapnode.theirpick { border-style: solid; }
 .mapnode.agreed { animation: agreed-flash 0.5s; }

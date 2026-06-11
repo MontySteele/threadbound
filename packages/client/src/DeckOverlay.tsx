@@ -33,7 +33,7 @@ function CardRow({ state, owner, cards, empty }: {
   return (
     <div className="hand deck-row">
       {sortByName(cards).map((c) => (
-        <Card key={c.instanceId} small echo={c.echo}
+        <Card key={c.instanceId} small echo={c.echo} upgraded={c.upgraded} mutated={c.mutated}
           def={(() => {
             const d = CARDS[c.defId];
             return c.upgraded && d.upgrade

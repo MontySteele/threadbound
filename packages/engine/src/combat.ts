@@ -12,7 +12,7 @@ import {
   PassiveId, PlayerId, PlayerState,
 } from './types';
 import { rngInt, rngShuffle } from './rng';
-import { sayWitness } from './witness-draw';
+import { maybeSaySolo, sayWitness } from './witness-draw';
 
 export function otherPlayer(p: PlayerId): PlayerId {
   return p === 'p1' ? 'p2' : 'p1';
@@ -548,12 +548,18 @@ export function resolveTurn(state: GameState): void {
     if (hasPrimary) owner.pulseBonus = 0;
 
     state.log.push({ e: 'card', player: slot.owner, card: def.name, slot: i, linkFired: fired[i], resonance });
+    if (state.botSeat) {
+      // S2.1 solo chatter (capped per combat; no-op in co-op)
+      if (slot.owner === state.botSeat) maybeSaySolo(state, 'own_play', 7);
+      else if (fired[i] && i > 0 && chain[i - 1].owner === state.botSeat) maybeSaySolo(state, 'human_linked_off_me', 18);
+    }
     if (resonance) {
       let start = i;
       while (start > 0 && fired[start]) start--;
       const streakTags = chain.slice(start, i + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
       state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags });
-      sayWitness(state, 'resonance');
+      // S2.1: in solo the streak includes HIM — the closest he comes to joy
+      sayWitness(state, state.botSeat ? 'resonance_together' : 'resonance');
       state.telemetry.resonances++;
       for (const t of streakTags) {
         state.telemetry.resonanceTagCounts[t] = (state.telemetry.resonanceTagCounts[t] ?? 0) + 1;
@@ -799,7 +805,9 @@ function fall(state: GameState, player: PlayerState): void {
     }
   }
   state.log.push({ e: 'fallen', player: player.id });
-  sayWitness(state, 'partner_fallen');
+  sayWitness(state, state.botSeat
+    ? (player.id === state.botSeat ? 'fallen_self' : 'fallen_human')
+    : 'partner_fallen');
 }
 
 // ---------------------------------------------------------------------------
@@ -897,6 +905,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     handSnapshot: { p1: [], p2: [] },
     severedTurns: 0,
     severTriggered: false,
+    witnessLines: 0,
   };
   state.thread = 6; // §5
   state.phase = 'combat';

@@ -8,20 +8,25 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
-  Action, CharacterId, GameState, IllegalAction, PlayerId,
+  Action, BotView, CharacterId, GameState, IllegalAction, PlayerId,
   initialState, reduce, hashState,
 } from '@threadbound/engine';
+import { BotSpeed, SoloBotDriver } from './solo';
 
 export interface Seat {
   token: string;
   character: CharacterId;
   socket: WebSocket | null;
+  /** S1: this seat is held by the in-process solo bot (no socket, ever) */
+  bot?: boolean;
 }
 
 export interface FeedbackEntry {
   ts: number;
   player: PlayerId;
   mood: 'good' | 'bad' | 'note';
+  /** S1.3: solo stamps must never pollute pair-calibration baselines */
+  mode: 'solo' | 'pair';
   note?: string;
   // context stamp: where the feeling changed (M3 review — playtest gold)
   phase: string;
@@ -38,6 +43,8 @@ export interface Room {
   lastActivity: number;
   telemetryWritten?: boolean;
   feedback: FeedbackEntry[];
+  /** S1: solo room — persisted so the bot survives restarts with the room */
+  bot?: { seat: PlayerId; speed: BotSpeed };
 }
 
 export interface GameServerOptions {
@@ -55,6 +62,8 @@ const HOUR = 3_600_000;
 export class GameServer {
   rooms = new Map<string, Room>();
   tokenIndex = new Map<string, { room: Room; pid: PlayerId }>();
+  /** runtime bot drivers by room code (never persisted; rebuilt on restore) */
+  private botDrivers = new Map<string, SoloBotDriver>();
   server: http.Server;
   wss: WebSocketServer;
   private now: () => number;
@@ -110,8 +119,31 @@ export class GameServer {
 
   close(): void {
     for (const t of this.timers) clearInterval(t);
+    for (const d of this.botDrivers.values()) d.stop();
+    this.botDrivers.clear();
     this.persist();
     this.server.close();
+  }
+
+  /** S1: seat the in-process solo bot. It consumes the same redacted view a
+   *  remote client would and submits intents through the same reducer path. */
+  private attachBot(room: Room): void {
+    if (!room.bot || this.botDrivers.has(room.code)) return;
+    const seat = room.bot.seat;
+    const driver = new SoloBotDriver(
+      seat,
+      () => room.bot?.speed ?? 'paced',
+      (action) => {
+        (action as { player?: PlayerId }).player = seat;
+        this.applyAction(room, null, action);
+      },
+    );
+    this.botDrivers.set(room.code, driver);
+  }
+
+  private dropBot(room: Room): void {
+    this.botDrivers.get(room.code)?.stop();
+    this.botDrivers.delete(room.code);
   }
 
   // ---- room lifecycle (M2-D3 / M3-D) --------------------------------------
@@ -132,6 +164,7 @@ export class GameServer {
           if (seat) this.tokenIndex.delete(seat.token);
           seat?.socket?.close();
         }
+        this.dropBot(room);
         this.rooms.delete(code);
       }
     }
@@ -146,9 +179,10 @@ export class GameServer {
       actionLog: room.actionLog,
       lastActivity: room.lastActivity,
       seats: Object.fromEntries(
-        Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character }]),
+        Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot }]),
       ),
       feedback: room.feedback,
+      bot: room.bot,
     }));
     try {
       fs.writeFileSync(this.opts.persistPath, JSON.stringify({ version: 2, rooms: snapshot }));
@@ -170,12 +204,19 @@ export class GameServer {
           lastActivity: r.lastActivity ?? this.now(),
           seats: {},
           feedback: r.feedback ?? [],
+          bot: r.bot,
         };
-        for (const [pid, seat] of Object.entries(r.seats ?? {}) as [PlayerId, { token: string; character: CharacterId }][]) {
-          room.seats[pid] = { token: seat.token, character: seat.character, socket: null };
-          this.tokenIndex.set(seat.token, { room, pid });
+        for (const [pid, seat] of Object.entries(r.seats ?? {}) as [PlayerId, { token: string; character: CharacterId; bot?: boolean }][]) {
+          room.seats[pid] = { token: seat.token, character: seat.character, socket: null, bot: seat.bot };
+          if (!seat.bot) this.tokenIndex.set(seat.token, { room, pid });
         }
         this.rooms.set(room.code, room);
+        if (room.bot) {
+          // S1.1: the bot persists/restores with the room — re-seat the driver
+          // and feed it the current view so a mid-combat bot picks back up
+          this.attachBot(room);
+          this.botDrivers.get(room.code)?.onState(this.redactFor(room.state, room.bot.seat) as BotView);
+        }
       }
       console.log(`restored ${this.rooms.size} room(s) from ${p}`);
     } catch (err) {
@@ -194,6 +235,7 @@ export class GameServer {
       const file = path.join(dir, `run-${room.code}-${this.now()}.json`);
       fs.writeFileSync(file, JSON.stringify({
         code: room.code,
+        mode: room.bot ? 'solo' : 'pair', // S1.3: keep solo out of pair baselines
         outcome: room.state.phase,
         act: room.state.map.act,
         seed: room.state.seed,
@@ -243,13 +285,18 @@ export class GameServer {
       const seat = room.seats[pid];
       if (seat) this.send(seat.socket, { type: 'state', state: this.redactFor(room.state, pid), hash });
     }
+    // the bot seat gets the same redacted view, in-process (S1.1)
+    if (room.bot) this.botDrivers.get(room.code)?.onState(this.redactFor(room.state, room.bot.seat) as BotView);
   }
 
   private broadcastPresence(room: Room): void {
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
       const other: PlayerId = pid === 'p1' ? 'p2' : 'p1';
       const seat = room.seats[pid];
-      if (seat) this.send(seat.socket, { type: 'presence', partnerConnected: !!room.seats[other]?.socket });
+      const partner = room.seats[other];
+      if (seat && !seat.bot) {
+        this.send(seat.socket, { type: 'presence', partnerConnected: !!partner && (!!partner.bot || !!partner.socket) });
+      }
     }
   }
 
@@ -264,9 +311,15 @@ export class GameServer {
     switch (msg.type) {
       case 'create': {
         const character: CharacterId = msg.character === 'bram' ? 'bram' : 'vess';
+        // S1.1: solo rooms seat the in-process bot at p2; the human picks both
+        // characters at the lobby (duplicates allowed — it's a debug tool too)
+        const solo = msg.solo === true;
+        const botCharacter: CharacterId = solo
+          ? (msg.botCharacter === 'bram' || msg.botCharacter === 'vess' ? msg.botCharacter : character === 'vess' ? 'bram' : 'vess')
+          : character === 'vess' ? 'bram' : 'vess';
         const room: Room = {
           code: this.makeCode(),
-          state: initialState(crypto.randomInt(2 ** 31), { p1: character, p2: character === 'vess' ? 'bram' : 'vess' }),
+          state: initialState(crypto.randomInt(2 ** 31), { p1: character, p2: botCharacter }, solo ? 'p2' : undefined),
           seats: {},
           actionLog: [],
           lastActivity: this.now(),
@@ -276,6 +329,11 @@ export class GameServer {
         const token = crypto.randomUUID();
         room.seats.p1 = { token, character, socket };
         this.tokenIndex.set(token, { room, pid: 'p1' });
+        if (solo) {
+          room.seats.p2 = { token: `bot:${crypto.randomUUID()}`, character: botCharacter, socket: null, bot: true };
+          room.bot = { seat: 'p2', speed: msg.botSpeed === 'instant' ? 'instant' : 'paced' };
+          this.attachBot(room);
+        }
         ctx.room = room;
         ctx.pid = 'p1';
         this.send(socket, { type: 'joined', token, code: room.code, playerId: 'p1', character });
@@ -335,7 +393,12 @@ export class GameServer {
         if (seat && (phase === 'lobby' || phase === 'game_over' || phase === 'victory')) {
           this.tokenIndex.delete(seat.token);
           delete ctx.room.seats[ctx.pid];
-          if (!ctx.room.seats.p1 && !ctx.room.seats.p2) this.rooms.delete(ctx.room.code);
+          // a room holding only the bot is empty — don't strand it for the GC
+          const humansLeft = Object.values(ctx.room.seats).some((s) => s && !s.bot);
+          if (!humansLeft) {
+            this.dropBot(ctx.room);
+            this.rooms.delete(ctx.room.code);
+          }
         } else if (seat) {
           seat.socket = null;
         }
@@ -356,6 +419,7 @@ export class GameServer {
           ts: this.now(),
           player: ctx.pid,
           mood,
+          mode: ctx.room.bot ? 'solo' : 'pair',
           note: typeof msg.note === 'string' ? msg.note.slice(0, 500) : undefined,
           phase: st.phase,
           act: st.map.act,
@@ -376,6 +440,14 @@ export class GameServer {
         return;
       }
 
+      case 'botspeed': {
+        // S1.2: settings toggle — paced (default) / instant (testing)
+        if (!ctx.room?.bot) return;
+        ctx.room.bot.speed = msg.speed === 'instant' ? 'instant' : 'paced';
+        this.send(socket, { type: 'botspeed_ack', speed: ctx.room.bot.speed });
+        return;
+      }
+
       case 'action': {
         if (!ctx.room || !ctx.pid) return this.send(socket, { type: 'error', message: 'join a room first' });
         const action = msg.action as Action;
@@ -391,13 +463,16 @@ export class GameServer {
     }
   }
 
-  private applyAction(room: Room, sender: WebSocket, action: Action): void {
+  private applyAction(room: Room, sender: WebSocket | null, action: Action): void {
     room.lastActivity = this.now();
     try {
       room.state = reduce(room.state, action);
       room.actionLog.push(action);
       this.broadcastState(room);
       this.maybeWriteTelemetry(room);
+      if (room.bot && (room.state.phase === 'game_over' || room.state.phase === 'victory')) {
+        this.dropBot(room); // terminal rooms can't restart; stop the timers
+      }
     } catch (err) {
       if (err instanceof IllegalAction) {
         this.send(sender, { type: 'error', message: err.message });

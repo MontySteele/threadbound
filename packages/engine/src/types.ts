@@ -346,6 +346,9 @@ export interface CombatState {
   /** The Unraveled (§6): >0 = Thread severed (no actions/regen/cross-player links) */
   severedTurns: number;
   severTriggered: boolean;
+  /** S2.1: solo Witness chatter budget — capped per combat. Optional so
+   *  pre-S1 persisted rooms restore cleanly. */
+  witnessLines?: number;
 }
 
 export interface RewardState {
@@ -418,6 +421,9 @@ export interface GameState {
   seed: number;
   rng: number;
   phase: Phase;
+  /** S1: solo mode — which seat the in-process bot holds. Absent in co-op.
+   *  Drives the Witness's solo voice profile (S2.1); never changes rules. */
+  botSeat?: PlayerId;
   map: MapState;
   gold: number; // shared (§8)
   /** event grants banked for the next combat's opening Thread */

@@ -4,12 +4,16 @@
 import React from 'react';
 import { CARDS, ENEMIES } from '@threadbound/engine';
 import { Card } from './App';
+import { GLYPH } from './keywords';
 import { Sigil, CharacterSigil } from './sigils';
 import { ThreadCord } from './ThreadCord';
 import { resolveInspect } from './Tooltip';
 
 export function StyleScreen(): JSX.Element {
   const sample = resolveInspect('card:rendcall');
+  const rare = Object.values(CARDS).find((c) => c.rarity === 'rare' && !c.starterOnly);
+  const uncommon = Object.values(CARDS).find((c) => c.rarity === 'uncommon' && !c.starterOnly);
+  const mutable = Object.values(CARDS).find((c) => c.mutation);
   return (
     <div className="app style-screen">
       <header><span className="title">THREADBOUND — STYLE SAMPLE</span><span className="muted">/?style</span></header>
@@ -23,13 +27,27 @@ export function StyleScreen(): JSX.Element {
         <Card def={CARDS.haymaker} small />
       </div>
 
-      <h3>Enemy frames & sigils</h3>
+      <h3>Card frames — rarity, gilding, mutation (S2.2)</h3>
+      <div className="hand">
+        <Card def={CARDS.rendcall} small />
+        {uncommon && <Card def={uncommon} small />}
+        {rare && <Card def={rare} small />}
+        {rare && <Card def={rare} small upgraded />}
+        {mutable && <Card def={mutable} small echo mutated />}
+      </div>
+
+      <h3>Status glyph set — same marks on cards, intents, status bars</h3>
+      <div className="statuses glyph-row">
+        {Object.entries(GLYPH).map(([k, g]) => <span key={k}><b>{g}</b> {k}</span>)}
+      </div>
+
+      <h3>Enemy frames & sigils <span className="muted">(boss scale; Unraveled fraying mid-sever)</span></h3>
       <div className="enemies">
         {['cinder_husk', 'mourner', 'the_unraveled', 'chorister_mid'].map((id, i) => {
           const def = ENEMIES[id];
           return (
-            <div key={id} className={`enemy ${i === 3 ? 'untargetable' : ''}`} style={{ borderColor: i % 2 ? 'var(--p2)' : 'var(--p1)' }}>
-              <Sigil id={id} size={64} aura={def.elite || def.boss} className="enemy-sigil" />
+            <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`} style={{ borderColor: i % 2 ? 'var(--p2)' : 'var(--p1)' }}>
+              <Sigil id={id} size={def.boss ? 104 : def.elite ? 82 : 64} aura={def.elite || def.boss} className="enemy-sigil" />
               <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar"><div className="hpfill" style={{ width: '62%' }} /></div>
               <div>26/42 <span className="chipblock">🛡6</span></div>

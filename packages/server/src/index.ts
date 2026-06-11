@@ -33,3 +33,5 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
 // exported for the bot simulation / integration tests (legacy shape)
 export const server = game.server;
 export { game };
+export { GameServer } from './lib';
+export type { Room, Seat, GameServerOptions } from './lib';
