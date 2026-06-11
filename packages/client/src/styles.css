@@ -36,7 +36,7 @@ input, select {
 }
 input[type='range'] { accent-color: var(--thread); }
 
-.app { max-width: 1240px; margin: 0 auto; padding: 8px 16px 64px; }
+.app { max-width: 1240px; margin: 0 auto; padding: 8px 16px 24px; }
 header { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding: 6px 0; font-size: 0.9em; align-items: center; }
 .title { letter-spacing: 0.3em; font-weight: bold; }
 .header-right { display: flex; gap: 10px; align-items: center; }
@@ -58,9 +58,11 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 }
 .settings-pop label { display: flex; gap: 8px; align-items: center; font-size: 0.85em; color: var(--text-dim); }
 .hintbar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; display: flex; gap: 18px; justify-content: center;
+  /* sticky, not fixed: it rides the viewport bottom mid-scroll but OCCUPIES
+     flow space, so it can never sit on top of the Ready row / bottom text */
+  position: sticky; bottom: 0; z-index: 30; display: flex; gap: 18px; justify-content: center; flex-wrap: wrap;
   background: color-mix(in srgb, var(--ink) 88%, transparent); border-top: 1px solid var(--line-soft);
-  padding: 6px; font-size: 0.8em; color: var(--text-dim);
+  padding: 6px; margin-top: 8px; font-size: 0.8em; color: var(--text-dim);
 }
 .hintbar b { color: var(--focus); font-family: var(--font-ui); }
 .relicbar { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0; }
@@ -75,9 +77,6 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* ---- map (S2.2): knots on branching cord paths ---- */
 .mapwrap { position: relative; margin: 0 auto; }
-/* the pad's hint bar is fixed to the viewport foot — give the map room to
-   scroll past it (right stick pans) */
-.pad-active .mapwrap { margin-bottom: 72px; }
 .mapwrap.act-1 { filter: sepia(0.06); }
 .mapwrap.act-2 { filter: hue-rotate(8deg) saturate(0.96); }
 .mapwrap.act-3 { filter: saturate(1.08); }
