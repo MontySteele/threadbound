@@ -19,7 +19,7 @@ function logKey(log: GameEvent[]): string {
   return `${log.length}:${h}`;
 }
 
-function isResolution(log: GameEvent[]): boolean {
+export function isResolution(log: GameEvent[]): boolean {
   return log.some((e) => e.e === 'card' || e.e === 'enemy_action' || e.e === 'fallen' || e.e === 'detonate');
 }
 
@@ -164,11 +164,15 @@ export function ResolutionTheater({ log, pname }: { log: GameEvent[]; pname: (p:
       }
       if (!cancelled) setTimeout(() => setLines(null), 1200);
     })();
-    return () => {
-      cancelled = true;
-    };
+    // Deliberately NO cleanup on log churn: every broadcast (the partner or
+    // bot staging a card) replaces the log prop, and cancelling here cut the
+    // narration off after its first beat AND left the panel stuck on screen
+    // (the !cancelled guard meant lines were never cleared). A new resolution
+    // supersedes via cancelRef above; skip-click clears directly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log]);
+
+  useEffect(() => () => cancelRef.current?.(), []); // unmount only
 
   if (!lines) return null;
   return (

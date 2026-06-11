@@ -14,7 +14,7 @@ import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
 import { InspectPanel, inspectElement } from './Tooltip';
 import { ThreadCord } from './ThreadCord';
-import { ResolutionTheater } from './Theater';
+import { ResolutionTheater, isResolution } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
@@ -62,6 +62,10 @@ function inspectKeyFor(state: ClientState, owner: PlayerId, id: string): string 
 
 export default function App(): JSX.Element {
   const [state, setState] = useState<ClientState | null>(null);
+  // resolution logs get their own slot: React coalesces rapid broadcasts, and
+  // the bot's (or partner's) next staging states arrive instantly after a
+  // resolution — keyed off state.log alone, the theater could miss it entirely
+  const [resolutionLog, setResolutionLog] = useState<GameEvent[]>([]);
   const [joined, setJoined] = useState<{ code: string; playerId: PlayerId; character: string } | null>(null);
   const [error, setError] = useState('');
   const [partnerOn, setPartnerOn] = useState(false);
@@ -75,7 +79,10 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     netRef.current = new Net({
-      onState: setState,
+      onState: (s) => {
+        setState(s);
+        if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
+      },
       onJoined: (info) => setJoined(info),
       onError: (m) => { setError(m); setTimeout(() => setError(''), 4000); },
       onPresence: setPartnerOn,
@@ -162,7 +169,7 @@ export default function App(): JSX.Element {
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
           <Phase state={state} net={net} partnerOn={partnerOn} />
-          <ResolutionTheater log={state.log} pname={(p) => state.players[p].character} />
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} />
           <Tutorial state={state} />
           <Hints state={state} />
           <HintBar />
