@@ -15,8 +15,11 @@ export function emitCordFx(fx: CordFx): void {
   window.dispatchEvent(new CustomEvent('tb-cord', { detail: fx }));
 }
 
-export function ThreadCord({ value, max, mode, left, right }: {
+export function ThreadCord({ value, max, mode, left, right, compact }: {
   value: number; max: number; mode: CordMode; left: 'vess' | 'bram'; right: 'vess' | 'bram';
+  /** combat layout: the player panels flank the cord, so its own portraits
+   *  would double them — hide them and let the panels be the endpoints */
+  compact?: boolean;
 }): JSX.Element {
   const [fx, setFx] = useState<string | null>(null);
   const fxTimer = useRef(0);
@@ -41,8 +44,8 @@ export function ThreadCord({ value, max, mode, left, right }: {
   const y = 22;
 
   return (
-    <div className={`cord ${mode} ${fx ? `fx-${fx}` : ''}`} data-inspect="thread" data-gp="THREAD">
-      <div className="cord-portrait"><CharacterSigil who={left} size={56} /></div>
+    <div className={`cord ${mode} ${compact ? 'compact' : ''} ${fx ? `fx-${fx}` : ''}`} data-inspect="thread" data-gp="THREAD">
+      {!compact && <div className="cord-portrait"><CharacterSigil who={left} size={56} /></div>}
       <div className="cord-mid">
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
           {mode === 'severed' ? (
@@ -72,7 +75,7 @@ export function ThreadCord({ value, max, mode, left, right }: {
         {mode === 'slack' && <div className="cord-state-label">SLACK — your partner has fallen</div>}
         {mode === 'severed' && <div className="cord-state-label">SEVERED</div>}
       </div>
-      <div className="cord-portrait"><CharacterSigil who={right} size={56} /></div>
+      {!compact && <div className="cord-portrait"><CharacterSigil who={right} size={56} /></div>}
     </div>
   );
 }

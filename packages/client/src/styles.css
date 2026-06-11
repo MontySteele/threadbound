@@ -93,7 +93,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapnode.mypick { outline: 2px solid var(--focus); }
 
 /* ---- enemies (B5) ---- */
-.enemies { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+.enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }
 .enemy {
   position: relative; border: 2px solid; border-radius: var(--radius); padding: 8px 12px; min-width: 178px;
   background: var(--panel); animation: idle-bob 3.2s ease-in-out infinite;
@@ -156,7 +156,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 /* ---- chain (B4) ---- */
 .chain {
   background: var(--ink-2); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 10px; margin: 8px 0; display: flex; gap: 2px; align-items: center; min-height: 140px; overflow-x: auto;
+  padding: 8px; margin: 6px 0; display: flex; gap: 2px; align-items: center; min-height: 112px; overflow-x: auto;
 }
 .chain-label { writing-mode: vertical-lr; letter-spacing: 0.2em; color: var(--text-faint); font-size: 0.7em; margin-right: 6px; }
 .chaincard { border: 2px solid; border-radius: var(--radius); padding: 4px; position: relative; flex-shrink: 0; }
@@ -200,9 +200,17 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* ---- players / hand / cards ---- */
 .players { display: flex; gap: 12px; margin: 6px 0; }
-.pstat { border: 1px solid; border-radius: var(--radius); padding: 6px 10px; flex: 1; background: var(--panel); }
+.pstat { border: 1px solid; border-radius: var(--radius); padding: 6px 10px; flex: 1; background: var(--panel); position: relative; }
+/* combat fits one screen: the player panels ARE the cord's endpoints */
+.combat-table { display: flex; gap: 10px; align-items: center; margin: 4px 0; }
+.combat-table .cord { margin: 0; flex-shrink: 0; }
+.partner-hand-pop {
+  position: absolute; right: 0; top: 100%; z-index: 35; width: 330px; margin: 2px 0 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px; box-shadow: 0 8px 26px #000a; justify-content: flex-start;
+}
 .pstat.fallen { opacity: 0.6; background: #241418; }
-.hand { display: flex; gap: var(--gap); flex-wrap: wrap; margin: 8px 0; justify-content: center; }
+.hand { display: flex; gap: var(--gap); flex-wrap: wrap; margin: 6px 0; justify-content: center; }
 .card {
   width: var(--card-w); background: linear-gradient(170deg, var(--panel-2), var(--panel)); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em;
@@ -250,6 +258,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   background: var(--ink-2); border: 1px solid var(--line-soft); border-radius: var(--radius); margin: 10px 0;
   padding: 8px 12px; max-height: 180px; overflow-y: auto; font-size: 0.8em; text-align: left; color: var(--text-dim);
 }
+/* in combat the theater narrates; the log is reference — keep it short */
+.combat .log { max-height: 84px; margin: 6px 0; }
 .log .witness, .witness { color: #b9a8d4; font-style: italic; font-family: var(--font-display); }
 .log .resonance { color: var(--ignite); }
 .prose { text-align: left; line-height: 1.65; background: var(--panel); padding: 14px 18px; border-left: 3px solid var(--line); border-radius: var(--radius); font-family: var(--font-display); }

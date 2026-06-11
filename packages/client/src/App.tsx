@@ -648,8 +648,13 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
       <ChainTrack state={state} fired={fired} resonance={resonance} net={net} pulseLanding={pulseLanding} />
 
-      <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode}
-        left={state.players.p1.character} right={state.players.p2.character} />
+      {/* one row: player panels are the cord's endpoints (screen-height budget) */}
+      <div className="combat-table">
+        <PStat state={state} pid={you} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+        <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode} compact
+          left={state.players.p1.character} right={state.players.p2.character} />
+        <PStat state={state} pid={partner} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+      </div>
 
       <div className="thread-bar">
         <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || !partnerHasPrimary}
@@ -692,50 +697,6 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </div>
       )}
 
-      <div className="players">
-        {[you, partner].map((pid) => {
-          const p = state.players[pid];
-          return (
-            <div key={pid} data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
-              <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
-              {pid === state.botSeat && <span className="muted"> · the Witness</span>}
-              {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
-              <div>
-                HP {p.hp}/{p.maxHp} · {GLYPH.block} {p.block} · Energy {p.energy}
-                {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · {GLYPH.kindled} Kindled {p.kindled}</span>}
-                {p.momentum > 0 && <span data-inspect="kw:momentum"> · {GLYPH.momentum} Momentum {p.momentum}</span>}
-              </div>
-              <div className="statuses">
-                {p.statuses.frayed > 0 && <span className="fray" data-inspect="kw:frayed">{GLYPH.frayed} Frayed {p.statuses.frayed}</span>}
-                {p.statuses.weak > 0 && <span data-inspect="kw:weak">{GLYPH.weak} Weak {p.statuses.weak}</span>}
-                {p.statuses.vulnerable > 0 && <span data-inspect="kw:vulnerable">{GLYPH.vulnerable} Vuln {p.statuses.vulnerable}</span>}
-                {p.powers.map((pw) => <span key={pw}>{POWERS[pw]?.name ?? pw}</span>)}
-                {p.ready && <span className="ready">READY</span>}
-              </div>
-              {pid === partner && (
-                <div className="partner-hand">
-                  <button className="chip" data-gp="META" onClick={() => setPartnerHandOpen(!partnerHandOpen)}>
-                    hand ({p.hand.length}) {partnerHandOpen ? '▴' : '▾'}
-                  </button>
-                  {partnerHandOpen && (
-                    <div className="hand">
-                      {p.hand.map((id) => (
-                        <Card key={id} def={defFor(state, partner, id)} small
-                          echo={!!inst(state, partner, id)?.echo}
-                          upgraded={!!inst(state, partner, id)?.upgraded}
-                          mutated={!!inst(state, partner, id)?.mutated}
-                          inspect={inspectKeyFor(state, partner, id)} />
-                      ))}
-                      {p.hand.length === 0 && <i className="muted">empty</i>}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
       <div className="hand">
         {me.hand.map((id) => {
           const def = defFor(state, you, id);
@@ -765,6 +726,52 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       </div>
 
       <Log log={state.log} state={state} />
+    </div>
+  );
+}
+
+function PStat({ state, pid, partnerHandOpen, setPartnerHandOpen }: {
+  state: ClientState; pid: PlayerId; partnerHandOpen: boolean; setPartnerHandOpen: (o: boolean) => void;
+}): JSX.Element {
+  const you = state.you;
+  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+  const p = state.players[pid];
+  return (
+    <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
+      <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
+      {pid === state.botSeat && <span className="muted"> · the Witness</span>}
+      {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
+      <div>
+        HP {p.hp}/{p.maxHp} · {GLYPH.block} {p.block} · Energy {p.energy}
+        {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · {GLYPH.kindled} Kindled {p.kindled}</span>}
+        {p.momentum > 0 && <span data-inspect="kw:momentum"> · {GLYPH.momentum} Momentum {p.momentum}</span>}
+      </div>
+      <div className="statuses">
+        {p.statuses.frayed > 0 && <span className="fray" data-inspect="kw:frayed">{GLYPH.frayed} Frayed {p.statuses.frayed}</span>}
+        {p.statuses.weak > 0 && <span data-inspect="kw:weak">{GLYPH.weak} Weak {p.statuses.weak}</span>}
+        {p.statuses.vulnerable > 0 && <span data-inspect="kw:vulnerable">{GLYPH.vulnerable} Vuln {p.statuses.vulnerable}</span>}
+        {p.powers.map((pw) => <span key={pw}>{POWERS[pw]?.name ?? pw}</span>)}
+        {p.ready && <span className="ready">READY</span>}
+      </div>
+      {pid === partner && (
+        <div className="partner-hand">
+          <button className="chip" data-gp="META" onClick={() => setPartnerHandOpen(!partnerHandOpen)}>
+            hand ({p.hand.length}) {partnerHandOpen ? '▴' : '▾'}
+          </button>
+          {partnerHandOpen && (
+            <div className="hand partner-hand-pop">
+              {p.hand.map((id) => (
+                <Card key={id} def={defFor(state, partner, id)} small
+                  echo={!!inst(state, partner, id)?.echo}
+                  upgraded={!!inst(state, partner, id)?.upgraded}
+                  mutated={!!inst(state, partner, id)?.mutated}
+                  inspect={inspectKeyFor(state, partner, id)} />
+              ))}
+              {p.hand.length === 0 && <i className="muted">empty</i>}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
