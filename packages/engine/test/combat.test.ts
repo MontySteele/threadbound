@@ -50,6 +50,20 @@ function toughen(state: GameState): void {
   }
 }
 
+describe('fixed draw of 5 (Playtest-1 ruling, §14.7)', () => {
+  it('cards drawn during resolution are EXTRA next turn, not absorbed by the refill', () => {
+    const s0 = combatState();
+    toughen(s0);
+    const [stitch] = forceHand(s0, 'p1', ['loose_stitch']); // 0-cost "Draw 1"
+    let s = reduce(s0, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: stitch, slot: 0 });
+    s = ready(s);
+    expect(s.phase).toBe('combat');
+    // p1: 1 carried (drawn mid-resolution) + 5 fresh; p2: just the 5
+    expect(s.players.p1.hand.length).toBe(6);
+    expect(s.players.p2.hand.length).toBe(5);
+  });
+});
+
 describe('map negotiation (M2-B3)', () => {
   it('requires both players to pick the same node; mismatches bounce', () => {
     const s0 = initialState(7, { p1: 'vess', p2: 'bram' });
@@ -124,8 +138,9 @@ describe('combat basics (§2)', () => {
     expect(p1.hand).not.toContain(bystander1);
     expect(p1.hand).not.toContain(bystander2);
     expect(p1.discard).toContain(bystander1);
-    // ...and the hand was drawn back to 5 at the new turn
-    expect(p1.hand.length).toBe(5);
+    // ...and the 2 cards drawn mid-resolution (Link Strike: draw 2) carry as
+    // EXTRA on top of the fixed 5 (Playtest-1 ruling, §14.7)
+    expect(p1.hand.length).toBe(7);
   });
 
   it('M2-A2: Kindled banks energy into the next turn', () => {

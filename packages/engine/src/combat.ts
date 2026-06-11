@@ -853,7 +853,11 @@ export function startTurn(state: GameState): void {
     if (p.statuses.weak > 0) p.statuses.weak--;
     if (p.statuses.vulnerable > 0) p.statuses.vulnerable--;
     runHooks(state, pid, 'turnStart');
-    if (p.hand.length < 5) drawCards(state, p, 5 - p.hand.length);
+    // Fixed FIVE fresh cards (playtest ruling, supersedes draw-to-5): cards
+    // carried from resolution draws, Keep, and retain-1 are EXTRA — otherwise
+    // "Draw N" only previews cards instead of netting any (M2-A1's stated
+    // "N extra next turn"). Hand cap 10 still binds inside drawCards.
+    drawCards(state, p, 5);
   }
 }
 

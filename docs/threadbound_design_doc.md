@@ -26,7 +26,7 @@
 
 Each combat turn has three phases:
 
-1. **Draw & Intents.** Each player draws to 5 (carried cards count toward the 5; hand cap 10). Enemy intents are revealed (StS-style icons), including which player each enemy is **Bound** to (§6).
+1. **Draw & Intents.** Each player draws 5 fresh cards (hand cap 10); cards carried from resolution draws, **Keep**, or retention are extra. *(Playtest-1 ruling — supersedes Draft 3's draw-to-5, which made "Draw N" net zero cards.)* Enemy intents are revealed (StS-style icons), including which player each enemy is **Bound** to (§6).
 2. **Planning (simultaneous).** Both players stage cards from hand onto the shared **Chain track** — a row of numbered slots visible to both. You may place, remove, and reorder *your own* cards freely. You see your partner's staged cards live (face-up, with full text). Either player hits **Ready**; when both are Ready, the turn commits. Thread actions (§5) are also declared during planning.
 3. **Resolution.** The Chain resolves slot 1 → N in order, then enemies act. At the end of resolution, each player discards every card that was in hand when the turn committed; cards **drawn during resolution** are kept and carried into the next turn's hand. Cards with **Keep** are never discarded this way. *(M2 ruling, supersedes Draft 2's persistent hands.)*
 
@@ -265,3 +265,4 @@ Each change traces to a designer ruling on `docs/OPEN-QUESTIONS.md` (2026-06), s
 4. **Confirmed as-is** (M2-A4): Link (any) not self-similar; Momentum once per multi-hit Strike (per-hit is rare link design space); detonation ignores Block; Steady semantics; Mourner same-turn; seeded chooser for standard events.
 5. **Dedicated starter decks** (OQ#9 ruling → M2-A5): starter-only cards excluded from pools; per-act link-fire telemetry tracks the draft climb.
 6. **Detonation damage 3 → 4 per stack** (M2-B1 Hex rebalance lever 2) and stronger common Hex application (lever 3), tuned against the Part C telemetry gates.
+7. **Fixed draw of 5** (Playtest-1 ruling, 2026-06-11): start of turn draws 5 fresh cards instead of drawing **to** 5. M2-A1 promised "Draw N mid-resolution = N extra cards next turn" while also saying carried cards count toward the 5 — the implementation honored the latter, making draw effects, Keep, and retain-1 pure card *selection* with zero card advantage. Carried/Kept/retained cards are now extra; hand cap 10 unchanged. Sim baselines pre-dating this are obsolete (re-baseline before M3 Part A).
