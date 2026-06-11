@@ -157,10 +157,16 @@ export default function App(): JSX.Element {
           {concedeOpen && !['lobby', 'game_over', 'victory'].includes(state.phase) && (
             <div className="feedback-overlay">
               <div className="tutorial-step">ABANDON RUN</div>
-              <p className="muted">Both of you must agree — even quitting is co-op.</p>
+              <p className="muted">
+                {state.botSeat ? 'The Witness will follow your lead. Grumbling.'
+                  : partnerOn ? 'Both of you must agree — even quitting is co-op.'
+                  : 'Your partner is away — you may set the thread down alone.'}
+              </p>
               <p>
                 You: <b>{state.concede[state.you] ? 'ready to walk away' : 'undecided'}</b>
-                {' · '}Partner: <b>{state.concede[state.you === 'p1' ? 'p2' : 'p1'] ? 'ready to walk away' : 'undecided'}</b>
+                {!state.botSeat && partnerOn && (
+                  <> · Partner: <b>{state.concede[state.you === 'p1' ? 'p2' : 'p1'] ? 'ready to walk away' : 'undecided'}</b></>
+                )}
               </p>
               <button data-gp="META" onClick={() => net.act({ type: 'CONCEDE', confirm: !state.concede[state.you] } as any)}>
                 {state.concede[state.you] ? 'no — keep fighting' : 'yes, set the thread down'}

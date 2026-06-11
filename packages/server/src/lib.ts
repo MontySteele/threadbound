@@ -83,6 +83,9 @@ export class GameServer {
           const seat = ctx.room.seats[ctx.pid];
           if (seat && seat.socket === socket) seat.socket = null;
           this.broadcastPresence(ctx.room);
+          // if the remaining player already wants out, their partner's exit
+          // settles it (covers concede-then-disconnect ordering)
+          this.waiveAbsentConcede(ctx.room);
         }
       });
     });
@@ -479,11 +482,30 @@ export class GameServer {
         if (action.type === 'START_RUN') return this.send(socket, { type: 'error', message: 'use start' });
         (action as any).player = ctx.pid;
         this.applyAction(ctx.room, socket, action);
+        if (action.type === 'CONCEDE') this.waiveAbsentConcede(ctx.room);
         return;
       }
 
       default:
         this.send(socket, { type: 'error', message: `unknown message type ${msg.type}` });
+    }
+  }
+
+  /** An absent partner can't consent to abandoning — don't trap the player
+   *  who remains. Checked after any CONCEDE and after any disconnect, so
+   *  both orderings settle. The waiver lands as a normal action, so the
+   *  action log still replays (§11). */
+  private waiveAbsentConcede(room: Room): void {
+    if (['lobby', 'game_over', 'victory'].includes(room.state.phase)) return;
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      const other: PlayerId = pid === 'p1' ? 'p2' : 'p1';
+      if (!room.state.concede[pid] || room.state.concede[other]) continue;
+      const seat = room.seats[other];
+      const absent = !seat || (!seat.bot && !seat.socket);
+      if (absent) {
+        this.applyAction(room, null, { type: 'CONCEDE', player: other, confirm: true });
+        return;
+      }
     }
   }
 

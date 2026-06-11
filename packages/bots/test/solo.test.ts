@@ -174,4 +174,33 @@ describe('solo mode (S1)', () => {
       gs.close();
     }
   }, 30_000);
+
+  it('an absent co-op partner cannot block abandoning (server waives their consent)', async () => {
+    const { GameServer } = await import('@threadbound/server');
+    const gs = new GameServer({ port: 0 });
+    const port = await gs.listen();
+    try {
+      const p1 = new Client(port);
+      await p1.open();
+      p1.send({ type: 'create', character: 'vess' });
+      const joined = await p1.next('joined');
+      const p2 = new Client(port);
+      await p2.open();
+      p2.send({ type: 'join', code: joined.code });
+      await p2.next('joined');
+      p1.send({ type: 'start', seed: 13 });
+      await p1.next('state', (m) => m.state.phase === 'map');
+
+      // p1 wants out while the partner is still nominally connected…
+      p1.send({ type: 'action', action: { type: 'CONCEDE', confirm: true } });
+      await p1.next('state', (m) => m.state.concede.p1 === true);
+      // …then the partner walks off mid-run. Their exit settles it.
+      p2.ws.close();
+      const over = await p1.next('state', (m) => m.state.phase === 'game_over', 15_000);
+      expect(over.state.phase).toBe('game_over');
+      p1.ws.close();
+    } finally {
+      gs.close();
+    }
+  }, 30_000);
 });
