@@ -325,6 +325,28 @@ export class GameServer {
         return;
       }
 
+      case 'leave': {
+        // back out of a room (e.g., both friends created one). In lobby or on a
+        // finished run the seat is freed so the room can be rejoined/evicted;
+        // mid-run we only detach — the token must stay valid for reconnection.
+        if (!ctx.room || !ctx.pid) return;
+        const seat = ctx.room.seats[ctx.pid];
+        const phase = ctx.room.state.phase;
+        if (seat && (phase === 'lobby' || phase === 'game_over' || phase === 'victory')) {
+          this.tokenIndex.delete(seat.token);
+          delete ctx.room.seats[ctx.pid];
+          if (!ctx.room.seats.p1 && !ctx.room.seats.p2) this.rooms.delete(ctx.room.code);
+        } else if (seat) {
+          seat.socket = null;
+        }
+        const room = ctx.room;
+        ctx.room = null;
+        ctx.pid = null;
+        this.broadcastPresence(room);
+        this.send(socket, { type: 'left' });
+        return;
+      }
+
       case 'feedback': {
         // M3 review: in-the-moment stamps beat post-session recall
         if (!ctx.room || !ctx.pid) return;

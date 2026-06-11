@@ -288,6 +288,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <h2>The Undercroft awaits</h2>
           <TitleCord left={true} right={partnerOn} />
           <p>{partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
+          <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
           {partnerOn && <p className="witness">THE WITNESS: “{greeting}”</p>}
           {partnerOn && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
         </div>
@@ -310,7 +311,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
         <div className="center">
           <h2>The Unraveled lies still.</h2>
           <RunSummary state={state} won={true} />
-          <p className="muted">A full clear. Create a new room to descend again — and screenshot this for the calibration pile.</p>
+          <p className="muted">A full clear — screenshot this for the calibration pile.</p>
+          <button className="big" data-gp="META" onClick={() => net.leave()}>Leave room (descend again)</button>
         </div>
       );
     case 'game_over':
@@ -318,7 +320,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
         <div className="center">
           <h2>The descent ends here.</h2>
           <RunSummary state={state} won={false} />
-          <p className="muted">Death is a fresh run. Create a new room to descend again — and screenshot this for the calibration pile.</p>
+          <p className="muted">Death is a fresh run — screenshot this for the calibration pile first.</p>
+          <button className="big" data-gp="META" onClick={() => net.leave()}>Leave room (descend again)</button>
         </div>
       );
     default:

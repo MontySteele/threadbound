@@ -89,6 +89,15 @@ export class Net {
     this.send({ type: 'action', action });
   }
 
+  /** Back out of the current room: frees the seat (lobby/finished), clears
+   *  the stored session, and reloads to the home screen. */
+  leave(): void {
+    this.send({ type: 'leave' });
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(CODE_KEY);
+    setTimeout(() => location.reload(), 150); // let the message flush
+  }
+
   /** Playtest feedback stamp ([ bad / ] good / \ note, or pad L1+R1). */
   feedback(mood: 'good' | 'bad' | 'note', note?: string): void {
     this.send({ type: 'feedback', mood, note });
