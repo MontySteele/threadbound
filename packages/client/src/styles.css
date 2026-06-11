@@ -82,12 +82,11 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-cord { stroke: color-mix(in srgb, var(--thread) 38%, transparent); stroke-width: 1.6; stroke-dasharray: 6 4; }
 .map-cord.cord-live { stroke: var(--thread); stroke-width: 2.2; stroke-dasharray: none; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
 .map-cord.cord-cleared { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
-.map-knot { fill: var(--ink-2); stroke: var(--thread); stroke-width: 1.4; }
-.map-knot.knot-cleared { stroke: var(--line-soft); opacity: 0.5; }
-.mapnode { padding: 7px 12px; opacity: 0.45; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
-.mapnode.can { opacity: 1; box-shadow: 0 0 8px color-mix(in srgb, var(--thread) 30%, transparent); border-color: var(--thread); }
-.mapnode.here { outline: 2px solid var(--text); opacity: 0.85; }
-.mapnode.cleared { opacity: 0.22; }
+.mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
+.mapnode:disabled { opacity: 1; cursor: default; } /* scouting ahead must stay readable */
+.mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
+.mapnode.here { outline: 2px solid var(--text); }
+.mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
 .mapnode.mypick { outline: 2px solid var(--focus); }
 
 /* ---- enemies (B5) ---- */

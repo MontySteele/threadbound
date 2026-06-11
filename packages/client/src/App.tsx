@@ -459,11 +459,6 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               );
             });
           })}
-          {map.nodes.map((n) => {
-            const { x, y } = pos(n);
-            const cleared = n.layer < hereLayer;
-            return <circle key={n.id} className={`map-knot ${cleared ? 'knot-cleared' : ''}`} cx={x} cy={y} r={5} />;
-          })}
         </svg>
         {map.nodes.map((n) => {
           const { x, y } = pos(n);
