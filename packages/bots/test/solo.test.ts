@@ -153,4 +153,25 @@ describe('solo mode (S1)', () => {
       b.close();
     }
   }, 60_000);
+
+  it('the bot follows the human concede — a solo run can be abandoned', async () => {
+    const { GameServer } = await import('@threadbound/server');
+    const gs = new GameServer({ port: 0 });
+    const port = await gs.listen();
+    try {
+      const c = new Client(port);
+      await c.open();
+      c.send({ type: 'create', character: 'vess', solo: true, botCharacter: 'bram', botSpeed: 'instant' });
+      const joined = await c.next('joined');
+      c.send({ type: 'start', seed: 11 });
+      await c.next('state', (m) => m.state.phase === 'map');
+      c.send({ type: 'action', action: { type: 'CONCEDE', confirm: true } });
+      const over = await c.next('state', (m) => m.state.phase === 'game_over', 15_000);
+      expect(over.state.phase).toBe('game_over');
+      expect(gs.rooms.get(joined.code)!.state.concede).toEqual({ p1: true, p2: true });
+      c.ws.close();
+    } finally {
+      gs.close();
+    }
+  }, 30_000);
 });

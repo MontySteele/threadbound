@@ -104,6 +104,16 @@ export class BotPolicy {
     if (view.phase === 'game_over' && this.lastPhase === 'combat') this.combatsWon--;
     this.lastPhase = view.phase;
 
+    // S1.2: abandoning needs both confirmations — the solo bot defers to the
+    // human on quitting (a run the human can't end is a trap, not co-op)
+    if (
+      this.mode === 'solo' &&
+      !['lobby', 'game_over', 'victory'].includes(view.phase) &&
+      view.concede[otherOf(you)] && !view.concede[you]
+    ) {
+      return { type: 'CONCEDE', player: you, confirm: true };
+    }
+
     switch (view.phase) {
       case 'map': {
         if (this.mode === 'solo') {

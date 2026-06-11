@@ -6,7 +6,12 @@
 import path from 'node:path';
 import { GameServer } from './lib';
 
-const humanSession = process.argv.includes('--human-session') || !!process.env.HUMAN_TELEMETRY;
+// `npm run server --human-session` doesn't reach argv — npm swallows unknown
+// flags into npm_config_* env. Accept all three spellings.
+const humanSession =
+  process.argv.includes('--human-session') ||
+  !!process.env.HUMAN_TELEMETRY ||
+  process.env.npm_config_human_session === 'true';
 
 const game = new GameServer({
   port: Number(process.env.PORT ?? 8080),

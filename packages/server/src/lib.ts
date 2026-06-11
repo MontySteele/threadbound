@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, GameState, IllegalAction, PlayerId,
-  initialState, reduce, hashState,
+  emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
 import { BotSpeed, SoloBotDriver } from './solo';
 
@@ -191,6 +191,30 @@ export class GameServer {
     }
   }
 
+  /** Snapshots written by older builds can predate state fields (e.g. M2-era
+   *  rooms have no `concede`, no per-player telemetry). Fill the gaps with
+   *  defaults so the reducer and client never read undefined. */
+  private migrateState(s: GameState): GameState {
+    s.concede ??= { p1: false, p2: false };
+    s.advanceReady ??= { p1: false, p2: false };
+    s.witnessSaid ??= [];
+    s.pendingThread ??= 0;
+    s.rebraidUsed ??= false;
+    const fresh = emptyTelemetry();
+    s.telemetry ??= fresh;
+    for (const k of Object.keys(fresh) as (keyof ReturnType<typeof emptyTelemetry>)[]) {
+      (s.telemetry as unknown as Record<string, unknown>)[k] ??= fresh[k];
+    }
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      const pl = s.players[pid];
+      pl.pulseBonus ??= 0;
+      pl.kindled ??= 0;
+      pl.pendingFray ??= 0;
+      pl.covetCharges ??= 1;
+    }
+    return s;
+  }
+
   restore(): void {
     const p = this.opts.persistPath;
     if (!p || !fs.existsSync(p)) return;
@@ -199,7 +223,7 @@ export class GameServer {
       for (const r of snapshot.rooms ?? []) {
         const room: Room = {
           code: r.code,
-          state: r.state,
+          state: this.migrateState(r.state),
           actionLog: r.actionLog ?? [],
           lastActivity: r.lastActivity ?? this.now(),
           seats: {},

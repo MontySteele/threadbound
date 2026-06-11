@@ -84,4 +84,28 @@ describe('graceful restart persistence (M3-D)', () => {
     expect(entry?.pid).toBe('p1');
     expect(b.rooms.get('SNAPS')!.state.phase).toBe('lobby');
   });
+
+  it('migrates snapshots from older builds: missing concede/telemetry fields get defaults', () => {
+    // playtest regression: an M2-era room (no `concede`, no per-player
+    // telemetry) crashed the abandon overlay and the reducer on restore
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tb-')), 'rooms.json');
+    const a = mkServer({ persistPath: file });
+    const room = fakeRoom('OLDRM', Date.now());
+    room.state.phase = 'combat';
+    delete (room.state as Partial<typeof room.state>).concede;
+    delete (room.state as Partial<typeof room.state>).advanceReady;
+    delete (room.state.telemetry as Record<string, unknown>).damageByPlayer;
+    delete (room.state.telemetry as Record<string, unknown>).covetsSpent;
+    delete (room.state.telemetry as Record<string, unknown>).biggestTurn;
+    a.rooms.set(room.code, room);
+    a.persist();
+
+    const b = mkServer({ persistPath: file });
+    const restored = b.rooms.get('OLDRM')!.state;
+    expect(restored.concede).toEqual({ p1: false, p2: false });
+    expect(restored.advanceReady).toEqual({ p1: false, p2: false });
+    expect(restored.telemetry.damageByPlayer).toEqual({ p1: 0, p2: 0 });
+    expect(restored.telemetry.covetsSpent).toEqual({ p1: 0, p2: 0 });
+    expect(restored.telemetry.biggestTurn).toEqual({ damage: 0, turn: 0, act: 0 });
+  });
 });
