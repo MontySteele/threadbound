@@ -333,6 +333,11 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
 // Map
 // ---------------------------------------------------------------------------
 
+function nodeLabel(map: ClientState['map'], id: number): string {
+  const n = map.nodes.find((x) => x.id === id);
+  return n ? `${NODE_ICON[n.kind]} ${n.kind}` : '?';
+}
+
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const you = state.you;
   const map = state.map;
@@ -351,8 +356,16 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       <h2>{ACT_NAME[map.act]}</h2>
       <p className="muted">
         Pick your next node — you must both pick the <i>same</i> one.
-        {map.picks[partner] !== null && <b> Your partner has chosen.</b>}
-        {map.mismatchStreak > 0 && <span className="crossed"> You disagreed {map.mismatchStreak}×.</span>}
+        {map.mismatchStreak > 0 && <span className="crossed"> You disagreed {map.mismatchStreak}× — picks reset.</span>}
+      </p>
+      <p className="map-picks">
+        <span style={{ color: PCOLOR[you] }}>
+          You: <b>{map.picks[you] !== null ? nodeLabel(map, map.picks[you]!) : 'choosing…'}</b>
+        </span>
+        {' · '}
+        <span style={{ color: PCOLOR[partner] }}>
+          {state.players[partner].character}: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
+        </span>
       </p>
       <div className="map">
         {[...layers.keys()].sort((a, b) => a - b).map((layer) => (
@@ -366,12 +379,21 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
                 <button
                   key={n.id}
                   data-gp="META"
-                  className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${myPick ? 'mypick' : ''}`}
-                  style={theirPick ? { borderColor: PCOLOR[partner], borderStyle: 'dashed' } : undefined}
+                  className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
+                  style={{
+                    ...(myPick ? { outlineColor: PCOLOR[you] } : {}),
+                    ...(theirPick ? { boxShadow: `0 0 14px ${PCOLOR[partner]}`, borderColor: PCOLOR[partner] } : {}),
+                  }}
                   disabled={!can}
                   onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
                 >
-                  {NODE_ICON[n.kind]} {n.kind}{theirPick ? ' ◄' : ''}
+                  {NODE_ICON[n.kind]} {n.kind}
+                  {(myPick || theirPick) && (
+                    <span className="pick-tags">
+                      {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
+                      {theirPick && <span className="pick-tag" style={{ background: PCOLOR[partner] }}>{state.players[partner].character}</span>}
+                    </span>
+                  )}
                 </button>
               );
             })}
