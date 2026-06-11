@@ -19,6 +19,8 @@ class Audio {
   private masterGain!: GainNode;
   private ambientNodes: AudioNode[] = [];
   private currentAct = 0;
+  /** the act we WANT droning — survives setAmbient calls made before unlock */
+  private desiredAct = 0;
   volumes: Volumes;
 
   constructor() {
@@ -38,6 +40,9 @@ class Audio {
       this.ambientGain = this.ctx.createGain();
       this.ambientGain.connect(this.masterGain);
       this.applyVolumes();
+      // the act drone was usually requested BEFORE the first gesture created
+      // the context (reconnect lands straight in combat) — start it now
+      this.applyAmbient();
     } catch {
       this.ctx = null;
     }
@@ -135,6 +140,12 @@ class Audio {
 
   /** One drone per act; sparser for the finale (Part C). */
   setAmbient(act: number): void {
+    this.desiredAct = act;
+    this.applyAmbient();
+  }
+
+  private applyAmbient(): void {
+    const act = this.desiredAct;
     if (!this.ctx || act === this.currentAct) return;
     this.currentAct = act;
     for (const n of this.ambientNodes) {
@@ -153,7 +164,7 @@ class Audio {
       osc.type = i === 0 ? 'sine' : 'triangle';
       osc.frequency.value = f;
       const g = this.ctx.createGain();
-      g.gain.value = 0.05 / (i + 1);
+      g.gain.value = 0.09 / (i + 1); // audible under the sfx bed (playtest 1)
       const lfo = this.ctx.createOscillator();
       lfo.frequency.value = 0.05 + i * 0.03;
       const lfoGain = this.ctx.createGain();

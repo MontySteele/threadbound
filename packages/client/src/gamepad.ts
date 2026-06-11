@@ -200,27 +200,37 @@ export class Controller {
     }
     const zone = this.focused.dataset.gp!;
     const inZone = items.filter((el) => el.dataset.gp === zone);
-    // spatial nearest-neighbor within the zone; up/down may leave the zone
     const from = this.focused.getBoundingClientRect();
     const fc = { x: from.left + from.width / 2, y: from.top + from.height / 2 };
-    const candidates = (pool: HTMLElement[]) =>
+    const horiz = dir === 'left' || dir === 'right';
+    const measure = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      // edge-to-edge travel in the pressed direction (small overlaps allowed)
+      const along =
+        dir === 'left' ? from.left - r.right
+        : dir === 'right' ? r.left - from.right
+        : dir === 'up' ? from.top - r.bottom
+        : r.top - from.bottom;
+      // do our spans actually overlap on the perpendicular axis?
+      const overlap = horiz
+        ? Math.min(from.bottom, r.bottom) - Math.max(from.top, r.top)
+        : Math.min(from.right, r.right) - Math.max(from.left, r.left);
+      const across = horiz ? Math.abs(r.top + r.height / 2 - fc.y) : Math.abs(r.left + r.width / 2 - fc.x);
+      return { el, along, overlap, across };
+    };
+    // Rectangle navigation, not center-distance: a move lands on something
+    // your row/column actually faces. Tiers: aligned in-zone → aligned
+    // anywhere → (vertical only) nearest with a heavy diagonal penalty, so
+    // up/down always traverses but never warps far sideways; left/right
+    // dead-end rather than teleport diagonally.
+    const best = (pool: HTMLElement[], aligned: boolean) =>
       pool
         .filter((el) => el !== this.focused)
-        .map((el) => {
-          const r = el.getBoundingClientRect();
-          const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-          const dx = c.x - fc.x;
-          const dy = c.y - fc.y;
-          const along = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy;
-          const across = dir === 'left' || dir === 'right' ? Math.abs(dy) : Math.abs(dx);
-          return { el, along, across };
-        })
-        .filter((c) => c.along > 4)
-        .sort((a, b) => a.along + a.across * 2 - (b.along + b.across * 2));
-    // prefer the current zone, but any direction may leave it — the dpad
-    // alone must reach every zone (L1/R1 stay as shortcuts)
-    let next = candidates(inZone)[0]?.el;
-    if (!next) next = candidates(items)[0]?.el;
+        .map(measure)
+        .filter((c) => c.along > -6 && (!aligned || c.overlap > 2))
+        .sort((a, b) => a.along + a.across * (aligned ? 0.3 : 2.5) - (b.along + b.across * (aligned ? 0.3 : 2.5)))[0]?.el;
+    let next = best(inZone, true) ?? best(items, true);
+    if (!next && !horiz) next = best(items, false);
     if (next) this.setFocus(next);
   }
 
