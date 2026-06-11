@@ -4,7 +4,7 @@
 // (Deviation from "scripted single combat" logged in OPEN-QUESTIONS: the guide
 // rides the run's real first combat instead of a separate scripted one.)
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ClientState } from './net';
 
 const DONE_KEY = 'tb_tutorial_done';
@@ -46,11 +46,21 @@ const STEPS: Step[] = [
 export function Tutorial({ state }: { state: ClientState }): JSX.Element | null {
   const [stepIdx, setStepIdx] = useState(0);
   const [active, setActive] = useState(() => !localStorage.getItem(DONE_KEY));
+  // the thread step is the only one a player can decline (no Thread action
+  // wanted, or none possible while severed/slack) — record the turn it
+  // appeared and let it pass once a turn resolves without one
+  const threadTurn = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!active || state.phase !== 'combat') return;
+    if (!active || state.phase !== 'combat') {
+      threadTurn.current = null;
+      return;
+    }
     const step = STEPS[stepIdx];
-    if (step && step.done(state)) {
+    if (step?.id === 'thread' && threadTurn.current === null) threadTurn.current = state.combat!.turn;
+    const declined =
+      step?.id === 'thread' && threadTurn.current !== null && state.combat!.turn !== threadTurn.current;
+    if (step && (step.done(state) || declined)) {
       if (stepIdx + 1 >= STEPS.length) {
         localStorage.setItem(DONE_KEY, '1');
         setActive(false);

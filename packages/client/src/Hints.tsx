@@ -84,11 +84,13 @@ export function Hints({ state }: { state: ClientState }): JSX.Element | null {
     const t = setTimeout(() => {
       window.addEventListener('pointerdown', dismiss, { once: true });
       window.addEventListener('keydown', dismiss, { once: true });
+      window.addEventListener('gp-input', dismiss, { once: true }); // pad buttons (B1)
     }, 600);
     return () => {
       clearTimeout(t);
       window.removeEventListener('pointerdown', dismiss);
       window.removeEventListener('keydown', dismiss);
+      window.removeEventListener('gp-input', dismiss);
     };
   }, [active]);
 

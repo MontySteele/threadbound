@@ -91,6 +91,12 @@ export class Controller {
       return;
     }
 
+    // pad presses never fire pointerdown/keydown — anything that dismisses
+    // "on any input" (hints) listens for this instead
+    if (cur.buttons.some((b, i) => b && !this.prev.buttons[i])) {
+      window.dispatchEvent(new CustomEvent('gp-input'));
+    }
+
     // right stick pans the view (the map outgrows the viewport; the fixed
     // hint bar covers its foot). Left stick / dpad keep moving the focus.
     const rx = cur.axes[2] ?? 0;
