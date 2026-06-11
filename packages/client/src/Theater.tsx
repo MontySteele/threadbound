@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEvent, PlayerId } from '@threadbound/engine';
 import { audio } from './sfx';
+import { controller, GLYPHS } from './gamepad';
 import { emitCordFx } from './ThreadCord';
 
 const BEAT = 400;
@@ -175,7 +176,7 @@ export function ResolutionTheater({ log, pname }: { log: GameEvent[]; pname: (p:
       {lines.map((b, i) => (
         <div key={i} className={`beat ${b.cls ?? ''} ${i === lines.length - 1 ? 'beat-now' : ''}`}>{b.text}</div>
       ))}
-      <div className="beat-skip">click / ○ to skip</div>
+      <div className="beat-skip">click{controller.connected ? ` / ${GLYPHS[controller.flavor].cancel}` : ''} to skip</div>
     </div>
   );
 }

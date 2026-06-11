@@ -217,8 +217,10 @@ export class Controller {
         })
         .filter((c) => c.along > 4)
         .sort((a, b) => a.along + a.across * 2 - (b.along + b.across * 2));
+    // prefer the current zone, but any direction may leave it — the dpad
+    // alone must reach every zone (L1/R1 stay as shortcuts)
     let next = candidates(inZone)[0]?.el;
-    if (!next && (dir === 'up' || dir === 'down')) next = candidates(items)[0]?.el;
+    if (!next) next = candidates(items)[0]?.el;
     if (next) this.setFocus(next);
   }
 
@@ -243,7 +245,15 @@ export class Controller {
   }
 
   private cancel(): void {
-    this.clickAction('cancel') || this.onInspect?.(null);
+    // several cancelables can coexist (pending-target chip, narration
+    // theater, deck overlay) — peel the TOPMOST, i.e. the last one rendered.
+    // No offsetParent check: fixed-position overlays report null for it.
+    const els = [...document.querySelectorAll<HTMLElement>('[data-gp-action="cancel"]')].filter(
+      (el) => !(el as HTMLButtonElement).disabled && el.getClientRects().length > 0,
+    );
+    const top = els[els.length - 1];
+    if (top) top.click();
+    else this.onInspect?.(null);
   }
 
   private reorder(dir: 'left' | 'right'): void {
