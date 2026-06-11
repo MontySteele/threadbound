@@ -39,6 +39,17 @@ function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
 }
 
+// The game wants the whole screen. Browsers only grant fullscreen from a
+// user gesture, so this rides the room-entry / descent clicks (and ⛶ / f).
+function goFullscreen(): void {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
+function toggleFullscreen(): void {
+  if (document.fullscreenElement) void document.exitFullscreen();
+  else goFullscreen();
+}
+
 function inspectKeyFor(state: ClientState, owner: PlayerId, id: string): string {
   const i = inst(state, owner, id);
   if (!i) return '';
@@ -82,6 +93,7 @@ export default function App(): JSX.Element {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
       if (e.key === 'd') setDeckOpen((o) => !o);
+      else if (e.key === 'f') toggleFullscreen();
       else if (e.key === '[') netRef.current?.feedback('bad');
       else if (e.key === ']') netRef.current?.feedback('good');
       else if (e.key === '\\') {
@@ -140,6 +152,7 @@ export default function App(): JSX.Element {
                   abandon…
                 </button>
               )}
+              <button className="chip" data-gp="META" title="fullscreen (f)" onClick={toggleFullscreen}>⛶</button>
               <Settings net={net} solo={!!state.botSeat} />
               <span className={partnerOn ? 'on' : 'off'}>
                 {state.botSeat ? '● the Witness' : partnerOn ? '● partner' : '○ partner'}
@@ -198,6 +211,7 @@ function HintBar(): JSX.Element | null {
       <span><b>{g.cancel}</b> back</span>
       <span><b>{g.menu}</b> thread</span>
       <span><b>{g.inspect}</b> inspect</span>
+      <span><b>{g.scroll}</b> pan</span>
       <span><b>{g.zone}</b> zones</span>
       <span><b>{g.reorder}</b> reorder</span>
       <span><b>{g.ready}</b> ready</span>
@@ -304,12 +318,12 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
             <option value="bram">Bram, the Cinderfist</option>
           </select>
         </label>
-        <button data-gp="META" onClick={() => net.create(character)}>Create room</button>
+        <button data-gp="META" onClick={() => { goFullscreen(); net.create(character); }}>Create room</button>
       </div>
       <div className="panel">
         <h3>Join a room</h3>
         <input placeholder="5-letter code" value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-        <button data-gp="META" onClick={() => net.join(code)}>Join</button>
+        <button data-gp="META" onClick={() => { goFullscreen(); net.join(code); }}>Join</button>
       </div>
       <div className="panel">
         <h3>Descend alone</h3>
@@ -328,7 +342,7 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
             <option value="vess">Vess, the Hexweaver</option>
           </select>
         </label>
-        <button data-gp="META" onClick={() => net.createSolo(soloCharacter, botCharacter)}>Descend alone</button>
+        <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
       </div>
     </div>
   );
@@ -350,7 +364,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <p>{solo ? 'The Witness holds the other end. Reluctantly.' : partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
           <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
           {(partnerOn || solo) && <p className="witness">THE WITNESS: “{greeting}”</p>}
-          {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => net.start()}>Begin the descent</button>}
+          {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => { goFullscreen(); net.start(); }}>Begin the descent</button>}
         </div>
       );
     }

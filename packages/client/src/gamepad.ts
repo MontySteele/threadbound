@@ -7,12 +7,12 @@ export type PadFlavor = 'ps' | 'xbox';
 
 export interface GlyphSet {
   confirm: string; cancel: string; menu: string; inspect: string;
-  zone: string; reorder: string; ready: string; overview: string;
+  zone: string; reorder: string; ready: string; overview: string; scroll: string;
 }
 
 export const GLYPHS: Record<PadFlavor, GlyphSet> = {
-  ps: { confirm: '✕', cancel: '○', menu: '□', inspect: '△', zone: 'L1/R1', reorder: 'L2/R2', ready: 'Options (hold)', overview: 'Create' },
-  xbox: { confirm: 'A', cancel: 'B', menu: 'X', inspect: 'Y', zone: 'LB/RB', reorder: 'LT/RT', ready: 'Menu (hold)', overview: 'View' },
+  ps: { confirm: '✕', cancel: '○', menu: '□', inspect: '△', zone: 'L1/R1', reorder: 'L2/R2', ready: 'Options (hold)', overview: 'Create', scroll: 'R-stick' },
+  xbox: { confirm: 'A', cancel: 'B', menu: 'X', inspect: 'Y', zone: 'LB/RB', reorder: 'LT/RT', ready: 'Menu (hold)', overview: 'View', scroll: 'R-stick' },
 };
 
 const ZONE_ORDER = ['ENEMIES', 'CHAIN', 'THREAD', 'HAND', 'META'];
@@ -89,6 +89,14 @@ export class Controller {
     if (!this.active) {
       this.prev = cur;
       return;
+    }
+
+    // right stick pans the view (the map outgrows the viewport; the fixed
+    // hint bar covers its foot). Left stick / dpad keep moving the focus.
+    const rx = cur.axes[2] ?? 0;
+    const ry = cur.axes[3] ?? 0;
+    if (Math.abs(rx) > 0.3 || Math.abs(ry) > 0.3) {
+      window.scrollBy(Math.abs(rx) > 0.3 ? rx * 24 : 0, Math.abs(ry) > 0.3 ? ry * 24 : 0);
     }
 
     // directional: dpad 12-15 + left stick, with hold-repeat

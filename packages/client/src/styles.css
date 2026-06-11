@@ -75,6 +75,9 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 
 /* ---- map (S2.2): knots on branching cord paths ---- */
 .mapwrap { position: relative; margin: 0 auto; }
+/* the pad's hint bar is fixed to the viewport foot — give the map room to
+   scroll past it (right stick pans) */
+.pad-active .mapwrap { margin-bottom: 72px; }
 .mapwrap.act-1 { filter: sepia(0.06); }
 .mapwrap.act-2 { filter: hue-rotate(8deg) saturate(0.96); }
 .mapwrap.act-3 { filter: saturate(1.08); }
