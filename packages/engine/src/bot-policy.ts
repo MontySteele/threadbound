@@ -65,9 +65,6 @@ export class BotPolicy {
   private reorderCount = 0;
   /** solo: the turn on which we granted the post-human-ready re-evaluation pass */
   private finalPassTurn = -1;
-  /** solo: items WE bought at the current shop (anything else sold = the human spent) */
-  private myShopBuys = new Set<string>();
-  private shopKey = '';
   combatsWon = 0;
   private lastPhase = '';
 
@@ -458,49 +455,34 @@ export class BotPolicy {
   private playShop(view: BotView): Action | null {
     const you = view.you;
     if (this.mode === 'sim' && you === 'p2' && !view.advanceReady.p1) return null; // deterministic serial shopping
+    // S1.2 courtesy, playtest-1 revision: gold AND stock are shared (3 removal
+    // services per shop) — a floor on gold alone let the bot slam the scarce
+    // services before the human clicked anything. The bot now buys NOTHING
+    // until the human advances; then it shops the leftovers and follows.
+    if (this.mode === 'solo' && !view.advanceReady[otherOf(you)]) return null;
     const shop = view.shop!;
 
-    // S1.2 courtesy floor: the bot may spend, but never below 50% of current
-    // gold unless the human has spent first this shop. (Detected from the
-    // view: any sold item we didn't buy ourselves. Crude; refine post-playtest.)
-    let allowed = (price: number): boolean => price <= view.gold;
-    if (this.mode === 'solo') {
-      const key = `${view.map.act}:${view.map.position}`;
-      if (key !== this.shopKey) {
-        this.shopKey = key;
-        this.myShopBuys.clear();
-      }
-      const humanSpent = shop.items.some((i) => i.sold && !this.myShopBuys.has(i.id));
-      allowed = (price) => price <= view.gold && (humanSpent || price * 2 <= view.gold);
-    }
-    const note = (action: Action & { itemId?: string }): Action => {
-      if (this.mode === 'solo' && action.itemId) this.myShopBuys.add(action.itemId);
-      return action;
-    };
-
-    const affordable = shop.items.filter((i) => !i.sold && allowed(i.price));
+    const affordable = shop.items.filter((i) => !i.sold && i.price <= view.gold);
     const myCard = affordable.find((i) => i.kind === 'card' && i.forPlayer === you);
     const relic = affordable.find((i) => i.kind === 'relic');
     const removal0 = affordable.find((i) => i.kind === 'removal');
     const me0 = view.players[you];
     const starter0 = me0.deck.find((c) => CARDS[c.defId].starterOnly);
     if (removal0 && starter0) {
-      return note({ type: 'SHOP_REMOVE', player: you, itemId: removal0.id, cardInstanceId: starter0.instanceId });
+      return { type: 'SHOP_REMOVE', player: you, itemId: removal0.id, cardInstanceId: starter0.instanceId };
     }
     if (myCard && this.draftScore(view, myCard.refId!) >= 5) {
-      return note({ type: 'SHOP_BUY', player: you, itemId: myCard.id });
+      return { type: 'SHOP_BUY', player: you, itemId: myCard.id };
     }
     if (relic && this.chance(view, 0.4, 'shop:relic')) {
-      return note({ type: 'SHOP_BUY', player: you, itemId: relic.id });
+      return { type: 'SHOP_BUY', player: you, itemId: relic.id };
     }
     const removal = affordable.find((i) => i.kind === 'removal');
     const me = view.players[you];
     const starter = me.deck.find((c) => CARDS[c.defId].starterOnly);
     if (removal && starter && me.deck.length > 8 && this.chance(view, 0.4, 'shop:remove')) {
-      return note({ type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId });
+      return { type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId };
     }
-    // solo: linger until the human advances — they may still want the gold
-    if (this.mode === 'solo' && !view.advanceReady[otherOf(you)]) return null;
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;
   }
