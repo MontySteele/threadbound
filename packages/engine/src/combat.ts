@@ -131,6 +131,53 @@ export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set
   return out;
 }
 
+/** Static planning preview (§11-sanctioned, like computeLinksFired): the
+ *  Block each player would gain from the chain as currently staged —
+ *  base + fired-link effects, with Pulse landing and Resonance scaling
+ *  mirrored from resolution. An ESTIMATE: hooks (relics/powers) excluded. */
+export function computePlannedBlock(state: GameState): Record<PlayerId, number> {
+  const out: Record<PlayerId, number> = { p1: 0, p2: 0 };
+  const combat = state.combat;
+  if (!combat) return out;
+  const chain = combat.chain;
+  const fired = computeLinksFired(state, chain);
+  const resonance = computeResonanceSlots(chain, fired);
+  const pulse: Record<PlayerId, number> = {
+    p1: state.players.p1.pulseBonus,
+    p2: state.players.p2.pulseBonus,
+  };
+  for (const ta of combat.threadActions) {
+    if (ta.kind !== 'pulse') continue;
+    const recipient = otherPlayer(ta.player);
+    pulse[recipient] += hasPassive(state.players[ta.player], 'pulsePlusOne') ? 4 : 3;
+  }
+  const pulseSpent: Record<PlayerId, boolean> = { p1: false, p2: false };
+  for (let i = 0; i < chain.length; i++) {
+    const slot = chain[i];
+    const def = effectiveDef(mustFind(state, slot));
+    const effects: EffectOp[] =
+      fired[i] && def.link
+        ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+        : def.base;
+    const hasPrimary = effects.some((e) => 'primary' in e && (e as { primary?: boolean }).primary);
+    const myPulse = hasPrimary && !pulseSpent[slot.owner] ? pulse[slot.owner] : 0;
+    if (hasPrimary && !pulseSpent[slot.owner]) pulseSpent[slot.owner] = true;
+    for (const eff of effects) {
+      if (eff.op === 'block') {
+        let v = eff.amount;
+        if (eff.primary) {
+          v += myPulse;
+          if (resonance.has(i)) v = Math.ceil(v * 1.5);
+        }
+        out[slot.owner] += v;
+      } else if (eff.op === 'partnerBlock') {
+        out[otherPlayer(slot.owner)] += eff.amount;
+      }
+    }
+  }
+  return out;
+}
+
 export function longestSoloRun(chain: ChainSlot[]): number {
   let best = 0;
   let cur = 0;

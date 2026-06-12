@@ -4,7 +4,7 @@ export * from './hash';
 export { reduce, initialState, emptyTelemetry, STARTING_HP } from './reducer';
 export {
   effectiveDef, otherPlayer, findInstance, hasPassive, targetableEnemies,
-  computeLinksFired, computeResonanceSlots, longestSoloRun, DETONATION_DAMAGE,
+  computeLinksFired, computeResonanceSlots, computePlannedBlock, longestSoloRun, DETONATION_DAMAGE,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 export { CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, eventsForAct } from './content/registry';

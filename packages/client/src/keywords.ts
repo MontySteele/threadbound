@@ -44,6 +44,7 @@ kw({ id: 'pulse', name: 'Pulse', rule: '2 Thread: your partner’s next card wit
 kw({ id: 'steady', name: 'Steady', rule: '1 Thread: remove a Frayed stack from you both, or shield against the next Fray this turn.', flavor: 'Breathe. Hold the line still.' });
 kw({ id: 'reclaim', name: 'Reclaim', rule: '2 Thread: copy a card from your partner’s discard into your hand as a mutated Echo.', flavor: 'What’s theirs is yours, briefly.' });
 kw({ id: 'covet', name: 'Covet', rule: 'After your partner picks a reward, spend a charge to take a card they passed over. +1 charge per elite; Barter at rest sites.', flavor: 'The commandments saw you coming.' });
+kw({ id: 'block-planned', name: 'Planned Block', rule: 'The Block your staged cards will grant when the turn resolves (links, Pulse, and Resonance included; relic bonuses excluded). Block absorbs damage and clears at the start of your turn.', flavor: 'A wall you have promised to build.' });
 kw({ id: 'weak', name: 'Weak', rule: 'Deals 25% less damage this turn per stack (rounds down).' });
 kw({ id: 'vulnerable', name: 'Vulnerable', rule: 'Takes 50% more damage while it lasts.' });
 kw({ id: 'stun', name: 'Stun', rule: 'Skips its next turn. Rare for a reason.' });

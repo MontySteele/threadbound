@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
-  computeLinksFired, computeResonanceSlots, effectiveDef, hasPassive,
+  computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, hasPassive,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { GLYPH } from './keywords';
@@ -554,6 +554,9 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
     try { return computeLinksFired(state, combat.chain); } catch { return combat.chain.map(() => false); }
   }, [state, combat.chain]);
   const resonance = useMemo(() => computeResonanceSlots(combat.chain, fired), [combat.chain, fired]);
+  const plannedBlock = useMemo(() => {
+    try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
+  }, [state]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
   // Pulse bookkeeping (§5 + M2-D4): the bonus lands on the recipient's FIRST
@@ -668,10 +671,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
       {/* one row: player panels are the cord's endpoints (screen-height budget) */}
       <div className="combat-table">
-        <PStat state={state} pid={you} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+        <PStat state={state} pid={you} plannedBlock={plannedBlock[you]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
         <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode} compact
           left={state.players.p1.character} right={state.players.p2.character} />
-        <PStat state={state} pid={partner} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+        <PStat state={state} pid={partner} plannedBlock={plannedBlock[partner]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
       </div>
 
       <div className="thread-bar">
@@ -748,8 +751,9 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   );
 }
 
-function PStat({ state, pid, partnerHandOpen, setPartnerHandOpen }: {
-  state: ClientState; pid: PlayerId; partnerHandOpen: boolean; setPartnerHandOpen: (o: boolean) => void;
+function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }: {
+  state: ClientState; pid: PlayerId; plannedBlock?: number;
+  partnerHandOpen: boolean; setPartnerHandOpen: (o: boolean) => void;
 }): JSX.Element {
   const you = state.you;
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
@@ -760,7 +764,12 @@ function PStat({ state, pid, partnerHandOpen, setPartnerHandOpen }: {
       {pid === state.botSeat && <span className="muted"> · the Witness</span>}
       {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
       <div>
-        HP {p.hp}/{p.maxHp} · {GLYPH.block} {p.block} · Energy {p.energy}
+        HP {p.hp}/{p.maxHp}
+        {/* live Block is structurally 0 while planning — show the staged plan */}
+        <span data-inspect="kw:block-planned"> · {GLYPH.block} {(plannedBlock ?? 0) > 0
+          ? <b className="planned-block">{plannedBlock} planned</b>
+          : p.block}</span>
+        {' '}· Energy {p.energy}
         {p.kindled > 0 && <span className="kindled" data-inspect="kw:kindled"> · {GLYPH.kindled} Kindled {p.kindled}</span>}
         {p.momentum > 0 && <span data-inspect="kw:momentum"> · {GLYPH.momentum} Momentum {p.momentum}</span>}
       </div>

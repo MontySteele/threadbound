@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameState, PlayerId } from '../src/types';
 import { initialState, reduce } from '../src/reducer';
-import { computeResonanceSlots, longestSoloRun } from '../src/combat';
+import { computePlannedBlock, computeResonanceSlots, longestSoloRun } from '../src/combat';
 import { pickableNodes } from '../src/map';
 
 /** Start a run and walk both players onto the first (combat) map node. */
@@ -61,6 +61,18 @@ describe('fixed draw of 5 (Playtest-1 ruling, §14.7)', () => {
     // p1: 1 carried (drawn mid-resolution) + 5 fresh; p2: just the 5
     expect(s.players.p1.hand.length).toBe(6);
     expect(s.players.p2.hand.length).toBe(5);
+  });
+});
+
+describe('planned-block preview (§11 static helper)', () => {
+  it('sums staged base block per owner; empty chain previews zero', () => {
+    const s = combatState();
+    expect(computePlannedBlock(s)).toEqual({ p1: 0, p2: 0 });
+    const [ward] = forceHand(s, 'p1', ['wardknot']); // Gain 4 Block
+    const staged = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: ward, slot: 0 });
+    const planned = computePlannedBlock(staged);
+    expect(planned.p1).toBeGreaterThan(0);
+    expect(planned.p2).toBe(0);
   });
 });
 
