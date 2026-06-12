@@ -42,8 +42,12 @@ for (const e of M2_ENEMIES) {
 // displayed intent, log line, and tooltip reads the scaled truth. Tune these
 // two numbers only against the A1 bands; do not stack per-def edits on top.
 
-export const PT1_ENEMY_HP_SCALE = 1.2;
-export const PT1_ENEMY_DMG_SCALE = 1.2;
+// Tuning ladder (seeded 50-run bot floor): 1.0 → 86% | 1.2/1.2 → 30% (the
+// designer's calibration run) | then the §14.10 Hatpin buff pushed 1.2/1.2
+// back to 74% | 1.3/1.25 → 50% | 1.4/1.3 → 34%, act-1 HP loss 21.4 —
+// restores the floor the validated run sat on. Next human run rules.
+export const PT1_ENEMY_HP_SCALE = 1.4;
+export const PT1_ENEMY_DMG_SCALE = 1.3;
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {
