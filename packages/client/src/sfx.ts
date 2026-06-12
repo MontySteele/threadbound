@@ -18,6 +18,7 @@ class Audio {
   private ambientGain!: GainNode;
   private masterGain!: GainNode;
   private ambientNodes: AudioNode[] = [];
+  private ambientTimers: number[] = [];
   private currentAct = 0;
   /** the act we WANT droning — survives setAmbient calls made before unlock */
   private desiredAct = 0;
@@ -147,7 +148,9 @@ class Audio {
     }
   }
 
-  /** One drone per act; sparser for the finale (Part C). */
+  /** One evolving bed per act (Part C, playtest-1 variety pass): the drone
+   *  slowly walks a small per-act chord cycle, and a sparse motif note rings
+   *  every so often. Still 100% procedural — no assets. */
   setAmbient(act: number): void {
     this.desiredAct = act;
     this.applyAmbient();
@@ -157,26 +160,34 @@ class Audio {
     const act = this.desiredAct;
     if (!this.ctx || act === this.currentAct) return;
     this.currentAct = act;
+    for (const t of this.ambientTimers) window.clearTimeout(t);
+    this.ambientTimers = [];
     for (const n of this.ambientNodes) {
       try { (n as OscillatorNode).stop?.(); } catch { /* already stopped */ }
       n.disconnect();
     }
     this.ambientNodes = [];
     if (act < 1) return;
+    const ctx = this.ctx;
     const roots: Record<number, number[]> = {
       1: [55, 82.4, 110],        // A1 minor stack — the Undercroft
       2: [61.7, 92.5, 123.5],    // B1 — the Hollow Choir, a step up and wronger
       3: [49, 98],               // G1 — the Last Braid, sparse
     };
-    for (const [i, f] of (roots[act] ?? roots[1]).entries()) {
-      const osc = this.ctx.createOscillator();
+    // slow harmonic walk: unison → minor 3rd up → 4th up → back (ratios keep
+    // every act's character; the change is felt more than heard)
+    const CYCLE: number[] = [1, 6 / 5, 4 / 3, 1, 9 / 10, 1];
+    const oscs: OscillatorNode[] = [];
+    const base = roots[act] ?? roots[1];
+    for (const [i, f] of base.entries()) {
+      const osc = ctx.createOscillator();
       osc.type = i === 0 ? 'sine' : 'triangle';
       osc.frequency.value = f;
-      const g = this.ctx.createGain();
+      const g = ctx.createGain();
       g.gain.value = 0.09 / (i + 1); // audible under the sfx bed (playtest 1)
-      const lfo = this.ctx.createOscillator();
+      const lfo = ctx.createOscillator();
       lfo.frequency.value = 0.05 + i * 0.03;
-      const lfoGain = this.ctx.createGain();
+      const lfoGain = ctx.createGain();
       lfoGain.gain.value = 0.02;
       lfo.connect(lfoGain);
       lfoGain.connect(g.gain);
@@ -184,8 +195,44 @@ class Audio {
       g.connect(this.ambientGain);
       osc.start();
       lfo.start();
+      oscs.push(osc);
       this.ambientNodes.push(osc, lfo, g);
     }
+    let step = 0;
+    const walk = () => {
+      step = (step + 1) % CYCLE.length;
+      const t = ctx.currentTime;
+      for (const [i, osc] of oscs.entries()) {
+        // the lowest voice holds the root; upper voices wander
+        const mult = i === 0 ? 1 : CYCLE[(step + i) % CYCLE.length];
+        osc.frequency.cancelScheduledValues(t);
+        osc.frequency.setValueAtTime(osc.frequency.value, t);
+        osc.frequency.linearRampToValueAtTime(base[i] * mult, t + 6);
+      }
+      this.ambientTimers.push(window.setTimeout(walk, 18_000 + Math.random() * 14_000));
+    };
+    this.ambientTimers.push(window.setTimeout(walk, 16_000));
+
+    // sparse motif: a lone bell from the act's minor pentatonic, far apart
+    // enough to stay scenery (gain rides the ambient bus + sliders)
+    const PENT = [1, 6 / 5, 4 / 3, 3 / 2, 9 / 5];
+    const bell = () => {
+      const f = base[0] * 4 * PENT[Math.floor(Math.random() * PENT.length)];
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (act === 3 ? 6 : 3.5));
+      osc.connect(g);
+      g.connect(this.ambientGain);
+      osc.start(t);
+      osc.stop(t + 7);
+      this.ambientTimers.push(window.setTimeout(bell, 9_000 + Math.random() * 18_000));
+    };
+    this.ambientTimers.push(window.setTimeout(bell, 5_000 + Math.random() * 6_000));
   }
 }
 
