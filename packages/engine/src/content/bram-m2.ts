@@ -403,8 +403,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: forgefire — on turnStart: kindled 1 (banked heat: +1 energy arriving each following turn)
   {
-    id: 'forgefire', name: 'Forgefire', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite',
-    text: 'Power: at the start of your turn, gain Kindled 1.',
+    id: 'forgefire', name: 'Forgefire', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
+    text: 'Power: at the start of your turn, gain Kindled 1. Exhaust.',
     base: [{ op: 'power', power: 'forgefire' }],
     mutation: {
       name: 'Stitched Forgefire', text: 'Gain 2 Thread. Draw 1.',
@@ -417,8 +417,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: eye_for_an_opening — on linkFired: momentum 1 (every fired link of yours feeds the swing)
   {
-    id: 'eye_for_an_opening', name: 'Eye for an Opening', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Rite',
-    text: 'Power: whenever one of your links fires, gain 1 Momentum.',
+    id: 'eye_for_an_opening', name: 'Eye for an Opening', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Rite', exhaust: true,
+    text: 'Power: whenever one of your links fires, gain 1 Momentum. Exhaust.',
     base: [{ op: 'power', power: 'eye_for_an_opening' }],
     mutation: {
       name: 'Hexbound Eye for an Opening', text: 'Apply 3 Hex. Gain 1 Thread.',
@@ -499,8 +499,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: aftershock — on detonate: damageAll 3 (every detonation event cracks outward into all enemies)
   {
-    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite',
-    text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies.',
+    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+    text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'aftershock' }],
     upgrade: {
       text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies.',

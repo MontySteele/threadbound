@@ -409,8 +409,8 @@ export const VESS_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: spitespun_mantle — on detonate: hexAll 1 (whenever Hexes detonate, apply 1 Hex to ALL enemies)
   {
-    id: 'spitespun_mantle', name: 'Spitespun Mantle', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite',
-    text: 'Power: whenever Hexes detonate, apply 1 Hex to ALL enemies.',
+    id: 'spitespun_mantle', name: 'Spitespun Mantle', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
+    text: 'Power: whenever Hexes detonate, apply 1 Hex to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'spitespun_mantle' }],
     mutation: {
       name: 'Cinderspun Mantle', text: 'Gain 8 Block. Gain 3 Momentum.',
@@ -507,8 +507,8 @@ export const VESS_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: loom_of_hours — on turnStart: kindled 1, block 2 (at the start of each turn, gain Kindled 1 and 2 Block)
   {
-    id: 'loom_of_hours', name: 'Loom of Hours', character: 'vess', rarity: 'rare', cost: 3, tag: 'Rite',
-    text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block.',
+    id: 'loom_of_hours', name: 'Loom of Hours', character: 'vess', rarity: 'rare', cost: 3, tag: 'Rite', exhaust: true,
+    text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block. Exhaust.',
     base: [{ op: 'power', power: 'loom_of_hours' }],
     upgrade: {
       cost: 2,

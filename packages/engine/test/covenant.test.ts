@@ -102,6 +102,13 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
     }
   });
 
+  it('every power-granting card exhausts (Playtest-1 — replaying an active power is a dead play)', () => {
+    for (const c of all) {
+      const grantsPower = [...c.base, ...(c.link?.effects ?? [])].some((e) => e.op === 'power');
+      if (grantsPower) expect(c.exhaust, `${c.id} grants a power but does not exhaust`).toBe(true);
+    }
+  });
+
   it('every power referenced by a card exists in the POWERS registry', () => {
     const scan = (effects: EffectOp[] | undefined, where: string) => {
       for (const e of effects ?? []) {

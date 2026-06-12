@@ -96,8 +96,8 @@ def({
   link: { condition: 'Rite', text: 'Gain 3 instead and your partner draws 1.', effects: [{ op: 'thread', amount: 3 }, { op: 'partnerDraw', amount: 1 }], replace: true },
 });
 def({
-  id: 'black_lattice', name: 'Black Lattice', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite',
-  text: 'Power: whenever Hexes detonate, gain 3 Block.',
+  id: 'black_lattice', name: 'Black Lattice', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
+  text: 'Power: whenever Hexes detonate, gain 3 Block. Exhaust.',
   base: [{ op: 'power', power: 'black_lattice' }],
 });
 def({
@@ -149,8 +149,8 @@ def({
   base: [{ op: 'detonateAllEnemies' }, { op: 'damagePerDetonated', per: 1 }],
 });
 def({
-  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'rare', cost: 2, tag: 'Rite',
-  text: 'Power: at the start of each turn, gain 1 Thread.',
+  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+  text: 'Power: at the start of each turn, gain 1 Thread. Exhaust.',
   base: [{ op: 'power', power: 'unbroken_line' }],
 });
 
@@ -244,8 +244,8 @@ def({
   link: { condition: 'Guard', text: 'Your partner also gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
 });
 def({
-  id: 'stoke', name: 'Stoke', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Rite',
-  text: 'Power: at the start of your turn, gain 2 Momentum.',
+  id: 'stoke', name: 'Stoke', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Rite', exhaust: true,
+  text: 'Power: at the start of your turn, gain 2 Momentum. Exhaust.',
   base: [{ op: 'power', power: 'stoke' }],
 });
 def({
@@ -284,8 +284,8 @@ def({
   link: { condition: 'partner', text: 'Link (Partner’s card): deal 8 five times instead.', effects: [{ op: 'damage', amount: 8, times: 5, primary: true }], replace: true },
 });
 def({
-  id: 'wildfire_heart', name: 'Wildfire Heart', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite',
-  text: 'Power: Momentum no longer halves after Strikes.',
+  id: 'wildfire_heart', name: 'Wildfire Heart', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+  text: 'Power: Momentum no longer halves after Strikes. Exhaust.',
   base: [{ op: 'power', power: 'wildfire_heart' }],
 });
 def({
