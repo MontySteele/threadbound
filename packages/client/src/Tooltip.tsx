@@ -68,6 +68,7 @@ export function resolveInspect(key: string): InspectContent | null {
       if (def.chainReader) mech.push(`Reads the chain: +${def.chainReader.blockPerUnfiredLink} Block per link that failed to fire.`);
       if (def.chorus) mech.push('A chorus: the bodies share one pool of life. One is always unbound and untargetable — sever a binding to rotate who stands forward.');
       if (def.unraveled) mech.push(`At half health it SEVERS the Thread for ${def.unraveled.severTurns} turns, then the Thread reignites at full.`);
+      if (def.elite || def.boss) mech.push('Re-tethers on its own every 3rd turn — no one stays safe on soak duty.');
       return {
         title: def.name,
         subtitle: `${def.boss ? 'boss' : def.elite ? 'elite' : 'enemy'} · act ${def.act}`,

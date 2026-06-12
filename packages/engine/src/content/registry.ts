@@ -35,6 +35,31 @@ for (const e of M2_ENEMIES) {
   ENEMIES[e.id] = e;
 }
 
+// ---- Playtest-1 difficulty pass (§14.8) -------------------------------------
+// The designer full-cleared act 1 with zero damage; the bot floor sat at 86%
+// wins post-draw-5. Inverse of the A2 levers (those were written when the game
+// was too HARD): one global enemy HP/damage scale, applied HERE so every
+// displayed intent, log line, and tooltip reads the scaled truth. Tune these
+// two numbers only against the A1 bands; do not stack per-def edits on top.
+
+export const PT1_ENEMY_HP_SCALE = 1.2;
+export const PT1_ENEMY_DMG_SCALE = 1.2;
+
+const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
+for (const def of Object.values(ENEMIES)) {
+  def.hp = [Math.round(def.hp[0] * PT1_ENEMY_HP_SCALE), Math.round(def.hp[1] * PT1_ENEMY_HP_SCALE)];
+  def.script = def.script.map((it) => {
+    switch (it.kind) {
+      case 'attack': return { ...it, amount: dmg(it.amount) };
+      case 'attack_all': return { ...it, amount: dmg(it.amount) };
+      case 'attack_momentum': return { ...it, base: dmg(it.base) };
+      case 'attack_drain': return { ...it, amount: dmg(it.amount) };
+      case 'attack_fray': return { ...it, amount: dmg(it.amount) };
+      default: return it;
+    }
+  });
+}
+
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };

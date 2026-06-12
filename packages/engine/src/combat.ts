@@ -651,6 +651,17 @@ export function resolveTurn(state: GameState): void {
   for (const enemy of combat.enemies) {
     if (enemy.hp <= 0) continue;
     enemy.block = 0;
+    // Playtest-1 (§14.8): elites and bosses re-tether on their own every 3rd
+    // turn — parking one player on guard-soak duty stops being a solved fight.
+    // Deterministic cadence: learnable, no hidden rolls.
+    const selfDef = ENEMIES[enemy.defId];
+    if ((selfDef.elite || selfDef.boss) && combat.turn % 3 === 0 && enemy.boundTo !== null) {
+      const other = otherPlayer(enemy.boundTo);
+      if (!state.players[other].fallen) {
+        enemy.boundTo = other;
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `re-tethers of its own will — now bound to ${other}` });
+      }
+    }
     if (enemy.stun > 0) {
       enemy.stun--;
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: 'stunned — skips its turn' });

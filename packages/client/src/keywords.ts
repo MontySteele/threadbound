@@ -36,7 +36,7 @@ kw({ id: 'kindled', name: 'Kindled', rule: 'Gain N energy at the start of your n
 kw({ id: 'keep', name: 'Keep', rule: 'Not discarded at end of turn. (Everything else in hand at commit is.)', flavor: 'Some things you don’t put down.' });
 kw({ id: 'frayed', name: 'Frayed', rule: 'You take +25% damage per stack this turn. Both of you. Caused by overdrafting the Thread.', flavor: 'The bill arrives addressed to both of you.' });
 kw({ id: 'fallen', name: 'Fallen', rule: 'At 0 HP: no turns, Powers dormant, enemies rebind to your partner, the Thread goes slack. Revive at 1 HP if your partner wins.', flavor: 'Not dead. Carried.' });
-kw({ id: 'bound', name: 'Bound', rule: 'Each enemy targets only the player it is bound to (AoE excepted). Sever Binding (3 Thread) or taunts move it.', flavor: 'It has chosen you. How flattering.' });
+kw({ id: 'bound', name: 'Bound', rule: 'Each enemy targets only the player it is bound to (AoE excepted). Sever Binding (3 Thread) or taunts move it. Elites and bosses re-tether on their own every 3rd turn.', flavor: 'It has chosen you. How flattering.' });
 kw({ id: 'sever', name: 'Sever Binding', rule: '3 Thread: move one enemy’s binding to the other player. On a chorus: rotates which body stands forward.', flavor: 'Trade your monsters like debts.' });
 kw({ id: 'echo', name: 'Echo', rule: 'An ethereal copy taken via Reclaim. Exhausts at end of combat.', flavor: 'Borrowed, never owned.' });
 kw({ id: 'mutated', name: 'Mutated', rule: 'A Reclaimed card arrives rewritten for its new owner — deterministic, learnable, discussable.', flavor: 'It crossed the Thread and came back different.' });

@@ -64,6 +64,25 @@ describe('fixed draw of 5 (Playtest-1 ruling, §14.7)', () => {
   });
 });
 
+describe('elite/boss self-retarget (Playtest-1 ruling, §14.8)', () => {
+  it('an elite moves its own tether every 3rd turn', () => {
+    const s0 = combatState();
+    toughen(s0);
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      s0.players[pid].hp = 999;
+      s0.players[pid].maxHp = 999;
+    }
+    s0.combat!.enemies[0].defId = 'mourner'; // elite mechanics live on the def
+    const before = s0.combat!.enemies[0].boundTo;
+    let s = s0;
+    s = ready(s); // resolves turn 1
+    s = ready(s); // turn 2
+    expect(s.combat!.enemies[0].boundTo).toBe(before);
+    s = ready(s); // turn 3 — the tether moves
+    expect(s.combat!.enemies[0].boundTo).toBe(before === 'p1' ? 'p2' : 'p1');
+  });
+});
+
 describe('map negotiation (M2-B3)', () => {
   it('requires both players to pick the same node; mismatches bounce', () => {
     const s0 = initialState(7, { p1: 'vess', p2: 'bram' });
