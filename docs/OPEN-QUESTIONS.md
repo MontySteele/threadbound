@@ -145,3 +145,24 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     pairing, no change needed; gold focus ring distinct from both. Explicitly
     NOT done per the skip list: balance levers, new content, mulligans, damage
     previews, art beyond the title treatment.
+
+24. **Link (any) reads as "free stuff"** (Playtest 1, designer): an `any` link
+    fires in every slot but the first — no ordering decision, no coordination
+    texture. Data: the BASE pools are fine (10 of 115 linked cards are `any`:
+    5c/3u/2r, zero starters; named broad tags dominate at 89). The flood is
+    the M2-B6 upgrade convention — **73 upgrades widen a narrower link to
+    `any`** ("upgrades prefer deepening the link: wider conditions"), so a
+    late-game upgraded deck converges on always-on links and the weave puzzle
+    evaporates exactly when decks get interesting. Note `any` was also the
+    OQ#13 fix for sparse-tag links under-firing, and act-2 link-fire targets
+    (45–60%) are partly delivered by this widening — any change must re-check
+    those bands. Candidate directions (post-playtest, pick one):
+    (a) re-aim the upgrade convention: widen one step to a named broad tag
+        (incl. the partner's primary tags) instead of to `any`; keep `any`
+        as the rare-tier payoff;
+    (b) keep semantics, audit the budget: `any` payoffs priced ~half of
+        narrow-tag payoffs (reliability is the product);
+    (c) new conditions with texture instead of width (e.g. "partner's card
+        anywhere earlier this chain", "fires twice if both neighbors match").
+    Decision deferred mid-playtest; the difficulty pass (§14.8) just landed
+    and stacking a link-economy rework on it would blind both readings.
