@@ -70,6 +70,8 @@ function randomAction(state: GameState, die: Die): Action | null {
         const targetId =
           kind === 'sever' && living.length ? die.pick(living).id
           : kind === 'reclaim' && partner.discard.length ? die.pick(partner.discard)
+          // §14.12: Pulse targets a staged card (often illegal — that's the point)
+          : kind === 'pulse' && combat.chain.length ? die.pick(combat.chain).cardInstanceId
           : undefined;
         return { type: 'DECLARE_THREAD', player: pid, kind, targetId };
       }

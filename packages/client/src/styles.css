@@ -168,7 +168,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .arc.arc-on svg path { stroke: var(--thread); stroke-width: 2.5; stroke-dasharray: none; filter: drop-shadow(0 0 4px var(--thread)); }
 .arc.arc-resonance svg path { stroke: var(--ignite); stroke-width: 3; filter: drop-shadow(0 0 7px var(--ignite)); animation: shimmer 1.1s infinite; }
 @keyframes shimmer { 50% { filter: drop-shadow(0 0 14px var(--ignite)); } }
+/* §14.12: a Pulse-forced arc lights in the ignition hue with a thread-strand
+   motif - forced reads differently from natural at a glance */
+.arc.arc-forced svg path { stroke: var(--ignite); stroke-width: 2.5; stroke-dasharray: none; filter: drop-shadow(0 0 5px var(--ignite)); }
+.arc.arc-forced svg path.strand { stroke: var(--thread); stroke-width: 1; stroke-dasharray: 2 4; animation: strand-walk 1.4s linear infinite; }
+@keyframes strand-walk { to { stroke-dashoffset: -12; } }
+/* dead arcs become Pulse targets while a Pulse is pending */
+.arc.arc-pulse-target { cursor: pointer; }
+.arc.arc-pulse-target svg path { stroke: var(--kindled); animation: pulse-target-breathe 0.9s ease-in-out infinite; }
+@keyframes pulse-target-breathe { 50% { filter: drop-shadow(0 0 8px var(--kindled)); stroke-width: 3; } }
 .linkstate.on { color: var(--thread); } .linkstate.off { color: var(--text-faint); font-size: 0.8em; }
+.linkstate.pulse-target { color: var(--kindled); cursor: pointer; animation: pulse-target-breathe 0.9s ease-in-out infinite; }
+.chain-margin { display: flex; flex-direction: column; gap: 3px; margin-left: 10px; align-self: center; }
 .resonance { color: var(--ignite); font-weight: bold; }
 .target { font-size: 0.75em; color: #e0a060; }
 .reorder button { padding: 0 6px; font-size: 0.8em; }

@@ -123,7 +123,8 @@ export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set
     const runLen = j - i + 1;
     if (runLen >= 3) {
       const owners = new Set<PlayerId>();
-      for (let k = i - 1; k <= j; k++) owners.add(chain[k].owner);
+      // i can be 0 when slot 0's link was Pulse-forced (§14.12)
+      for (let k = Math.max(0, i - 1); k <= j; k++) owners.add(chain[k].owner);
       if (owners.size === 2) out.add(j); // solo streaks never ignite (§2.3)
     }
     i = j + 1;
@@ -131,27 +132,36 @@ export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set
   return out;
 }
 
+/** §14.12 Pulse: declared pulses force a staged card's dead Link — it counts
+ *  as fired when it resolves (and toward Resonance). Returns the per-slot
+ *  forced flags; combine with computeLinksFired for the effective fired set.
+ *  §11-sanctioned static helper, shared by resolution and the client preview. */
+export function computeForcedLinks(state: GameState, chain: ChainSlot[], fired: boolean[]): boolean[] {
+  const pulsed = new Set(
+    (state.combat?.threadActions ?? [])
+      .filter((t) => t.kind === 'pulse' && t.targetId)
+      .map((t) => t.targetId!),
+  );
+  return chain.map((slot, i) => {
+    if (fired[i] || !pulsed.has(slot.cardInstanceId)) return false;
+    return !!effectiveDef(mustFind(state, slot)).link;
+  });
+}
+
 /** Static planning preview (§11-sanctioned, like computeLinksFired): the
  *  Block each player would gain from the chain as currently staged —
- *  base + fired-link effects, with Pulse landing and Resonance scaling
- *  mirrored from resolution. An ESTIMATE: hooks (relics/powers) excluded. */
+ *  base + fired-link effects (Pulse-forced links included, §14.12), with
+ *  Resonance scaling mirrored from resolution. An ESTIMATE: hooks
+ *  (relics/powers) excluded. */
 export function computePlannedBlock(state: GameState): Record<PlayerId, number> {
   const out: Record<PlayerId, number> = { p1: 0, p2: 0 };
   const combat = state.combat;
   if (!combat) return out;
   const chain = combat.chain;
-  const fired = computeLinksFired(state, chain);
+  const natural = computeLinksFired(state, chain);
+  const forced = computeForcedLinks(state, chain, natural);
+  const fired = natural.map((f, i) => f || forced[i]);
   const resonance = computeResonanceSlots(chain, fired);
-  const pulse: Record<PlayerId, number> = {
-    p1: state.players.p1.pulseBonus,
-    p2: state.players.p2.pulseBonus,
-  };
-  for (const ta of combat.threadActions) {
-    if (ta.kind !== 'pulse') continue;
-    const recipient = otherPlayer(ta.player);
-    pulse[recipient] += hasPassive(state.players[ta.player], 'pulsePlusOne') ? 4 : 3;
-  }
-  const pulseSpent: Record<PlayerId, boolean> = { p1: false, p2: false };
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
     const def = effectiveDef(mustFind(state, slot));
@@ -159,16 +169,10 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
       fired[i] && def.link
         ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
         : def.base;
-    const hasPrimary = effects.some((e) => 'primary' in e && (e as { primary?: boolean }).primary);
-    const myPulse = hasPrimary && !pulseSpent[slot.owner] ? pulse[slot.owner] : 0;
-    if (hasPrimary && !pulseSpent[slot.owner]) pulseSpent[slot.owner] = true;
     for (const eff of effects) {
       if (eff.op === 'block') {
         let v = eff.amount;
-        if (eff.primary) {
-          v += myPulse;
-          if (resonance.has(i)) v = Math.ceil(v * 1.5);
-        }
+        if (eff.primary && resonance.has(i)) v = Math.ceil(v * 1.5);
         out[slot.owner] += v;
       } else if (eff.op === 'partnerBlock') {
         out[otherPlayer(slot.owner)] += eff.amount;
@@ -309,7 +313,6 @@ interface CardContext {
   def: CardDef;
   fired: boolean[];
   resonance: boolean;
-  pulse: number;
   detonatedStacks: number;
   momentumSpent: boolean;
   keepMomentum: boolean;
@@ -318,9 +321,7 @@ interface CardContext {
 
 function scale(ctx: CardContext, amount: number, primary: boolean | undefined): number {
   if (!primary) return amount;
-  let v = amount + ctx.pulse;
-  if (ctx.resonance) v = Math.ceil(v * 1.5);
-  return v;
+  return ctx.resonance ? Math.ceil(amount * 1.5) : amount;
 }
 
 /** S3.1 per-character split: block gained, whoever sourced it. */
@@ -527,10 +528,20 @@ export function resolveTurn(state: GameState): void {
     const actor = state.players[ta.player];
     const partner = state.players[otherPlayer(ta.player)];
     switch (ta.kind) {
-      case 'pulse':
-        spendThread(state, 2);
-        partner.pulseBonus += hasPassive(actor, 'pulsePlusOne') ? 4 : 3;
+      case 'pulse': {
+        // §14.12: the forcing itself happens in the link computation below;
+        // here we pay, and say which card so the spend is legible to both
+        spendThread(state, hasPassive(actor, 'pulseCostMinusOne') ? 1 : 2);
+        const slot = combat.chain.find((s) => s.cardInstanceId === ta.targetId);
+        if (slot) {
+          const name = effectiveDef(mustFind(state, slot)).name;
+          state.log.push({
+            e: 'thread_action', player: ta.player, kind: 'pulse',
+            detail: `pulses ${name} — its Link fires no matter what precedes it`,
+          });
+        }
         break;
+      }
       case 'reclaim': {
         spendThread(state, 2);
         const src = findInstance(partner, ta.targetId!);
@@ -568,15 +579,22 @@ export function resolveTurn(state: GameState): void {
         break;
     }
     // S3.1 thread economy: spend mix by action type
-    const cost = ta.kind === 'sever' ? 3 : ta.kind === 'steady' ? 1 : 2;
+    const cost =
+      ta.kind === 'sever' ? 3
+      : ta.kind === 'steady' ? 1
+      : ta.kind === 'pulse' ? (hasPassive(actor, 'pulseCostMinusOne') ? 1 : 2)
+      : 2;
     state.telemetry.threadSpent += cost;
     state.telemetry.threadSpendByKind[ta.kind]++;
-    state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
+    if (ta.kind !== 'pulse') state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
   }
 
-  // 2-3. Static link + Resonance computation (§2.3)
+  // 2-3. Static link + Resonance computation (§2.3); §14.12: Pulse-forced
+  // links count as fired — for effects, telemetry, and Resonance alike
   const chain = combat.chain;
-  const fired = computeLinksFired(state, chain);
+  const natural = computeLinksFired(state, chain);
+  const forcedSlots = computeForcedLinks(state, chain, natural);
+  const fired = natural.map((f, i) => f || forcedSlots[i]);
   const resonanceSlots = computeResonanceSlots(chain, fired);
   combat.lastSoloRun = longestSoloRun(chain);
   const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = { cardsPlayed: 0, linksFired: 0, combats: 0, hpLost: 0 });
@@ -597,14 +615,10 @@ export function resolveTurn(state: GameState): void {
           : [...def.base, ...def.link.effects]
         : def.base;
 
-    // M2-D4: Pulse skips cards with no primary number and carries forward
-    const hasPrimary = effects.some((e) => 'primary' in e && e.primary);
     const ctx: CardContext = {
       owner, partner, slotIndex: i, targetId: slot.targetId, def, fired, resonance,
-      pulse: hasPrimary ? owner.pulseBonus : 0,
       detonatedStacks: 0, momentumSpent: false, keepMomentum: false, momentumPerHit: false,
     };
-    if (hasPrimary) owner.pulseBonus = 0;
 
     state.log.push({ e: 'card', player: slot.owner, card: def.name, slot: i, linkFired: fired[i], resonance });
     if (state.botSeat) {
@@ -616,6 +630,10 @@ export function resolveTurn(state: GameState): void {
       let start = i;
       while (start > 0 && fired[start]) start--;
       const streakTags = chain.slice(start, i + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
+      // S3.1: did this streak need a Pulse to exist?
+      for (let k = start; k <= i; k++) {
+        if (forcedSlots[k]) { state.telemetry.resonancesForced++; break; }
+      }
       state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags });
       // S2.1: in solo the streak includes HIM — the closest he comes to joy
       sayWitness(state, state.botSeat ? 'resonance_together' : 'resonance');
@@ -656,6 +674,7 @@ export function resolveTurn(state: GameState): void {
     if (fired[i]) {
       state.telemetry.linksFired++;
       state.telemetry.linkFiresByPlayer[slot.owner]++;
+      if (forcedSlots[i]) state.telemetry.forcedLinkFires++; // §14.12
       actStats.linksFired++;
       runHooks(state, slot.owner, 'linkFired');
     }
@@ -871,7 +890,6 @@ function fall(state: GameState, player: PlayerState): void {
   player.fallen = true;
   player.block = 0;
   player.momentum = 0;
-  player.pulseBonus = 0;
   player.kindled = 0;
   // staged cards fizzle (relevant if a fall could ever occur mid-planning) + hand discards
   if (state.combat) {
@@ -945,7 +963,6 @@ export function startTurn(state: GameState): void {
     p.energy = p.energyMax + p.kindled; // M2-A2
     p.kindled = 0;
     p.ready = false;
-    p.pulseBonus = 0;
     p.statuses.frayed = 0;
     if (p.statuses.weak > 0) p.statuses.weak--;
     if (p.statuses.vulnerable > 0) p.statuses.vulnerable--;

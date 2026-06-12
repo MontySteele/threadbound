@@ -38,7 +38,7 @@ const STEPS: Step[] = [
   },
   {
     id: 'thread',
-    text: 'The cord between your portraits is the THREAD — a shared pool. Try a Pulse (2 Thread): your partner’s next card hits +3 harder. Overdraft and you BOTH fray.',
+    text: 'The cord between your portraits is the THREAD — a shared pool. Try a Pulse (2 Thread): pick a staged card with a dead Link and force it to fire — it even counts toward Resonance. Overdraft and you BOTH fray.',
     done: (s) => !!s.combat && s.combat.threadActions.length > 0,
   },
 ];

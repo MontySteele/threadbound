@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
-  computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, hasPassive,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { GLYPH } from './keywords';
@@ -548,53 +548,39 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const [partnerHandOpen, setPartnerHandOpen] = useState(false);
   const [pendingCard, setPendingCard] = useState<string | null>(null);
   const [pendingSever, setPendingSever] = useState(false);
+  const [pendingPulse, setPendingPulse] = useState(false);
   const [reclaimOpen, setReclaimOpen] = useState(false);
 
-  // pad ergonomics: a pending target snaps focus to the enemies, and back to
-  // where the intent came from once it's resolved or cancelled
-  const wasPending = useRef<'card' | 'sever' | null>(null);
+  // pad ergonomics: a pending target snaps focus to the enemies (or the
+  // chain, for Pulse), and back to where the intent came from afterward
+  const wasPending = useRef<'card' | 'sever' | 'pulse' | null>(null);
   useEffect(() => {
-    const pending = pendingCard ? 'card' : pendingSever ? 'sever' : null;
-    if (pending && !wasPending.current) controller.snapZone('ENEMIES');
-    else if (!pending && wasPending.current) controller.snapZone(wasPending.current === 'sever' ? 'THREAD' : 'HAND');
+    const pending = pendingCard ? 'card' : pendingSever ? 'sever' : pendingPulse ? 'pulse' : null;
+    if (pending && !wasPending.current) controller.snapZone(pending === 'pulse' ? 'CHAIN' : 'ENEMIES');
+    else if (!pending && wasPending.current) controller.snapZone(wasPending.current === 'card' ? 'HAND' : 'THREAD');
     wasPending.current = pending;
-  }, [pendingCard, pendingSever]);
+  }, [pendingCard, pendingSever, pendingPulse]);
 
   const fired = useMemo(() => {
     try { return computeLinksFired(state, combat.chain); } catch { return combat.chain.map(() => false); }
   }, [state, combat.chain]);
-  const resonance = useMemo(() => computeResonanceSlots(combat.chain, fired), [combat.chain, fired]);
+  // §14.12: Pulse-forced links — lit, but visually distinct from natural fires
+  const forced = useMemo(() => {
+    try { return computeForcedLinks(state, combat.chain, fired); } catch { return combat.chain.map(() => false); }
+  }, [state, combat.chain, fired]);
+  const firedAll = useMemo(() => fired.map((f, i) => f || forced[i]), [fired, forced]);
+  const resonance = useMemo(() => computeResonanceSlots(combat.chain, firedAll), [combat.chain, firedAll]);
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
-  // Pulse bookkeeping (§5 + M2-D4): the bonus lands on the recipient's FIRST
-  // staged card (chain order) whose effective effects carry a primary number;
-  // cards with nothing to boost are skipped. The UI shows the landing spot.
-  const slotHasPrimary = (i: number): boolean => {
-    const slot = combat.chain[i];
-    const def = defFor(state, slot.owner, slot.cardInstanceId);
-    const effects = fired[i] && def.link
-      ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
-      : def.base;
-    return effects.some((e) => 'primary' in e && (e as { primary?: boolean }).primary);
-  };
-  const pulseBonus: Record<PlayerId, number> = { p1: 0, p2: 0 };
-  for (const ta of combat.threadActions) {
-    if (ta.kind !== 'pulse') continue;
-    const recipient: PlayerId = ta.player === 'p1' ? 'p2' : 'p1';
-    pulseBonus[recipient] += hasPassive(state.players[ta.player], 'pulsePlusOne') ? 4 : 3;
-  }
-  const pulseLanding: Record<string, number> = {};
-  const pulseWaiting: PlayerId[] = [];
-  for (const pid of ['p1', 'p2'] as PlayerId[]) {
-    if (pulseBonus[pid] === 0) continue;
-    const idx = combat.chain.findIndex((s, i) => s.owner === pid && slotHasPrimary(i));
-    if (idx >= 0) pulseLanding[combat.chain[idx].cardInstanceId] = pulseBonus[pid];
-    else pulseWaiting.push(pid);
-  }
-  const partnerHasPrimary = combat.chain.some((s, i) => s.owner === partner && slotHasPrimary(i));
+  // §14.12: Pulse targets = staged cards with a dead Link, not yet pulsed
+  const pulseTargets = useMemo(() => new Set(
+    combat.chain
+      .filter((slot, i) => !firedAll[i] && !!defFor(state, slot.owner, slot.cardInstanceId).link)
+      .map((slot) => slot.cardInstanceId),
+  ), [state, combat.chain, firedAll]);
   const cordMode = severed ? 'severed' : anyFallen ? 'slack' : 'normal';
 
   const stage = (cardId: string, targetId?: string) => {
@@ -670,14 +656,21 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         })}
       </div>
 
-      {(pendingCard || pendingSever) && (
+      {(pendingCard || pendingSever || pendingPulse) && (
         <div className="hint">
-          Pick an enemy to {pendingSever ? 'sever its binding' : 'target'}.
-          <button className="chip" data-gp-action="cancel" onClick={() => { setPendingCard(null); setPendingSever(false); }}>cancel</button>
+          {pendingPulse
+            ? 'Pick a dead link in the Chain — Pulse forces it to fire.'
+            : `Pick an enemy to ${pendingSever ? 'sever its binding' : 'target'}.`}
+          <button className="chip" data-gp-action="cancel" onClick={() => { setPendingCard(null); setPendingSever(false); setPendingPulse(false); }}>cancel</button>
         </div>
       )}
 
-      <ChainTrack state={state} fired={fired} resonance={resonance} net={net} pulseLanding={pulseLanding} />
+      <ChainTrack state={state} fired={fired} forced={forced} resonance={resonance} net={net}
+        pendingPulse={pendingPulse}
+        onPulseTarget={(cardInstanceId) => {
+          net.act({ type: 'DECLARE_THREAD', kind: 'pulse', targetId: cardInstanceId } as any);
+          setPendingPulse(false);
+        }} />
 
       {/* one row: player panels are the cord's endpoints (screen-height budget) */}
       <div className="combat-table">
@@ -688,28 +681,13 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       </div>
 
       <div className="thread-bar">
-        <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || !partnerHasPrimary}
-          onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'pulse' } as any)}>
-          Pulse (2)
+        <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || pulseTargets.size === 0}
+          onClick={() => setPendingPulse(!pendingPulse)}>
+          Pulse (2)…
         </button>
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
         <button data-gp="THREAD" data-inspect="kw:steady" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' } as any)}>Steady (1)</button>
-        {pulseWaiting.length > 0 && (
-          <span className="muted pulse-waiting">
-            Pulse waits for {pulseWaiting.map((p) => state.players[p].character).join(' & ')}’s first boostable card
-          </span>
-        )}
-        {combat.threadActions.length > 0 && (
-          <span className="declared">
-            {combat.threadActions.map((t, i) => (
-              <button key={i} className="chip" data-gp="THREAD" style={{ color: PCOLOR[t.player] }}
-                onClick={() => t.player === you && net.act({ type: 'UNDECLARE_THREAD', kind: t.kind } as any)}>
-                {t.kind}{t.player === you ? ' ✕' : ''}
-              </button>
-            ))}
-          </span>
-        )}
       </div>
 
       {reclaimOpen && (
@@ -819,11 +797,29 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
   );
 }
 
-function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
-  state: ClientState; fired: boolean[]; resonance: Set<number>; net: Net; pulseLanding: Record<string, number>;
+function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPulseTarget }: {
+  state: ClientState; fired: boolean[]; forced: boolean[]; resonance: Set<number>; net: Net;
+  pendingPulse: boolean; onPulseTarget: (cardInstanceId: string) => void;
 }): JSX.Element {
   const you = state.you;
-  const chain = state.combat!.chain;
+  const combat = state.combat!;
+  const chain = combat.chain;
+  // §14.12: which staged cards can still be Pulsed (dead link, not yet pulsed)
+  const pulseable = (i: number): boolean => {
+    const slot = chain[i];
+    return !fired[i] && !forced[i] && !!defFor(state, slot.owner, slot.cardInstanceId).link;
+  };
+  const threadName = (t: { kind: string; targetId?: string }): string => {
+    if (t.kind === 'pulse' && t.targetId) {
+      const slot = chain.find((s) => s.cardInstanceId === t.targetId);
+      if (slot) return `pulse → ${defFor(state, slot.owner, slot.cardInstanceId).name}`;
+    }
+    if (t.kind === 'sever' && t.targetId) {
+      const e = combat.enemies.find((en) => en.id === t.targetId);
+      if (e) return `sever → ${ENEMIES[e.defId].name}`;
+    }
+    return t.kind;
+  };
   return (
     <div className="chain">
       <div className="chain-label">THE CHAIN</div>
@@ -831,31 +827,49 @@ function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
       {chain.map((slot, i) => {
         const def = defFor(state, slot.owner, slot.cardInstanceId);
         const mine = slot.owner === you;
-        const target = slot.targetId ? state.combat!.enemies.find((e) => e.id === slot.targetId) : null;
+        const lit = fired[i] || forced[i];
+        const canPulse = pendingPulse && pulseable(i);
+        const target = slot.targetId ? combat.enemies.find((e) => e.id === slot.targetId) : null;
         return (
           <React.Fragment key={slot.cardInstanceId}>
             {i > 0 && (
-              // B4: link arcs between adjacent staged cards; pre-light when satisfied
-              <div className={`arc ${fired[i] ? 'arc-on' : ''} ${resonance.has(i) ? 'arc-resonance' : ''}`} data-inspect="kw:link">
-                <svg viewBox="0 0 40 24" width="40" height="24"><path d="M 2 22 Q 20 -8 38 22" fill="none" /></svg>
+              // B4: link arcs between adjacent staged cards; pre-light when
+              // satisfied. §14.12: forced arcs glow in the ignition hue with a
+              // thread-strand motif; dead arcs become Pulse targets.
+              <div
+                className={`arc ${lit ? 'arc-on' : ''} ${forced[i] ? 'arc-forced' : ''} ${resonance.has(i) ? 'arc-resonance' : ''} ${canPulse ? 'arc-pulse-target' : ''}`}
+                data-inspect={forced[i] ? 'kw:pulse' : 'kw:link'}
+                data-gp={canPulse ? 'CHAIN' : undefined}
+                onClick={() => canPulse && onPulseTarget(slot.cardInstanceId)}
+              >
+                <svg viewBox="0 0 40 24" width="40" height="24">
+                  <path d="M 2 22 Q 20 -8 38 22" fill="none" />
+                  {forced[i] && <path className="strand" d="M 2 22 Q 20 -8 38 22" fill="none" />}
+                </svg>
               </div>
             )}
-            <div className={`chaincard ${fired[i] ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
+            <div className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
               style={{ borderColor: PCOLOR[slot.owner] }}>
               <div className="slotnum">{i + 1}</div>
               <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
                 upgraded={!!inst(state, slot.owner, slot.cardInstanceId)?.upgraded}
                 mutated={!!inst(state, slot.owner, slot.cardInstanceId)?.mutated}
-                gpZone={mine ? 'CHAIN' : undefined}
+                gpZone={mine && !pendingPulse ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
-                onClick={() => mine && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
-              {pulseLanding[slot.cardInstanceId] && (
-                <div className="pulse-badge" data-inspect="kw:pulse">⊕ Pulse +{pulseLanding[slot.cardInstanceId]}</div>
-              )}
+                onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
               {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
-              {def.link && <div className={`linkstate ${fired[i] ? 'on' : 'off'}`}>{fired[i] ? '⚡ fires' : `link: ${def.link.condition}`}</div>}
+              {def.link && (
+                <div
+                  className={`linkstate ${lit ? 'on' : 'off'} ${canPulse ? 'pulse-target' : ''}`}
+                  data-gp={canPulse && i === 0 ? 'CHAIN' : undefined}
+                  data-inspect={forced[i] ? 'kw:pulse' : undefined}
+                  onClick={() => canPulse && onPulseTarget(slot.cardInstanceId)}
+                >
+                  {forced[i] ? '⊕ forced' : lit ? '⚡ fires' : `link: ${def.link.condition}`}
+                </div>
+              )}
               {resonance.has(i) && <div className="resonance" data-inspect="kw:resonance">✦ RESONANCE</div>}
-              {mine && (
+              {mine && !pendingPulse && (
                 <div className="reorder">
                   <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
                   <button data-gp-reorder="right" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.min(chain.length - 1, i + 1) } as any)}>▶</button>
@@ -865,6 +879,18 @@ function ChainTrack({ state, fired, resonance, net, pulseLanding }: {
           </React.Fragment>
         );
       })}
+      {combat.threadActions.length > 0 && (
+        // §14.12 salience: declared thread actions live in the Chain margin,
+        // in stage order, visible to both players while planning
+        <div className="chain-margin">
+          {combat.threadActions.map((t, i) => (
+            <button key={i} className="chip" data-gp="THREAD" style={{ color: PCOLOR[t.player] }}
+              onClick={() => t.player === you && net.act({ type: 'UNDECLARE_THREAD', kind: t.kind } as any)}>
+              {threadName(t)}{t.player === you ? ' ✕' : ''}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

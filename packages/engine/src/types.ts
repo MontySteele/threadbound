@@ -95,7 +95,7 @@ export interface Hook {
 /** Named passive behaviors special-cased by the engine. */
 export type PassiveId =
   | 'momentumNoHalve' // Wildfire Heart
-  | 'pulsePlusOne' // Pulse grants +4 instead of +3 (relic space)
+  | 'pulseCostMinusOne' // §14.12: Pulse costs 1 instead of 2 (relic space)
   | 'threadRegenPlusOne' // +1 Thread regen per turn
   | 'covetMaxPlusOne' // may hold 3 Covet charges
   | 'handRetainOne' // M2-A1: retain 1 card at end of turn
@@ -317,7 +317,6 @@ export interface PlayerState {
   covetCharges: number;
   ready: boolean;
   pendingFray: number;
-  pulseBonus: number;
 }
 
 export type ThreadActionKind = 'pulse' | 'reclaim' | 'sever' | 'steady';
@@ -325,6 +324,8 @@ export type ThreadActionKind = 'pulse' | 'reclaim' | 'sever' | 'steady';
 export interface DeclaredThreadAction {
   player: PlayerId;
   kind: ThreadActionKind;
+  /** sever: enemy id · reclaim: card in partner's discard · pulse (§14.12):
+   *  a staged card whose Link won't currently fire — forced at resolution */
   targetId?: string;
 }
 

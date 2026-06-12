@@ -15,6 +15,7 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
+import { computeResonanceSlots } from './combat';
 
 export interface BotView extends GameState {
   you: PlayerId;
@@ -176,13 +177,13 @@ export class BotPolicy {
     }
     // solo: no parity gate — stage early so the human can plan around us (S1.2)
 
-    if (!anyFallen && !severed && this.pulsedTurn !== combat.turn && view.thread >= 4 && this.chance(view, 0.35, 'pulse')) {
-      this.pulsedTurn = combat.turn;
+    // sever to spread bindings (pre-§14.12 heuristic, kept) — courtesy-gated
+    if (!anyFallen && !severed && this.pulsedTurn !== combat.turn && this.chance(view, 0.35, 'pulse')) {
       const myEnemies = targetable.filter((e) => e.boundTo === you);
-      if (myEnemies.length === living.length && living.length > 1 && view.thread >= 5) {
+      if (myEnemies.length === living.length && living.length > 1 && this.maySpend(view, 3, 'sever')) {
+        this.pulsedTurn = combat.turn;
         return { type: 'DECLARE_THREAD', player: you, kind: 'sever', targetId: myEnemies[0].id };
       }
-      return { type: 'DECLARE_THREAD', player: you, kind: 'pulse' };
     }
 
     const affordable = me.hand
@@ -206,6 +207,14 @@ export class BotPolicy {
         if (reorder) {
           this.reorderCount++;
           return reorder;
+        }
+      }
+      // §14.12: with the chain settled, force the best remaining dead link
+      if (!anyFallen && !severed && this.pulsedTurn !== combat.turn) {
+        const pulse = this.tryPulse(view);
+        if (pulse) {
+          this.pulsedTurn = combat.turn;
+          return pulse;
         }
       }
       if (this.mode === 'solo' && !partnerIsReady) return null; // readies last (S1.2)
@@ -266,6 +275,67 @@ export class BotPolicy {
       type: 'STAGE_CARD', player: you, cardInstanceId: pick.id,
       slot: best!.pos, targetId: pick.def.needsTarget ? target.id : undefined,
     };
+  }
+
+  /** §14.12 solo courtesy: never take the shared pool below 5 — except
+   *  Sever/Steady under lethal-adjacent pressure. Sim bots just need the
+   *  thread to exist (plus a buffer so a spend can't fray the pair). */
+  private maySpend(view: BotView, cost: number, kind: 'pulse' | 'sever' | 'steady'): boolean {
+    if (view.thread < cost + 2) return false; // never spend into fray range
+    if (this.mode !== 'solo' || view.thread - cost >= 5) return true;
+    if (kind === 'pulse') return false;
+    const me = view.players[view.you];
+    const incoming = view.combat!.enemies
+      .filter((e) => e.hp > 0 && e.boundTo === view.you && e.intent.kind.startsWith('attack'))
+      .reduce((a, e) => {
+        const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
+        return a + raw + e.strength;
+      }, 0);
+    return me.hp - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+  }
+
+  /** §14.12: score each staged card whose Link won't fire — link payoff value
+   *  plus a large bonus when forcing it completes a Resonance streak — and
+   *  Pulse the best one past a threshold. Deterministic: no rolls. */
+  private tryPulse(view: BotView): Action | null {
+    const you = view.you;
+    const combat = view.combat!;
+    const chain = combat.chain;
+    if (chain.length < 2) return null;
+    if (!this.maySpend(view, 2, 'pulse')) return null;
+    const severed = combat.severedTurns > 0;
+    const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
+    const fired = chain.map((slot, i) => {
+      const def = defs[i];
+      if (i === 0 || !def.link) return false;
+      if (severed && chain[i - 1].owner !== slot.owner) return false;
+      if (def.link.condition === 'partner') return chain[i - 1].owner !== slot.owner;
+      if (def.link.condition === 'any') return true;
+      return defs[i - 1].tag === def.link.condition;
+    });
+    const pulsed = new Set(
+      combat.threadActions.filter((t) => t.kind === 'pulse').map((t) => t.targetId),
+    );
+    const targetable = combat.enemies.filter((e) => e.hp > 0 && !e.untargetable);
+    const bigPile = targetable.some((e) => e.hex >= 4);
+    const resonancesAt = (f: boolean[]): number => computeResonanceSlots(chain, f).size;
+    const baseRes = resonancesAt(fired);
+    let best: { id: string; score: number } | null = null;
+    for (let i = 0; i < chain.length; i++) {
+      const def = defs[i];
+      if (!def.link || fired[i] || pulsed.has(chain[i].cardInstanceId)) continue;
+      const text = JSON.stringify(def.link.effects);
+      let score = 1;
+      if (text.includes('detonate') && bigPile) score += 2;
+      if (text.includes('"hex"') || text.includes('hexAll')) score += 1;
+      if (text.includes('"damage"') || text.includes('damageAll') || text.includes('damagePerHex')) score += 1;
+      const withForced = fired.slice();
+      withForced[i] = true;
+      if (resonancesAt(withForced) > baseRes) score += 4;
+      if (!best || score > best.score) best = { id: chain[i].cardInstanceId, score };
+    }
+    if (!best || best.score < 3) return null;
+    return { type: 'DECLARE_THREAD', player: you, kind: 'pulse', targetId: best.id };
   }
 
   private tryReorder(view: BotView): Action | null {

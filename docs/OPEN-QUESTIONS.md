@@ -190,3 +190,21 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
       env knobs soften live (e.g. 1.2/1.2 for a first-timer pair); the active
       scales ride in every telemetry file so Part A stays interpretable.
       First-session fun outranks calibration purity.
+
+26. **§14.12 deferred Thread levers** (S3.3b, 2026-06-12): the Pulse rework
+    (force a dead link) shipped pre-playtest; the rest of the Thread economy
+    loop is explicitly deferred until post-playtest data exists. Candidates,
+    in the order we'd reach for them if Thread still idles:
+    - **Links generate Thread** (close the loop: weaving feeds the pool that
+      feeds the weave).
+    - **Overcap strain** (regen wasted at cap becomes a cost, not a no-op —
+      telemetry already counts it: `regenWastedAtCap`).
+    - **Earlier thread-attacking enemies** (attrition that makes Steady/regen
+      decisions real before the Unraveled).
+
+27. **Pulsekeeper's Ring forced retext** (§14.12 collateral): the relic read
+    "Pulse grants +4 instead of +3" — meaningless once the flat bonus died.
+    Retexted to the closest equivalent: "Pulse costs 1 Thread instead of 2"
+    (`pulseCostMinusOne`). A relic referencing a removed mechanic is a bug,
+    not a scope save; flagged here because S3's hard scope rule said no relic
+    changes. Designer may re-rule the effect.

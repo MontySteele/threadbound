@@ -288,9 +288,11 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'pulsekeepers_ring', name: 'Pulsekeeper’s Ring',
-    text: 'Pulse grants +4 instead of +3.',
+    // §14.12 forced touch: the +3 bonus no longer exists; the closest
+    // equivalent under force-a-dead-link Pulse is a cost break.
+    text: 'Pulse costs 1 Thread instead of 2.',
     coop: true,
-    passives: ['pulsePlusOne'],
+    passives: ['pulseCostMinusOne'],
   },
   {
     id: 'threadspool_reliquary', name: 'Threadspool Reliquary',

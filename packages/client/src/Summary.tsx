@@ -26,8 +26,22 @@ export function RunSummary({ state, won }: { state: ClientState; won: boolean })
     ['Hexes detonated', `${t.detonatedStacks} stacks${t.detonationEvents ? ` · avg ${(t.detonatedStacks / t.detonationEvents).toFixed(1)}/burst` : ''}`],
     ['Biggest single turn', t.biggestTurn.damage > 0 ? `${t.biggestTurn.damage} damage (turn ${t.biggestTurn.turn}, act ${t.biggestTurn.act})` : '—'],
     ['Covets spent', `${t.covetsSpent.p1 + t.covetsSpent.p2} (${name('p1')} ${t.covetsSpent.p1} · ${name('p2')} ${t.covetsSpent.p2})`],
-    ['Seed', `${state.seed}`],
   ];
+
+  // S3.1/§14.12 thread economy — make the shared pool's story visible
+  const combats = Object.values(t.actStats ?? {}).reduce((a, s) => a + s.combats, 0);
+  const mix = Object.entries(t.threadSpendByKind ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(' · ');
+  rows.push(['Thread spent', t.threadSpent
+    ? `${t.threadSpent}${combats ? ` (${(t.threadSpent / combats).toFixed(1)}/combat)` : ''}${mix ? ` — ${mix}` : ''}`
+    : '0']);
+  if ((t.regenWastedAtCap ?? 0) > 0) rows.push(['Thread regen wasted at cap', `${t.regenWastedAtCap}`]);
+  if ((t.forcedLinkFires ?? 0) > 0) {
+    rows.push(['Links forced (Pulse)', `${t.forcedLinkFires}${t.resonancesForced ? ` · ${t.resonancesForced} Resonance${t.resonancesForced > 1 ? 's' : ''} needed one` : ''}`]);
+  }
+  if ((t.wornKnife?.plays ?? 0) > 0) {
+    rows.push(['Worn Knife', `${t.wornKnife.plays} plays · mean ${(t.wornKnife.damage / t.wornKnife.plays).toFixed(1)} damage`]);
+  }
+  rows.push(['Seed', `${state.seed}`]);
 
   return (
     <div className="summary">

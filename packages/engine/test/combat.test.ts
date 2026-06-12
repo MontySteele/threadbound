@@ -203,20 +203,6 @@ describe('combat basics (§2)', () => {
     expect(s.players.p2.kindled).toBe(0);
   });
 
-  it('M2-D4: Pulse skips cards with no primary number and lands on the next that has one', () => {
-    let s = combatState();
-    const [stitch, knife] = forceHand(s, 'p1', ['loose_stitch', 'stitchblade']);
-    forceHand(s, 'p2', ['brace_up']);
-    const enemy = s.combat!.enemies[0].id;
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p2', kind: 'pulse' });
-    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: stitch, slot: 0 }); // draw only — no primary
-    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: knife, slot: 1, targetId: enemy }); // Deal 5
-    toughen(s);
-    s = ready(s);
-    const hits = s.log.filter((e) => e.e === 'damage');
-    // stitchblade deals 5 + 3 Pulse = 8 (raw, vs unblocked enemy: hpLoss+blocked = 8)
-    expect(hits.some((h) => h.e === 'damage' && h.hpLoss + h.blocked === 8)).toBe(true);
-  });
 });
 
 describe('Resonance (§2.3)', () => {
@@ -249,38 +235,107 @@ describe('Resonance (§2.3)', () => {
   });
 });
 
-describe('The Thread (§5)', () => {
-  it('Pulse boosts the partner’s next primary number by +3 and costs 2 Thread', () => {
-    let s = combatState();
-    const [rend] = forceHand(s, 'p2', ['rendcall']);
-    forceHand(s, 'p1', ['wardknot']);
+describe('The Thread (§5) — Pulse per §14.12', () => {
+  /** Chain with a dead Link: needlework (Hex) → brace (Guard) → rendcall
+   *  (Strike, Link (Hex)) — rendcall's link can't fire behind a Guard. */
+  function deadLinkChain(seed = 42) {
+    let s = combatState(seed);
+    const [needle] = forceHand(s, 'p1', ['needlework']);
+    const [brace, rend] = forceHand(s, 'p2', ['brace', 'rendcall']);
     const enemy = s.combat!.enemies[0].id;
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: rend, slot: 0, targetId: enemy });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: needle, slot: 0, targetId: enemy });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: brace, slot: 1 });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: rend, slot: 2, targetId: enemy });
+    return { s, rend, enemy };
+  }
+
+  it('Pulse forces a dead Link: payoff fires, costs 2 Thread, either player may target either card', () => {
+    let { s, rend } = deadLinkChain();
+    toughen(s);
+    // p1 pulses p2's card — both-player targeting
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: rend });
+    const threadBefore = s.thread;
+    s = ready(s);
+    // rendcall's Link (Hex) detonated needlework's stacks despite the Guard between
+    expect(s.log.some((e) => e.e === 'detonate')).toBe(true);
+    expect(s.log.some((e) => e.e === 'thread_action' && e.kind === 'pulse' && /Rendcall/.test(e.detail ?? ''))).toBe(true);
+    expect(s.telemetry.forcedLinkFires).toBe(1);
+    expect(s.telemetry.threadSpent).toBe(2);
+    expect(s.telemetry.threadSpendByKind.pulse).toBe(1);
+    // 6 - 2 spent + 2 regen at next turn start
+    expect(s.thread).toBe(threadBefore - 2 + 2);
+  });
+
+  it('declaration guards: needs a staged card, a Link, and a DEAD link; no double-pulse', () => {
+    const { s, rend } = deadLinkChain();
+    expect(() => reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: 'nope' })).toThrow(/staged/);
+    // brace's Link (Surge) fires? no — but needlework (slot 0) HAS a link that can't fire: legal.
+    // A naturally-firing link is not pulseable: stage spark behind needlework (Hex → Link Strike? no).
+    let s2 = combatState(9);
+    const [needle2] = forceHand(s2, 'p1', ['needlework']);
+    const [rend2] = forceHand(s2, 'p2', ['rendcall']);
+    const enemy2 = s2.combat!.enemies[0].id;
+    s2 = reduce(s2, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: needle2, slot: 0, targetId: enemy2 });
+    s2 = reduce(s2, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: rend2, slot: 1, targetId: enemy2 });
+    expect(() => reduce(s2, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: rend2 })).toThrow(/already fires/);
+    // linkless cards can't be forced
+    let s3 = combatState(11);
+    const [knife, pin] = forceHand(s3, 'p1', ['worn_knife', 'hatpin']);
+    const enemy3 = s3.combat!.enemies[0].id;
+    s3 = reduce(s3, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: pin, slot: 0, targetId: enemy3 });
+    s3 = reduce(s3, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: knife, slot: 1, targetId: enemy3 });
+    expect(() => reduce(s3, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: knife })).toThrow(/no Link/);
+    // one Pulse per card
+    const declared = reduce(deadLinkChain(13).s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: deadLinkChain(13).rend });
+    expect(() => reduce(declared, { type: 'DECLARE_THREAD', player: 'p2', kind: 'pulse', targetId: deadLinkChain(13).rend })).toThrow(/already pulsed/);
+  });
+
+  it('unstaging a pulsed card drops the Pulse with it', () => {
+    let { s, rend } = deadLinkChain();
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: rend });
+    s = reduce(s, { type: 'UNSTAGE_CARD', player: 'p2', cardInstanceId: rend });
+    expect(s.combat!.threadActions.some((t) => t.kind === 'pulse')).toBe(false);
+  });
+
+  it('a forced link counts toward Resonance (and is tallied as needing one)', () => {
+    let s = combatState(7);
+    const [needle, stitch] = forceHand(s, 'p1', ['needlework', 'stitchblade']);
+    const [rend, follow] = forceHand(s, 'p2', ['rendcall', 'followthrough']);
+    const enemy = s.combat!.enemies[0].id;
+    // needlework(Hex) → rendcall fires naturally (Hex) → stitchblade dead
+    // (Link Hex behind a Strike) → followthrough dead (same)
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: needle, slot: 0, targetId: enemy });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: rend, slot: 1, targetId: enemy });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: stitch, slot: 2, targetId: enemy });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: follow, slot: 3, targetId: enemy });
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: stitch });
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p2', kind: 'pulse', targetId: follow });
     toughen(s);
     s = ready(s);
-    const hit = s.log.find((e) => e.e === 'damage');
-    expect(hit && hit.e === 'damage' && hit.hpLoss + hit.blocked).toBe(11); // 8 + 3
+    expect(s.log.some((e) => e.e === 'resonance_ignite')).toBe(true);
+    expect(s.telemetry.resonances).toBe(1);
+    expect(s.telemetry.resonancesForced).toBe(1);
+    expect(s.telemetry.forcedLinkFires).toBe(2);
   });
 
   it('overdrafting the Thread frays both players (§5)', () => {
     let s = combatState();
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p2', kind: 'sever', targetId: s.combat!.enemies[0].id });
-    const done = ready(s);
+    const enemy = s.combat!.enemies[0].id;
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'sever', targetId: enemy });
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p2', kind: 'sever', targetId: enemy });
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'steady' });
+    const done = ready(s); // 3 + 3 + 1 = 7 > 6 — the steady's own cost frays
     expect(done.log.some((e) => e.e === 'fray')).toBe(true);
     expect(done.thread).toBeGreaterThanOrEqual(0);
   });
 
   it('Steady prevents the next Fray', () => {
     let s = combatState();
+    const enemy = s.combat!.enemies[0].id;
     s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'steady' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse' });
-    s = ready(s);
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'sever', targetId: enemy });
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p2', kind: 'sever', targetId: enemy });
+    s = ready(s); // 1 + 3 + 3 = 7 > 6, but the early Steady shields the Fray
     expect(s.log.some((e) => e.e === 'fray')).toBe(false);
   });
 

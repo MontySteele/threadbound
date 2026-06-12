@@ -11,7 +11,8 @@ import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID } from './content/regi
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
 import { ENCOUNTERS } from './content/encounters';
 import {
-  effectiveDef, findInstance, hasPassive, otherPlayer, resolveTurn, runHooks, startCombat, startTurn,
+  computeLinksFired, effectiveDef, findInstance, hasPassive, otherPlayer, resolveTurn, runHooks,
+  startCombat, startTurn,
 } from './combat';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { rngInt } from './rng';
@@ -35,7 +36,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
       powers: [], relics: [],
       deck, draw: [], hand: [], discard: [], exhaust: [], combatCards: [],
       covetCharges: 1,
-      ready: false, pendingFray: 0, pulseBonus: 0,
+      ready: false, pendingFray: 0,
     };
   };
   return {
@@ -174,6 +175,11 @@ function apply(state: GameState, action: Action): void {
       const removed = combat.chain.splice(idx, 1)[0];
       p.hand.push(removed.cardInstanceId);
       p.energy += effectiveDef(findInstance(p, removed.cardInstanceId)!).cost;
+      // §14.12: a Pulse aimed at an unstaged card has nothing to force — drop
+      // it (either player's) rather than letting it fizzle at resolution
+      combat.threadActions = combat.threadActions.filter(
+        (t) => !(t.kind === 'pulse' && t.targetId === action.cardInstanceId),
+      );
       return;
     }
 
@@ -199,6 +205,20 @@ function apply(state: GameState, action: Action): void {
       assert(combat.threadActions.length < 10, 'too many declared thread actions');
       if (action.kind === 'sever') {
         assert(action.targetId && combat.enemies.some((e) => e.id === action.targetId && e.hp > 0), 'sever needs a living enemy');
+      }
+      if (action.kind === 'pulse') {
+        // §14.12: Pulse forces a staged card's dead Link. Either player may
+        // Pulse either player's card; one Pulse per card is enough.
+        const slot = combat.chain.find((s) => s.cardInstanceId === action.targetId);
+        assert(slot, 'pulse needs a staged card');
+        const def = effectiveDef(findInstance(state.players[slot.owner], slot.cardInstanceId)!);
+        assert(def.link, 'that card has no Link to force');
+        const fired = computeLinksFired(state, combat.chain);
+        assert(!fired[combat.chain.indexOf(slot)], 'that Link already fires');
+        assert(
+          !combat.threadActions.some((t) => t.kind === 'pulse' && t.targetId === action.targetId),
+          'already pulsed',
+        );
       }
       if (action.kind === 'reclaim') {
         const partner = state.players[otherPlayer(action.player)];
@@ -741,7 +761,7 @@ function endCombatCleanup(state: GameState): void {
     const p = state.players[pid];
     p.hand = []; p.draw = []; p.discard = []; p.exhaust = [];
     p.combatCards = [];
-    p.block = 0; p.momentum = 0; p.kindled = 0; p.powers = []; p.ready = false; p.pulseBonus = 0;
+    p.block = 0; p.momentum = 0; p.kindled = 0; p.powers = []; p.ready = false;
     p.energy = p.energyMax;
     p.fallen = false;
     p.statuses = { weak: 0, vulnerable: 0, frayed: 0 };

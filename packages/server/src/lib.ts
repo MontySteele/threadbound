@@ -209,9 +209,12 @@ export class GameServer {
     for (const k of Object.keys(fresh) as (keyof ReturnType<typeof emptyTelemetry>)[]) {
       (s.telemetry as unknown as Record<string, unknown>)[k] ??= fresh[k];
     }
+    // §14.12: pre-rework Pulse declarations (no target) have nothing to force
+    if (s.combat) {
+      s.combat.threadActions = s.combat.threadActions.filter((t) => t.kind !== 'pulse' || !!t.targetId);
+    }
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
       const pl = s.players[pid];
-      pl.pulseBonus ??= 0;
       pl.kindled ??= 0;
       pl.pendingFray ??= 0;
       pl.covetCharges ??= 1;
