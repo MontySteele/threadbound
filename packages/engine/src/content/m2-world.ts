@@ -592,6 +592,10 @@ export const M2_WITNESS: Record<string, string[]> = {
     'Buy something or stop fondling the merchandise.',
     "Haggle if you like. The dead don't discount.",
   ],
+  // §14.13 (S4.2) tone budget: exactly one line, for a player's 4th+ removal
+  removal_fourth: [
+    'Cutting away at yourself again. The Thread notices.',
+  ],
   map_disagree: [
     'Two destinations, one thread. Physics is against you.',
     'You do realize you are tied together. Pick a direction.',

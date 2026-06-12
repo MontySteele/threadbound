@@ -5,9 +5,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef,
+  ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
+import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
 import { GLYPH } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
@@ -131,6 +133,19 @@ export default function App(): JSX.Element {
   useEffect(() => {
     audio.setAmbient(state && state.phase !== 'lobby' ? state.map.act : 0);
   }, [state?.map.act, state?.phase]);
+
+  // S4.5: bank the clear into the browser profile — once per run (room+seed
+  // key), for the seat this browser holds. The partner's browser banks its
+  // own seat; that's how credit accrues to BOTH profiles (union rule).
+  useEffect(() => {
+    if (state?.phase === 'victory' && joined) {
+      const dedup = `tb_cleared_${joined.code}_${state.seed}`;
+      if (!localStorage.getItem(dedup)) {
+        localStorage.setItem(dedup, '1');
+        recordClear(state.players[state.you].character, state.ascension ?? 0);
+      }
+    }
+  }, [state?.phase, joined?.code]);
 
   // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
   useEffect(() => {
@@ -282,11 +297,16 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   if (relics.length === 0) return <></>;
   return (
     <div className="relicbar">
-      {relics.map(({ pid, relic }, i) => (
-        <span key={i} className="relic" data-gp="RELICS" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
-          {relic?.name ?? '?'}
-        </span>
-      ))}
+      {relics.map(({ pid, relic }, i) => {
+        // §14.13: the Ring wears 0–2 charge pips — the count made visible
+        const pips = relic?.id === 'pulsekeepers_ring' ? (state.players[pid].ringPulses ?? 0) % 3 : null;
+        return (
+          <span key={i} className="relic" data-gp="RELICS" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
+            {relic?.name ?? '?'}
+            {pips !== null && <span className="ring-pips"> {'●'.repeat(pips)}{'○'.repeat(2 - pips)}</span>}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -362,6 +382,83 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
         </label>
         <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
       </div>
+      <ProfilePanel />
+    </div>
+  );
+}
+
+/** S4.5: the browser profile's export/import — the save-state until a real
+ *  account layer exists (explicitly out of scope). Small, on the title screen. */
+function ProfilePanel(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [msg, setMsg] = useState('');
+  const [, tick] = useState(0);
+  const p = loadProfile();
+  const clears = p.clears.vess.count + p.clears.bram.count;
+  return (
+    <div className="panel" style={{ opacity: 0.85 }}>
+      <button className="chip" data-gp="META" onClick={() => setOpen(!open)}>
+        profile — {clears} clear{clears === 1 ? '' : 's'} · A{p.ascensionUnlocked.vess}/{p.ascensionUnlocked.bram} unlocked {open ? '▴' : '▾'}
+      </button>
+      {open && (
+        <div>
+          <p className="muted">Progress lives in this browser. Carry it with the string below.</p>
+          <textarea readOnly value={exportProfile(p)} rows={2} style={{ width: '100%' }}
+            onFocus={(e) => e.currentTarget.select()} />
+          <div>
+            <input placeholder="paste an export string to import" value={importText}
+              onChange={(e) => setImportText(e.target.value)} />
+            <button className="chip" data-gp="META" onClick={() => {
+              const imported = importProfile(importText);
+              if (!imported) { setMsg('that string is corrupt — rejected'); return; }
+              saveProfile(mergeProfiles(loadProfile(), imported)); // merge never downgrades
+              setImportText('');
+              setMsg('imported (merged — max/union)');
+              tick((n) => n + 1);
+            }}>import</button>
+          </div>
+          {msg && <p className="muted">{msg}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** S4.4: lobby ascension select — both players must land on the same level
+ *  (concede pattern; in solo the Witness follows the human's vote). Levels
+ *  above this browser's unlocked max are shown locked; the server clamps
+ *  regardless (profiles are claims, not authority). */
+function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; solo: boolean }): JSX.Element {
+  const you = state.you;
+  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+  const votes = state.ascensionVotes ?? { p1: 0, p2: 0 };
+  const myMax = loadProfile().ascensionUnlocked[state.players[you].character] ?? 0;
+  if (myMax === 0 && votes.p1 === 0 && votes.p2 === 0) {
+    return <></>; // nothing unlocked, nothing voted: keep the lobby quiet
+  }
+  return (
+    <div className="panel">
+      <h3>Ascension</h3>
+      <label>
+        Level{' '}
+        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) } as any)}>
+          {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
+            <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
+          ))}
+        </select>
+      </label>
+      {votes[you] > 0 && (
+        <p className="muted">
+          {Array.from({ length: votes[you] }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+        </p>
+      )}
+      {!solo && (
+        <p className="muted">
+          You: <b>A{votes[you]}</b> · Partner: <b>A{votes[partner]}</b>
+          {votes.p1 === votes.p2 ? ' — agreed' : ' — both must pick the same level'}
+        </p>
+      )}
     </div>
   );
 }
@@ -381,6 +478,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <TitleCord left={state.players.p1.character} right={solo ? 'witness' : partnerOn ? state.players.p2.character : null} />
           <p>{solo ? 'The Witness holds the other end. Reluctantly.' : partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
           <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
+          {(partnerOn || solo) && <AscensionPicker state={state} net={net} solo={solo} />}
           {(partnerOn || solo) && <p className="witness">THE WITNESS: “{greeting}”</p>}
           {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => { goFullscreen(); net.start(); }}>Begin the descent</button>}
         </div>
@@ -681,9 +779,11 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       </div>
 
       <div className="thread-bar">
+        {/* §14.13: when the Ring's next Pulse is the discounted third, the
+            row shows the real price — the affordance matters more than the math */}
         <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || pulseTargets.size === 0}
           onClick={() => setPendingPulse(!pendingPulse)}>
-          Pulse (2)…
+          Pulse ({me.relics.includes('pulsekeepers_ring') && ((me.ringPulses ?? 0) + 1) % 3 === 0 ? 1 : 2})…
         </button>
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
@@ -1053,7 +1153,9 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       <Log log={state.log} state={state} />
       {chosen === null ? (
         <>
-          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>Rest (heal 30%)</button>
+          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>
+            Rest (heal {Math.round(ascensionMods(state.ascension ?? 0).restHeal * 100)}%)
+          </button>
           <button className="big" data-gp="META" data-inspect="kw:upgrade" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' } as any)}>Upgrade a card</button>
           <button className="big" data-gp="META" data-inspect="kw:covet" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' } as any)}>Barter (+1 Covet charge)</button>
           <button className="big" data-gp="META" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' } as any)}>
@@ -1169,14 +1271,27 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
             <span className="muted"> {RELICS_BY_ID[item.refId!]?.text}</span>
           </div>
         ))}
-        {shop.items.filter((i) => i.kind === 'removal').map((item) => (
-          <div key={item.id}>
-            <button data-gp="META" disabled={item.sold || item.price > state.gold}
-              onClick={() => setRemoving(removing === item.id ? null : item.id)}>
-              Remove a card — {item.sold ? 'used' : `${item.price}g`}
-            </button>
-          </div>
-        ))}
+        {/* S4.2 (OQ#8): the removal service never sells out — your price
+            escalates with YOUR removals this run; the partner's next price
+            sits beside it because the negotiation is the point */}
+        {(() => {
+          const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+          const myRow = shop.items.find((i) => i.kind === 'removal' && (!i.forPlayer || i.forPlayer === you));
+          if (!myRow) return null;
+          const myPrice = removalPrice(state, you);
+          const theirPrice = removalPrice(state, partner);
+          return (
+            <div>
+              <button data-gp="META" disabled={myPrice > state.gold || state.players[you].deck.length <= 5}
+                onClick={() => setRemoving(removing === myRow.id ? null : myRow.id)}>
+                Remove a card from your deck — {myPrice}g
+              </button>
+              <span className="muted">
+                {' '}unlimited; your price climbs +25g per cut, all run · {state.players[partner].character}’s next: {theirPrice}g
+              </span>
+            </div>
+          );
+        })()}
         {removing && (
           <div className="hand">
             {me.deck.map((c) => (

@@ -4,16 +4,17 @@
 // Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardInstance, CharacterId, GameState, IllegalAction, MapNode, PlayerId, PlayerState,
-  Rarity, RestOption, Telemetry,
+  Action, CardDef, CardInstance, CharacterId, GameState, GoldSource, IllegalAction, MapNode,
+  PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
-import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID } from './content/registry';
+import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
 import { ENCOUNTERS } from './content/encounters';
 import {
-  computeLinksFired, effectiveDef, findInstance, hasPassive, otherPlayer, resolveTurn, runHooks,
-  startCombat, startTurn,
+  computeLinksFired, effectiveDef, emptyActStats, findInstance, hasPassive, otherPlayer,
+  resolveTurn, runHooks, startCombat, startTurn,
 } from './combat';
+import { ASCENSION_MAX, ascensionMods } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
@@ -37,6 +38,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
       deck, draw: [], hand: [], discard: [], exhaust: [], combatCards: [],
       covetCharges: 1,
       ready: false, pendingFray: 0,
+      ringPulses: 0,
     };
   };
   return {
@@ -47,6 +49,10 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     ...(botSeat ? { botSeat } : {}),
     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
     gold: 40,
+    removalsByPlayer: { p1: 0, p2: 0 },
+    ascension: 0,
+    ascensionVotes: { p1: 0, p2: 0 },
+    unlockedCards: [],
     pendingThread: 0,
     thread: 6,
     threadMax: 10,
@@ -80,7 +86,46 @@ export function emptyTelemetry(): Telemetry {
     regenWastedAtCap: 0,
     forcedLinkFires: 0,
     resonancesForced: 0,
+    goldEarnedBySource: { combat: 0, elite: 0, boss: 0, event: 0, treasure: 0 },
+    goldSpentByCategory: {
+      p1: { cards: 0, relics: 0, removals: 0 },
+      p2: { cards: 0, relics: 0, removals: 0 },
+    },
+    removalsByPlayer: { p1: 0, p2: 0 },
+    goldResidual: 0,
+    ringDiscountsFired: 0,
   };
+}
+
+/** S4.2 (OQ#8): a player's next removal price — 75 + 25 × removals THEY have
+ *  bought this run, anywhere. Shared by reducer, bots, and the shop UI. */
+export function removalPrice(state: Pick<GameState, 'removalsByPlayer'>, pid: PlayerId): number {
+  return 75 + 25 * (state.removalsByPlayer?.[pid] ?? 0);
+}
+
+/** S4.1: every purse gain flows through here so source attribution and the
+ *  per-act split can't drift from the actual gold. */
+function earnGold(state: GameState, amount: number, source: GoldSource): void {
+  state.gold += amount;
+  state.telemetry.goldEarnedBySource[source] += amount;
+  actStatsFor(state).goldEarned += amount;
+}
+
+function spendGold(state: GameState, pid: PlayerId, amount: number, category: 'cards' | 'relics' | 'removals'): void {
+  state.gold -= amount;
+  state.telemetry.goldSpentByCategory[pid][category] += amount;
+  actStatsFor(state).goldSpent += amount;
+}
+
+function actStatsFor(state: GameState) {
+  const act = state.map.act;
+  return state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
+}
+
+/** S4.5: pool gate. Only ids in LOCKED_CARDS need unlocking; the set ships
+ *  empty, so this is the identity filter until a locked set is authored. */
+function cardUnlocked(state: GameState, def: CardDef): boolean {
+  return !LOCKED_CARDS.has(def.id) || state.unlockedCards.includes(def.id);
 }
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -102,15 +147,37 @@ function apply(state: GameState, action: Action): void {
   switch (action.type) {
     case 'START_RUN': {
       assert(state.phase === 'lobby', 'run already started');
+      // S4.4: both players must have landed on the same rung (default 0/0)
+      assert(state.ascensionVotes.p1 === state.ascensionVotes.p2, 'agree on an ascension level first');
+      const ascension = state.ascensionVotes.p1;
       const fresh = initialState(action.seed, {
         p1: state.players.p1.character,
         p2: state.players.p2.character,
       }, state.botSeat);
       Object.assign(state, fresh, { log: state.log });
-      const gen = generateActMap(state.rng, 1);
+      state.ascension = ascension;
+      state.ascensionVotes = { p1: ascension, p2: ascension };
+      state.unlockedCards = action.unlockedCards ?? [];
+      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite);
       state.rng = gen.rng;
       state.map = gen.map;
       state.phase = 'map';
+      if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
+      return;
+    }
+
+    case 'SET_ASCENSION': {
+      // S4.4 lobby vote, concede pattern: both must say the same number.
+      assert(state.phase === 'lobby', 'ascension is chosen in the lobby');
+      assert(Number.isInteger(action.level) && action.level >= 0 && action.level <= ASCENSION_MAX, 'bad ascension level');
+      state.ascensionVotes[action.player] = action.level;
+      // solo: the Witness follows the human's lead (S1.2 etiquette)
+      if (state.botSeat && action.player !== state.botSeat) {
+        state.ascensionVotes[state.botSeat] = action.level;
+      }
+      if (state.ascensionVotes.p1 === state.ascensionVotes.p2) {
+        state.ascension = action.level;
+      }
       return;
     }
 
@@ -309,7 +376,8 @@ function apply(state: GameState, action: Action): void {
       const option: RestOption = action.option;
       switch (option) {
         case 'rest':
-          p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * 0.3));
+          // S4.4 A5 (provisional): 30% → 20% at the top rung
+          p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * ascensionMods(state.ascension).restHeal));
           break;
         case 'barter':
           p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1);
@@ -397,31 +465,40 @@ function apply(state: GameState, action: Action): void {
       if (item.kind === 'card') {
         assert(item.forPlayer === action.player, 'that card is cut for your partner');
         addCardToDeck(state, action.player, item.refId!);
+        spendGold(state, action.player, item.price, 'cards');
       } else {
         const p = state.players[action.player];
         assert(!p.relics.includes(item.refId!) && !state.players[otherPlayer(action.player)].relics.includes(item.refId!), 'already owned');
         grantRelic(state, action.player, item.refId!);
+        spendGold(state, action.player, item.price, 'relics');
       }
-      state.gold -= item.price;
       item.sold = true;
       return;
     }
 
     case 'SHOP_REMOVE': {
+      // S4.2 (OQ#8): unlimited per visit — only gold gates it. The price is
+      // per player and run-persistent: 75 + 25 × their removals so far,
+      // paid from the shared purse. Going small-deck is allowed; it taxes
+      // the team, escalatingly.
       assert(state.phase === 'shop' && state.shop, 'not at a shop');
       const shop = state.shop!;
       const item = shop.items.find((i) => i.id === action.itemId);
-      assert(item && item.kind === 'removal' && !item.sold, 'removal unavailable');
-      assert(state.gold >= item.price, 'not enough gold');
+      assert(item && item.kind === 'removal', 'removal unavailable');
+      assert(!item.forPlayer || item.forPlayer === action.player, "that service row is your partner's");
+      const price = removalPrice(state, action.player);
+      assert(state.gold >= price, 'not enough gold');
       const p = state.players[action.player];
       const idx = p.deck.findIndex((c) => c.instanceId === action.cardInstanceId);
       assert(idx >= 0, 'no such card in your deck');
       assert(p.deck.length > 5, 'your deck is thin enough');
       const [removed] = p.deck.splice(idx, 1);
-      state.gold -= item.price;
-      item.sold = true;
-      shop.removalsBought++;
-      state.log.push({ e: 'info', detail: `${p.character} pays to forget ${CARDS[removed.defId].name}.` });
+      state.removalsByPlayer[action.player]++;
+      state.telemetry.removalsByPlayer[action.player]++;
+      spendGold(state, action.player, price, 'removals');
+      state.log.push({ e: 'info', detail: `${p.character} pays ${price}g to forget ${CARDS[removed.defId].name}. Next cut: ${removalPrice(state, action.player)}g.` });
+      // §14.13 tone budget: one line for the 4th+ cut (no-repeat pool of one)
+      if (state.removalsByPlayer[action.player] >= 4) sayWitness(state, 'removal_fourth');
       return;
     }
 
@@ -537,7 +614,8 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       subject.hp = Math.max(1, Math.min(subject.maxHp, subject.hp + Math.max(0, eff.amount as number)));
       break;
     case 'gainCard': {
-      const pool = [...cardsForCharacter(subject.character), ...neutralCards()].filter((c) => c.rarity === (eff.pool as Rarity));
+      const pool = [...cardsForCharacter(subject.character), ...neutralCards()]
+        .filter((c) => c.rarity === (eff.pool as Rarity) && cardUnlocked(state, c));
       if (pool.length === 0) break;
       const r = rngInt(state.rng, pool.length);
       state.rng = r.state;
@@ -550,9 +628,14 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       if (relic) grantRelic(state, subject.id, relic);
       break;
     }
-    case 'gold':
-      state.gold = Math.max(0, state.gold + (eff.amount as number));
+    case 'gold': {
+      const amt = eff.amount as number;
+      // S4.1: only gains get source attribution; event losses just drain the
+      // purse (they're shared misfortune, not a spend category)
+      if (amt > 0) earnGold(state, amt, 'event');
+      else state.gold = Math.max(0, state.gold + amt);
       break;
+    }
     case 'covetCharge':
       subject.covetCharges = Math.min(covetMax(subject), subject.covetCharges + (eff.amount as number));
       break;
@@ -637,7 +720,7 @@ function enterNode(state: GameState): void {
       const goldRoll = rngInt(state.rng, 21);
       state.rng = goldRoll.state;
       const gold = 30 + goldRoll.value;
-      state.gold += gold;
+      earnGold(state, gold, 'treasure');
       const relic = randomUnownedRelic(state);
       const ownerRoll = rngInt(state.rng, 2);
       state.rng = ownerRoll.state;
@@ -669,7 +752,7 @@ function healBetweenActs(state: GameState): void {
 function advanceAct(state: GameState): void {
   if (state.map.act === 1) {
     healBetweenActs(state);
-    const gen = generateActMap(state.rng, 2);
+    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite);
     state.rng = gen.rng;
     state.map = gen.map;
     state.phase = 'map';
@@ -681,6 +764,7 @@ function advanceAct(state: GameState): void {
     sayWitness(state, 'finale_start');
   } else {
     state.phase = 'victory';
+    state.telemetry.goldResidual = state.gold; // S4.1
     sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
@@ -717,7 +801,7 @@ function afterResolution(state: GameState): void {
       node.kind === 'boss' ? 70 + goldRoll.value
       : node.kind === 'elite' ? 45 + goldRoll.value
       : 20 + goldRoll.value;
-    state.gold += gold;
+    earnGold(state, gold, node.kind as GoldSource);
 
     let relic: string | undefined;
     if (node.kind === 'elite' || node.kind === 'boss') {
@@ -772,6 +856,7 @@ function gameOver(state: GameState): void {
   sayWitness(state, state.botSeat ? 'solo_defeat' : 'player_death');
   endCombatCleanup(state);
   state.phase = 'game_over';
+  state.telemetry.goldResidual = state.gold; // S4.1
 }
 
 /** §8: reward sets of 3 from your own pool; M2-B1 adds a neutral splash. */
@@ -786,7 +871,10 @@ function rollRewardSet(state: GameState, pid: PlayerId): string[] {
     const rarity: Rarity = rar.value < 60 ? 'common' : rar.value < 90 ? 'uncommon' : 'rare';
     const neutralRoll = rngInt(state.rng, 100);
     state.rng = neutralRoll.state;
-    const pool = (neutralRoll.value < 18 ? neutrals : character).filter((c) => c.rarity === rarity && !out.includes(c.id));
+    // S4.5: the pool is gated by the run's unlock union (identity until a
+    // locked set is authored — LOCKED_CARDS ships empty)
+    const pool = (neutralRoll.value < 18 ? neutrals : character)
+      .filter((c) => c.rarity === rarity && !out.includes(c.id) && cardUnlocked(state, c));
     if (pool.length === 0) continue;
     const pick = rngInt(state.rng, pool.length);
     state.rng = pick.state;
@@ -825,8 +913,10 @@ function generateShop(state: GameState) {
     const relic = randomUnownedRelic(state);
     if (relic) items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
   }
-  items.push({ id: `item${n++}`, kind: 'removal', price: 75, sold: false });
-  items.push({ id: `item${n++}`, kind: 'removal', price: 100, sold: false });
-  items.push({ id: `item${n++}`, kind: 'removal', price: 125, sold: false });
-  return { items, removalsBought: 0 };
+  // S4.2: the removal service never sells out — one always-present row per
+  // player; the live price is removalPrice(state, player), shown per player
+  // (and the partner's, too: the negotiation is the point).
+  items.push({ id: `item${n++}`, kind: 'removal', forPlayer: 'p1', price: 0, sold: false });
+  items.push({ id: `item${n++}`, kind: 'removal', forPlayer: 'p2', price: 0, sold: false });
+  return { items };
 }

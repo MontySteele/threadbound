@@ -8,7 +8,7 @@ import { eventsForAct } from './content/registry';
 
 const LAYERS = 6; // + boss layer
 
-export function generateActMap(rngState: number, act: 1 | 2): { map: MapState; rng: number } {
+export function generateActMap(rngState: number, act: 1 | 2, extraElite = false): { map: MapState; rng: number } {
   let rng = rngState;
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
@@ -36,10 +36,13 @@ export function generateActMap(rngState: number, act: 1 | 2): { map: MapState; r
     laneCounts.push(l === LAYERS - 1 ? 2 : 2 + r.value);
   }
 
-  // exactly 2 elites per act (M2-B3), placed in layers 2-4 on distinct layers
+  // exactly 2 elites per act (M2-B3), placed in layers 2-4 on distinct layers.
+  // S4.4 A3: +1 elite — the remaining 2-4 layer also gets one. Same rng draws
+  // as A0 (the flag adds no rolls), so lower rungs reproduce A0 maps exactly.
   const eliteLayerRoll = rngInt(rng, 3);
   rng = eliteLayerRoll.state;
   const eliteLayers = [2 + eliteLayerRoll.value, 2 + ((eliteLayerRoll.value + 1) % 3)];
+  if (extraElite) eliteLayers.push(2 + ((eliteLayerRoll.value + 2) % 3));
   const eliteIds = [...pools.elite];
   // guarantee ≥1 shop and ≥1 treasure in layers 1-4
   const shopLayerRoll = rngInt(rng, 4);

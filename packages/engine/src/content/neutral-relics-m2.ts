@@ -288,11 +288,13 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'pulsekeepers_ring', name: 'Pulsekeeper’s Ring',
-    // §14.12 forced touch: the +3 bonus no longer exists; the closest
-    // equivalent under force-a-dead-link Pulse is a cost break.
-    text: 'Pulse costs 1 Thread instead of 2.',
+    // §14.13 (OQ#27): the flat cost break literally doubled Pulses per
+    // Thread — ruled overpowered. Now a run-persistent charge counter on the
+    // owner (PlayerState.ringPulses, engine-special-cased in resolveTurn):
+    // every 3rd Pulse costs 1. If Playtest 2 reads it dead, the pre-agreed
+    // (b) escalation is "every third Pulse FREE".
+    text: 'Every third Pulse costs 1 Thread. The Ring keeps count.',
     coop: true,
-    passives: ['pulseCostMinusOne'],
   },
   {
     id: 'threadspool_reliquary', name: 'Threadspool Reliquary',

@@ -31,6 +31,10 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
    discovered-in-shop/treasure story beat... actually it can drop randomly last;
    flag if it should be shop-only.
 
+   **OQ#3 ruling (S4 session, 2026-06-12): RESOLVED — CLOSED, no change.**
+   The Wedding Knife stays droppable-last from the random pool; shop/treasure
+   remain its primary sources.
+
 4. **Sever Binding vs Choristers** (§6 "one is always unbound") — severing any
    chorister **rotates**: the unbound body takes the target's binding and
    becomes targetable; the target goes unbound/untargetable. Normal p1↔p2
@@ -49,6 +53,14 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
 
 8. **Shop removal escalation** — per-shop (3 slots at 75/100/125 gold), not
    per-run cumulative. Flag if removal should get globally scarcer.
+
+   **OQ#8 ruling (S4 session, 2026-06-12): RESOLVED.** Unlimited removals per
+   shop visit — the service never sells out, only gold gates it. Price is per
+   player and run-persistent: 75 + 25 × (removals that player has bought this
+   run, anywhere), paid from the shared purse. A player going small-deck can,
+   at an escalating tax on the team's gold. Implemented S4.2 (§14.13);
+   `removalsByPlayer`/`goldSpentByCategory` telemetry reads whether the
+   escalation is a real constraint or theater.
 
 9. **Wedding Knife flow** — an optional sub-flow at any rest site once a player
    owns the relic (offer → both confirm), on top of the normal rest choice, not
@@ -208,6 +220,19 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     (`pulseCostMinusOne`). A relic referencing a removed mechanic is a bug,
     not a scope save; flagged here because S3's hard scope rule said no relic
     changes. Designer may re-rule the effect.
+
+    **OQ#27 ruling (S4 session, 2026-06-12): RESOLVED.** The flat cost break
+    literally doubled Pulses per Thread — overpowered. `pulseCostMinusOne` is
+    removed entirely (type, engine branches, relic def). New mechanic: a
+    run-persistent charge counter on the owner — **every third Pulse costs 1
+    Thread** instead of 2 (counter ≡ 0 mod 3 on the Pulse being cast; counting
+    starts at acquisition). Retext: "Every third Pulse costs 1 Thread. The
+    Ring keeps count." UI: 0–2 charge pips on the relic frame; the THREAD row
+    shows the discounted cost when the next Pulse is the third.
+    `ringDiscountsFired` telemetry watches for deadness at human Pulse rates
+    (risk accepted knowingly); the pre-agreed escalation if it reads dead is
+    variant (b): every third Pulse FREE — same average value, punchier moment.
+    Implemented S4.3 (§14.13).
 
 28. **S3.5 battery findings** (2026-06-12, full data in
     `docs/S3-BALANCE-REPORT.md`): at the 1.5/1.35 anchor, vb resonates more

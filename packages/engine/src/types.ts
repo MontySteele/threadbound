@@ -95,7 +95,8 @@ export interface Hook {
 /** Named passive behaviors special-cased by the engine. */
 export type PassiveId =
   | 'momentumNoHalve' // Wildfire Heart
-  | 'pulseCostMinusOne' // §14.12: Pulse costs 1 instead of 2 (relic space)
+  // §14.13 (OQ#27): 'pulseCostMinusOne' removed — Pulsekeeper's Ring now uses
+  // the run-persistent ringPulses counter (every 3rd Pulse costs 1).
   | 'threadRegenPlusOne' // +1 Thread regen per turn
   | 'covetMaxPlusOne' // may hold 3 Covet charges
   | 'handRetainOne' // M2-A1: retain 1 card at end of turn
@@ -317,6 +318,11 @@ export interface PlayerState {
   covetCharges: number;
   ready: boolean;
   pendingFray: number;
+  /** §14.13 (OQ#27) Pulsekeeper's Ring: run-persistent Pulse count while the
+   *  ring is owned. Only incremented when this player owns the ring, so
+   *  Pulses before acquisition never count. Every 3rd (counter ≡ 0 mod 3 on
+   *  the Pulse being cast) costs 1 Thread instead of 2. */
+  ringPulses: number;
 }
 
 export type ThreadActionKind = 'pulse' | 'reclaim' | 'sever' | 'steady';
@@ -385,15 +391,18 @@ export interface RestState {
 export interface ShopItem {
   id: string;
   kind: 'card' | 'relic' | 'removal';
-  forPlayer?: PlayerId; // cards are offered per-character
+  /** cards are offered per-character; removal service rows are per-player
+   *  (S4.2 — each player removes from their own deck at their own price) */
+  forPlayer?: PlayerId;
   refId?: string; // cardDefId or relicId
+  /** removal rows: ignored — the live price is removalPrice(state, player),
+   *  run-persistent escalation per OQ#8 */
   price: number;
   sold: boolean;
 }
 
 export interface ShopState {
   items: ShopItem[];
-  removalsBought: number;
 }
 
 export type GameEvent =
@@ -427,6 +436,19 @@ export interface GameState {
   botSeat?: PlayerId;
   map: MapState;
   gold: number; // shared (§8)
+  /** S4.2 (OQ#8): removals bought this RUN, per player — the run-persistent
+   *  escalation counter. Price = 75 + 25 × this, paid from the shared purse. */
+  removalsByPlayer: Record<PlayerId, number>;
+  /** S4.4: active ascension level (0–5), applied at run start as composable
+   *  rung flags (ascensionMods). All numbers provisional until Playtest 2. */
+  ascension: number;
+  /** S4.4: lobby votes — both players must confirm the same level (concede
+   *  pattern). Default 0/0, so an untouched lobby starts at A0. */
+  ascensionVotes: Record<PlayerId, number>;
+  /** S4.5: union of both players' unlocked card sets, sent by the server at
+   *  run start. Only consulted for ids in LOCKED_CARDS (empty until a locked
+   *  set is authored), so the default ships with everything unlocked. */
+  unlockedCards: string[];
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -450,7 +472,13 @@ export interface ActStats {
   linksFired: number;
   combats: number;
   hpLost: number;
+  /** S4.1: per-act gold flow */
+  goldEarned: number;
+  goldSpent: number;
 }
+
+/** S4.1: where gold comes from. */
+export type GoldSource = 'combat' | 'elite' | 'boss' | 'event' | 'treasure';
 
 export interface Telemetry {
   cardsPlayed: number;
@@ -484,6 +512,17 @@ export interface Telemetry {
    *  streaks that needed one */
   forcedLinkFires: number;
   resonancesForced: number;
+  /** S4.1 gold economy: earned by source, spent per player by category */
+  goldEarnedBySource: Record<GoldSource, number>;
+  goldSpentByCategory: Record<PlayerId, { cards: number; relics: number; removals: number }>;
+  /** S4.1: mirrors the S4.2 run counter, logged separately so the telemetry
+   *  survives even if the counter implementation moves */
+  removalsByPlayer: Record<PlayerId, number>;
+  /** S4.1: purse at run end — is removal escalation a constraint or theater? */
+  goldResidual: number;
+  /** S4.3 (OQ#27): discounted Pulses fired by the Ring — is the relic dead
+   *  at human Pulse rates? */
+  ringDiscountsFired: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -491,7 +530,11 @@ export interface Telemetry {
 // ---------------------------------------------------------------------------
 
 export type Action =
-  | { type: 'START_RUN'; seed: number }
+  /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
+   *  profiles are claims, the server clamps). Omitted = everything. */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[] }
+  /** S4.4: lobby ascension vote — both players must land on the same level */
+  | { type: 'SET_ASCENSION'; player: PlayerId; level: number }
   | { type: 'NODE_PICK'; player: PlayerId; nodeId: number } // M2-B3
   | { type: 'STAGE_CARD'; player: PlayerId; cardInstanceId: string; slot: number; targetId?: string }
   | { type: 'UNSTAGE_CARD'; player: PlayerId; cardInstanceId: string }

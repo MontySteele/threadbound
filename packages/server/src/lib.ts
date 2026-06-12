@@ -14,12 +14,20 @@ import {
 } from '@threadbound/engine';
 import { BotSpeed, SoloBotDriver } from './solo';
 
+/** S4.5: a browser profile's claim, sent at room join. Claims, not authority
+ *  — the server clamps ascension and builds the unlock union itself. */
+export interface ProfileClaim {
+  unlockedCards: string[];
+  ascensionUnlocked: Record<string, number>;
+}
+
 export interface Seat {
   token: string;
   character: CharacterId;
   socket: WebSocket | null;
   /** S1: this seat is held by the in-process solo bot (no socket, ever) */
   bot?: boolean;
+  claim?: ProfileClaim;
 }
 
 export interface FeedbackEntry {
@@ -183,7 +191,7 @@ export class GameServer {
       actionLog: room.actionLog,
       lastActivity: room.lastActivity,
       seats: Object.fromEntries(
-        Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot }]),
+        Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot, claim: seat!.claim }]),
       ),
       feedback: room.feedback,
       bot: room.bot,
@@ -213,11 +221,21 @@ export class GameServer {
     if (s.combat) {
       s.combat.threadActions = s.combat.threadActions.filter((t) => t.kind !== 'pulse' || !!t.targetId);
     }
+    // S4: economy/ascension fields (pre-S4 rooms)
+    for (const a of Object.values(s.telemetry.actStats ?? {})) {
+      a.goldEarned ??= 0;
+      a.goldSpent ??= 0;
+    }
+    s.removalsByPlayer ??= { p1: 0, p2: 0 };
+    s.ascension ??= 0;
+    s.ascensionVotes ??= { p1: s.ascension, p2: s.ascension };
+    s.unlockedCards ??= [];
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
       const pl = s.players[pid];
       pl.kindled ??= 0;
       pl.pendingFray ??= 0;
       pl.covetCharges ??= 1;
+      pl.ringPulses ??= 0;
     }
     return s;
   }
@@ -237,8 +255,8 @@ export class GameServer {
           feedback: r.feedback ?? [],
           bot: r.bot,
         };
-        for (const [pid, seat] of Object.entries(r.seats ?? {}) as [PlayerId, { token: string; character: CharacterId; bot?: boolean }][]) {
-          room.seats[pid] = { token: seat.token, character: seat.character, socket: null, bot: seat.bot };
+        for (const [pid, seat] of Object.entries(r.seats ?? {}) as [PlayerId, { token: string; character: CharacterId; bot?: boolean; claim?: ProfileClaim }][]) {
+          room.seats[pid] = { token: seat.token, character: seat.character, socket: null, bot: seat.bot, claim: seat.claim };
           if (!seat.bot) this.tokenIndex.set(seat.token, { room, pid });
         }
         this.rooms.set(room.code, room);
@@ -277,6 +295,8 @@ export class GameServer {
         },
         outcome: room.state.phase,
         act: room.state.map.act,
+        // S4.4: every telemetry file carries its difficulty, scales AND rung
+        ascension: room.state.ascension ?? 0,
         seed: room.state.seed,
         telemetry: room.state.telemetry,
         actions: room.actionLog.length,
@@ -289,6 +309,46 @@ export class GameServer {
   }
 
   // ---- protocol ------------------------------------------------------------
+
+  /** S4.5: sanitize a client-sent profile claim. */
+  private sanitizeClaim(raw: unknown): ProfileClaim | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const r = raw as Record<string, unknown>;
+    const unlockedCards = Array.isArray(r.unlockedCards)
+      ? (r.unlockedCards as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 2000)
+      : [];
+    const ascensionUnlocked: Record<string, number> = {};
+    const au = r.ascensionUnlocked;
+    if (au && typeof au === 'object') {
+      for (const k of ['vess', 'bram']) {
+        const v = Number((au as Record<string, unknown>)[k]);
+        if (Number.isFinite(v)) ascensionUnlocked[k] = Math.max(0, Math.min(5, Math.floor(v)));
+      }
+    }
+    return { unlockedCards, ascensionUnlocked };
+  }
+
+  /** S4.4: highest ascension this room may start at — the minimum over every
+   *  HUMAN seat's claimed unlock for the character it plays. No claim = A0.
+   *  Profiles are claims, not authority: this is the clamp, not a trust. */
+  private maxAscension(room: Room): number {
+    let max = 5;
+    for (const seat of Object.values(room.seats)) {
+      if (!seat || seat.bot) continue;
+      max = Math.min(max, seat.claim?.ascensionUnlocked?.[seat.character] ?? 0);
+    }
+    return max;
+  }
+
+  /** S4.5 union rule: the run's pool is the union of both players' unlocked
+   *  sets (designer ruling, 2026-06-12 session). */
+  private unlockUnion(room: Room): string[] {
+    const union = new Set<string>();
+    for (const seat of Object.values(room.seats)) {
+      for (const id of seat?.claim?.unlockedCards ?? []) union.add(id);
+    }
+    return [...union];
+  }
 
   private makeCode(): string {
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -369,7 +429,7 @@ export class GameServer {
         };
         this.rooms.set(room.code, room);
         const token = crypto.randomUUID();
-        room.seats.p1 = { token, character, socket };
+        room.seats.p1 = { token, character, socket, claim: this.sanitizeClaim(msg.profile) };
         this.tokenIndex.set(token, { room, pid: 'p1' });
         if (solo) {
           room.seats.p2 = { token: `bot:${crypto.randomUUID()}`, character: botCharacter, socket: null, bot: true };
@@ -390,7 +450,7 @@ export class GameServer {
         if (room.seats.p2) return this.send(socket, { type: 'error', message: 'room is full' });
         const token = crypto.randomUUID();
         const character = room.state.players.p2.character;
-        room.seats.p2 = { token, character, socket };
+        room.seats.p2 = { token, character, socket, claim: this.sanitizeClaim(msg.profile) };
         this.tokenIndex.set(token, { room, pid: 'p2' });
         ctx.room = room;
         ctx.pid = 'p2';
@@ -408,6 +468,7 @@ export class GameServer {
           try { seat.socket.close(); } catch { /* stale socket */ }
         }
         seat.socket = socket;
+        if (msg.profile) seat.claim = this.sanitizeClaim(msg.profile);
         ctx.room = entry.room;
         ctx.pid = entry.pid;
         this.send(socket, { type: 'joined', token: seat.token, code: entry.room.code, playerId: entry.pid, character: seat.character });
@@ -421,7 +482,17 @@ export class GameServer {
         if (!ctx.room.seats.p1 || !ctx.room.seats.p2) return this.send(socket, { type: 'error', message: 'waiting for your partner' });
         if (ctx.room.state.phase !== 'lobby') return this.send(socket, { type: 'error', message: 'already started' });
         const seed = Number.isInteger(msg.seed) ? (msg.seed >>> 0) : crypto.randomInt(2 ** 31);
-        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed });
+        // S4.4: re-clamp the agreed level against the seats present NOW (a
+        // partner with a lower unlock may have joined after the vote)
+        const allowed = this.maxAscension(ctx.room);
+        const votes = ctx.room.state.ascensionVotes ?? { p1: 0, p2: 0 };
+        if (votes.p1 === votes.p2 && votes.p1 > allowed) {
+          for (const pid of ['p1', 'p2'] as PlayerId[]) {
+            this.applyAction(ctx.room, null, { type: 'SET_ASCENSION', player: pid, level: allowed });
+          }
+        }
+        // S4.5: pool = union of both players' unlocked sets (server-built)
+        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed, unlockedCards: this.unlockUnion(ctx.room) });
         return;
       }
 
@@ -495,6 +566,12 @@ export class GameServer {
         const action = msg.action as Action;
         if (!action || typeof action.type !== 'string') return this.send(socket, { type: 'error', message: 'bad action' });
         if (action.type === 'START_RUN') return this.send(socket, { type: 'error', message: 'use start' });
+        // S4.4: ascension votes are clamped to the room's unlocked max —
+        // profiles are claims, the server never trusts them
+        if (action.type === 'SET_ASCENSION') {
+          const lvl = Number((action as { level?: unknown }).level ?? 0);
+          (action as { level: number }).level = Math.max(0, Math.min(Number.isFinite(lvl) ? Math.floor(lvl) : 0, this.maxAscension(ctx.room)));
+        }
         (action as any).player = ctx.pid;
         this.applyAction(ctx.room, socket, action);
         if (action.type === 'CONCEDE') this.waiveAbsentConcede(ctx.room);
