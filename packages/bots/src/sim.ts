@@ -19,6 +19,14 @@ const RUNS = Number(process.argv[2] ?? 50);
 const BASE_SEED = Number(process.env.SEED ?? 1000); // fixed seed set → reproducible gates
 const RUN_TIMEOUT_MS = 300_000;
 
+// S3.5 character-balance battery: PAIR=vb (default) | vv | bb
+const PAIR = (process.env.PAIR ?? 'vb').toLowerCase();
+const CHAR = { v: 'vess', b: 'bram' } as const;
+const PAIR_CHARS = {
+  p1: CHAR[(PAIR[0] === 'b' ? 'b' : 'v')],
+  p2: CHAR[(PAIR[1] === 'b' ? 'b' : 'v')],
+};
+
 function port(): number {
   const addr = server.address();
   if (typeof addr === 'object' && addr) return addr.port;
@@ -27,7 +35,7 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed });
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS });
   await new Promise((r) => setTimeout(r, 150));
   const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2 });
   const timeout = new Promise<RunResult>((_, rej) =>
@@ -53,7 +61,7 @@ async function main(): Promise<void> {
   const url = `ws://localhost:${port()}`;
   console.log(`sim: bots connecting to ${url}, ${RUNS} runs, seed set ${BASE_SEED}+ (engine + policy seeded; socket timing still jitters slightly)`);
   // S3.1 run header: a batch is uninterpretable without the difficulty on record
-  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}`);
+  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}`);
 
   const results: RunResult[] = [];
   for (let run = 1; run <= RUNS; run++) {
