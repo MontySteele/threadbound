@@ -883,7 +883,9 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       onClick={onClick}>
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
       <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
-      <div className="ctext">{def.text}</div>
+      {/* upgrade texts restate the link clause inline; the ⚡ line below is
+          the canonical display — trim the duplicate so links don't read twice */}
+      <div className="ctext">{def.link && def.text.includes('Link (') ? def.text.slice(0, def.text.indexOf('Link (')).trim() : def.text}</div>
       {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {def.link.text}</div>}
     </div>
   );
@@ -1036,14 +1038,20 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <>
           <p>Choose a card — the weave tightens into the version on the right:</p>
           <div className="hand">
-            {me.deck.filter((c) => !c.upgraded && CARDS[c.defId].upgrade).map((c) => (
-              <div key={c.instanceId} className="upgrade-pair" data-gp="META" data-inspect={`card:${c.defId}:uprev`}
-                onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)}>
-                <Card def={CARDS[c.defId]} small />
-                <div className="upgrade-arrow">→</div>
-                <Card def={effectiveDef({ ...c, upgraded: true })} small upgraded />
-              </div>
-            ))}
+            {me.deck.filter((c) => !c.upgraded && CARDS[c.defId].upgrade).map((c) => {
+              const up = effectiveDef({ ...c, upgraded: true });
+              // cost-only upgrades (most Powers) must still read as a change
+              const cheaper = up.cost !== CARDS[c.defId].cost;
+              return (
+                <div key={c.instanceId} className={`upgrade-pair ${cheaper ? 'cost-improved' : ''}`} data-gp="META"
+                  data-inspect={`card:${c.defId}:uprev`}
+                  onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)}>
+                  <Card def={CARDS[c.defId]} small />
+                  <div className="upgrade-arrow">→</div>
+                  <Card def={up} small upgraded />
+                </div>
+              );
+            })}
           </div>
         </>
       ) : (

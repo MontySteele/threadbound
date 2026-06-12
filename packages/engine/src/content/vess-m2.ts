@@ -418,7 +418,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
     upgrade: {
       cost: 1,
-      text: 'Power: whenever Hexes detonate, apply 1 Hex to ALL enemies.',
+      text: 'Power: whenever Hexes detonate, apply 1 Hex to ALL enemies. Exhaust.',
     },
   },
   {
@@ -512,7 +512,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'power', power: 'loom_of_hours' }],
     upgrade: {
       cost: 2,
-      text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block.',
+      text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block. Exhaust.',
     },
   },
 ];
@@ -636,7 +636,7 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
     },
     upgrade: {
       cost: 1,
-      text: 'Power: whenever Hexes detonate, gain 3 Block.',
+      text: 'Power: whenever Hexes detonate, gain 3 Block. Exhaust.',
     },
   },
   saturate: {
@@ -706,7 +706,7 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   unbroken_line: {
     upgrade: {
       cost: 1,
-      text: 'Power: at the start of each turn, gain 1 Thread.',
+      text: 'Power: at the start of each turn, gain 1 Thread. Exhaust.',
     },
   },
 };

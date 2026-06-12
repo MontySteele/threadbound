@@ -411,7 +411,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'thread', amount: 2 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Power: at the start of your turn, gain Kindled 1.',
+      text: 'Power: at the start of your turn, gain Kindled 1. Exhaust.',
       cost: 1,
     },
   },
@@ -425,7 +425,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hex', amount: 3, primary: true }, { op: 'thread', amount: 1 }],
     },
     upgrade: {
-      text: 'Power: whenever one of your links fires, gain 1 Momentum. When played, gain 2 Momentum.',
+      text: 'Power: whenever one of your links fires, gain 1 Momentum. When played, gain 2 Momentum. Exhaust.',
       base: [{ op: 'power', power: 'eye_for_an_opening' }, { op: 'momentum', amount: 2 }],
     },
   },
@@ -503,7 +503,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
     text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'aftershock' }],
     upgrade: {
-      text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies.',
+      text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
       cost: 1,
     },
   },
@@ -642,7 +642,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'thread', amount: 2 }, { op: 'hexAll', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Power: at the start of your turn, gain 2 Momentum.',
+      text: 'Power: at the start of your turn, gain 2 Momentum. Exhaust.',
       cost: 0,
     },
   },
@@ -697,7 +697,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   wildfire_heart: {
     upgrade: {
-      text: 'Power: Momentum no longer halves after Strikes.',
+      text: 'Power: Momentum no longer halves after Strikes. Exhaust.',
       cost: 1,
     },
   },

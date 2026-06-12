@@ -259,6 +259,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .upgrade-pair:hover { border-color: var(--kindled); }
 .upgrade-pair .card { cursor: pointer; }
 .upgrade-arrow { color: var(--kindled); font-size: 1.25em; flex-shrink: 0; }
+.upgrade-pair.cost-improved .card:last-child .cost {
+  color: var(--kindled); border-color: var(--kindled);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--kindled) 55%, transparent);
+}
 .cardtop { display: flex; gap: 6px; align-items: center; }
 .cost { background: var(--ink-2); border: 1px solid var(--line); border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 18px; }
 .cname { font-weight: bold; }
