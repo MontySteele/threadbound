@@ -270,6 +270,14 @@ export class Controller {
     if (first) this.setFocus(first);
   }
 
+  /** UI-driven focus snap (e.g. a card starts waiting for a target → jump to
+   *  ENEMIES, back to HAND after). No-op without an active pad: the mouse is
+   *  left alone. */
+  snapZone(zone: string): void {
+    if (!this.active) return;
+    this.jumpZone(zone);
+  }
+
   private confirm(): void {
     this.ensureFocus();
     this.focused?.click();

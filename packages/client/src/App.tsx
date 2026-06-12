@@ -540,6 +540,16 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const [pendingSever, setPendingSever] = useState(false);
   const [reclaimOpen, setReclaimOpen] = useState(false);
 
+  // pad ergonomics: a pending target snaps focus to the enemies, and back to
+  // where the intent came from once it's resolved or cancelled
+  const wasPending = useRef<'card' | 'sever' | null>(null);
+  useEffect(() => {
+    const pending = pendingCard ? 'card' : pendingSever ? 'sever' : null;
+    if (pending && !wasPending.current) controller.snapZone('ENEMIES');
+    else if (!pending && wasPending.current) controller.snapZone(wasPending.current === 'sever' ? 'THREAD' : 'HAND');
+    wasPending.current = pending;
+  }, [pendingCard, pendingSever]);
+
   const fired = useMemo(() => {
     try { return computeLinksFired(state, combat.chain); } catch { return combat.chain.map(() => false); }
   }, [state, combat.chain]);
