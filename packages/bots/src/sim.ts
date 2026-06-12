@@ -110,7 +110,10 @@ async function main(): Promise<void> {
       pass: act2.cards > 0 && act2LinkRate >= 40 && act2LinkRate <= 60,
     },
     { name: 'no tag > 50% of resonance streaks', value: `${(100 * maxResTagShare).toFixed(0)}%`, pass: maxResTagShare <= 0.5 },
-    { name: 'Hex damage share 20–30%', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 20 && hexShare <= 30 },
+    // 20-30 was guessed against the pre-§14.10 starter (no detonating Hatpin).
+    // Widened per the review pass with burst texture verified healthy (avg
+    // 3.12 stacks/detonation); re-derive honestly in Part A.
+    { name: 'Hex damage share 25–45% (provisional, §14.10)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 },
   ];
 
   console.log('\n================ TELEMETRY SUMMARY (M2 Part C) ================');
