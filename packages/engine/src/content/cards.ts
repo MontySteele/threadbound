@@ -193,7 +193,10 @@ def({
   id: 'second_wind', name: 'Second Wind', character: 'bram', rarity: 'common', cost: 1, tag: 'Surge',
   text: 'Gain Kindled 1. Draw 1.',
   base: [{ op: 'kindled', amount: 1 }, { op: 'draw', amount: 1 }],
-  link: { condition: 'any', text: 'Also gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
+  // §14.10: was Link (any) in a STARTER — free stuff (OQ#24). Strike makes it
+  // positional: his four Jabs are the fuel. The upgrade still widens to (any)
+  // per the M2-B6 convention, pending the OQ#24 ruling.
+  link: { condition: 'Strike', text: 'Also gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
 });
 def({
   id: 'hammerfall', name: 'Hammerfall', character: 'bram', rarity: 'common', cost: 2, tag: 'Strike',
@@ -302,12 +305,15 @@ def({
 // ---------------------------------------------------------------------------
 
 def({
+  // §14.10: her basic strike IS the starter's Hex payoff — 2 + one stack
+  // detonated (4, pierces Block) = 6 on a hexed target, 2 dry. Sequencing
+  // (hex first, then strike) matters from turn 1.
   id: 'hatpin', name: 'Hatpin', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   starterOnly: true, needsTarget: true,
-  text: 'Deal 4.',
-  base: [{ op: 'damage', amount: 4, primary: true }],
+  text: 'Deal 2. Detonate 1 Hex.',
+  base: [{ op: 'damage', amount: 2, primary: true }, { op: 'detonate', max: 1 }],
   mutation: { name: 'Heated Hatpin', text: 'Deal 3. Gain 1 Momentum.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Deal 5. Link (Hex): apply 1 Hex.', base: [{ op: 'damage', amount: 5, primary: true }], link: { condition: 'Hex', text: 'Apply 1 Hex.', effects: [{ op: 'hex', amount: 1 }] } },
+  upgrade: { text: 'Deal 3. Detonate 2 Hex. Link (Hex): apply 1 Hex.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'detonate', max: 2 }], link: { condition: 'Hex', text: 'Apply 1 Hex.', effects: [{ op: 'hex', amount: 1 }] } },
 });
 def({
   id: 'patchwork', name: 'Patchwork', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
