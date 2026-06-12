@@ -44,8 +44,15 @@ for (const e of M2_ENEMIES) {
 
 // Tuning ladder (seeded 50-run bot floor): 1.0 → 86% | 1.2/1.2 → 30% (the
 // designer's calibration run) | then the §14.10 Hatpin buff pushed 1.2/1.2
-// back to 74% | 1.3/1.25 → 50% | 1.4/1.3 → 34%, act-1 HP loss 21.4 —
-// restores the floor the validated run sat on. Next human run rules.
+// back to 74% | 1.3/1.25 → 50% | 1.4/1.3 → 34%, act-1 HP loss 21.4.
+// S3.4 re-anchor (post-§14.11 starters + §14.12 Pulse, 2026-06-12): the new
+// starters BUFFED the pair (1.4/1.3 → 40%); walked UP, not down as S3
+// predicted: 1.45/1.35 → 40%/21.9 | 1.5/1.3 → 44%/21.6 | 1.5/1.4 → 22%/24.0 |
+// 1.55/1.3 → 24%/23.0 | 1.55/1.25 → 38%/21.6 | 1.525/1.325 → 34%/23.5 |
+// 1.5/1.35 → 26%/23.0 (seeds 1000) and 28%/22.0 (seeds 2000) — committed.
+// Win band 25-35% met on both seed sets; act-1 HP sits AT the 16-22 ceiling
+// (22.0-23.0) — the two S3.4 bands conflict by ~1 HP at this meta; see
+// docs/S3-BALANCE-REPORT.md. Next human run rules.
 //
 // Env-overridable (review pass, pre-Playtest-2): TB_ENEMY_HP_SCALE /
 // TB_ENEMY_DMG_SCALE soften or harden a live session without a commit — the
@@ -62,8 +69,8 @@ const envScale = (name: string, fallback: number): number => {
   }
   return fallback;
 };
-export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.4);
-export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
+export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.5);
+export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.35);
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {
