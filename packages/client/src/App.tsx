@@ -111,11 +111,21 @@ export default function App(): JSX.Element {
     };
     window.addEventListener('keydown', onKey);
     controller.start();
-    const unlock = () => audio.unlock();
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    // NOT once: a pad-only session creates the context suspended (gamepad
+    // input is no "user activation"), so later real gestures must retry resume
+    const nudge = () => audio.nudge();
+    window.addEventListener('pointerdown', nudge);
+    window.addEventListener('keydown', nudge);
+    window.addEventListener('gp-input', nudge);
     const refocus = setInterval(() => controller.ensureFocus(), 400);
-    return () => { controller.stop(); clearInterval(refocus); window.removeEventListener('keydown', onKey); };
+    return () => {
+      controller.stop();
+      clearInterval(refocus);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', nudge);
+      window.removeEventListener('keydown', nudge);
+      window.removeEventListener('gp-input', nudge);
+    };
   }, []);
 
   useEffect(() => {
@@ -718,7 +728,13 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </div>
       )}
 
-      <div className="hand">
+      {/* >7 cards: overlap instead of wrapping to a second row (which shoved
+          Ready offscreen); hover/focus/selection pops a card fully visible */}
+      <div
+        className={`hand ${me.hand.length > 7 ? 'crowded' : ''}`}
+        style={me.hand.length > 7
+          ? { ['--card-overlap' as string]: `${Math.min(110, Math.ceil((me.hand.length * 166 - 1100) / (me.hand.length - 1)))}px` }
+          : undefined}>
         {me.hand.map((id) => {
           const def = defFor(state, you, id);
           return (
@@ -866,7 +882,7 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
-      <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
+      <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       <div className="ctext">{def.text}</div>
       {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {def.link.text}</div>}
     </div>

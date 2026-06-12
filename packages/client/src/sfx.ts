@@ -28,6 +28,15 @@ class Audio {
     this.volumes = saved ? JSON.parse(saved) : { master: 0.5, sfx: 0.6, ambient: 0.25 };
   }
 
+  /** Poke the audio system from ANY input source. Pad input isn't a browser
+   *  "user activation", so a pad-only session may create the context in the
+   *  suspended state — every later nudge (including the first real click or
+   *  keypress) retries the resume. */
+  nudge(): void {
+    if (!this.ctx) this.unlock();
+    else if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => undefined);
+  }
+
   /** Browsers require a user gesture before audio; call from any click/keydown. */
   unlock(): void {
     if (this.ctx) return;

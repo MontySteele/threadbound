@@ -211,6 +211,15 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 }
 .pstat.fallen { opacity: 0.6; background: #241418; }
 .hand { display: flex; gap: var(--gap); flex-wrap: wrap; margin: 6px 0; justify-content: center; }
+/* crowded hand (S? playtest 1): fan the cards instead of wrapping — Ready
+   stays onscreen; the card under the cursor/focus rises fully visible */
+.hand.crowded { flex-wrap: nowrap; gap: 0; }
+.hand.crowded .card { position: relative; flex-shrink: 0; }
+.hand.crowded .card + .card { margin-left: calc(var(--card-overlap, 60px) * -1); }
+.hand.crowded .card:hover, .hand.crowded .card.gp-focus, .hand.crowded .card.selected {
+  z-index: 6; transform: translateY(-8px);
+  box-shadow: 0 6px 16px #000c;
+}
 .card {
   width: var(--card-w); background: linear-gradient(170deg, var(--panel-2), var(--panel)); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em;

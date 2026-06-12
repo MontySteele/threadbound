@@ -109,13 +109,25 @@ function hashStr(s: string): number {
 
 /** Singleton inspect state, driven by hover delegation + controller inspect. */
 let setGlobalKey: ((key: string | null, pinned: boolean) => void) | null = null;
+let currentKey: string | null = null; // mirror for module-level decisions
+/** △ is a sticky toggle: closing the panel keeps it closed across focus
+ *  moves; opening it resumes the focus-preview. Mouse hover ignores this —
+ *  pointing at something is already a deliberate ask. */
+let padPreviewOn = true;
 
 export function inspectElement(el: HTMLElement | null): void {
+  if (currentKey) {
+    padPreviewOn = false;
+    setGlobalKey?.(null, false);
+    return;
+  }
+  padPreviewOn = true;
   setGlobalKey?.(el?.dataset.inspect ?? null, true);
 }
 
 /** Pad-focus preview: hover parity for the controller (unpinned). */
 export function previewInspect(el: HTMLElement | null): void {
+  if (!padPreviewOn) return;
   setGlobalKey?.(el?.dataset.inspect ?? null, false);
 }
 
@@ -125,7 +137,8 @@ export function InspectPanel(): JSX.Element | null {
 
   useEffect(() => {
     setGlobalKey = (k, p) => {
-      setKey((prev) => (p && prev === k ? null : k)); // inspect again = close
+      currentKey = k; // toggle logic lives in inspectElement now
+      setKey(k);
       setPinned(p);
     };
     let timer = 0;
@@ -137,8 +150,8 @@ export function InspectPanel(): JSX.Element | null {
       window.clearTimeout(timer);
       if (el) {
         timer = window.setTimeout(() => setGlobalKey?.(el.dataset.inspect!, false), 250);
-      } else {
-        setKey((prev) => (pinnedRef ? prev : null));
+      } else if (!pinnedRef) {
+        setGlobalKey?.(null, false); // keep the module mirror honest
       }
     };
     let pinnedRef = false;
@@ -155,7 +168,7 @@ export function InspectPanel(): JSX.Element | null {
   const content = resolveInspect(key);
   if (!content) return null;
   return (
-    <aside className="inspect-panel" onClick={() => setKey(null)}>
+    <aside className="inspect-panel" onClick={() => setGlobalKey?.(null, false)}>
       <div className="inspect-title">{content.title}</div>
       {content.subtitle && <div className="inspect-sub">{content.subtitle}</div>}
       {content.body?.map((line, i) => (
