@@ -34,6 +34,8 @@ export class Bot {
     seed?: number; startSeed?: number;
     /** S1: create a solo room — the server seats its in-process bot at p2 */
     createSolo?: boolean;
+    /** S3.5 battery: pin both seats' characters (default vess/bram) */
+    characters?: Record<PlayerId, CharacterId>;
     /** off when partnering a non-lockstep peer (the solo bot stages eagerly) */
     lockstep?: boolean;
   }) {
@@ -41,10 +43,11 @@ export class Bot {
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {
+      const chars = opts.characters ?? { p1: 'vess', p2: 'bram' };
       if (opts.createSolo) {
-        this.send({ type: 'create', character: 'vess', solo: true, botCharacter: 'bram', botSpeed: 'instant' });
+        this.send({ type: 'create', character: chars.p1, solo: true, botCharacter: chars.p2, botSpeed: 'instant' });
       } else if (opts.create) {
-        this.send({ type: 'create', character: 'vess' });
+        this.send({ type: 'create', character: chars.p1, p2Character: chars.p2 });
       } else {
         this.send({ type: 'join', code: opts.joinCode });
       }

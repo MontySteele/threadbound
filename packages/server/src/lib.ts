@@ -351,11 +351,14 @@ export class GameServer {
       case 'create': {
         const character: CharacterId = msg.character === 'bram' ? 'bram' : 'vess';
         // S1.1: solo rooms seat the in-process bot at p2; the human picks both
-        // characters at the lobby (duplicates allowed — it's a debug tool too)
+        // characters at the lobby (duplicates allowed — it's a debug tool too).
+        // S3.5: pair rooms may also pin p2's character (mirror-match batteries;
+        // duplicates allowed for the same debug-tool reason).
         const solo = msg.solo === true;
+        const pick = (v: unknown): CharacterId | null => (v === 'bram' || v === 'vess' ? v : null);
         const botCharacter: CharacterId = solo
-          ? (msg.botCharacter === 'bram' || msg.botCharacter === 'vess' ? msg.botCharacter : character === 'vess' ? 'bram' : 'vess')
-          : character === 'vess' ? 'bram' : 'vess';
+          ? (pick(msg.botCharacter) ?? (character === 'vess' ? 'bram' : 'vess'))
+          : (pick(msg.p2Character) ?? (character === 'vess' ? 'bram' : 'vess'));
         const room: Room = {
           code: this.makeCode(),
           state: initialState(crypto.randomInt(2 ** 31), { p1: character, p2: botCharacter }, solo ? 'p2' : undefined),
