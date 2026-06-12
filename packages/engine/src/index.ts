@@ -7,7 +7,10 @@ export {
   computeLinksFired, computeResonanceSlots, computePlannedBlock, longestSoloRun, DETONATION_DAMAGE,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
-export { CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, eventsForAct } from './content/registry';
+export {
+  CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, eventsForAct,
+  PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE,
+} from './content/registry';
 export { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
 export { POWERS } from './content/powers';
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';

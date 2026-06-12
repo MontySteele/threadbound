@@ -2,6 +2,9 @@
 //   PORT                 listen port (default 8080; 0 = ephemeral)
 //   HUMAN_TELEMETRY=dir  M3-A1: write per-run telemetry files (or pass --human-session)
 //   PERSIST=path         graceful-restart room snapshots (default .threadbound-rooms.json)
+//   TB_ENEMY_HP_SCALE / TB_ENEMY_DMG_SCALE
+//                        live difficulty override (defaults 1.4 / 1.3) — soften a
+//                        first-timer session without a commit; logged in telemetry
 
 import path from 'node:path';
 import { GameServer } from './lib';

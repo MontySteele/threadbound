@@ -66,6 +66,7 @@ export function emptyTelemetry(): Telemetry {
     resonanceTagCounts: {}, damageByTag: {},
     damageByPlayer: { p1: 0, p2: 0 },
     detonatedStacks: 0,
+    detonationEvents: 0,
     covetsSpent: { p1: 0, p2: 0 },
     biggestTurn: { damage: 0, turn: 0, act: 0 },
     turns: 0, actStats: {},

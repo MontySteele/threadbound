@@ -87,6 +87,8 @@ async function main(): Promise<void> {
     }
   }
 
+  const detonations = sum((r) => r.telemetry.detonationEvents ?? 0);
+  const detonatedStacks = sum((r) => r.telemetry.detonatedStacks);
   const totalDamage = Object.values(damageByTag).reduce((a, b) => a + b, 0);
   const hexShare = totalDamage ? (100 * ((damageByTag.Hex ?? 0) + (damageByTag.HexScaling ?? 0))) / totalDamage : 0;
   const act1 = actAgg[1] ?? { cards: 0, links: 0, combats: 1, hpLost: 0 };
@@ -119,6 +121,9 @@ async function main(): Promise<void> {
   console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
+  // review-pass texture stat (NOT a gate): is Hex still bank-and-burst, or a
+  // §14.10 Hatpin drip? Watch for avg hovering near 1-2.
+  console.log(`detonations: ${detonations}  |  avg stacks per detonation: ${detonations ? (detonatedStacks / detonations).toFixed(2) : 'n/a'}`);
   console.log('---------------- GATES ----------------');
   let allPass = true;
   for (const g of gates) {

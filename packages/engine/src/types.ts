@@ -461,6 +461,9 @@ export interface Telemetry {
   /** end-of-run summary fodder (M3 downtime list) */
   damageByPlayer: Record<PlayerId, number>;
   detonatedStacks: number;
+  /** review pass: bursts, for avg-stacks-at-detonation — is Hex still
+   *  bank-and-burst, or did §14.10 Hatpins turn it into a drip? */
+  detonationEvents: number;
   covetsSpent: Record<PlayerId, number>;
   biggestTurn: { damage: number; turn: number; act: number };
   turns: number;

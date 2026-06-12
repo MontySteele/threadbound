@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, GameState, IllegalAction, PlayerId,
+  PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE,
   emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
 import { BotSpeed, SoloBotDriver } from './solo';
@@ -263,6 +264,9 @@ export class GameServer {
       fs.writeFileSync(file, JSON.stringify({
         code: room.code,
         mode: room.bot ? 'solo' : 'pair', // S1.3: keep solo out of pair baselines
+        // review pass: Part A data is uninterpretable without the difficulty
+        // it was played at (the scales are env-overridable mid-session)
+        enemyScales: { hp: PT1_ENEMY_HP_SCALE, dmg: PT1_ENEMY_DMG_SCALE },
         outcome: room.state.phase,
         act: room.state.map.act,
         seed: room.state.seed,

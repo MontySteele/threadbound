@@ -46,8 +46,24 @@ for (const e of M2_ENEMIES) {
 // designer's calibration run) | then the §14.10 Hatpin buff pushed 1.2/1.2
 // back to 74% | 1.3/1.25 → 50% | 1.4/1.3 → 34%, act-1 HP loss 21.4 —
 // restores the floor the validated run sat on. Next human run rules.
-export const PT1_ENEMY_HP_SCALE = 1.4;
-export const PT1_ENEMY_DMG_SCALE = 1.3;
+//
+// Env-overridable (review pass, pre-Playtest-2): TB_ENEMY_HP_SCALE /
+// TB_ENEMY_DMG_SCALE soften or harden a live session without a commit — the
+// proto-ascension slider. Server-side only by nature (the browser bundle has
+// no env); safe because clients render enemy numbers from authoritative
+// STATE, never from their local content tables. The active values ride along
+// in every telemetry file so Part A data stays interpretable. Caveat:
+// replaying an action log under different scales diverges — keep the file
+// and the scales together.
+const envScale = (name: string, fallback: number): number => {
+  if (typeof process !== 'undefined' && process.env && process.env[name]) {
+    const v = Number(process.env[name]);
+    if (Number.isFinite(v) && v > 0) return v;
+  }
+  return fallback;
+};
+export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.4);
+export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {

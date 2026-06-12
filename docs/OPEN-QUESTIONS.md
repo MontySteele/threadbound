@@ -166,3 +166,27 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
         anywhere earlier this chain", "fires twice if both neighbors match").
     Decision deferred mid-playtest; the difficulty pass (§14.8) just landed
     and stacking a link-economy rework on it would blind both readings.
+
+    **OQ#24 ruling (review pass, 2026-06-11):** upgrades may widen a link by
+    ONE step between named tags (e.g. (Hex) → (Hex or Rite) once multi-tag
+    conditions exist, or to an adjacent broad tag); widening to (any) is
+    reserved for rares; starters are exempt downward (Second Wind already
+    narrowed, §14.10). Implementation is the post-playtest content pass —
+    do not stack it onto the Friday difficulty reading.
+
+25. **Playtest-2 (Friday) watch-list** (review pass — watch, don't build):
+    - **Hex texture**: avg stacks per detonation now in telemetry/sim/summary.
+      If it hovers near 1–2, §14.10 Hatpins have turned bank-and-burst into a
+      drip and the big detonators are being cannibalized — lever: gate
+      Hatpin's detonate behind Link (Hex) so sequencing is required, not free.
+      If healthy, widen the 20–30% Hex-share band honestly (it was guessed
+      against a starter reality that no longer exists).
+    - **Sever economics vs self-retether**: a 3-Thread Sever an elite undoes
+      ≤2 turns later reads as wasted thread. If the complaint lands, the fix
+      is "a manual Sever resets that enemy's retether clock."
+    - **Difficulty anchor caveats**: 1.4/1.3 is calibrated to the designer
+      (best player alive, solo with a coordinated bot) and the validated run
+      predates the planned-block UI fix. TB_ENEMY_HP_SCALE/TB_ENEMY_DMG_SCALE
+      env knobs soften live (e.g. 1.2/1.2 for a first-timer pair); the active
+      scales ride in every telemetry file so Part A stays interpretable.
+      First-session fun outranks calibration purity.

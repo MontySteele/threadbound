@@ -248,6 +248,7 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
   applyEnemyHpLoss(state, enemy, dmg, 'detonate');
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.telemetry.detonatedStacks += stacks;
+  state.telemetry.detonationEvents = (state.telemetry.detonationEvents ?? 0) + 1;
   if (by) state.telemetry.damageByPlayer[by] += dmg;
   turnDamage += dmg;
   state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });

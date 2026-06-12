@@ -23,7 +23,7 @@ export function RunSummary({ state, won }: { state: ClientState; won: boolean })
     ['Resonance ignitions', `${t.resonances}`],
     ['Damage dealt', `${totalDamage} (${name('p1')} ${t.damageByPlayer.p1} · ${name('p2')} ${t.damageByPlayer.p2})`],
     ['By tag', Object.entries(t.damageByTag).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ')],
-    ['Hexes detonated', `${t.detonatedStacks} stacks`],
+    ['Hexes detonated', `${t.detonatedStacks} stacks${t.detonationEvents ? ` · avg ${(t.detonatedStacks / t.detonationEvents).toFixed(1)}/burst` : ''}`],
     ['Biggest single turn', t.biggestTurn.damage > 0 ? `${t.biggestTurn.damage} damage (turn ${t.biggestTurn.turn}, act ${t.biggestTurn.act})` : '—'],
     ['Covets spent', `${t.covetsSpent.p1 + t.covetsSpent.p2} (${name('p1')} ${t.covetsSpent.p1} · ${name('p2')} ${t.covetsSpent.p2})`],
     ['Seed', `${state.seed}`],
