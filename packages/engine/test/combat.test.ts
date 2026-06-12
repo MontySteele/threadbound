@@ -76,6 +76,24 @@ describe('planned-block preview (§11 static helper)', () => {
   });
 });
 
+describe('act-transition heal (Playtest-1 ruling, §14.9)', () => {
+  it('both players heal 30% when the boss reward advances the act', () => {
+    let s = combatState();
+    const boss = s.map.nodes.find((n) => n.kind === 'boss')!;
+    s.map.position = boss.id;
+    s.phase = 'reward';
+    s.combat = null;
+    s.reward = { sets: { p1: [], p2: [] }, picked: { p1: 'skip', p2: 'skip' }, coveted: { p1: 'pass', p2: 'pass' }, gold: 0 };
+    s.players.p1.hp = 10;
+    s.players.p2.hp = 10;
+    s = reduce(s, { type: 'ADVANCE', player: 'p1' });
+    s = reduce(s, { type: 'ADVANCE', player: 'p2' });
+    expect(s.map.act).toBe(2);
+    expect(s.players.p1.hp).toBe(10 + Math.floor(68 * 0.3)); // vess
+    expect(s.players.p2.hp).toBe(10 + Math.floor(78 * 0.3)); // bram
+  });
+});
+
 describe('elite/boss self-retarget (Playtest-1 ruling, §14.8)', () => {
   it('an elite moves its own tether every 3rd turn', () => {
     const s0 = combatState();

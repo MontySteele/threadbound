@@ -857,12 +857,21 @@ function fall(state: GameState, player: PlayerState): void {
   player.ready = true; // takes no turns
   // enemies rebind to the survivor immediately
   const survivor = otherPlayer(player.id);
+  let rebound = 0;
   if (state.combat) {
     for (const e of state.combat.enemies) {
-      if (e.boundTo === player.id) e.boundTo = survivor;
+      if (e.boundTo === player.id && e.hp > 0) {
+        e.boundTo = survivor;
+        rebound++;
+      }
     }
   }
   state.log.push({ e: 'fallen', player: player.id });
+  if (rebound > 0) {
+    // say it out loud (playtest 1): the silent rebind undid a player's Sever
+    // and read as "the boss ignored my sever" — a bug-shaped surprise
+    state.log.push({ e: 'info', detail: `Every tether snaps to ${survivor} — the Fallen draw no aggro. Severed bindings are undone.` });
+  }
   sayWitness(state, state.botSeat
     ? (player.id === state.botSeat ? 'fallen_self' : 'fallen_human')
     : 'partner_fallen');

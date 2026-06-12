@@ -626,14 +626,26 @@ function enterNode(state: GameState): void {
   }
 }
 
+/** §14.9 (Playtest-1 ruling): one free rest's worth of healing between acts —
+ *  30%, same as a rest site. Tune later; removable as an ascension modifier. */
+function healBetweenActs(state: GameState): void {
+  for (const pid of ['p1', 'p2'] as PlayerId[]) {
+    const p = state.players[pid];
+    p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * 0.3));
+  }
+  state.log.push({ e: 'info', detail: 'You bind your wounds on the way down — both heal 30%.' });
+}
+
 function advanceAct(state: GameState): void {
   if (state.map.act === 1) {
+    healBetweenActs(state);
     const gen = generateActMap(state.rng, 2);
     state.rng = gen.rng;
     state.map = gen.map;
     state.phase = 'map';
     sayWitness(state, 'act2_start');
   } else if (state.map.act === 2) {
+    healBetweenActs(state);
     state.map = generateFinaleMap();
     state.phase = 'map';
     sayWitness(state, 'finale_start');
