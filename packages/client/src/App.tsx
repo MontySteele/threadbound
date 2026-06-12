@@ -12,7 +12,7 @@ import { GLYPH } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
-import { InspectPanel, inspectElement } from './Tooltip';
+import { InspectPanel, inspectElement, previewInspect } from './Tooltip';
 import { ThreadCord } from './ThreadCord';
 import { ResolutionTheater, isResolution } from './Theater';
 import { StyleScreen } from './StyleScreen';
@@ -94,6 +94,7 @@ export default function App(): JSX.Element {
     });
     controller.onChange = () => padTick((n) => n + 1);
     controller.onInspect = (el) => inspectElement(el);
+    controller.onFocusInspect = (el) => previewInspect(el); // pad focus = hover
     controller.onFeedback = () => setFeedbackOpen(true);
     // playtest feedback hotkeys: [ felt bad, ] felt good, \ note (M3 review)
     const onKey = (e: KeyboardEvent) => {
@@ -272,7 +273,7 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   return (
     <div className="relicbar">
       {relics.map(({ pid, relic }, i) => (
-        <span key={i} className="relic" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
+        <span key={i} className="relic" data-gp="RELICS" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
           {relic?.name ?? '?'}
         </span>
       ))}
@@ -491,7 +492,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           return (
             <button
               key={n.id}
-              data-gp="META"
+              data-gp="MAP"
               className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
               style={{
                 left: x, top: y,
@@ -943,7 +944,7 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   return (
     <div className="center event">
       <h2>{def.name}</h2>
-      <p className="prose">{def.prose}</p>
+      <p className="prose" data-inspect={`scan:${def.prose}`}>{def.prose}</p>
       {def.crossed && (
         <p className="crossed">
           Crossed choice: <b style={{ color: PCOLOR[ev.chooser] }}>{state.players[ev.chooser].character}</b> decides
@@ -954,7 +955,8 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       {ev.chosen === null ? (
         youChoose ? (
           def.options.map((o) => (
-            <button key={o.id} className="big" data-gp="META" onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id } as any)}>
+            <button key={o.id} className="big" data-gp="META" data-inspect={`scan:${o.label}`}
+              onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id } as any)}>
               {o.label}
             </button>
           ))
@@ -963,7 +965,7 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         )
       ) : (
         <>
-          <p className="prose">{ev.resultText}</p>
+          <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
           <Log log={state.log} state={state} />
           <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
@@ -997,11 +999,15 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </>
       ) : needUpgradePick ? (
         <>
-          <p>Choose a card — upgrades tighten the weave (inspect for the preview):</p>
+          <p>Choose a card — the weave tightens into the version on the right:</p>
           <div className="hand">
             {me.deck.filter((c) => !c.upgraded && CARDS[c.defId].upgrade).map((c) => (
-              <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META" inspect={`card:${c.defId}:uprev`}
-                onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)} />
+              <div key={c.instanceId} className="upgrade-pair" data-gp="META" data-inspect={`card:${c.defId}:uprev`}
+                onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)}>
+                <Card def={CARDS[c.defId]} small />
+                <div className="upgrade-arrow">→</div>
+                <Card def={effectiveDef({ ...c, upgraded: true })} small upgraded />
+              </div>
             ))}
           </div>
         </>

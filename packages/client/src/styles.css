@@ -240,6 +240,15 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .card.upgraded .cardtop { border-bottom: 1px solid color-mix(in srgb, var(--kindled) 45%, transparent); padding-bottom: 2px; }
 .card.mutated .ctag { color: var(--hex); }
 .card.mutated { box-shadow: 0 0 8px color-mix(in srgb, var(--hex) 30%, transparent); }
+
+/* rest-site upgrade picker: before → after, click the pair (playtest 1) */
+.upgrade-pair {
+  display: flex; align-items: center; gap: 4px; padding: 5px; cursor: pointer;
+  border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--ink-2);
+}
+.upgrade-pair:hover { border-color: var(--kindled); }
+.upgrade-pair .card { cursor: pointer; }
+.upgrade-arrow { color: var(--kindled); font-size: 1.25em; flex-shrink: 0; }
 .cardtop { display: flex; gap: 6px; align-items: center; }
 .cost { background: var(--ink-2); border: 1px solid var(--line); border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 18px; }
 .cname { font-weight: bold; }

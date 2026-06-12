@@ -61,7 +61,7 @@ export function keywordsIn(...texts: (string | undefined)[]): KeywordDef[] {
     ['link', /link \(/], ['resonance', /resonance/], ['thread', /thread/],
     ['hex', /hex/], ['detonate', /detonat/], ['momentum', /momentum/],
     ['kindled', /kindled/], ['keep', /\bkeep\b/], ['frayed', /fray/],
-    ['fallen', /fallen/], ['bound', /\bbound\b|binding/], ['echo', /echo/],
+    ['fallen', /fallen/], ['bound', /\bbound\b|\bbinds?\b|binding/], ['echo', /echo/],
     ['mutated', /mutat/], ['pulse', /pulse/], ['steady', /steady/],
     ['reclaim', /reclaim/], ['covet', /covet/], ['weak', /\bweak\b/],
     ['vulnerable', /vulnerable/], ['stun', /\bstun/], ['exhaust', /exhaust/],

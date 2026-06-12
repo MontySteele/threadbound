@@ -28,6 +28,13 @@ function cardLines(def: CardDef): string[] {
 }
 
 export function resolveInspect(key: string): InspectContent | null {
+  // scan:<free text> — surface every keyword the text mentions (event prose,
+  // option labels, result lines). Null when nothing matches: no empty panel.
+  if (key.startsWith('scan:')) {
+    const kws = keywordsIn(key.slice(5));
+    if (kws.length === 0) return null;
+    return { title: 'Terms', keywords: kws };
+  }
   const [kind, id, flag] = key.split(':');
   switch (kind) {
     case 'card': {
@@ -104,6 +111,11 @@ let setGlobalKey: ((key: string | null, pinned: boolean) => void) | null = null;
 
 export function inspectElement(el: HTMLElement | null): void {
   setGlobalKey?.(el?.dataset.inspect ?? null, true);
+}
+
+/** Pad-focus preview: hover parity for the controller (unpinned). */
+export function previewInspect(el: HTMLElement | null): void {
+  setGlobalKey?.(el?.dataset.inspect ?? null, false);
 }
 
 export function InspectPanel(): JSX.Element | null {

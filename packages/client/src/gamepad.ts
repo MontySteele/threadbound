@@ -15,7 +15,7 @@ export const GLYPHS: Record<PadFlavor, GlyphSet> = {
   xbox: { confirm: 'A', cancel: 'B', menu: 'X', inspect: 'Y', zone: 'LB/RB', reorder: 'LT/RT', ready: 'Menu (hold)', overview: 'View', scroll: 'R-stick' },
 };
 
-const ZONE_ORDER = ['ENEMIES', 'CHAIN', 'THREAD', 'HAND', 'META'];
+const ZONE_ORDER = ['ENEMIES', 'CHAIN', 'THREAD', 'HAND', 'MAP', 'RELICS', 'META'];
 const READY_HOLD_MS = 300;
 const REPEAT_FIRST_MS = 280;
 const REPEAT_MS = 140;
@@ -32,7 +32,10 @@ export class Controller {
   focused: HTMLElement | null = null;
   onChange: (() => void) | null = null; // hint bar re-render
   onInspect: ((el: HTMLElement | null) => void) | null = null;
+  /** focus lingered on an inspectable element — hover parity for the pad */
+  onFocusInspect: ((el: HTMLElement) => void) | null = null;
   onFeedback: (() => void) | null = null; // L1+R1 chord
+  private previewTimer = 0;
   private prev: PadState = { buttons: [], axes: [] };
   private repeatTimers: Record<string, number> = {};
   private readyHeldSince = 0;
@@ -177,8 +180,27 @@ export class Controller {
     if (el) {
       el.classList.add('gp-focus');
       el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      // same 250ms settle as mouse hover, then preview the tooltip
+      window.clearTimeout(this.previewTimer);
+      if (el.dataset.inspect) {
+        this.previewTimer = window.setTimeout(() => {
+          if (this.focused === el) this.onFocusInspect?.(el);
+        }, 250);
+      }
     }
     this.onChange?.();
+  }
+
+  /** First item of the highest-priority zone present (MAP before META etc.) —
+   *  fresh focus should land on the screen's subject, not the header chips. */
+  private firstItem(): HTMLElement | null {
+    const items = this.items();
+    const zones = this.zonesPresent();
+    if (zones.length > 0) {
+      const first = items.find((el) => el.dataset.gp === zones[0]);
+      if (first) return first;
+    }
+    return items[0] ?? null;
   }
 
   /** Re-acquire focus after re-renders detach the focused node. */
@@ -188,14 +210,14 @@ export class Controller {
     const items = this.items();
     const zone = this.focused?.dataset.gp;
     const inZone = items.filter((el) => el.dataset.gp === zone);
-    this.setFocus(inZone[0] ?? items[0] ?? null);
+    this.setFocus(inZone[0] ?? this.firstItem());
   }
 
   private move(dir: 'up' | 'down' | 'left' | 'right'): void {
     const items = this.items();
     if (items.length === 0) return;
     if (!this.focused || !document.contains(this.focused)) {
-      this.setFocus(items[0]);
+      this.setFocus(this.firstItem());
       return;
     }
     const zone = this.focused.dataset.gp!;
