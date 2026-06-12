@@ -267,6 +267,11 @@ export class GameServer {
         // review pass: Part A data is uninterpretable without the difficulty
         // it was played at (the scales are env-overridable mid-session)
         enemyScales: { hp: PT1_ENEMY_HP_SCALE, dmg: PT1_ENEMY_DMG_SCALE },
+        // S3.1 run header: seat → character, for the per-seat telemetry splits
+        characters: {
+          p1: room.state.players.p1.character,
+          p2: room.state.players.p2.character,
+        },
         outcome: room.state.phase,
         act: room.state.map.act,
         seed: room.state.seed,

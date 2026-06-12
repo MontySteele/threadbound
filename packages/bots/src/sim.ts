@@ -12,6 +12,7 @@ process.env.PORT = process.env.PORT ?? '0';
 process.env.PERSIST = ''; // sims never persist rooms
 
 import { server } from '@threadbound/server';
+import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId } from '@threadbound/engine';
 import { Bot, RunResult } from './bot';
 
 const RUNS = Number(process.argv[2] ?? 50);
@@ -51,6 +52,8 @@ async function main(): Promise<void> {
   await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
   const url = `ws://localhost:${port()}`;
   console.log(`sim: bots connecting to ${url}, ${RUNS} runs, seed set ${BASE_SEED}+ (engine + policy seeded; socket timing still jitters slightly)`);
+  // S3.1 run header: a batch is uninterpretable without the difficulty on record
+  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}`);
 
   const results: RunResult[] = [];
   for (let run = 1; run <= RUNS; run++) {
@@ -127,6 +130,37 @@ async function main(): Promise<void> {
   // review-pass texture stat (NOT a gate): is Hex still bank-and-burst, or a
   // §14.10 Hatpin drip? Watch for avg hovering near 1-2.
   console.log(`detonations: ${detonations}  |  avg stacks per detonation: ${detonations ? (detonatedStacks / detonations).toFixed(2) : 'n/a'}`);
+
+  // ---- S3.1 stats -----------------------------------------------------------
+  const combats = Object.values(actAgg).reduce((a, s) => a + s.combats, 0);
+  const seatChar = (pid: PlayerId): string => {
+    const chars = new Set(results.map((r) => r.characters?.[pid] ?? '?'));
+    return [...chars].join('/');
+  };
+  for (const pid of ['p1', 'p2'] as PlayerId[]) {
+    const dmg = sum((r) => r.telemetry.damageByPlayer[pid]);
+    const blk = sum((r) => r.telemetry.blockByPlayer?.[pid] ?? 0);
+    const lf = sum((r) => r.telemetry.linkFiresByPlayer?.[pid] ?? 0);
+    const falls = sum((r) => r.telemetry.fallsByPlayer?.[pid] ?? 0);
+    const covets = sum((r) => r.telemetry.covetsSpent[pid]);
+    console.log(`${pid} (${seatChar(pid)}): damage ${dmg} | block ${blk} | link-fires ${lf} | falls ${falls} | covets taken from partner ${covets}`);
+  }
+  const wkPlays = sum((r) => r.telemetry.wornKnife?.plays ?? 0);
+  const wkDamage = sum((r) => r.telemetry.wornKnife?.damage ?? 0);
+  console.log(`Worn Knife: ${wkPlays} plays | mean damage ${wkPlays ? (wkDamage / wkPlays).toFixed(2) : 'n/a'}`);
+  const threadSpent = sum((r) => r.telemetry.threadSpent ?? 0);
+  const spendMix: Record<string, number> = {};
+  for (const r of results) {
+    for (const [k, n] of Object.entries(r.telemetry.threadSpendByKind ?? {})) spendMix[k] = (spendMix[k] ?? 0) + n;
+  }
+  const regenWasted = sum((r) => r.telemetry.regenWastedAtCap ?? 0);
+  const forced = sum((r) => r.telemetry.forcedLinkFires ?? 0);
+  const resForced = sum((r) => r.telemetry.resonancesForced ?? 0);
+  console.log(
+    `thread: spent/combat ${combats ? (threadSpent / combats).toFixed(2) : 'n/a'} | spend mix ${JSON.stringify(spendMix)} | ` +
+    `regen wasted at cap/combat ${combats ? (regenWasted / combats).toFixed(2) : 'n/a'}`,
+  );
+  console.log(`forced links (Pulse): ${forced} (${links ? ((100 * forced) / links).toFixed(1) : 0}% of fires) | Resonances needing one: ${resForced}/${resonances}`);
   console.log('---------------- GATES ----------------');
   let allPass = true;
   for (const g of gates) {

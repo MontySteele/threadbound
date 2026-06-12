@@ -70,6 +70,15 @@ export function emptyTelemetry(): Telemetry {
     covetsSpent: { p1: 0, p2: 0 },
     biggestTurn: { damage: 0, turn: 0, act: 0 },
     turns: 0, actStats: {},
+    blockByPlayer: { p1: 0, p2: 0 },
+    linkFiresByPlayer: { p1: 0, p2: 0 },
+    fallsByPlayer: { p1: 0, p2: 0 },
+    wornKnife: { plays: 0, damage: 0 },
+    threadSpent: 0,
+    threadSpendByKind: { pulse: 0, reclaim: 0, sever: 0, steady: 0 },
+    regenWastedAtCap: 0,
+    forcedLinkFires: 0,
+    resonancesForced: 0,
   };
 }
 

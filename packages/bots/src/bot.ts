@@ -5,12 +5,14 @@
 // socket, watchdog, run bookkeeping.
 
 import WebSocket from 'ws';
-import { Action, BotPolicy, BotView, PlayerId, Telemetry } from '@threadbound/engine';
+import { Action, BotPolicy, BotView, CharacterId, PlayerId, Telemetry } from '@threadbound/engine';
 
 export interface RunResult {
   outcome: 'victory' | 'game_over';
   act: number;
   combatsWon: number;
+  /** S3.1 run header: seat → character, so per-seat splits stay interpretable */
+  characters: Record<PlayerId, CharacterId>;
   telemetry: Telemetry;
 }
 
@@ -95,6 +97,7 @@ export class Bot {
         outcome: view.phase,
         act: view.map.act,
         combatsWon: this.policy.combatsWon,
+        characters: { p1: view.players.p1.character, p2: view.players.p2.character },
         telemetry: view.telemetry,
       });
       this.ws.close();

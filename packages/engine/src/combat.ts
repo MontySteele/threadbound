@@ -76,8 +76,8 @@ export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): 
 export function applyHookOp(state: GameState, p: PlayerState, eff: HookOp): void {
   const partner = state.players[otherPlayer(p.id)];
   switch (eff.op) {
-    case 'block': p.block += eff.amount; break;
-    case 'partnerBlock': partner.block += eff.amount; break;
+    case 'block': p.block += eff.amount; blockTelemetry(state, p.id, eff.amount); break;
+    case 'partnerBlock': partner.block += eff.amount; blockTelemetry(state, partner.id, eff.amount); break;
     case 'thread': gainThread(state, eff.amount); break;
     case 'kindled': p.kindled += eff.amount; break;
     case 'draw': drawCards(state, p, eff.amount); break;
@@ -323,6 +323,11 @@ function scale(ctx: CardContext, amount: number, primary: boolean | undefined): 
   return v;
 }
 
+/** S3.1 per-character split: block gained, whoever sourced it. */
+function blockTelemetry(state: GameState, recipient: PlayerId, amount: number): void {
+  state.telemetry.blockByPlayer[recipient] += amount;
+}
+
 function dmgTelemetry(state: GameState, tag: string, dealt: number, player?: PlayerId): void {
   state.telemetry.damageByTag[tag] = (state.telemetry.damageByTag[tag] ?? 0) + dealt;
   if (player) state.telemetry.damageByPlayer[player] += dealt;
@@ -398,11 +403,13 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     case 'block': {
       const amt = scale(ctx, eff.amount, eff.primary);
       owner.block += amt;
+      blockTelemetry(state, owner.id, amt);
       state.log.push({ e: 'block', target: owner.id, amount: amt }); // M2-D2: scaled value
       break;
     }
     case 'partnerBlock':
       partner.block += eff.amount;
+      blockTelemetry(state, partner.id, eff.amount);
       state.log.push({ e: 'block', target: partner.id, amount: eff.amount });
       break;
     case 'hex': {
@@ -560,6 +567,10 @@ export function resolveTurn(state: GameState): void {
         }
         break;
     }
+    // S3.1 thread economy: spend mix by action type
+    const cost = ta.kind === 'sever' ? 3 : ta.kind === 'steady' ? 1 : 2;
+    state.telemetry.threadSpent += cost;
+    state.telemetry.threadSpendByKind[ta.kind]++;
     state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
   }
 
@@ -616,7 +627,15 @@ export function resolveTurn(state: GameState): void {
       runHooks(state, 'p2', 'resonance');
     }
 
+    const dmgBefore = state.telemetry.damageByPlayer[slot.owner];
     for (const eff of effects) applyEffect(state, ctx, eff);
+
+    // S3.1: Worn Knife mean damage = the scaling floor's health stat (§14.11)
+    if (inst.defId === 'worn_knife') {
+      state.telemetry.wornKnife.plays++;
+      state.telemetry.wornKnife.damage += state.telemetry.damageByPlayer[slot.owner] - dmgBefore;
+      if (state.telemetry.wornKnife.plays === 1) sayWitness(state, 'worn_knife_first');
+    }
 
     if (def.tag === 'Strike' && ctx.momentumSpent && !ctx.keepMomentum && !hasPassive(owner, 'momentumNoHalve')) {
       owner.momentum = Math.floor(owner.momentum / 2);
@@ -631,6 +650,7 @@ export function resolveTurn(state: GameState): void {
     actStats.cardsPlayed++;
     if (fired[i]) {
       state.telemetry.linksFired++;
+      state.telemetry.linkFiresByPlayer[slot.owner]++;
       actStats.linksFired++;
       runHooks(state, slot.owner, 'linkFired');
     }
@@ -867,6 +887,7 @@ function fall(state: GameState, player: PlayerState): void {
       }
     }
   }
+  state.telemetry.fallsByPlayer[player.id]++;
   state.log.push({ e: 'fallen', player: player.id });
   if (rebound > 0) {
     // say it out loud (playtest 1): the silent rebind undid a player's Sever
@@ -903,7 +924,10 @@ export function startTurn(state: GameState): void {
   if (!anyFallen && !severed) {
     let regen = 2; // §5
     if (hasPassive(state.players.p1, 'threadRegenPlusOne') || hasPassive(state.players.p2, 'threadRegenPlusOne')) regen++;
+    const before = state.thread;
     gainThread(state, regen);
+    // S3.1 thread economy: regen the cap ate (a high number = the pool idles)
+    state.telemetry.regenWastedAtCap += regen - (state.thread - before);
   }
 
   for (const pid of ['p1', 'p2'] as PlayerId[]) {

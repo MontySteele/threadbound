@@ -469,6 +469,20 @@ export interface Telemetry {
   turns: number;
   /** per-act link-fire climb + difficulty gates (M2-A5/C) */
   actStats: Record<number, ActStats>;
+  /** S3.1 per-character splits (keyed by seat; reports map seat → character) */
+  blockByPlayer: Record<PlayerId, number>;
+  linkFiresByPlayer: Record<PlayerId, number>;
+  fallsByPlayer: Record<PlayerId, number>;
+  /** S3.1 scaling-floor health stat, counterpart to avg-stacks-at-detonation */
+  wornKnife: { plays: number; damage: number };
+  /** S3.1 thread economy */
+  threadSpent: number;
+  threadSpendByKind: Record<ThreadActionKind, number>;
+  regenWastedAtCap: number;
+  /** S3.3b: fired links that only fired because of a Pulse, and Resonance
+   *  streaks that needed one */
+  forcedLinkFires: number;
+  resonancesForced: number;
 }
 
 // ---------------------------------------------------------------------------
