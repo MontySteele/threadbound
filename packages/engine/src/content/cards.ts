@@ -305,15 +305,41 @@ def({
 // ---------------------------------------------------------------------------
 
 def({
-  // §14.10: her basic strike IS the starter's Hex payoff — 2 + one stack
-  // detonated (4, pierces Block) = 6 on a hexed target, 2 dry. Sequencing
-  // (hex first, then strike) matters from turn 1.
+  // §14.11: plain again. The §14.10 detonating Hatpin made Hex a self-owned
+  // drip; the starter Hex payoffs are now Worn Knife (her own scaling floor)
+  // and Bram's Knuckle-Crack (the cross-player burst).
   id: 'hatpin', name: 'Hatpin', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   starterOnly: true, needsTarget: true,
-  text: 'Deal 2. Detonate 1 Hex.',
-  base: [{ op: 'damage', amount: 2, primary: true }, { op: 'detonate', max: 1 }],
+  text: 'Deal 4.',
+  base: [{ op: 'damage', amount: 4, primary: true }],
   mutation: { name: 'Heated Hatpin', text: 'Deal 3. Gain 1 Momentum.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Deal 3. Detonate 2 Hex. Link (Hex): apply 1 Hex.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'detonate', max: 2 }], link: { condition: 'Hex', text: 'Apply 1 Hex.', effects: [{ op: 'hex', amount: 1 }] } },
+  upgrade: { text: 'Deal 6.', base: [{ op: 'damage', amount: 6, primary: true }] },
+});
+def({
+  // §14.11: Vess's self-owned Hex floor — scales with the pile WITHOUT
+  // consuming it (normal, blockable damage; deliberate contrast with
+  // detonation's pierce). The burst payoff lives on her partner.
+  id: 'worn_knife', name: 'Worn Knife', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
+  starterOnly: true, needsTarget: true,
+  text: 'Deal 2. +1 damage per Hex on the target (does not detonate).',
+  base: [{ op: 'damagePerHex', base: 2, perHex: 1, primary: true }],
+  mutation: { name: 'Cinder-honed Knife', text: 'Deal 4. Gain 1 Momentum.', base: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 1 }] },
+  upgrade: { text: 'Deal 4. +1 damage per Hex on the target (does not detonate).', base: [{ op: 'damagePerHex', base: 4, perHex: 1, primary: true }] },
+});
+def({
+  // §14.11: the burst payoff, cross-player by construction — Bram detonates
+  // what Vess banks. Playable standalone (Deal 4); the Link is the thesis.
+  id: 'knuckle_crack', name: 'Knuckle-Crack', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
+  starterOnly: true, needsTarget: true,
+  text: 'Deal 4. Link (Hex): Detonate 2.',
+  base: [{ op: 'damage', amount: 4, primary: true }],
+  link: { condition: 'Hex', text: 'Detonate 2.', effects: [{ op: 'detonate', max: 2 }] },
+  mutation: { name: 'Stitched Knuckle-Crack', text: 'Deal 3. Apply 2 Hex.', base: [{ op: 'damage', amount: 3, primary: true }, { op: 'hex', amount: 2 }] },
+  upgrade: {
+    text: 'Deal 5. Link (Hex): Detonate 3.',
+    base: [{ op: 'damage', amount: 5, primary: true }],
+    link: { condition: 'Hex', text: 'Detonate 3.', effects: [{ op: 'detonate', max: 3 }] },
+  },
 });
 def({
   id: 'patchwork', name: 'Patchwork', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
@@ -340,14 +366,14 @@ def({
   upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 
-// M2-A5 starter decks
+// M2-A5 starter decks; §14.11: one Hatpin/Jab slot becomes the payoff card
 export const STARTER_DECKS: Record<CharacterId, string[]> = {
   vess: [
-    'hatpin', 'hatpin', 'hatpin', 'hatpin', 'patchwork', 'patchwork', 'patchwork',
+    'hatpin', 'hatpin', 'hatpin', 'worn_knife', 'patchwork', 'patchwork', 'patchwork',
     'pinprick', 'loose_stitch', 'mendthread',
   ],
   bram: [
-    'jab', 'jab', 'jab', 'jab', 'brace_up', 'brace_up', 'brace_up',
+    'jab', 'jab', 'jab', 'knuckle_crack', 'brace_up', 'brace_up', 'brace_up',
     'opener', 'second_wind', 'kindle',
   ],
 };

@@ -9,7 +9,10 @@ export type WitnessContext =
   | 'covet_pick'
   | 'resonance'
   | 'fray'
-  | 'elite_mourner_intro';
+  | 'elite_mourner_intro'
+  // §14.11 starter payoffs: one line each, first occurrence per run (solo + pair)
+  | 'worn_knife_first'
+  | 'knuckle_crack_first';
 
 export const WITNESS_LINES: Record<WitnessContext, string[]> = {
   combat_start: [
@@ -76,5 +79,11 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'The Mourner. It feeds on loneliness. You two should be perfectly safe. Probably.',
     'It grieves for those who fight alone. Give it nothing to mourn.',
     'Ah, the Mourner. Play selfishly and it will love you to death.',
+  ],
+  worn_knife_first: [
+    'The Worn Knife. It does not break a curse — it reads one. Sharper for every stitch she leaves in.',
+  ],
+  knuckle_crack_first: [
+    'There it is: her curses, your knuckles. Perhaps this marriage will work after all.',
   ],
 };

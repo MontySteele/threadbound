@@ -123,6 +123,33 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
     }
   });
 
+  it('§14.11: starter payoffs — burst is cross-player, scaling floor self-owned', () => {
+    // Hatpin is plain again: no detonate anywhere on it
+    const hatpin = CARDS.hatpin;
+    const ops = (c: CardDef) => [
+      ...c.base, ...(c.link?.effects ?? []), ...(c.upgrade?.base ?? []), ...(c.upgrade?.link?.effects ?? []),
+    ].map((e) => e.op);
+    expect(ops(hatpin)).not.toContain('detonate');
+    // Worn Knife: pure floor — scales with Hex, never consumes it, no link
+    const knife = CARDS.worn_knife;
+    expect(knife.starterOnly).toBe(true);
+    expect(knife.link).toBeUndefined();
+    expect(ops(knife)).not.toContain('detonate');
+    expect(knife.base[0].op).toBe('damagePerHex');
+    // Knuckle-Crack: playable standalone, burst only via Link (Hex) —
+    // amplified-never-dependent holds in both directions
+    const kc = CARDS.knuckle_crack;
+    expect(kc.starterOnly).toBe(true);
+    expect(kc.base.some((e) => e.op === 'damage')).toBe(true);
+    expect(kc.base.map((e) => e.op)).not.toContain('detonate');
+    expect(kc.link?.condition).toBe('Hex');
+    expect(kc.link?.effects.some((e) => e.op === 'detonate')).toBe(true);
+    expect(isSelfSimilar(kc)).toBe(false); // Strike with Link (Hex)
+    // one payoff card per starter deck
+    expect(STARTER_DECKS.vess.filter((id) => id === 'worn_knife').length).toBe(1);
+    expect(STARTER_DECKS.bram.filter((id) => id === 'knuckle_crack').length).toBe(1);
+  });
+
   it('M2-A5: starter decks are 10 starter-weighted cards; starter-only cards never in pools', () => {
     for (const ch of CHARACTERS) {
       expect(STARTER_DECKS[ch].length).toBe(10);

@@ -636,6 +636,11 @@ export function resolveTurn(state: GameState): void {
       state.telemetry.wornKnife.damage += state.telemetry.damageByPlayer[slot.owner] - dmgBefore;
       if (state.telemetry.wornKnife.plays === 1) sayWitness(state, 'worn_knife_first');
     }
+    // §14.11: first Knuckle-Crack detonation per run — the 1-line pool
+    // self-gates afterward (sayWitness returns pre-rng once exhausted)
+    if (inst.defId === 'knuckle_crack' && ctx.detonatedStacks > 0) {
+      sayWitness(state, 'knuckle_crack_first');
+    }
 
     if (def.tag === 'Strike' && ctx.momentumSpent && !ctx.keepMomentum && !hasPassive(owner, 'momentumNoHalve')) {
       owner.momentum = Math.floor(owner.momentum / 2);

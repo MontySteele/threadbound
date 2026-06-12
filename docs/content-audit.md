@@ -85,3 +85,23 @@ Result: Hex damage share 21.2% (gate: 20–30%) at 25-run sim.
 
 Full M2 pool **complies** with §3/§2.3 and all M2-B1 scaling rules. New
 judgment calls logged in `docs/OPEN-QUESTIONS.md`.
+
+## §14.11 starter payoff redesign (S3.3, 2026-06-12)
+
+Hatpin reverts to a plain Strike (the §14.10 detonating version made Hex a
+self-owned drip). Two new starter-only cards carry the starter Hex payoff:
+
+- **Worn Knife** (Vess, 1, Strike): "Deal 2. +1 damage per Hex on the target
+  (does not detonate)." Playable standalone ✓ (2 dry). No link — the pure,
+  self-owned scaling floor ✓. Normal blockable damage, a deliberate contrast
+  with detonation's pierce. Starter-only, never in pools ✓.
+- **Knuckle-Crack** (Bram, 1, Strike): "Deal 4. Link (Hex): Detonate 2."
+  Playable standalone ✓ (4 dry). Strike with Link (Hex) — not self-similar ✓.
+  The burst payoff is cross-player by construction: Bram detonates what Vess
+  banks. Starter-only, never in pools ✓.
+
+Amplified-never-dependent holds in both directions: each card does honest work
+alone; the Link/scaling is the reward for cooperation, not the cost of
+playing. Mutations follow the cross-character convention (Cinder-honed Knife,
+Stitched Knuckle-Crack). Enforced in covenant.test.ts ("§14.11 starter
+payoffs").
