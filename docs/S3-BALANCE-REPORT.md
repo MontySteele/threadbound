@@ -108,6 +108,82 @@ Findings the next tuner needs:
 
 ---
 
-## S3.5 — character balance battery
+## S3.5 — character balance battery (anchor 1.5/1.35, seeds 1000, 50 runs each)
 
-<!-- BATTERY RESULTS APPEND HERE -->
+| metric | vb (baseline) | vv | bb |
+|---|---|---|---|
+| win rate | 26% | 32% | 16% |
+| furthest acts (1/2/3) | 4 / 33 / 13 | 8 / 24 / 18 | 1 / 41 / 8 |
+| act-1 HP lost/combat | 23.0 | 22.2 | 23.1 |
+| link-fire act 1 / act 2 | 52.8% / 62.0% | 47.6% / 61.8% | 38.6% / 51.7% |
+| Resonance ignitions (per a1+a2 combat) | 1803 (4.13) | 1387 (3.36) | 1377 (3.21) |
+| Hex damage share | 50.0% | **84.7%** | 8.9% |
+| avg stacks/detonation | 6.18 | **13.11** | 2.77 |
+| Worn Knife plays · mean damage | 608 · 12.92 | 1280 · 19.13 | — |
+| thread spent/combat · forced links | 3.25 · 6.5% | 1.55 · 2.5% | 3.03 · 8.5% |
+| per-seat damage+block split | vess 41% / bram 59% | 53% / 47% | 50% / 50% |
+| Falls split | 47 / 41 (53%/47%) | 40 / 41 | 50 / 48 |
+
+### Acceptance bands, scored
+
+- ❌→✅ **Synergy premium (headline)**: split verdict.
+  - Resonance/combat: vb 4.13 **exceeds both** mirrors (3.36, 3.21) ✅ — the
+    pairing weaves more than duplication does, mirrors are NOT resonating at
+    near-vb rates, so links are not too generic (the S3.6 first check).
+  - Win rate: vb 26% beats bb by exactly 10 points ✅ but **loses to vv by 6
+    points** ❌. The vv edge is not resonance — it is the hex ENGINE: 84.7%
+    Hex damage share, 13.1 stacks per burst, double Worn Knife at 19.1 mean.
+    Two hex-converging bots playing the hex-converging policy's favorite
+    archetype is the caveat printed above doing exactly what it warned;
+    treat the 6-point edge as bot-fit signal until a human vv run exists.
+- ❌ **Character parity |vv − bb| ≤ 15**: 16 points — a hair over, in the
+  weak-Bram direction (bb also bottoms the link-fire rates: Bram's pool
+  links want a Hex supply that the mirror lacks).
+- ✅/❌ **Texture**: avgStackAtDetonation 6.18 in vb (≥3 — bank-and-burst
+  restored, the §14.11 goal) ✅; Worn Knife mean 12.92 in vb vs band 4–8 ❌ —
+  the band assumed typical piles of 2–6 Hex; bot piles routinely exceed 10.
+  Direction is right (the knife scales and is never dead weight at 2 dry);
+  the magnitude says the band was authored for human pile sizes.
+- ✅ **Within-pair contribution (vb)**: bram 59.0% of damage+block (< 60%);
+  Falls 53%/47% (< 70% one-sided).
+
+### S3.6 findings (report, don't auto-tune — nothing beyond the two knobs was touched)
+
+1. **vv > vb on win rate** — per playbook, checked Resonance first: mirrors
+   resonate 19–22% LESS than vb, so cross-archetype links are doing their
+   job. The vv edge rides on hex-pile compounding. Top vess damage sources
+   in vv: detonation bucket 42.3k (largest), HexScaling 37.4k — of which
+   Worn Knife alone ≈ 24.5k (26% of ALL vv damage; 1280 plays × 19.13),
+   remainder Patient Knife's per-Hex mode — Strike only 14.4k. The pile
+   enablers (Saturate's doubleHex feeding 13-stack bursts, uncapped
+   Worn Knife scaling) are the cards to watch IF a human vv run ever
+   reproduces this; logged as OQ#28. Do not nerf mirror play without a
+   human datapoint — the tuned product is vb.
+2. **Bram mirror is the weak one** (16% win, 38.6% act-1 link-fire): his
+   links are Hex-hungry (Rendcall, Stamp Out, Followthrough, Knuckle-Crack
+   all read Hex) and the mirror starves them. This is the design working —
+   Bram is supposed to want a Vess — but it makes |vv−bb| parity miss by 1
+   point. Designer call: accept (asymmetric dependence is the thesis) or
+   widen a couple of Bram links to Strike/Surge in the pool pass (OQ#24's
+   content pass is already scheduled post-playtest).
+3. **Hex-share gate proposal** (sign-off item; gate NOT edited): vb at the
+   S3.4 anchor reads 50.0% (current provisional band 25–45 FAILs). With
+   §14.11, starter payoffs exist on both sides and Worn Knife books into
+   HexScaling by design; the bot is also hex-converging. **Propose: 35–55%
+   provisional at the bot floor**, re-derived against Friday's human pair
+   data in M3 Part A. Until ratified, the sim prints the 25–45 FAIL line —
+   honest, and it blocks nothing (gates are pending Part A anyway).
+
+### Sign-off checklist (S3)
+
+- [x] Tests green incl. §14.11 covenant entries and §14.12 Pulse engine +
+  policy-courtesy tests (55 passing).
+- [x] A/B recorded; two signals pass, two fail structurally — **escalated
+  above**; S3.4 proceeded with anchor marked provisional per the decision
+  note.
+- [x] S3.4 anchor committed (1.5/1.35) with updated ladder comment.
+- [x] This report: A/B + all three battery batches, bands evaluated, caveats
+  printed.
+- [x] DESIGN doc §14.11 + §14.12 entries; deferred Thread levers in OQ#26;
+  Pulsekeeper's Ring forced retext in OQ#27; battery findings in OQ#28.
+- [x] Hex-share band revisited honestly: proposal above, gate untouched.

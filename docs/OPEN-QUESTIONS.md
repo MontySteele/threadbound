@@ -208,3 +208,15 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     (`pulseCostMinusOne`). A relic referencing a removed mechanic is a bug,
     not a scope save; flagged here because S3's hard scope rule said no relic
     changes. Designer may re-rule the effect.
+
+28. **S3.5 battery findings** (2026-06-12, full data in
+    `docs/S3-BALANCE-REPORT.md`): at the 1.5/1.35 anchor, vb resonates more
+    than either mirror (4.13/combat vs 3.36/3.21 — links are not too
+    generic), but the vess mirror out-WINS vb 32% vs 26% on the back of the
+    hex engine (84.7% Hex share, 13.1 stacks/burst, Worn Knife = 26% of all
+    vv damage). Watch-list cards if a human vv run ever reproduces it:
+    Saturate (doubleHex), uncapped Worn Knife scaling. Bram mirror is weak
+    (16%, link-starved without a Hex supply) — asymmetric dependence may be
+    the thesis working; designer may instead widen 1-2 Bram pool links in
+    the OQ#24 content pass. Parity |vv−bb| = 16 vs bound 15. Proposed
+    Hex-share gate band: 35–55% provisional (gate not edited).
