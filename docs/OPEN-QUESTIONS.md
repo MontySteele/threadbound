@@ -245,3 +245,59 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     the thesis working; designer may instead widen 1-2 Bram pool links in
     the OQ#24 content pass. Parity |vv−bb| = 16 vs bound 15. Proposed
     Hex-share gate band: 35–55% provisional (gate not edited).
+
+## Playtest-2 live reports (2026-06-12, triaged mid-session)
+
+UI bugs fixed on `s4-economy` same day (controller skipping every other card
+in 8+ hands; right-stick unable to pan the Chain track; hex count hidden
+below 10; no HP shown at rest sites; boss/elite re-tether not forecast in the
+intent area; invisible relic-sourced Thread gains now logged by name).
+Balance items below are LOGGED, not tuned — the difficulty anchor reading
+comes first (§14.8 discipline), and they're content-pass material.
+
+29. **Loom of Two Hands is too good** (designer, live): +1 Thread per own
+    link fired, against a base regen of +2/turn — at the current ~55%+
+    link-fire rates that's roughly +3–5 Thread/turn, which dissolves the
+    Thread economy the §14.12 rework just made matter. Candidate nerfs for
+    the post-playtest pass: cap at 1/turn ("the first time one of your links
+    fires each turn"), make it Kindled instead of Thread, or price it as the
+    premium relic it currently is. The new named "+N Thread" log lines (this
+    session) make its contribution visible in any future session; candidate
+    telemetry: thread gains by source.
+
+30. **Stolen Breath is too good** (designer, live: "free power - add
+    exhaust?"): 0-cost neutral COMMON, "Draw 1. Link (any): Gain Kindled 1."
+    — a free chain-slot filler that replaces itself, extends Resonance
+    streaks, and (link `any`) fires from any slot but the first. Designer
+    proposes adding Exhaust; alternatives: drop the link to a named tag
+    (OQ#24 direction), or uncommon rarity. Queued for the post-playtest
+    content pass with OQ#24 — not changed mid-playtest.
+
+31. **Resonance scaling coverage is thin and reads as "does nothing"**
+    (designer, live: "Resonate 3+? No resonance on link effects? What does
+    resonance do for things that are not damage or guard? Not showing
+    anything"). Data (pool audit, this session): resonance scales only
+    `primary`-flagged effect ops; **12 of 105 link clauses** carry the flag
+    while **93 numeric link effects don't**, and **33 of 131 cards have no
+    primary anywhere** — on those, igniting Resonance does nothing visible
+    on the card itself. The tooltip now says exactly what scales (and that
+    flagless cards still extend streaks + trigger Resonance relics), but the
+    design questions stand for the content pass:
+    (a) should link-clause numbers scale by default (primary on the link's
+        main number), so the card that COMPLETES a streak feels it?
+    (b) should no-primary cards get a fallback Resonance bonus (e.g. draw 1
+        or +1 Kindled) so igniting on them never feels blank?
+    Both change balance pool-wide; rule after the difficulty reading banks.
+
+32. **"Thread math ain't matching" (needs repro)**: report arrived truncated
+    ("seems like we ran ..."). Best hypothesis is invisible mid-resolution
+    relic Thread gains — Loom of Two Hands (OQ#29) firing per link with no
+    log line; regen eaten silently at the cap is the other usual suspect
+    (`regenWastedAtCap` already counts it). Named "+N Thread" log lines added
+    this session; if the mismatch reproduces with those visible, capture the
+    seed + turn and the spend list from the Chain margin.
+
+33. **link(any) too common on upgrades** (designer, live) — confirmation of
+    OQ#24 from a fresh pair; no new decision needed. The ruling stands
+    (one-step widening between named tags, `any` reserved for rares) and
+    remains scheduled for the post-playtest content pass.

@@ -102,11 +102,17 @@ export class Controller {
 
     // right stick pans the view (the map outgrows the viewport; the fixed
     // hint bar covers its foot). Left stick / dpad keep moving the focus.
+    // Playtest-2 fix: horizontal pan must drive the focused element's own
+    // scroll container — the Chain track is overflow-x:auto, and window
+    // scrolling never reached cards queued past the first screenful.
     const rx = cur.axes[2] ?? 0;
     const ry = cur.axes[3] ?? 0;
-    if (Math.abs(rx) > 0.3 || Math.abs(ry) > 0.3) {
-      window.scrollBy(Math.abs(rx) > 0.3 ? rx * 24 : 0, Math.abs(ry) > 0.3 ? ry * 24 : 0);
+    if (Math.abs(rx) > 0.3) {
+      const scroller = this.scrollerX();
+      if (scroller) scroller.scrollBy(rx * 24, 0);
+      else window.scrollBy(rx * 24, 0);
     }
+    if (Math.abs(ry) > 0.3) window.scrollBy(0, ry * 24);
 
     // directional: dpad 12-15 + left stick, with hold-repeat
     const dirDown = {
@@ -158,6 +164,19 @@ export class Controller {
     }
 
     this.prev = cur;
+  }
+
+  /** Nearest horizontally-scrollable ancestor of the focus (the Chain track,
+   *  a crowded hand) — the right stick pans THAT before the window. */
+  private scrollerX(): HTMLElement | null {
+    let el: HTMLElement | null = this.focused;
+    while (el) {
+      if (el.scrollWidth > el.clientWidth + 4 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
   }
 
   // ---- DOM navigation -------------------------------------------------------
@@ -233,12 +252,21 @@ export class Controller {
         : dir === 'right' ? r.left - from.right
         : dir === 'up' ? from.top - r.bottom
         : r.top - from.bottom;
+      // center-to-center travel: with deeply overlapped cards (a crowded
+      // 8+ hand fans cards over each other) the edge test rejects the true
+      // neighbor and navigation skipped every other card (Playtest 2) —
+      // a strictly-forward CENTER still identifies it
+      const centerAlong =
+        dir === 'left' ? fc.x - (r.left + r.width / 2)
+        : dir === 'right' ? r.left + r.width / 2 - fc.x
+        : dir === 'up' ? fc.y - (r.top + r.height / 2)
+        : r.top + r.height / 2 - fc.y;
       // do our spans actually overlap on the perpendicular axis?
       const overlap = horiz
         ? Math.min(from.bottom, r.bottom) - Math.max(from.top, r.top)
         : Math.min(from.right, r.right) - Math.max(from.left, r.left);
       const across = horiz ? Math.abs(r.top + r.height / 2 - fc.y) : Math.abs(r.left + r.width / 2 - fc.x);
-      return { el, along, overlap, across };
+      return { el, along, centerAlong, overlap, across };
     };
     // Rectangle navigation, not center-distance: a move lands on something
     // your row/column actually faces. Tiers: aligned in-zone → aligned
@@ -249,7 +277,7 @@ export class Controller {
       pool
         .filter((el) => el !== this.focused)
         .map(measure)
-        .filter((c) => c.along > -6 && (!aligned || c.overlap > 2))
+        .filter((c) => (c.along > -6 || c.centerAlong > 4) && (!aligned || c.overlap > 2))
         .sort((a, b) => a.along + a.across * (aligned ? 0.3 : 2.5) - (b.along + b.across * (aligned ? 0.3 : 2.5)))[0]?.el;
     let next = best(inZone, true) ?? best(items, true);
     if (!next && !horiz) next = best(items, false);

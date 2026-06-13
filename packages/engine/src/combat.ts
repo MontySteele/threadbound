@@ -74,7 +74,18 @@ export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): 
   for (const src of sources) {
     for (const hook of src.hooks ?? []) {
       if (hook.on !== event) continue;
-      for (const eff of hook.effects) applyHookOp(state, p, eff);
+      for (const eff of hook.effects) {
+        // Playtest 2: relic-sourced Thread gains were invisible — the pool
+        // moved mid-resolution and the math "didn't match". Name the source.
+        if (eff.op === 'thread') {
+          const before = state.thread;
+          applyHookOp(state, p, eff);
+          const gained = state.thread - before;
+          if (gained > 0) state.log.push({ e: 'info', detail: `${src.name}: +${gained} Thread` });
+          continue;
+        }
+        applyHookOp(state, p, eff);
+      }
     }
   }
 }

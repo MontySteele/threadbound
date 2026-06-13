@@ -717,6 +717,15 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           // visibly frays and parts while its sever phase holds
           const sigilSize = def.boss ? 104 : def.elite ? 82 : 64;
           const fraying = severed && !!def.unraveled;
+          // Playtest 2: the §14.8 self-retether (elites/bosses, every 3rd
+          // turn) happens during THIS turn's enemy phase — forecast the swap
+          // so the displayed target isn't a lie. Mirrors the engine condition
+          // exactly; deterministic, so the client may compute it (§11).
+          const retetherTo =
+            e.hp > 0 && (def.elite || def.boss) && combat.turn % 3 === 0 && e.boundTo &&
+            !state.players[e.boundTo === 'p1' ? 'p2' : 'p1'].fallen
+              ? (e.boundTo === 'p1' ? 'p2' : 'p1') as PlayerId
+              : null;
           return (
             <div
               key={e.id}
@@ -736,7 +745,8 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                   {Array.from({ length: Math.min(e.hex, 9) }, (_, m) => (
                     <span key={m} className="mote" style={{ animationDelay: `${m * 0.35}s` }} />
                   ))}
-                  {e.hex > 9 && <span className="motecount">{e.hex}</span>}
+                  {/* Playtest 2: the count is the tracking number — always show it */}
+                  <span className="motecount">{e.hex}</span>
                 </div>
               )}
               <div className="statuses">
@@ -746,8 +756,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
               <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
-              <div className="bound" style={{ color: e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
-                {e.untargetable ? 'unbound — untargetable' : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
+              <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
+                {e.untargetable ? 'unbound — untargetable'
+                  : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`
+                  : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
               </div>
             </div>
           );
@@ -1150,6 +1162,17 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   return (
     <div className="center">
       <h2>Rest Site</h2>
+      {/* Playtest 2: the heal decision needs the current number in view */}
+      <p className="muted">
+        {(['p1', 'p2'] as PlayerId[]).map((pid, i) => (
+          <span key={pid}>
+            {i > 0 && ' · '}
+            <span style={{ color: PCOLOR[pid] }}>
+              {state.players[pid].character}: <b>{state.players[pid].hp}/{state.players[pid].maxHp} HP</b>
+            </span>
+          </span>
+        ))}
+      </p>
       <Log log={state.log} state={state} />
       {chosen === null ? (
         <>
