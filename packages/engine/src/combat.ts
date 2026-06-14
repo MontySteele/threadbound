@@ -862,9 +862,11 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       break;
     case 'attack_fray':
       hitPlayer(state, enemy, bound, intent.amount);
-      state.players.p1.statuses.frayed++;
-      state.players.p2.statuses.frayed++;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} — the Thread FRAYS` });
+      // OQ#46: enemy-applied Fray takes hold at the start of the players' next
+      // turn (so it actually bites — was wiped before it could)
+      state.players.p1.pendingStatus.frayed++;
+      state.players.p2.pendingStatus.frayed++;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} — the Thread will FRAY next turn` });
       break;
     case 'block':
       enemy.block += intent.amount;
@@ -883,12 +885,13 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `incites its kin (+${intent.amount} Strength to all)` });
       break;
     case 'debuff_weak':
-      bound.statuses.weak += intent.amount;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Weak to ${bound.id}` });
+      // OQ#46: enemy debuffs take hold next turn (see pendingStatus)
+      bound.pendingStatus.weak += intent.amount;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Weak to ${bound.id} (next turn)` });
       break;
     case 'debuff_vulnerable':
-      bound.statuses.vulnerable += intent.amount;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Vulnerable to ${bound.id}` });
+      bound.pendingStatus.vulnerable += intent.amount;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Vulnerable to ${bound.id} (next turn)` });
       break;
     case 'sever': {
       // binding manipulation (M2-B3): the enemy moves its own tether
@@ -1003,6 +1006,14 @@ export function startTurn(state: GameState): void {
     p.statuses.frayed = 0;
     if (p.statuses.weak > 0) p.statuses.weak--;
     if (p.statuses.vulnerable > 0) p.statuses.vulnerable--;
+    // OQ#46: debuffs an enemy applied last turn activate NOW (after the
+    // clear/decrement), so they live through this turn — Fray for the turn,
+    // Weak/Vuln decrementing from here. Player-phase Fray (overdraft) already
+    // landed directly on statuses and isn't double-counted.
+    p.statuses.weak += p.pendingStatus.weak;
+    p.statuses.vulnerable += p.pendingStatus.vulnerable;
+    p.statuses.frayed += p.pendingStatus.frayed;
+    p.pendingStatus = { weak: 0, vulnerable: 0, frayed: 0 };
     runHooks(state, pid, 'turnStart');
     // Fixed FIVE fresh cards (playtest ruling, supersedes draw-to-5): cards
     // carried from resolution draws, Keep, and retain-1 are EXTRA — otherwise
@@ -1083,6 +1094,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     p.fallen = false;
     p.powers = [];
     p.statuses = { weak: 0, vulnerable: 0, frayed: 0 };
+    p.pendingStatus = { weak: 0, vulnerable: 0, frayed: 0 }; // OQ#46
     p.exhaust = [];
     p.discard = [];
     p.hand = [];

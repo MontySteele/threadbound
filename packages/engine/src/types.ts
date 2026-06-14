@@ -312,6 +312,11 @@ export interface PlayerState {
   momentum: number;
   fallen: boolean; // M2-A3
   statuses: PlayerStatuses;
+  /** OQ#46: debuffs an enemy applied during its phase, activating at the start
+   *  of this player's NEXT turn (so a 1-stack actually lasts a turn instead of
+   *  being wiped before it can bite). Player-phase Fray (thread overdraft)
+   *  stays immediate and is NOT routed here. */
+  pendingStatus: PlayerStatuses;
   powers: string[]; // PowerDef ids (dormant while fallen)
   relics: string[]; // RelicDef ids
   deck: CardInstance[];

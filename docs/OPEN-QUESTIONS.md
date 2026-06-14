@@ -532,3 +532,11 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     above, but it's a difficulty nudge, so flagged for a yes/no rather than
     done unilaterally mid-playtest. Content-bump alternative is viable for
     Weak/Vuln only and leaves Fray broken; not recommended.
+
+    **RULED + IMPLEMENTED (designer, 2026-06-14): BOTH.** All enemy Weak /
+    Vulnerable applications bumped 1 → 2, AND enemy-applied Weak/Vulnerable/Fray
+    now defer to the start of the players' next turn via a `pendingStatus`
+    bucket (activated in `startTurn` after the clear/decrement; thread-overdraft
+    Fray stays immediate). Net: enemy Weak/Vuln last two effective turns, boss
+    Fray bites for one. Difficulty nudge accepted (the two zero-fall clears had
+    headroom). Covered by `pt3-status.test.ts`. §14.16.

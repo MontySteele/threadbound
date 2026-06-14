@@ -21,7 +21,7 @@ export const M2_ENEMIES: EnemyDef[] = [
     hp: [18, 22],
     script: [
       { kind: 'attack', amount: 3, times: 2 },
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack', amount: 3, times: 2 },
       { kind: 'block', amount: 5 },
     ],
@@ -36,7 +36,7 @@ export const M2_ENEMIES: EnemyDef[] = [
       { kind: 'attack', amount: 8 },
       { kind: 'block', amount: 7 },
       { kind: 'attack', amount: 8 },
-      { kind: 'debuff_vulnerable', amount: 1 },
+      { kind: 'debuff_vulnerable', amount: 2 },
     ],
     flavor: 'The tallow of old funerals, melted down and poured into the rough shape of someone it half remembers.',
   },
@@ -128,7 +128,7 @@ export const M2_ENEMIES: EnemyDef[] = [
     hp: [44, 52],
     script: [
       { kind: 'attack_momentum', base: 7, perMomentum: 2 },
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack_momentum', base: 7, perMomentum: 2 },
       { kind: 'block', amount: 11 },
       { kind: 'attack', amount: 12 },
@@ -174,9 +174,9 @@ export const M2_ENEMIES: EnemyDef[] = [
     chorus: true,
     hp: [38, 38],
     script: [
-      { kind: 'debuff_vulnerable', amount: 1 },
+      { kind: 'debuff_vulnerable', amount: 2 },
       { kind: 'attack_all', amount: 7 },
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack_all', amount: 7 },
     ],
     flavor: 'The descant that was meant to carry the dead upward, still climbing, with nothing left to carry.',
@@ -194,7 +194,7 @@ export const M2_ENEMIES: EnemyDef[] = [
     chainReader: { blockPerUnfiredLink: 4 },
     script: [
       { kind: 'attack', amount: 13 },
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack', amount: 9, times: 2 },
       { kind: 'buff_strength', amount: 2 },
       { kind: 'attack', amount: 13 },

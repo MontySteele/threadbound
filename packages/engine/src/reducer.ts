@@ -34,6 +34,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
       block: 0, energy: 3, energyMax: 3, kindled: 0, momentum: 0,
       fallen: false,
       statuses: { weak: 0, vulnerable: 0, frayed: 0 },
+      pendingStatus: { weak: 0, vulnerable: 0, frayed: 0 }, // OQ#46
       powers: [], relics: [],
       deck, draw: [], hand: [], discard: [], exhaust: [], combatCards: [],
       covetCharges: 1,
@@ -857,6 +858,7 @@ function endCombatCleanup(state: GameState): void {
     p.energy = p.energyMax;
     p.fallen = false;
     p.statuses = { weak: 0, vulnerable: 0, frayed: 0 };
+    p.pendingStatus = { weak: 0, vulnerable: 0, frayed: 0 }; // OQ#46
   }
 }
 

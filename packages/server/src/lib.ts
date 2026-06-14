@@ -236,6 +236,7 @@ export class GameServer {
       pl.pendingFray ??= 0;
       pl.covetCharges ??= 1;
       pl.ringPulses ??= 0;
+      pl.pendingStatus ??= { weak: 0, vulnerable: 0, frayed: 0 }; // OQ#46
     }
     return s;
   }
