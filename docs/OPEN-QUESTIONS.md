@@ -473,3 +473,62 @@ luck across a short run. See OQ#45 for an optional fairness tweak.
     toward whichever player has been bound LESS this run (anti-streak), the
     way some roguelikes de-randomize aggro. Cheap (a per-run bind counter);
     deferred as a design choice, not done unilaterally.
+
+## Playtest-3 telemetry read (2026-06-14, two human full-clears)
+
+Two pair runs, vess/bram, scales 1.5/1.35, both VICTORY (act-3 clear), ZERO
+falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
+`run-BVVSE` = s4-economy beta (gold telemetry + ascension:0).
+
+- **Hex ≫ everything (confirms OQ#43 / #28, now with human data).** Hex share
+  (Hex + HexScaling) = **64.9%** (CADFM) and **75.0%** (BVVSE) — far above the
+  25–45% provisional band and the proposed 35–55%. HexScaling (Worn Knife +
+  damagePerHex) is the single LARGEST bucket in both (898, 1371). Worn Knife
+  ~**28 dmg/play** both runs (uncapped scaling, OQ#28). Detonation bursts
+  **9.8 → 17.2 stacks/event** — the doubleHex (Saturate) engine. Strike sat
+  flat (~709 both runs) while Hex ballooned. This is the strongest evidence
+  yet that the Hex axis needs the OQ#28/#43 levers (cap doubleHex, cap or
+  curve Worn Knife scaling). Strike/Momentum is not competitive.
+- **Thread regen — data does NOT support a blanket +2→+1 nerf (OQ#39).** The
+  beta run spent **101 Thread (~2/turn, ≈ regen)** with only **9 wasted at
+  cap** and heavy Pulse use (**29 pulses**, 20/37 resonances pulse-bought) —
+  Thread was a live, fully-used resource. The main run banked more (38 wasted,
+  15 pulses). The difference is Pulse engagement, not regen being too fast; a
+  +1 nerf would have starved the beta run. Recommend: leave base regen at +2;
+  the §14.12 Pulse rework already made Thread matter. Re-check if a run shows
+  high waste AND low Pulse together.
+- **Gold/removals (OQ#8 + the 100 ruling).** BVVSE: removals ate **82% of all
+  spend** (350g of 428; only 78g on cards), residual 89 on the OLD 40-gold
+  start. Gold was tight and removals crowded out card-buying — supports the
+  40→100 bump (more card agency). Escalation worked: each player self-capped
+  at 2 removals (75 then 100). OQ#8 reads as a real constraint, not theater.
+- **Difficulty (caveat, not an action).** Two skilled-pair full-clears, zero
+  falls, at 1.5/1.35 — the anchor is likely soft for good players (the known
+  designer-calibration caveat, §14.8). Don't move it mid-playtest; bank more
+  runs incl. weaker pairs first.
+- **Co-op health.** Link-fire 54–56% overall (healthy); BVVSE damage split
+  even (vess 1370 / bram 1465), CADFM vess-dominant (72%). Pulse forcing is
+  doing real work (forced links 15 → 29 across the builds).
+
+46. **Enemy-applied Weak / Vulnerable / Fray wear off before they can act**
+    (designer, live — both PT3 status notes are ONE bug). Player statuses are
+    cleared at the START of the player's turn (`startTurn`: `frayed = 0`,
+    `weak--`, `vulnerable--`), but enemies APPLY them during the enemy phase
+    (end of `resolveTurn`). So a 1-stack lands at end of turn N and is wiped at
+    the start of turn N+1 — before the next enemy phase (Vuln/Fray) or the
+    player's next attack (Weak) can use it. Net: enemy Weak 1 / Vuln 1 do
+    nothing, and **boss Fray does nothing at any amount** (Fray is hard-RESET
+    to 0, not decremented — so the designer's "bump to 2/3" fixes Weak/Vuln but
+    NOT Fray). Asymmetry note: player→enemy debuffs work (applied during the
+    chain, used in the SAME turn's enemy phase) and thread-overdraft Fray works
+    (applied during the player phase, active that same enemy phase) — only
+    enemy→player-during-enemy-phase is broken.
+    Recommended fix (one mechanic, fixes all three): route enemy-applied
+    debuffs through a PENDING bucket that activates at the next `startTurn`
+    AFTER the clear/decrement — exactly the existing `pendingFray` pattern (The
+    Basin already does this for combat-start Fray). Then "1" means "lasts your
+    next turn," matching the icons. Note this makes enemies meaningfully
+    HARDER (their debuffs finally bite) — fine given the two zero-fall clears
+    above, but it's a difficulty nudge, so flagged for a yes/no rather than
+    done unilaterally mid-playtest. Content-bump alternative is viable for
+    Weak/Vuln only and leaves Fray broken; not recommended.
