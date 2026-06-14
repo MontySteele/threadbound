@@ -703,8 +703,10 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   call_and_answer: {
     upgrade: {
+      // PT3: link.text is the effect only (the UI prints the "Link (partner):"
+      // prefix); the card text keeps its full form (UI strips it on display).
       text: 'Draw 2. Link (Partner’s card): gain Kindled 2 and your partner gains Kindled 1.',
-      link: { condition: 'partner', text: 'Link (Partner’s card): gain Kindled 2 and your partner gains Kindled 1.', effects: [{ op: 'kindled', amount: 2 }, { op: 'partnerKindled', amount: 1 }] },
+      link: { condition: 'partner', text: 'Gain Kindled 2 and your partner gains Kindled 1.', effects: [{ op: 'kindled', amount: 2 }, { op: 'partnerKindled', amount: 1 }] },
     },
   },
 };

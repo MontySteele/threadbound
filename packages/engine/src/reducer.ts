@@ -48,7 +48,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     phase: 'lobby',
     ...(botSeat ? { botSeat } : {}),
     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
-    gold: 40,
+    gold: 100, // PT3 designer ruling: 40 too low for first-shop agency (was 40)
     removalsByPlayer: { p1: 0, p2: 0 },
     ascension: 0,
     ascensionVotes: { p1: 0, p2: 0 },

@@ -428,3 +428,48 @@ working as intended, not a missing-content bug.
     telemetry's Hex-share and per-tag damage before touching either; the
     candidate lever set (cap doubleHex, Momentum that doesn't fully halve,
     etc.) is content-pass / balance-session material, not a mid-playtest tune.
+
+## Playtest-3 reports, second batch (2026-06-14, s4-economy)
+
+Fixed/changed this session:
+- **Starting gold 40 → 100** (designer ruling: 40 too low for first-shop
+  agency). One line in `initialState`; reflected in the §14 changelog.
+- **Call and Answer printed its link clause twice** — its `link.text`
+  embedded "Link (Partner's card):", which the Card UI re-prefixes. Fixed to
+  the convention (link.text = effect only) on base and upgrade.
+- **Ascension picker ungated from partner presence** — see OQ#44.
+
+Answered: **Binding does NOT carry across combats** (#4). `startCombat`
+rebuilds every enemy's `boundTo` fresh from a per-combat coin flip
+(`(enemyIndex + rng) % 2`); nothing persists between fights. And multi-enemy
+fights SPLIT: a 2-enemy fight always binds one to each player, a 3-enemy
+fight 2–1. So "all enemies on one player every combat" can't be literal for
+the 2–3 enemy fights (those always hit both) — it's single-enemy ELITE/BOSS
+fights, which ARE a pure per-combat coin flip, landing the same way by seed
+luck across a short run. See OQ#45 for an optional fairness tweak.
+
+44. **Ascension pick is fiddly / "doesn't seem to do anything before you open
+    the room"** (designer, live). Two real causes: (a) the picker was gated
+    behind partner-present, so a co-op host couldn't touch ascension until the
+    partner connected — FIXED this session (ungated; the host's vote now
+    persists into the partner's arrival). (b) The remaining friction is the
+    **both-confirm** model (S4 chose "same pattern as concede"): in co-op a
+    single player's pick records their vote but doesn't take effect until the
+    partner picks the SAME level, and at START the server clamps the agreed
+    level down to the LOWER of the two players' unlocked maxes — so a host who
+    picks A2 next to a fresh-profile partner silently starts at A0. Design
+    call: keep both-confirm, or make ascension a host-only lobby setting
+    (clamped to the host's own unlock, with the partner simply along for the
+    ride)? The latter matches how most co-op roguelikes handle difficulty and
+    would remove the "nothing happened" feel. NEEDS a quick repro note: was
+    the report solo or co-op, and did the other seat have unlocks? (Solo
+    already auto-matches the bot's vote, so solo picks apply immediately.)
+
+45. **Single-enemy binding is a pure coin flip → can streak onto one player**
+    (from the #4 investigation). Multi-enemy fights self-balance, but elites
+    and bosses (one body) bind p1/p2 50/50 each combat with no memory, so a
+    run can randomly pile every elite/boss onto the same player. Not a bug —
+    but an optional fairness tweak for the session: bias single-enemy binding
+    toward whichever player has been bound LESS this run (anti-streak), the
+    way some roguelikes de-randomize aggro. Cheap (a per-run bind counter);
+    deferred as a design choice, not done unilaterally.

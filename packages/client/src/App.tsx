@@ -479,7 +479,10 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <TitleCord left={state.players.p1.character} right={solo ? 'witness' : partnerOn ? state.players.p2.character : null} />
           <p>{solo ? 'The Witness holds the other end. Reluctantly.' : partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
           <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
-          {(partnerOn || solo) && <AscensionPicker state={state} net={net} solo={solo} />}
+          {/* PT3: not gated on partnerOn — the host can set ascension before
+              the partner connects; the vote persists into their arrival.
+              (Self-hides when nothing is unlocked.) */}
+          <AscensionPicker state={state} net={net} solo={solo} />
           {(partnerOn || solo) && <p className="witness">THE WITNESS: “{greeting}”</p>}
           {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => { goFullscreen(); net.start(); }}>Begin the descent</button>}
         </div>
