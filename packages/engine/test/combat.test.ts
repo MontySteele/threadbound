@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameState, PlayerId } from '../src/types';
 import { initialState, reduce } from '../src/reducer';
-import { computePlannedBlock, computeResonanceSlots, longestSoloRun } from '../src/combat';
+import { computePlannedBlock, computePlannedDamage, computeResonanceSlots, longestSoloRun } from '../src/combat';
 import { pickableNodes } from '../src/map';
 
 /** Start a run and walk both players onto the first (combat) map node. */
@@ -468,5 +468,44 @@ describe('run flow (§8, M2-B4/B6)', () => {
     s = reduce(s, { type: 'UPGRADE_PICK', player: 'p1', cardInstanceId: target.instanceId });
     expect(s.players.p1.deck.find((c) => c.instanceId === target.instanceId)!.upgraded).toBe(true);
     expect(() => reduce(s, { type: 'UPGRADE_PICK', player: 'p1', cardInstanceId: target.instanceId })).toThrow();
+  });
+});
+
+describe('planned-damage preview (§11 static helper, PT3)', () => {
+  it('forecasts exactly the HP loss the chain deals — through Block (no hooks)', () => {
+    const s0 = combatState();
+    toughen(s0); // hp 500, no death/cap interference
+    const target = s0.combat!.enemies[0];
+    target.block = 3; // first hit is partly absorbed
+    const [a, b] = forceHand(s0, 'p1', ['hatpin', 'hatpin']); // plain "Deal 4", no link
+    let s = reduce(s0, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: a, slot: 0, targetId: target.id });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: b, slot: 1, targetId: target.id });
+    // 4 (−3 block = 1) + 4 (block gone = 4) = 5 HP loss
+    const forecast = computePlannedDamage(s);
+    expect(forecast[target.id]).toBe(5);
+    const before = s.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    s = ready(s);
+    const after = s.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    expect(before - after).toBe(forecast[target.id]); // preview == reality
+  });
+
+  it('models Hex scaling (Worn Knife: 2 + 1/Hex) against the real resolution', () => {
+    const s0 = combatState();
+    toughen(s0);
+    const target = s0.combat!.enemies[0];
+    target.hex = 5;
+    const [wk] = forceHand(s0, 'p1', ['worn_knife']); // damagePerHex base 2, perHex 1
+    const s = reduce(s0, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: wk, slot: 0, targetId: target.id });
+    const forecast = computePlannedDamage(s);
+    expect(forecast[target.id]).toBe(7); // 2 + 5
+    const before = s.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    const resolved = ready(s);
+    const after = resolved.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    expect(before - after).toBe(forecast[target.id]);
+  });
+
+  it('is empty with nothing staged', () => {
+    const s = combatState();
+    expect(computePlannedDamage(s)).toEqual({});
   });
 });

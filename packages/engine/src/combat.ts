@@ -206,6 +206,128 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
   return out;
 }
 
+/** Static planning preview (§11-sanctioned, like computePlannedBlock): the HP
+ *  loss each enemy would take from the chain as currently staged, keyed by
+ *  enemy id. Mirrors the resolution math (targeting, Momentum first-hit +
+ *  halving, Weak/Vulnerable, Block absorption, Hex apply/double, detonation,
+ *  Resonance scaling) over WORKING COPIES — the real state is never touched.
+ *  An ESTIMATE: relic/power hooks (e.g. Cracked Bell's on-detonate splash) and
+ *  the rare per-hit-Momentum rider are excluded, so it can read slightly low. */
+export function computePlannedDamage(state: GameState): Record<string, number> {
+  const dealt: Record<string, number> = {};
+  const combat = state.combat;
+  if (!combat) return dealt;
+  const chain = combat.chain;
+  const natural = computeLinksFired(state, chain);
+  const forced = computeForcedLinks(state, chain, natural);
+  const fired = natural.map((f, i) => f || forced[i]);
+  const resonance = computeResonanceSlots(chain, fired);
+
+  // working copies — forecasting must not mutate authoritative state
+  const enemies = combat.enemies.map((e) => ({
+    id: e.id, hp: e.hp, block: e.block, hex: e.hex, vulnerable: e.vulnerable, untargetable: e.untargetable,
+  }));
+  const mom: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
+  const weak: Record<PlayerId, number> = { p1: state.players.p1.statuses.weak, p2: state.players.p2.statuses.weak };
+  const living = () => enemies.filter((e) => e.hp > 0);
+  const targetable = () => living().filter((e) => !e.untargetable);
+  const retarget = (id?: string) => targetable().find((e) => e.id === id) ?? targetable()[0];
+  type E = (typeof enemies)[number];
+  const hit = (owner: PlayerId, tgt: E, raw: number): void => {
+    let amt = raw;
+    if (weak[owner] > 0) amt = Math.floor(amt * 0.75);
+    if (tgt.vulnerable > 0) amt = Math.floor(amt * 1.5);
+    if (amt < 0) amt = 0;
+    const blocked = Math.min(tgt.block, amt);
+    tgt.block -= blocked;
+    const hpLoss = Math.min(tgt.hp, amt - blocked);
+    tgt.hp -= hpLoss;
+    dealt[tgt.id] = (dealt[tgt.id] ?? 0) + hpLoss;
+  };
+  const burn = (tgt: E, stacks: number): void => {
+    if (stacks <= 0) return;
+    tgt.hex -= stacks;
+    const hpLoss = Math.min(tgt.hp, stacks * DETONATION_DAMAGE); // detonation ignores Block
+    tgt.hp -= hpLoss;
+    dealt[tgt.id] = (dealt[tgt.id] ?? 0) + hpLoss;
+  };
+
+  for (let i = 0; i < chain.length; i++) {
+    const slot = chain[i];
+    const owner = slot.owner;
+    const def = effectiveDef(mustFind(state, slot));
+    const res = resonance.has(i);
+    const sc = (amt: number, primary?: boolean): number => (primary && res ? Math.ceil(amt * 1.5) : amt);
+    const effects: EffectOp[] =
+      fired[i] && def.link ? (def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]) : def.base;
+    let momSpent = false;
+    let detonated = 0;
+    for (const eff of effects) {
+      switch (eff.op) {
+        case 'damage': {
+          const first = retarget(slot.targetId);
+          if (!first) break;
+          for (let t = 0; t < (eff.times ?? 1); t++) {
+            const tgt = retarget(first.id);
+            if (!tgt) break;
+            let amt = sc(eff.amount, eff.primary);
+            if (def.tag === 'Strike' && t === 0 && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
+            hit(owner, tgt, amt);
+          }
+          break;
+        }
+        case 'damageAll': {
+          let used = false;
+          for (const tgt of targetable()) {
+            let amt = sc(eff.amount, eff.primary);
+            if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; used = true; }
+            hit(owner, tgt, amt);
+          }
+          if (used) momSpent = true;
+          break;
+        }
+        case 'damagePerHex': {
+          const tgt = retarget(slot.targetId);
+          if (!tgt) break;
+          let amt = sc(eff.base + eff.perHex * tgt.hex, eff.primary);
+          if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
+          hit(owner, tgt, amt);
+          break;
+        }
+        case 'momentumStrikeBonus': {
+          const tgt = retarget(slot.targetId);
+          if (tgt) hit(owner, tgt, mom[owner] * eff.mult);
+          momSpent = true;
+          break;
+        }
+        case 'detonate': {
+          const tgt = retarget(slot.targetId);
+          if (tgt) { const s = Math.min(tgt.hex, eff.max ?? tgt.hex); detonated += s; burn(tgt, s); }
+          break;
+        }
+        case 'detonateAllEnemies':
+          for (const tgt of living()) { detonated += tgt.hex; burn(tgt, tgt.hex); }
+          break;
+        case 'damagePerDetonated': {
+          const tgt = retarget(slot.targetId);
+          if (tgt && detonated > 0) hit(owner, tgt, detonated * eff.per);
+          break;
+        }
+        case 'hex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += sc(eff.amount, eff.primary); break; }
+        case 'hexAll': for (const tgt of living()) tgt.hex += sc(eff.amount, eff.primary); break;
+        case 'doubleHex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex *= 2; break; }
+        case 'vulnerable': { const tgt = retarget(slot.targetId); if (tgt) tgt.vulnerable += eff.amount; break; }
+        case 'momentum': mom[owner] += sc(eff.amount, eff.primary); break;
+        default: break; // non-damaging ops don't affect the enemy-damage forecast
+      }
+    }
+    if (def.tag === 'Strike' && momSpent && !hasPassive(state.players[owner], 'momentumNoHalve')) {
+      mom[owner] = Math.floor(mom[owner] / 2);
+    }
+  }
+  return dealt;
+}
+
 export function longestSoloRun(chain: ChainSlot[]): number {
   let best = 0;
   let cur = 0;

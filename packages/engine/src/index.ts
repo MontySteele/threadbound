@@ -6,7 +6,7 @@ export { ascensionMods, scaleIntent, ASCENSION_MAX, ASCENSION_RUNGS } from './as
 export type { AscensionMods } from './ascension';
 export {
   effectiveDef, otherPlayer, findInstance, hasPassive, targetableEnemies,
-  computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, longestSoloRun, DETONATION_DAMAGE,
+  computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 export {

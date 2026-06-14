@@ -119,8 +119,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .enemy.tel-debuff { box-shadow: inset 0 -3px 0 var(--hex); }
 .enemy-sigil { display: block; margin: 0 auto 2px; }
 .ename { font-weight: bold; }
-.hpbar { height: 5px; background: var(--ink-2); border-radius: 3px; margin: 3px 0; overflow: hidden; }
+.hpbar { position: relative; height: 5px; background: var(--ink-2); border-radius: 3px; margin: 3px 0; overflow: hidden; }
 .hpfill { height: 100%; background: linear-gradient(90deg, var(--strike), #e8a07a); transition: width 0.4s; }
+/* PT3: predicted HP loss from the staged chain (sits over the doomed chunk) */
+.hppreview { position: absolute; top: 0; height: 100%; background: repeating-linear-gradient(45deg, #ff5a5a, #ff5a5a 3px, #b83030 3px, #b83030 6px); opacity: 0.85; }
+.dmg-forecast { color: #ff8a8a; font-weight: 600; }
+.dmg-lethal { color: #ff5a5a; }
 .chipblock { color: var(--guard); }
 .intent { color: #e0a060; margin-top: 4px; font-weight: 600; }
 .bound { font-size: 0.78em; margin-top: 4px; }

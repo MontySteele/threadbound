@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
@@ -39,6 +39,20 @@ function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | u
 function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   const i = inst(state, owner, id);
   return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
+}
+
+/** Display name for an enemy instance. When the same enemy NAME appears more
+ *  than once in the fight, append its 1-based ordinal ("Cinder Husk 2") so a
+ *  card's target is unambiguous. Ordinal is by spawn order (stable as enemies
+ *  die — the survivor keeps its number). */
+function enemyName(combat: ClientState['combat'], enemyId: string): string {
+  if (!combat) return enemyId;
+  const enemy = combat.enemies.find((e) => e.id === enemyId);
+  if (!enemy) return enemyId;
+  const name = ENEMIES[enemy.defId]?.name ?? enemy.defId;
+  const sameName = combat.enemies.filter((e) => (ENEMIES[e.defId]?.name ?? e.defId) === name);
+  if (sameName.length < 2) return name;
+  return `${name} ${sameName.findIndex((e) => e.id === enemyId) + 1}`;
 }
 
 // The game wants the whole screen. Browsers only grant fullscreen from a
@@ -652,6 +666,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const [pendingSever, setPendingSever] = useState(false);
   const [pendingPulse, setPendingPulse] = useState(false);
   const [reclaimOpen, setReclaimOpen] = useState(false);
+  // PT3: per-enemy damage forecast — toggle-able, ON by default (localStorage
+  // so it survives reloads; easy to flip off if it ever needs reverting)
+  const [showDmg, setShowDmg] = useState(() => localStorage.getItem('tb_dmgPreview') !== '0');
+  const toggleDmg = () => setShowDmg((v) => { localStorage.setItem('tb_dmgPreview', v ? '0' : '1'); return !v; });
 
   // pad ergonomics: a pending target snaps focus to the enemies (or the
   // chain, for Pulse), and back to where the intent came from afterward
@@ -674,6 +692,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const resonance = useMemo(() => computeResonanceSlots(combat.chain, firedAll), [combat.chain, firedAll]);
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
+  }, [state]);
+  // PT3: per-enemy HP-loss forecast from the staged chain (§11 static preview)
+  const plannedDamage = useMemo(() => {
+    try { return computePlannedDamage(state); } catch { return {} as Record<string, number>; }
   }, [state]);
   // PT2/PT3: make Momentum legible — per-slot preview of the first-hit bonus
   // each staged Strike gets, halving after each spend (momentumNoHalve
@@ -763,6 +785,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
             !state.players[e.boundTo === 'p1' ? 'p2' : 'p1'].fallen
               ? (e.boundTo === 'p1' ? 'p2' : 'p1') as PlayerId
               : null;
+          // PT3: predicted HP loss from the staged chain (estimate)
+          const dmg = showDmg && e.hp > 0 ? Math.min(e.hp, plannedDamage[e.id] ?? 0) : 0;
+          const curPct = (100 * e.hp) / e.maxHp;
+          const postPct = (100 * (e.hp - dmg)) / e.maxHp;
           return (
             <div
               key={e.id}
@@ -774,9 +800,18 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
               <Sigil id={e.defId} size={sigilSize} aura={def.elite || def.boss} className="enemy-sigil" />
-              <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
-              <div className="hpbar"><div className="hpfill" style={{ width: `${(100 * e.hp) / e.maxHp}%` }} /></div>
-              <div>{e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}</div>
+              <div className="ename">{enemyName(combat, e.id)}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
+              <div className="hpbar">
+                <div className="hpfill" style={{ width: `${curPct}%` }} />
+                {/* PT3: the chunk the staged chain will remove */}
+                {dmg > 0 && <div className="hppreview" style={{ left: `${postPct}%`, width: `${curPct - postPct}%` }} />}
+              </div>
+              <div>
+                {e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}
+                {dmg > 0 && (e.hp - dmg <= 0
+                  ? <b className="dmg-lethal" data-inspect="kw:block-planned"> ☠ lethal</b>
+                  : <span className="dmg-forecast" data-inspect="kw:block-planned"> −{dmg} → {e.hp - dmg}</span>)}
+              </div>
               {e.hex > 0 && (
                 <div className="hexmotes" data-inspect="kw:hex">
                   {Array.from({ length: Math.min(e.hex, 9) }, (_, m) => (
@@ -897,6 +932,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </button>
         <span className="muted">turn {combat.turn}</span>
         {state.players[partner].ready && !me.ready && <span className="nudge">your partner is ready</span>}
+        <button className="chip" data-gp="META" title="forecast each enemy's HP loss when the turn resolves (estimate)"
+          onClick={toggleDmg}>
+          dmg preview: {showDmg ? 'on' : 'off'}
+        </button>
         <span className="muted">
           draw {state.counts[you].draw} · discard {me.discard.length}
         </span>
@@ -1028,7 +1067,7 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                 gpZone={mine && !pendingPulse ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
                 onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
-              {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
+              {target && <div className="target">→ {enemyName(combat, target.id)}</div>}
               {def.link && (
                 <div
                   className={`linkstate ${lit ? 'on' : 'off'} ${canPulse ? 'pulse-target' : ''}`}
@@ -1422,10 +1461,7 @@ function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Elem
 
 function renderEvent(e: GameEvent, state: ClientState): string {
   const pname = (p: PlayerId) => state.players[p].character;
-  const ename = (id: string) => {
-    const en = state.combat?.enemies.find((x) => x.id === id);
-    return en ? ENEMIES[en.defId].name : id;
-  };
+  const ename = (id: string) => enemyName(state.combat, id);
   switch (e.e) {
     case 'witness': return `THE WITNESS: “${e.line}”`;
     case 'card': return `[${e.slot + 1}] ${pname(e.player)} plays ${e.card}${e.linkFired ? ' ⚡' : ''}${e.resonance ? ' ✦' : ''}`;
