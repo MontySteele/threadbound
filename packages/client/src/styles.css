@@ -166,6 +166,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .chaincard { border: 2px solid; border-radius: var(--radius); padding: 4px; position: relative; flex-shrink: 0; }
 .chaincard.fires { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); }
 .chaincard.resonates { box-shadow: 0 0 18px color-mix(in srgb, var(--ignite) 70%, transparent); }
+/* PT3: mouse drag-to-reorder */
+.chaincard.draggable { cursor: grab; }
+.chaincard.draggable:active { cursor: grabbing; }
+.chaincard.dragging { opacity: 0.4; }
+.chaincard.drop-left { box-shadow: inset 4px 0 0 0 var(--focus); }
+.chaincard.drop-right { box-shadow: inset -4px 0 0 0 var(--focus); }
 .slotnum { position: absolute; top: -2px; right: 2px; color: var(--text-faint); font-size: 0.7em; }
 .arc { flex-shrink: 0; align-self: flex-start; margin-top: 34px; }
 .arc svg path { stroke: var(--text-faint); stroke-width: 1.5; stroke-dasharray: 4 3; transition: all 0.25s; }

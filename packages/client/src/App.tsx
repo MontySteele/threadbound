@@ -1006,6 +1006,29 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
   const you = state.you;
   const combat = state.combat!;
   const chain = combat.chain;
+  // PT3: mouse drag-to-reorder your staged cards (parallels the ◀▶ buttons /
+  // pad L2-R2). dropAt is the insertion GAP (0..len) in the current order.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
+  const reorderable = (i: number): boolean => chain[i].owner === you && !pendingPulse;
+  const onCardDragOver = (e: React.DragEvent, i: number): void => {
+    if (!dragId) return;
+    e.preventDefault(); // allow the drop
+    const r = e.currentTarget.getBoundingClientRect();
+    setDropAt(e.clientX > r.left + r.width / 2 ? i + 1 : i);
+  };
+  const onCardDrop = (e: React.DragEvent): void => {
+    e.preventDefault();
+    const si = dragId ? chain.findIndex((s) => s.cardInstanceId === dragId) : -1;
+    if (si >= 0 && dropAt !== null) {
+      // reducer removes then splices at `slot`, so the final index is `slot`;
+      // a gap past the source shifts left by one once the source is pulled out
+      const f = Math.max(0, Math.min(chain.length - 1, dropAt > si ? dropAt - 1 : dropAt));
+      if (f !== si) net.act({ type: 'REORDER', cardInstanceId: dragId!, slot: f } as any);
+    }
+    setDragId(null);
+    setDropAt(null);
+  };
   // §14.12: which staged cards can still be Pulsed (dead link, not yet pulsed)
   const pulseable = (i: number): boolean => {
     const slot = chain[i];
@@ -1057,8 +1080,14 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                 </svg>
               </div>
             )}
-            <div className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
-              style={{ borderColor: PCOLOR[slot.owner] }}>
+            <div
+              className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''} ${reorderable(i) ? 'draggable' : ''} ${dragId === slot.cardInstanceId ? 'dragging' : ''} ${dropAt === i ? 'drop-left' : ''} ${dropAt === chain.length && i === chain.length - 1 ? 'drop-right' : ''}`}
+              style={{ borderColor: PCOLOR[slot.owner] }}
+              draggable={reorderable(i)}
+              onDragStart={(e) => { setDragId(slot.cardInstanceId); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', slot.cardInstanceId); }}
+              onDragOver={(e) => onCardDragOver(e, i)}
+              onDrop={onCardDrop}
+              onDragEnd={() => { setDragId(null); setDropAt(null); }}>
               <div className="slotnum">{i + 1}</div>
               <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
                 upgraded={!!inst(state, slot.owner, slot.cardInstanceId)?.upgraded}
