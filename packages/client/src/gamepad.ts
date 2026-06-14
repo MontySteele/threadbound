@@ -112,7 +112,14 @@ export class Controller {
       if (scroller) scroller.scrollBy(rx * 24, 0);
       else window.scrollBy(rx * 24, 0);
     }
-    if (Math.abs(ry) > 0.3) window.scrollBy(0, ry * 24);
+    // PT3 fix: vertical pan must likewise drive the focused element's own
+    // overflow-y container first — the Deck overlay (max-height; overflow-y)
+    // and the Reclaim list otherwise can't be scrolled by pad at all.
+    if (Math.abs(ry) > 0.3) {
+      const scroller = this.scrollerY();
+      if (scroller) scroller.scrollBy(0, ry * 24);
+      else window.scrollBy(0, ry * 24);
+    }
 
     // directional: dpad 12-15 + left stick, with hold-repeat
     const dirDown = {
@@ -172,6 +179,22 @@ export class Controller {
     let el: HTMLElement | null = this.focused;
     while (el) {
       if (el.scrollWidth > el.clientWidth + 4 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  /** Nearest vertically-scrollable ancestor of the focus (the Deck overlay
+   *  panel, the Reclaim list) — the right stick pans THAT before the window.
+   *  Falls back to the topmost open overlay when nothing is focused, so a
+   *  freshly-opened Deck overlay scrolls before the user moves focus. */
+  private scrollerY(): HTMLElement | null {
+    let el: HTMLElement | null =
+      this.focused ?? document.querySelector<HTMLElement>('.deck-panel, .feedback-overlay');
+    while (el) {
+      if (el.scrollHeight > el.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) {
         return el;
       }
       el = el.parentElement;

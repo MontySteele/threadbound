@@ -672,24 +672,36 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
-  // PT2: make Momentum legible — per-slot preview of the first-hit bonus
+  // PT2/PT3: make Momentum legible — per-slot preview of the first-hit bonus
   // each staged Strike gets, halving after each spend (momentumNoHalve
   // honored; keep/per-hit riders not modeled). An estimate, like planned
   // Block; `next` is what a Strike staged NOW would receive.
+  // PT3 fix: walk effects IN ORDER so Momentum GAINED earlier in the chain
+  // (a card's `momentum` op) feeds the Strikes after it — the preview used to
+  // ignore mid-turn gains entirely and read stale.
   const momentumPreview = useMemo(() => {
     const m: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
     const perSlot = combat.chain.map((slot, i) => {
       const def = defFor(state, slot.owner, slot.cardInstanceId);
-      if (def.tag !== 'Strike' || m[slot.owner] <= 0) return 0;
+      const owner = slot.owner;
       const effects = firedAll[i] && def.link
         ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
         : def.base;
-      const hits = effects.some((e) =>
-        e.op === 'damage' || e.op === 'damageAll' || e.op === 'damagePerHex' || e.op === 'momentumStrikeBonus');
-      if (!hits) return 0;
-      const bonus = m[slot.owner];
-      if (!hasPassive(state.players[slot.owner], 'momentumNoHalve')) m[slot.owner] = Math.floor(bonus / 2);
-      return bonus;
+      let shown = 0;
+      let spent = false;
+      for (const e of effects) {
+        if (e.op === 'momentum') {
+          m[owner] += e.amount; // gained mid-turn — feeds the Strikes after it
+        } else if (
+          def.tag === 'Strike' && !spent && m[owner] > 0 &&
+          (e.op === 'damage' || e.op === 'damageAll' || e.op === 'damagePerHex' || e.op === 'momentumStrikeBonus')
+        ) {
+          shown = m[owner];
+          spent = true;
+          if (!hasPassive(state.players[owner], 'momentumNoHalve')) m[owner] = Math.floor(m[owner] / 2);
+        }
+      }
+      return shown;
     });
     return { perSlot, next: m };
   }, [state, combat.chain, firedAll]);
@@ -777,7 +789,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.stun > 0 && <span data-inspect="kw:stun">{GLYPH.stun} Stun {e.stun}</span>}
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
-              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
+              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
               <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
                 {e.untargetable ? 'unbound — untargetable'
                   : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`
@@ -829,22 +841,26 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <div className="panel">
           <b>Partner’s discard</b> <span className="muted">(Reclaims arrive mutated — inspect to preview)</span>{' '}
           {state.players[partner].discard.length === 0 && <i>empty</i>}
-          {state.players[partner].discard.map((id) => {
-            // PT2: Reclaim copies — the original stays listed, so a card
-            // already being reclaimed this turn must read as taken
-            const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
-            return (
-              <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
-                data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
-                onClick={() => {
-                  if (claimed) return;
-                  net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
-                  setReclaimOpen(false);
-                }}>
-                {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
-              </button>
-            );
-          })}
+          {/* PT3: bounded scroll list — more than one row was unreachable on
+              the pad (focus-follow + right-stick now both scroll within it) */}
+          <div className="reclaim-list">
+            {state.players[partner].discard.map((id) => {
+              // PT2: Reclaim copies — the original stays listed, so a card
+              // already being reclaimed this turn must read as taken
+              const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
+              return (
+                <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
+                  data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+                  onClick={() => {
+                    if (claimed) return;
+                    net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
+                    setReclaimOpen(false);
+                  }}>
+                  {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -974,6 +990,13 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
         const lit = fired[i] || forced[i];
         const canPulse = pendingPulse && pulseable(i);
         const target = slot.targetId ? combat.enemies.find((e) => e.id === slot.targetId) : null;
+        // PT3: a resonating card with no `primary` effect scales nothing —
+        // say so, instead of a bare "RESONANCE" that reads as a buff (OQ#31).
+        // Resolved effects mirror the engine (a fired link may replace base).
+        const resolvedEffects = lit && def.link
+          ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+          : def.base;
+        const scales = resolvedEffects.some((e) => (e as { primary?: boolean }).primary);
         return (
           <React.Fragment key={slot.cardInstanceId}>
             {i > 0 && (
@@ -1013,7 +1036,11 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                   {forced[i] ? '⊕ forced' : lit ? '⚡ fires' : `link: ${def.link.condition}`}
                 </div>
               )}
-              {resonance.has(i) && <div className="resonance" data-inspect="kw:resonance">✦ RESONANCE</div>}
+              {resonance.has(i) && (
+                <div className="resonance" data-inspect="kw:resonance">
+                  ✦ RESONANCE {scales ? '+50%' : '· streak only'}
+                </div>
+              )}
               {mine && !pendingPulse && (
                 <div className="reorder">
                   <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
@@ -1065,14 +1092,19 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
   );
 }
 
-function intentText(intent: any, strength: number): string {
-  const s = (n: number) => n + strength;
+function intentText(intent: any, strength: number, weak = 0): string {
+  // PT3: mirror the engine's hitPlayer math so the telegraphed number is the
+  // truth — Weak reduces the attacker's output 25% (after Strength), floored.
+  // (Target-side Vulnerable/Frayed aren't applied here: they belong to whoever
+  // it lands on, not the attacker's telegraph.)
+  const s = (n: number) => (weak > 0 ? Math.floor((n + strength) * 0.75) : n + strength);
+  const w = weak > 0 ? ' (Weak)' : '';
   switch (intent.kind) {
-    case 'attack': return `⚔ ${s(intent.amount)}${intent.times ? `×${intent.times}` : ''}`;
-    case 'attack_all': return `⚔ ${s(intent.amount)} BOTH`;
-    case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum`;
-    case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread`;
-    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS`;
+    case 'attack': return `⚔ ${s(intent.amount)}${intent.times ? `×${intent.times}` : ''}${w}`;
+    case 'attack_all': return `⚔ ${s(intent.amount)} BOTH${w}`;
+    case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum${w}`;
+    case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread${w}`;
+    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS${w}`;
     case 'block': return `🛡 ${intent.amount}`;
     case 'block_all': return `🛡 ${intent.amount} ALL`;
     case 'buff_strength': return `${GLYPH.strength} Str ${intent.amount}`;

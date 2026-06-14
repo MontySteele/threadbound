@@ -342,3 +342,89 @@ had no rarity concept before this).
     (a different card entirely) share a display name — a table-talk hazard
     ("I reclaimed Stolen Breath" is ambiguous). Rename one in the
     post-playtest content pass. Logged, not changed mid-playtest.
+
+## Playtest-3 live reports (2026-06-14, s4-economy)
+
+Bugs fixed this session (client/UX only, no gameplay change):
+- **Controller couldn't scroll the Deck overlay or the Reclaim list** — the
+  right stick only ever scrolled the window. It now drives the focused
+  element's nearest `overflow-y` container first (mirrors the PT2 horizontal
+  `scrollerX` fix); the Reclaim list got a bounded scroll container so >1 row
+  is pad-reachable.
+- **Momentum preview ignored mid-turn gains** — the PT2 `➤+N` badge started
+  from carried Momentum only and never added Momentum a chain card *grants*,
+  so a Strike staged after a "gain Momentum" card read stale. The preview now
+  walks effects in order, so gains feed the Strikes after them (and the
+  hand-Strike `next` badge reflects them too).
+- **Weak not reflected in the enemy intent number** — `intentText` now mirrors
+  the engine's `floor((amount + Strength) × 0.75)` and tags the telegraph
+  "(Weak)". (Target-side Vulnerable/Frayed deliberately not shown on the
+  attacker's telegraph — they belong to whoever it lands on.)
+- **Resonance read as a buff on cards that scale nothing** — a resonating
+  chain card now shows `✦ RESONANCE +50%` only when it has a `primary` effect
+  to scale, else `✦ RESONANCE · streak only`. (The deeper design question is
+  OQ#31, below.)
+
+Question answered directly: **link(Rite) cards do exist** — 6 in the pool
+(e.g. a Bram Hex card, two neutral Thread cards, two Vess cards). Rite is the
+deliberately-sparse tag (§4 / OQ#13), so a given run may show none; that's
+working as intended, not a missing-content bug.
+
+37. **Enemy HP snaps to final before the action narration plays** (report:
+    "don't update the enemy hp until after the list of actions finishes
+    firing, or the list is skipped"). This is the OQ#18 tradeoff surfacing in
+    play: the resolution theater narrates over the FINAL state because §11
+    forbids the client from computing intermediate states, so HP bars read
+    end-of-turn while the beats play (and a skip suppresses the remaining
+    floating numbers). Functionally everything fires — but it reads as if
+    actions were skipped. Fix direction for the session: have the theater
+    animate each enemy's HP bar DOWN per `damage`/`detonate` beat from a
+    client-held display value (presentation-only, no engine replay — stays
+    §11-clean). Scoped as a feature, not a one-liner, hence logged.
+
+38. **Discard pile is often empty, so Reclaim has nothing to grab** (report).
+    Fixed draw-of-5 (§14.7) keeps hands full and discards thin early in a
+    turn, so the cross-player Reclaim engine is hard to even attempt. Design
+    levers to weigh: Reclaim could also read the partner's EXHAUST or hand;
+    or the friction is acceptable and Reclaim is a late-turn / long-combat
+    tool by design. Couples to OQ#26 (Thread economy) and #5/#39 below.
+
+39. **Thread recovers too fast — nerf regen to +1/turn?** (designer, live).
+    Base regen is +2/turn (§5); with the Loom nerf (OQ#29) already landed,
+    this is the next Thread-economy lever. Don't tune off bot sims — the
+    Pulse rework (§14.12) made Thread matter and the right number wants human
+    data. THE telemetry to read first: thread spent/combat, `regenWastedAtCap`,
+    spend-mix. Explicitly a design-session call (OQ#26 family).
+
+40. **Let players Sever an ACTIVE chain link, not just Pulse dead ones** —
+    "control where Resonance lands" (designer, live). Today Pulse forces a
+    dead link to fire (§14.12); there's no inverse (suppress a firing link to
+    re-shape a streak). A real new verb — feature for the design session, not
+    a fix. Weigh against complexity: it inverts Pulse and adds a second
+    chain-editing Thread action.
+
+41. **"All relics seem to only apply to Vess" / Ember Coal only gave Vess
+    Momentum** (designer, live). Investigated: working as designed — relics
+    are PER-HOLDER, and Ember Coal's `combatStart` Momentum (a self-resource)
+    goes to whoever owns it; `runHooks` runs per-player on the holder's own
+    relics, and the RelicBar colors each relic by owner. The co-op framing of
+    the game makes players expect SHARED relic effects, which is the real
+    gap. Design-session calls: (a) relic text should name whose resource it
+    grants; (b) decide which relics should be co-op (use `partnerX` ops or
+    affect both) vs personal. If a relic literally failed to apply to a
+    player who OWNED it, that IS a bug — needs a seed + the relic id.
+
+42. **"Pass on Coveting" and "Onward" are redundant on the reward screen**
+    (designer, live). True: ADVANCE auto-passes an undecided Covet in the
+    reducer, so Onward already declines. The only thing the separate button
+    buys is decline-but-stay-on-screen. Quick UI call for the session: drop
+    the button (rely on Onward's auto-pass) or keep it as an explicit decline.
+    Trivial either way once decided — left as a judgment call, not a bug.
+
+43. **Hex >> Momentum, "especially since you can repeatedly double it"**
+    (designer, live). Echoes OQ#28 (the vess-mirror hex engine: Saturate's
+    `doubleHex`, uncapped Worn Knife). Momentum halves on use; Hex banks and
+    can be doubled — structurally asymmetric ceilings. Read the Playtest
+    telemetry's Hex-share and per-tag damage before touching either; the
+    candidate lever set (cap doubleHex, Momentum that doesn't fully halve,
+    etc.) is content-pass / balance-session material, not a mid-playtest tune.

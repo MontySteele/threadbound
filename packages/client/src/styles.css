@@ -237,6 +237,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   transition: transform 0.12s, box-shadow 0.12s;
   position: relative;
 }
+/* PT3: reclaim list — bounded so >1 row scrolls (pad-reachable) */
+.reclaim-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 168px; overflow-y: auto; margin-top: 6px; }
 /* PT2: live-effect chip (momentum preview) pinned to the card's corner */
 .card-badge {
   position: absolute; top: -7px; right: -5px; z-index: 3;
