@@ -235,6 +235,13 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   width: var(--card-w); background: linear-gradient(170deg, var(--panel-2), var(--panel)); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em;
   transition: transform 0.12s, box-shadow 0.12s;
+  position: relative;
+}
+/* PT2: live-effect chip (momentum preview) pinned to the card's corner */
+.card-badge {
+  position: absolute; top: -7px; right: -5px; z-index: 3;
+  background: var(--ink-2, #222); border: 1px solid var(--line); border-radius: 9px;
+  padding: 0 6px; font-size: 0.78em; color: var(--focus, #ffd700); pointer-events: none;
 }
 .card:hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 4px 12px #0008; }
 .card.small { width: var(--card-w-sm); font-size: 0.75em; }

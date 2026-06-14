@@ -290,6 +290,12 @@ function apply(state: GameState, action: Action): void {
       if (action.kind === 'reclaim') {
         const partner = state.players[otherPlayer(action.player)];
         assert(action.targetId && partner.discard.includes(action.targetId), "reclaim needs a card in your partner's discard");
+        // PT2: Reclaim copies (the original stays in the discard), so without
+        // this guard the same card could be declared twice in one turn
+        assert(
+          !combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === action.targetId),
+          'already being reclaimed this turn',
+        );
       }
       combat.threadActions.push({ player: action.player, kind: action.kind, targetId: action.targetId });
       return;
@@ -595,9 +601,11 @@ function randomUnownedRelic(state: GameState): string | null {
   const weddable = ALL_RELICS.filter((r) => !owned.has(r.id));
   const usable = pool.length > 0 ? pool.concat(weddable.filter((r) => r.passives?.includes('wedding_knife'))) : weddable;
   if (usable.length === 0) return null;
-  const r = rngInt(state.rng, usable.length);
+  // PT2/OQ#29: rare relics carry 1/3 weight (non-rares entered thrice)
+  const weighted = usable.flatMap((rel) => (rel.rare ? [rel] : [rel, rel, rel]));
+  const r = rngInt(state.rng, weighted.length);
   state.rng = r.state;
-  return usable[r.value].id;
+  return weighted[r.value].id;
 }
 
 function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: string; [k: string]: unknown }): void {

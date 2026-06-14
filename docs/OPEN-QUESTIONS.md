@@ -301,3 +301,44 @@ comes first (§14.8 discipline), and they're content-pass material.
     OQ#24 from a fresh pair; no new decision needed. The ruling stands
     (one-step widening between named tags, `any` reserved for rares) and
     remains scheduled for the post-playtest content pass.
+
+## Playtest-2 live reports, second batch (2026-06-12)
+
+UI/bug items fixed on `s4-economy` same day: deck size shown on the header
+Deck chip; the same card can no longer be declared for Reclaim twice in one
+turn (engine guard + the panel greys out claimed cards); Momentum now
+previews on cards (corner ➤+N badge on staged Strikes, halving walked down
+the chain like the planned-Block estimate, and on hand Strikes for what a
+stage-now would get); Cracked Bell retexted to its actual rule ("once per
+burst, any size" — it was never per-stack); Stolen Breath's upgrade was a
+byte-identical copy of its base link (a no-op "+") — now Link (any): Kindled
+2, base untouched pending OQ#30.
+
+**OQ#29 RULED (designer, live session):** Loom of Two Hands → "The first
+time one of your links fires each turn, gain 1 Thread", and rare. "For now"
+— revisit with Playtest-2 thread telemetry. Implementation: `oncePerTurn`
+hook flag (generic, per holder+event, recharges at turn start) and a
+`rare: true` relic flag at 1/3 drop weight in `randomUnownedRelic` (relics
+had no rarity concept before this).
+
+34. **Linked Shields seems underpowered** (designer, live): 2-cost uncommon,
+    7 Block + Link (Guard): partner gains 4. It is the pool's single allowed
+    self-similar uncommon (§2.3), so its link fires only off another Guard —
+    the cost of being the rule's one exception may be priced into a body
+    that's just small. Candidate buffs for the content pass: 8 Block base,
+    or partner Block 4 → 6 (the co-op half is the identity). Logged, not
+    tuned — same freeze as OQ#30.
+
+35. **"Echo cards can't be removed" (needs repro)**: engine paths verified
+    in-test this session — an Echo stages, UNSTAGES (energy refunded),
+    restages, and exhausts on play; echoes never reach decks, so the shop
+    removal service never lists them (by design — they die at combat end).
+    If the report meant something else (a declared Reclaim that couldn't be
+    cancelled? an Echo stuck in the overlap fan of a crowded hand?), a seed
+    + turn would pin it.
+
+36. **Two cards both named "Stolen Breath"** (found while triaging OQ#35):
+    the neutral common (`stolen_breath`) AND Gathering Slack's mutation form
+    (a different card entirely) share a display name — a table-talk hazard
+    ("I reclaimed Stolen Breath" is ambiguous). Rename one in the
+    post-playtest content pass. Logged, not changed mid-playtest.

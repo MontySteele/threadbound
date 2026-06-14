@@ -67,13 +67,20 @@ export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
 
 export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): void {
   const p = state.players[holder];
-  const sources: Array<{ name: string; hooks?: { on: HookEvent; effects: HookOp[] }[] }> = [
+  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean }[] }> = [
     ...p.relics.map((r) => RELICS_BY_ID[r]).filter(Boolean),
     ...(p.fallen ? [] : p.powers.map((pw) => POWERS[pw]).filter(Boolean)),
   ];
   for (const src of sources) {
     for (const hook of src.hooks ?? []) {
       if (hook.on !== event) continue;
+      // PT2/OQ#29 (Loom ruling): oncePerTurn hooks spend their charge here
+      if (hook.oncePerTurn && state.combat) {
+        const key = `${holder}:${src.id}:${hook.on}`;
+        const fired = (state.combat.hookOnceFired ??= []);
+        if (fired.includes(key)) continue;
+        fired.push(key);
+      }
       for (const eff of hook.effects) {
         // Playtest 2: relic-sourced Thread gains were invisible — the pool
         // moved mid-resolution and the math "didn't match". Name the source.
@@ -960,6 +967,7 @@ export function startTurn(state: GameState): void {
   combat.turn++;
   state.telemetry.turns++;
   combat.steadyShield = 0;
+  combat.hookOnceFired = []; // PT2/OQ#29: oncePerTurn hooks recharge
 
   // Unraveled sever countdown → reignition at full 10 (§6)
   if (combat.severedTurns > 0) {
@@ -1057,6 +1065,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     severedTurns: 0,
     severTriggered: false,
     witnessLines: 0,
+    hookOnceFired: [],
   };
   state.thread = 6; // §5
   state.phase = 'combat';

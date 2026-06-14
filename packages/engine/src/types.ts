@@ -90,6 +90,9 @@ export type HookOp =
 export interface Hook {
   on: HookEvent;
   effects: HookOp[];
+  /** PT2/OQ#29: fires at most once per turn (tracked per holder+event in
+   *  CombatState.hookOnceFired, reset at turn start) */
+  oncePerTurn?: boolean;
 }
 
 /** Named passive behaviors special-cased by the engine. */
@@ -117,6 +120,8 @@ export interface RelicDef {
   text: string;
   /** ≥8 of the pool must be Thread/co-op-specific (M2-B2) */
   coop?: boolean;
+  /** PT2/OQ#29: rare relics carry 1/3 the drop weight of the rest */
+  rare?: boolean;
   hooks?: Hook[];
   passives?: PassiveId[];
   /** one-time grant when acquired */
@@ -356,6 +361,9 @@ export interface CombatState {
   /** S2.1: solo Witness chatter budget — capped per combat. Optional so
    *  pre-S1 persisted rooms restore cleanly. */
   witnessLines?: number;
+  /** PT2/OQ#29: `holder:event` keys of oncePerTurn hooks already fired this
+   *  turn. Optional for persisted-room compatibility. */
+  hookOnceFired?: string[];
 }
 
 export interface RewardState {

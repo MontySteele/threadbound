@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, removalPrice,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
@@ -177,7 +177,8 @@ export default function App(): JSX.Element {
             <span className="header-right">
               {state.phase !== 'lobby' && (
                 <button className="chip" data-gp="META" data-gp-action="overview" onClick={() => setDeckOpen(!deckOpen)}>
-                  Deck (d)
+                  {/* PT2: deck SIZE in view at all times (removal decisions) */}
+                  Deck (d) · {state.players[state.you].deck.length}
                 </button>
               )}
               {!['lobby', 'game_over', 'victory'].includes(state.phase) && (
@@ -671,6 +672,27 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
+  // PT2: make Momentum legible — per-slot preview of the first-hit bonus
+  // each staged Strike gets, halving after each spend (momentumNoHalve
+  // honored; keep/per-hit riders not modeled). An estimate, like planned
+  // Block; `next` is what a Strike staged NOW would receive.
+  const momentumPreview = useMemo(() => {
+    const m: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
+    const perSlot = combat.chain.map((slot, i) => {
+      const def = defFor(state, slot.owner, slot.cardInstanceId);
+      if (def.tag !== 'Strike' || m[slot.owner] <= 0) return 0;
+      const effects = firedAll[i] && def.link
+        ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+        : def.base;
+      const hits = effects.some((e) =>
+        e.op === 'damage' || e.op === 'damageAll' || e.op === 'damagePerHex' || e.op === 'momentumStrikeBonus');
+      if (!hits) return 0;
+      const bonus = m[slot.owner];
+      if (!hasPassive(state.players[slot.owner], 'momentumNoHalve')) m[slot.owner] = Math.floor(bonus / 2);
+      return bonus;
+    });
+    return { perSlot, next: m };
+  }, [state, combat.chain, firedAll]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
   // §14.12: Pulse targets = staged cards with a dead Link, not yet pulsed
@@ -776,6 +798,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       )}
 
       <ChainTrack state={state} fired={fired} forced={forced} resonance={resonance} net={net}
+        momentumBonus={momentumPreview.perSlot}
         pendingPulse={pendingPulse}
         onPulseTarget={(cardInstanceId) => {
           net.act({ type: 'DECLARE_THREAD', kind: 'pulse', targetId: cardInstanceId } as any);
@@ -806,15 +829,22 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <div className="panel">
           <b>Partner’s discard</b> <span className="muted">(Reclaims arrive mutated — inspect to preview)</span>{' '}
           {state.players[partner].discard.length === 0 && <i>empty</i>}
-          {state.players[partner].discard.map((id) => (
-            <button key={id} className="chip" data-gp="THREAD" data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
-              onClick={() => {
-                net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
-                setReclaimOpen(false);
-              }}>
-              {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}
-            </button>
-          ))}
+          {state.players[partner].discard.map((id) => {
+            // PT2: Reclaim copies — the original stays listed, so a card
+            // already being reclaimed this turn must read as taken
+            const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
+            return (
+              <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
+                data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+                onClick={() => {
+                  if (claimed) return;
+                  net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
+                  setReclaimOpen(false);
+                }}>
+                {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -830,6 +860,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           return (
             <Card key={id} def={def} echo={!!inst(state, you, id)?.echo}
               upgraded={!!inst(state, you, id)?.upgraded} mutated={!!inst(state, you, id)?.mutated}
+              badge={def.tag === 'Strike' && momentumPreview.next[you] > 0 ? `➤+${momentumPreview.next[you]}` : undefined}
               gpZone="HAND"
               inspect={inspectKeyFor(state, you, id)}
               selected={pendingCard === id}
@@ -909,9 +940,10 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
   );
 }
 
-function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPulseTarget }: {
+function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPulseTarget, momentumBonus }: {
   state: ClientState; fired: boolean[]; forced: boolean[]; resonance: Set<number>; net: Net;
   pendingPulse: boolean; onPulseTarget: (cardInstanceId: string) => void;
+  momentumBonus: number[];
 }): JSX.Element {
   const you = state.you;
   const combat = state.combat!;
@@ -966,6 +998,7 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
               <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
                 upgraded={!!inst(state, slot.owner, slot.cardInstanceId)?.upgraded}
                 mutated={!!inst(state, slot.owner, slot.cardInstanceId)?.mutated}
+                badge={momentumBonus[i] > 0 ? `➤+${momentumBonus[i]}` : undefined}
                 gpZone={mine && !pendingPulse ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
                 onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
@@ -1007,11 +1040,13 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
   );
 }
 
-export function Card({ def, onClick, small, selected, disabled, echo, upgraded, mutated, gpZone, inspect }: {
+export function Card({ def, onClick, small, selected, disabled, echo, upgraded, mutated, gpZone, inspect, badge }: {
   def: CardDef; onClick?: () => void; small?: boolean; selected?: boolean; disabled?: boolean; echo?: boolean;
   /** S2.2 frame treatments — presentation only, the def already carries the rules */
   upgraded?: boolean; mutated?: boolean;
   gpZone?: string; inspect?: string;
+  /** PT2: corner chip for live-effect previews (momentum) */
+  badge?: string;
 }): JSX.Element {
   return (
     <div
@@ -1019,6 +1054,7 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       data-gp={!disabled && onClick ? gpZone : undefined}
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
+      {badge && <div className="card-badge" data-inspect="kw:momentum">{badge}</div>}
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
       <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       {/* upgrade texts restate the link clause inline; the ⚡ line below is
