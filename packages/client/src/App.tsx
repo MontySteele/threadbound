@@ -10,7 +10,7 @@ import {
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
-import { GLYPH } from './keywords';
+import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
@@ -1158,7 +1158,7 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       {/* upgrade texts restate the link clause inline; the ⚡ line below is
           the canonical display — trim the duplicate so links don't read twice */}
       <div className="ctext">{def.link && def.text.includes('Link (') ? def.text.slice(0, def.text.indexOf('Link (')).trim() : def.text}</div>
-      {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {def.link.text}</div>}
+      {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {linkBody(def.link.text)}</div>}
     </div>
   );
 }

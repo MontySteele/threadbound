@@ -21,6 +21,15 @@ export const GLYPH: Record<string, string> = {
   fallen: '⤓', sever: '✂', echo: '◌', mutated: '◈', upgraded: '✧',
 };
 
+/** The card/tooltip renderers print the `Link (condition):` prefix themselves
+ *  (from `def.link.condition`), so `link.text` is meant to be the effect only.
+ *  Some clauses still embed the prefix inline — defensively strip a leading
+ *  `Link (...):` so it never reads twice (PT-review: ~11 clauses + Call and
+ *  Answer's original bug). Idempotent; a clean effect-only string is untouched. */
+export function linkBody(text: string): string {
+  return text.replace(/^\s*Link \([^)]*\):\s*/, '');
+}
+
 export const KEYWORDS: Record<string, KeywordDef> = {};
 function kw(k: KeywordDef): void {
   KEYWORDS[k.id] = k;

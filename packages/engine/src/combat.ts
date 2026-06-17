@@ -261,6 +261,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
     const effects: EffectOp[] =
       fired[i] && def.link ? (def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]) : def.base;
     let momSpent = false;
+    let keepMomentum = false; // mirrors resolution: momentumStrikeBonus(keepMomentum) skips the halve
     let detonated = 0;
     for (const eff of effects) {
       switch (eff.op) {
@@ -298,6 +299,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
           const tgt = retarget(slot.targetId);
           if (tgt) hit(owner, tgt, mom[owner] * eff.mult);
           momSpent = true;
+          if (eff.keepMomentum) keepMomentum = true;
           break;
         }
         case 'detonate': {
@@ -321,7 +323,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
         default: break; // non-damaging ops don't affect the enemy-damage forecast
       }
     }
-    if (def.tag === 'Strike' && momSpent && !hasPassive(state.players[owner], 'momentumNoHalve')) {
+    if (def.tag === 'Strike' && momSpent && !keepMomentum && !hasPassive(state.players[owner], 'momentumNoHalve')) {
       mom[owner] = Math.floor(mom[owner] / 2);
     }
   }

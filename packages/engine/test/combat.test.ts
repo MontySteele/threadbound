@@ -508,4 +508,25 @@ describe('planned-damage preview (§11 static helper, PT3)', () => {
     const s = combatState();
     expect(computePlannedDamage(s)).toEqual({});
   });
+
+  it('honors keepMomentum: a no-halve Strike leaves Momentum for the next card (parity)', () => {
+    // Chain: Strike → Haymaker(link fires: +Mom×2, DON'T halve) → Strike.
+    // The trailing Strike spends the un-halved Momentum, so a forecast that
+    // wrongly halved after Haymaker would read low by that Momentum. This
+    // guards the one resolution path the Block/Hex parity cases don't touch.
+    const s0 = combatState();
+    toughen(s0);
+    const target = s0.combat!.enemies[0];
+    s0.players.p1.momentum = 4;
+    s0.players.p1.energy = 10; // 1 + 2 + 1 energy; bypass the default 3 cap
+    const [a, hm, b] = forceHand(s0, 'p1', ['hatpin', 'haymaker', 'hatpin']);
+    let s = reduce(s0, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: a, slot: 0, targetId: target.id });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: hm, slot: 1, targetId: target.id });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: b, slot: 2, targetId: target.id });
+    const forecast = computePlannedDamage(s);
+    const before = s.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    const resolved = ready(s);
+    const after = resolved.combat!.enemies.find((e) => e.id === target.id)!.hp;
+    expect(before - after).toBe(forecast[target.id]); // preview == reality
+  });
 });
