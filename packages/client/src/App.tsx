@@ -20,11 +20,12 @@ import { ResolutionTheater, isResolution } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
+import { TapestryOverlay } from './TapestryOverlay';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
 type Character = 'vess' | 'bram';
-const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
+export const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
@@ -89,13 +90,19 @@ export default function App(): JSX.Element {
   const [, padTick] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [deckOpen, setDeckOpen] = useState(false);
+  const [tapestryOpen, setTapestryOpen] = useState(false);
   const [concedeOpen, setConcedeOpen] = useState(false);
   const [toast, setToast] = useState('');
   const netRef = useRef<Net | null>(null);
+  // S6.6: the `t` hotkey exists only when the server pushed a truth
+  // projection — a ref, because the key handler outlives any one state
+  const truthRef = useRef(false);
+  const prevBoardLen = useRef<number | null>(null);
 
   useEffect(() => {
     netRef.current = new Net({
       onState: (s) => {
+        truthRef.current = !!s.truth;
         setState(s);
         if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
       },
@@ -117,6 +124,7 @@ export default function App(): JSX.Element {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
       if (e.key === 'd') setDeckOpen((o) => !o);
+      else if (e.key === 't' && truthRef.current) setTapestryOpen((o) => !o); // S6.6
       else if (e.key === 'f') toggleFullscreen();
       else if (e.key === '[') netRef.current?.feedback('bad');
       else if (e.key === ']') netRef.current?.feedback('good');
@@ -161,6 +169,18 @@ export default function App(): JSX.Element {
     }
   }, [state?.phase, joined?.code]);
 
+  // S6.6 pin toast: a fragment landed on YOUR board since the last state.
+  // Growth only (never on first sight of a board — reconnects stay quiet);
+  // the fragment itself is read on the Tapestry, not here.
+  useEffect(() => {
+    const len = state?.truth ? state.truth.board.length : null;
+    if (len !== null && prevBoardLen.current !== null && len > prevBoardLen.current) {
+      setToast('A thread pins to your Tapestry — T to view.');
+      setTimeout(() => setToast(''), 2600);
+    }
+    prevBoardLen.current = len;
+  }, [state?.truth]);
+
   // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
   useEffect(() => {
     const act = state && state.phase !== 'lobby' ? state.map.act : 0;
@@ -195,6 +215,12 @@ export default function App(): JSX.Element {
                   Deck (d) · {state.players[state.you].deck.length}
                 </button>
               )}
+              {state.phase !== 'lobby' && state.truth && (
+                // S6.6: only on flagged runs — no truth projection, no board
+                <button className="chip" data-gp="META" onClick={() => setTapestryOpen(!tapestryOpen)}>
+                  Tapestry (t) · {state.truth.board.length}
+                </button>
+              )}
               {!['lobby', 'game_over', 'victory'].includes(state.phase) && (
                 <button className="chip" data-gp="META" onClick={() => setConcedeOpen(!concedeOpen)}>
                   abandon…
@@ -215,6 +241,7 @@ export default function App(): JSX.Element {
           <Hints state={state} />
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
+          {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
           {concedeOpen && !['lobby', 'game_over', 'victory'].includes(state.phase) && (
             <div className="feedback-overlay">
               <div className="tutorial-step">ABANDON RUN</div>
