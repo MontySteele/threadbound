@@ -6,3 +6,6 @@ telemetry/
 
 # macOS
 .DS_Store
+
+# Claude agent worktrees
+.claude/
