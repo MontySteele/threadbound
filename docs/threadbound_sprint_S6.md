@@ -148,6 +148,38 @@ screen before the boss unlocks.
    flagged event queue. Tune after first playtest.
 3. Heal-6 *who* payoff and pre-boss-intent completion boon are marked
    provisional in the spec — implemented as specced, flagged for review.
+4. **Partner stubs carry event + act only — not the question.** A stub
+   pinned in a question column would leak `bearsOn` across screens; ruling 5
+   is ambiguous on this, so the conservative read shipped. Loosen?
+5. **Two-answer questions are single-fragment-resolvable.** One fragment on
+   *who*/*what* strikes 1 of 2 answers → auto-completion at the shrine. The
+   "no single event resolves a question alone" audit is enforced as
+   A/B-bear-different-questions (the strongest form arithmetic allows at 2
+   answers). Accept for the slice, or widen *what happened* to 3 answers?
+6. **The masked boss is "The Unraveled".** Flagged runs keep the Unraveled
+   body/script; the real-name reveal (Sexton/Peal) recontextualizes a name
+   players already know rather than introducing a new boss. Intended?
+7. **Mechanic schedule**: live mechanics fire turns 3 and 5, period 4,
+   overriding the script intent; opening is pinned to script index 0 on
+   flagged runs (so the all-true boon can state it honestly). All tunable.
+8. **Node order**: loom → rest → shop → boss. "Adjacent to the rest" +
+   "boon shows at the pre-boss rest" forces the loom BEFORE the rest.
+   Confirm the order reads right in play.
+
+## Implementation notes (2026-07-01, landed on nt-slice)
+
+- Bundle secrecy: the client bundles engine reducer/combat for planning
+  helpers, so vite aliases content/truth.ts + content/faces.ts to a throwing
+  stub; the bundle-secrecy test greps built assets for every secret string.
+  A true server-only content package remains the production follow-up.
+- Fragments are authored as VARIANT POOLS (one per eliminable answer per
+  event×channel — 28 total) and served consistent with the rolled truth; a
+  served fragment never eliminates a true answer (property-tested over all
+  12 truths × 6 events).
+- Solo (ruling 8): witness-voiced partner fragments appear IN the columns,
+  thread-gold, full text; co-op keeps face-down stubs.
+- secondsAtShrine is stamped server-side (wall clock stays out of the
+  deterministic engine).
 
 ## Out of scope, explicitly
 
