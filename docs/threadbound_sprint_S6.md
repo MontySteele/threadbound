@@ -25,22 +25,33 @@ unusable. Before anything ships:
 
 ## S6.2 Hosted deployment
 
-- Dockerfile for the server (serves client dist + websockets). Target:
-  designer's choice of Fly.io / Railway / Render — all handle websockets
-  and a persistent volume; the doc assumes "a small always-on node box
-  with a volume at /data". Domain + TLS via the platform.
+- Dockerfile for the server (serves client dist + websockets).
+  **Platform (ruled): Render, Starter tier + a small persistent disk**
+  mounted at `/data`. Flat monthly price, Git-push deploys, websockets
+  and TLS out of the box. Ship on the free `*.onrender.com` subdomain;
+  a custom domain waits for the itch page and a settled public name
+  (it's only a DNS pointer later).
 - Telemetry/feedback write to the volume (`/data/telemetry`,
   `/data/feedback`), JSONL, log-rotated by date. A pull script
   (`scripts/pull-telemetry.sh`, rsync or platform CLI) brings files local
   for analysis.
 - Server hardening, minimum viable: cap concurrent rooms (env,
-  default 200), rate-limit room creation per IP, idle-room reaping
+  default 200), rate-limit room creation per client IP, idle-room reaping
   (verify the existing lifecycle cleanup fires under hosted conditions),
   bound in-memory state, restart-on-crash via the platform.
-- Deploys kill in-memory rooms (reconnect tokens don't survive a process
-  swap). Add a **drain flag**: `TB_DRAIN=1` stops NEW room creation and
-  shows "the loom is being restrung — back in a few minutes" on the title
-  screen; deploy when active rooms hit zero or after a posted window.
+  **Proxy-aware IPs:** on Render the server sits behind the platform
+  proxy, and behind a cloudflared tunnel every player arrives from
+  Cloudflare edge IPs — rate limiting MUST read `X-Forwarded-For` /
+  `CF-Connecting-IP` (with the raw socket as fallback) or it will
+  throttle everyone as one client. Limits stay lenient enough for two
+  players behind one NAT.
+- **Deploys must only cost a refresh.** The server already snapshots
+  rooms on shutdown (README); the S6 requirement is that the snapshot
+  file writes to the persistent disk (`/data`) so the post-deploy
+  container restores it — verify the restore path fires on Render's
+  deploy cycle. The **drain flag** (`TB_DRAIN=1`: no new rooms, "the
+  loom is being restrung" on the title screen) ships as a nicety for
+  long maintenance windows, not as the deploy mechanism.
 - Playtest reality check as the deploy gate: two humans on different
   networks complete a full run start→victory/fall on the hosted URL,
   including one deliberate refresh-reconnect each.
@@ -55,10 +66,14 @@ unusable. Before anything ships:
 - Anonymous `installId` (random UUID in the profile) included in
   telemetry so runs can be grouped without identity. Regenerated if the
   profile is wiped; explicitly not tracking across devices.
-- **Both-consent rule (proposed):** a run's telemetry file is written
-  only if BOTH seats opted in (solo: the one human). Conservative,
-  simple, and avoids "my partner's file contains my run." Designer
-  yes/no.
+- **Both-consent rule (RATIFIED, designer 2026-07-01):** a run's
+  telemetry file is written only if BOTH seats opted in (solo: the one
+  human). Conservative, simple, and no one's file describes an
+  unconsented partner.
+- **The consent card appears only when the server declares telemetry
+  collection active** (`HUMAN_TELEMETRY` on). Plain local dev never asks;
+  a tunnel playtest with telemetry on asks — friends deserve the same
+  consent as strangers.
 - A short data note reachable from the consent card and the title screen
   footer (static page served by the server).
 
@@ -87,8 +102,11 @@ bot batteries. Build `scripts/aggregate-human.mjs`:
 - **End-of-run micro-survey**, two items max, skippable in one tap:
   "How was this run?" (1–5) + optional free text. Never blocks the
   return-to-title flow.
-- Title screen footer: version stamp + links (data note; a community
-  link — itch page or Discord, designer's choice — as an external URL).
+- Title screen footer: version stamp + links (data note; **community
+  link ruled: a small Discord server** — 3–4 channels max, including
+  `#looking-for-thread`, which IS the matchmaking system while real
+  matchmaking stays out of scope; the itch page joins later as
+  storefront/devlog).
 
 ## S6.6 Distribution surface
 
@@ -98,7 +116,29 @@ and a prominent "Play in browser" link to the hosted domain. Title
 screen gains a first-visit blurb: how rooms work, "play solo with the
 Witness," and where to leave feedback. No accounts, no email capture.
 
-## S6.7 Sign-off gates
+## S6.7 Environment parity — local + tunnel dev stays first-class
+
+The existing dev flow (README: `npm run server` on localhost:8080,
+`cloudflared tunnel --url http://localhost:8080` for remote playtests)
+must remain fully functional so development and local testing continue in
+parallel with the hosted deployment. Nothing in S6 may assume Render.
+
+- All S6 behavior is env-driven with LOCAL-SAFE DEFAULTS: telemetry dir
+  defaults to `./telemetry` (as today), `/data/...` only via env; drain
+  off; room cap generous; consent card absent when `HUMAN_TELEMETRY` is
+  off (S6.3).
+- `buildSha` falls back to `dev` + local git short-hash when no build-time
+  injection is present; never crashes a source checkout.
+- No absolute URLs anywhere: the client keeps deriving `ws(s)://` and all
+  links from the page origin (already true — preserve it); the data-note
+  page and footer links are relative paths.
+- The tunnel is a proxy: keep the client-IP handling of S6.2 correct
+  behind `trycloudflare.com` (CF-Connecting-IP) as well as Render.
+- README's self-hosting section gets updated, not replaced: quick tunnel
+  remains the documented way to play from source; the hosted URL is
+  simply where the public plays.
+
+## S6.8 Sign-off gates
 
 1. Hosted URL: full remote 2-player run incl. refresh-reconnects (S6.2).
 2. Consent honored: telemetry file written with both seats opted in;
@@ -112,13 +152,24 @@ Witness," and where to leave feedback. No accounts, no email capture.
    finishes undisturbed.
 7. Tests green from fresh clone; zero gameplay-surface diffs vs main
    (battery spot-check: 30-run vb aggregate within noise of S5 final).
+8. **Tunnel parity:** a full 2-player run completes through a fresh
+   `cloudflared` quick-tunnel URL from a source checkout — with
+   `HUMAN_TELEMETRY` on, the consent card shows and both-consent is
+   honored; with it off, no card and no files.
+9. **Snapshot-across-deploy:** a Render deploy mid-run restores the room
+   from the `/data` snapshot; both clients rejoin with a refresh and the
+   run continues.
 
-## Designer decisions needed
+## Rulings resolved (designer, 2026-07-01)
 
-1. Hosting platform (Fly / Railway / Render / other) + domain name.
-2. Both-consent rule: ratify or per-seat alternative.
-3. Community link target for the footer (itch page vs Discord vs none
-   for now).
+1. Platform: **Render Starter + persistent disk**, free
+   `*.onrender.com` subdomain for the soft release; custom domain
+   deferred to the itch launch.
+2. Consent: **both-consent** required to write a run's telemetry.
+3. Community link: **Discord** (small: 3–4 channels incl.
+   `#looking-for-thread`); itch page follows later.
+4. Local + cloudflared quick-tunnel development remains a first-class,
+   documented flow (S6.7).
 
 ## Out of scope
 
