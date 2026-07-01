@@ -10,7 +10,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, GameState, IllegalAction, PlayerId,
   PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE,
-  emptyTelemetry, initialState, reduce, hashState,
+  clientTruthView, emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
 import { BotSpeed, SoloBotDriver } from './solo';
 
@@ -362,7 +362,10 @@ export class GameServer {
 
   /** Hands are open information (designer ruling, OQ#22) — co-op has no
    *  hidden-hand stakes and you'd say it on voice anyway. Only the draw
-   *  piles stay redacted: their ORDER is the one true unknown. */
+   *  piles stay redacted: their ORDER is the one true unknown.
+   *  nt-slice (§11 extension): truth state is replaced wholesale by the
+   *  per-viewer projection — tuple, eliminations, and partner fragment text
+   *  never cross the wire. */
   private redactFor(state: GameState, viewer: PlayerId): unknown {
     const clone: GameState = structuredClone(state);
     const other: PlayerId = viewer === 'p1' ? 'p2' : 'p1';
@@ -372,7 +375,8 @@ export class GameServer {
     };
     clone.players.p1.draw = [];
     clone.players.p2.draw = [];
-    return { ...clone, counts, you: viewer };
+    const truth = clone.truth ? clientTruthView(clone.truth, viewer) : undefined;
+    return { ...clone, ...(truth ? { truth } : {}), counts, you: viewer };
   }
 
   private send(socket: WebSocket | null, msg: unknown): void {

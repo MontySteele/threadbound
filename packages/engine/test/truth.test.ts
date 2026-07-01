@@ -11,6 +11,7 @@ import { CLUE_EVENTS } from '../src/content/clue-events';
 import { eventsForAct } from '../src/content/registry';
 import { generateActMap } from '../src/map';
 import { initialState, reduce } from '../src/reducer';
+import { clientTruthView } from '../src/truth-view';
 
 describe('truth content covenant (slice scope)', () => {
   it('slice shape: 3 questions (who/what/why), 7 answers (2/2/3)', () => {
@@ -264,5 +265,51 @@ describe('fragment delivery (S6.2)', () => {
     const next = reduce(state, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'scavenge' });
     expect(next.truth!.boards.p1.length).toBe(0);
     expect(next.truth!.boards.p2.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S6.3: hidden-information projection (§11 extension)
+// ---------------------------------------------------------------------------
+
+describe('clientTruthView (S6.3)', () => {
+  // a flagged run with one clue event resolved: both boards hold a fragment
+  const pinnedState = () => {
+    const seed = 11;
+    const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+    state.phase = 'event';
+    state.event = { eventId: 'nt_unrung_bell', chooser: 'p2', subject: 'p2', chosen: null };
+    return reduce(state, { type: 'EVENT_CHOOSE', player: 'p2', optionId: 'ring' });
+  };
+
+  it('each viewer sees their own fragments and only stubs of the partner', () => {
+    const state = pinnedState();
+    for (const viewer of ['p1', 'p2'] as const) {
+      const partner = viewer === 'p1' ? 'p2' : 'p1';
+      const view = clientTruthView(state.truth!, viewer);
+      expect(view.board).toEqual(state.truth!.boards[viewer]);
+      expect(view.partnerStubs.length).toBe(state.truth!.boards[partner].length);
+      for (const stub of view.partnerStubs) {
+        expect(Object.keys(stub).sort()).toEqual(['act', 'eventId']);
+      }
+    }
+  });
+
+  it('the serialized view leaks no tuple, no eliminations, no partner text', () => {
+    const state = pinnedState();
+    for (const viewer of ['p1', 'p2'] as const) {
+      const partner = viewer === 'p1' ? 'p2' : 'p1';
+      const wire = JSON.stringify(clientTruthView(state.truth!, viewer));
+      expect(wire.includes('tuple')).toBe(false);
+      expect(wire.includes('eliminates')).toBe(false);
+      for (const pin of state.truth!.boards[partner]) {
+        expect(wire.includes(pin.text), `${viewer} must not see ${pin.fragmentId}`).toBe(false);
+        expect(wire.includes(pin.fragmentId)).toBe(false);
+      }
+      // the true answers never appear anywhere in a mid-run view
+      for (const answerId of Object.values(state.truth!.tuple)) {
+        expect(wire.includes(`"${answerId}"`)).toBe(false);
+      }
+    }
   });
 });

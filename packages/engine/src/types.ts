@@ -330,15 +330,22 @@ export interface PinnedFragment {
   text: string;
 }
 
+/** Who struck an answer, shown on the sheet ("source noted", ruling 6). */
+export interface StruckSource {
+  eventId: string;
+  holder: PlayerId;
+}
+
 export interface ShrineState {
   /** the coveted relic, revealed BEFORE commitment (spec ruling 1) */
   stakeRelicId: string;
   /** one shared sheet (spec ruling 3): questionId → asserted answerId,
    *  or null = leave unspoken */
   sheet: Record<string, string | null>;
-  /** pooled strike-outs per question, computed server-side from BOTH boards:
-   *  answerId → fragmentIds that struck it (source noted on the sheet) */
-  struck: Record<string, Record<string, string[]>>;
+  /** pooled strike-outs per question, computed server-side from BOTH boards.
+   *  Sources are stored pre-rendered ({event, holder} — never fragment ids)
+   *  so the client projection needs no access to the fragment table. */
+  struck: Record<string, Record<string, StruckSource[]>>;
   /** both must confirm the same filled state; any edit resets both */
   confirmed: Record<PlayerId, boolean>;
   /** per-question verdict, null until both confirm; stated completely
