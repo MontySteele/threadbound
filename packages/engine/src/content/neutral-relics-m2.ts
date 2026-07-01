@@ -174,7 +174,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'linked_shields', name: 'Linked Shields', character: 'neutral', rarity: 'uncommon', cost: 2, tag: 'Guard',
     text: 'Gain 7 Block.',
     base: [{ op: 'block', amount: 7, primary: true }],
-    link: { condition: 'Guard', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+    link: { condition: 'Guard', text: 'Your partner gains 6 Block.', effects: [{ op: 'partnerBlock', amount: 6 }] }, // OQ#34: 4 → 6 (co-op half is the identity)
     mutation: {
       name: 'Unlinked Shield', text: 'Gain 5 Block. Draw 1.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'draw', amount: 1 }],
