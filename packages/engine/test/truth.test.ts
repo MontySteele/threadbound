@@ -313,3 +313,158 @@ describe('clientTruthView (S6.3)', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// S6.4: the Loom's Eye
+// ---------------------------------------------------------------------------
+
+import { generateFinaleMap } from '../src/map';
+import { ALL_RELICS, RELICS_BY_ID } from '../src/content/registry';
+import { GameState } from '../src/types';
+
+/** Flagged run teleported to the finale with chosen fragments pinned. */
+function atLoom(seed: number, pins: Array<{ pid: 'p1' | 'p2'; fragmentId: string }>): GameState {
+  const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+  for (const { pid, fragmentId } of pins) {
+    const def = FRAGMENTS.find((f) => f.id === fragmentId)!;
+    state.truth!.boards[pid].push({
+      fragmentId, eventId: def.eventId, act: 1, questionId: def.bearsOn, text: def.text,
+    });
+  }
+  state.map = generateFinaleMap(true);
+  state.phase = 'map';
+  let next = reduce(state, { type: 'NODE_PICK', player: 'p1', nodeId: 0 });
+  next = reduce(next, { type: 'NODE_PICK', player: 'p2', nodeId: 0 });
+  return next;
+}
+
+/** A fragment id eliminating `answerId`, from any event (for board set-up). */
+function fragEliminating(answerId: string): string {
+  return FRAGMENTS.find((f) => f.eliminates[0] === answerId)!.id;
+}
+
+describe("the Loom's Eye (S6.4)", () => {
+  it('flagged finale: loom adjacent to (not replacing) the pre-boss rest, verdict before boss', () => {
+    const finale = generateFinaleMap(true);
+    expect(finale.nodes.map((n) => n.kind)).toEqual(['loom', 'rest', 'shop', 'boss']);
+    expect(generateFinaleMap().nodes.map((n) => n.kind)).toEqual(['rest', 'shop', 'boss']);
+  });
+
+  it('entering the loom reveals the stake and pools BOTH boards into strike-outs with sources', () => {
+    // pin one fragment per board, striking two different q_why answers
+    const why = answersFor('q_why').map((a) => a.id);
+    const state = atLoom(3, [
+      { pid: 'p1', fragmentId: fragEliminating(why[0]) },
+      { pid: 'p2', fragmentId: fragEliminating(why[1]) },
+    ]);
+    const shrine = state.truth!.shrine!;
+    expect(state.phase).toBe('loom');
+    expect(shrine.stakeRelicId).toBeTruthy();
+    expect(RELICS_BY_ID[shrine.stakeRelicId!]).toBeTruthy();
+    expect(Object.keys(shrine.struck.q_why).sort()).toEqual([why[0], why[1]].sort());
+    expect(shrine.struck.q_why[why[0]][0].holder).toBe('p1');
+    expect(shrine.struck.q_why[why[1]][0].holder).toBe('p2');
+    // q_why had 3 answers, 2 struck → auto-completion pre-fills the third
+    expect(shrine.sheet.q_why).toBe(why[2]);
+    expect(shrine.sheet.q_who).toBeNull();
+  });
+
+  it('struck answers cannot be asserted; edits reset both confirmations', () => {
+    const why = answersFor('q_why').map((a) => a.id);
+    const state = atLoom(3, [{ pid: 'p1', fragmentId: fragEliminating(why[0]) }]);
+    expect(() => reduce(state, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_why', answerId: why[0] }))
+      .toThrow(/struck/);
+    let s = reduce(state, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    expect(s.truth!.shrine!.confirmed.p1).toBe(true);
+    s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p2', questionId: 'q_why', answerId: why[1] });
+    expect(s.truth!.shrine!.confirmed).toEqual({ p1: false, p2: false });
+  });
+
+  it('pass in silence: all blanks, both confirm → no false, stake granted, no reveals', () => {
+    const state = atLoom(5, []);
+    let s = reduce(state, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    expect(s.truth!.shrine!.verdict).toBeNull(); // one voice is not the pair
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    const shrine = s.truth!.shrine!;
+    expect(shrine.verdict).toEqual({ q_who: 'blank', q_what: 'blank', q_why: 'blank' });
+    expect(shrine.stakeLost).toBe(false);
+    const relics = [...s.players.p1.relics, ...s.players.p2.relics];
+    expect(relics).toContain(shrine.stakeRelicId!);
+    expect(s.truth!.reveals).toEqual({ bossFace: false, bossMechanic: false, openingIntent: false });
+  });
+
+  it('true assertions pay their reveals; all-true adds the completion boon on top of the stake', () => {
+    const state = atLoom(9, []);
+    const tuple = state.truth!.tuple;
+    state.players.p1.hp = 30;
+    state.players.p2.hp = 30;
+    let s = state;
+    for (const q of ['q_who', 'q_what', 'q_why']) {
+      s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: q, answerId: tuple[q] });
+    }
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    const shrine = s.truth!.shrine!;
+    expect(shrine.verdict).toEqual({ q_who: 'true', q_what: 'true', q_why: 'true' });
+    expect(shrine.stakeLost).toBe(false);
+    expect(s.truth!.reveals).toEqual({ bossFace: true, bossMechanic: true, openingIntent: true });
+    expect(s.players.p1.hp).toBe(36); // healEach payoff
+    expect(s.players.p2.hp).toBe(36);
+    expect([...s.players.p1.relics, ...s.players.p2.relics]).toContain(shrine.stakeRelicId!);
+  });
+
+  it('ANY false assertion unravels the stake; true answers still pay; blanks stay free', () => {
+    const state = atLoom(13, []);
+    const tuple = state.truth!.tuple;
+    const wrongWho = answersFor('q_who').find((a) => a.id !== tuple.q_who)!.id;
+    let s = reduce(state, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_who', answerId: wrongWho });
+    s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p2', questionId: 'q_what', answerId: tuple.q_what });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    const shrine = s.truth!.shrine!;
+    expect(shrine.verdict).toEqual({ q_who: 'false', q_what: 'true', q_why: 'blank' });
+    expect(shrine.stakeLost).toBe(true);
+    expect([...s.players.p1.relics, ...s.players.p2.relics]).not.toContain(shrine.stakeRelicId!);
+    expect(s.truth!.reveals.bossFace).toBe(true); // the true naming still pays
+    expect(s.truth!.reveals.openingIntent).toBe(false);
+  });
+
+  it('after the verdict the sheet is sealed and ADVANCE moves on to the rest', () => {
+    const state = atLoom(5, []);
+    let s = reduce(state, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    expect(() => reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_who', answerId: null }))
+      .toThrow(/already spoken/);
+    expect(() => reduce(state, { type: 'ADVANCE', player: 'p1' })).toThrow(/not spoken/);
+    s = reduce(s, { type: 'ADVANCE', player: 'p1' });
+    s = reduce(s, { type: 'ADVANCE', player: 'p2' });
+    expect(s.phase).toBe('map');
+    expect(s.map.nodes.find((n) => n.id === s.map.position)!.kind).toBe('loom');
+    expect(s.map.nodes.find((n) => n.id === s.map.position)!.edges).toEqual([1]); // → rest
+  });
+
+  it('solo: the Witness follows the human — confirm and advance mirror to the bot seat', () => {
+    const seed = 5;
+    const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }, 'p2'), { type: 'START_RUN', seed, tracks: true });
+    state.map = generateFinaleMap(true);
+    state.phase = 'map';
+    let s = reduce(state, { type: 'NODE_PICK', player: 'p1', nodeId: 0 });
+    s = reduce(s, { type: 'NODE_PICK', player: 'p2', nodeId: 0 });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    expect(s.truth!.shrine!.verdict).not.toBeNull();
+    s = reduce(s, { type: 'ADVANCE', player: 'p1' });
+    expect(s.phase).toBe('map');
+  });
+
+  it('the stake covets: rare relics are ~3× overrepresented vs their pool share', () => {
+    let rares = 0;
+    const total = 400;
+    for (let seed = 0; seed < total; seed++) {
+      const s = atLoom(seed, []);
+      if (RELICS_BY_ID[s.truth!.shrine!.stakeRelicId!]?.rare) rares++;
+    }
+    const rareShare = ALL_RELICS.filter((r) => r.rare).length / ALL_RELICS.length;
+    // weighted 3:1 — observed share should clearly exceed the raw pool share
+    expect(rares / total).toBeGreaterThan(rareShare * 1.8);
+  });
+});

@@ -16,6 +16,7 @@ export type Phase =
   | 'combat'
   | 'reward'
   | 'event'
+  | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
   | 'rest'
   | 'shop' // M2-B4
   | 'game_over'
@@ -337,8 +338,9 @@ export interface StruckSource {
 }
 
 export interface ShrineState {
-  /** the coveted relic, revealed BEFORE commitment (spec ruling 1) */
-  stakeRelicId: string;
+  /** the coveted relic, revealed BEFORE commitment (spec ruling 1);
+   *  null only in the degenerate every-relic-owned case */
+  stakeRelicId: string | null;
   /** one shared sheet (spec ruling 3): questionId → asserted answerId,
    *  or null = leave unspoken */
   sheet: Record<string, string | null>;
@@ -361,9 +363,14 @@ export interface TruthState {
    *  only countable stubs of the partner's (spec ruling 5). */
   boards: Record<PlayerId, PinnedFragment[]>;
   shrine: ShrineState | null;
+  /** payoffs earned at the verdict, consumed by the boss layer (S6.5):
+   *  bossFace = real name + mechanic 1 in the intent UI · bossMechanic =
+   *  mechanic 2 · openingIntent = the all-true boon (full opening turn
+   *  shown at the pre-boss rest) */
+  reveals: { bossFace: boolean; bossMechanic: boolean; openingIntent: boolean };
 }
 
-export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure';
+export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure' | 'loom';
 
 export interface MapNode {
   id: number;
@@ -666,6 +673,13 @@ export type Action =
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }
   | { type: 'SHOP_BUY'; player: PlayerId; itemId: string } // M2-B4
   | { type: 'SHOP_REMOVE'; player: PlayerId; itemId: string; cardInstanceId: string }
+  /** nt-slice S6.4: edit the ONE shared sheet (ruling 3) — assert an answer
+   *  or return the question to unspoken (null). Any edit resets both
+   *  confirmations. */
+  | { type: 'LOOM_SHEET_SET'; player: PlayerId; questionId: string; answerId: string | null }
+  /** both must confirm the same filled state; the verdict resolves when the
+   *  second confirmation lands */
+  | { type: 'LOOM_CONFIRM'; player: PlayerId; confirm: boolean }
   | { type: 'ADVANCE'; player: PlayerId }
   /** abandon the run — both must confirm; even quitting is co-op */
   | { type: 'CONCEDE'; player: PlayerId; confirm: boolean };

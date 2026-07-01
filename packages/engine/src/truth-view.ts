@@ -19,7 +19,7 @@ export interface TruthStub {
 }
 
 export interface ClientShrineView {
-  stakeRelicId: string;
+  stakeRelicId: string | null;
   sheet: Record<string, string | null>;
   /** questionId → answerId → sources that struck it (pooled, both boards) */
   struck: Record<string, Record<string, StruckSource[]>>;

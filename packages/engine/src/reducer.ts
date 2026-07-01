@@ -16,7 +16,8 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
-import { rollTruth, serveFragments } from './content/truth';
+import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
+import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -173,6 +174,7 @@ function apply(state: GameState, action: Action): void {
           tuple: truthRoll.value,
           boards: { p1: [], p2: [] },
           shrine: null,
+          reveals: { bossFace: false, bossMechanic: false, openingIntent: false },
         };
       }
       state.phase = 'map';
@@ -532,8 +534,44 @@ function apply(state: GameState, action: Action): void {
       return;
     }
 
+    case 'LOOM_SHEET_SET': {
+      assert(state.phase === 'loom' && state.truth?.shrine, 'not at the Loom’s Eye');
+      const shrine = state.truth!.shrine!;
+      assert(shrine.verdict === null, 'the loom has already spoken');
+      assert(QUESTIONS_BY_ID[action.questionId], 'no such question');
+      if (action.answerId !== null) {
+        assert(ANSWERS_BY_ID[action.answerId]?.questionId === action.questionId, 'answer does not fit the question');
+        assert(!shrine.struck[action.questionId]?.[action.answerId], 'that answer is struck out');
+      }
+      if (shrine.sheet[action.questionId] === action.answerId) return;
+      shrine.sheet[action.questionId] = action.answerId;
+      // one shared sheet (ruling 3): any edit reopens BOTH confirmations
+      shrine.confirmed = { p1: false, p2: false };
+      return;
+    }
+
+    case 'LOOM_CONFIRM': {
+      assert(state.phase === 'loom' && state.truth?.shrine, 'not at the Loom’s Eye');
+      const shrine = state.truth!.shrine!;
+      assert(shrine.verdict === null, 'the loom has already spoken');
+      shrine.confirmed[action.player] = action.confirm;
+      // solo: the Witness speaks with the human's voice at the shrine
+      if (state.botSeat && action.player !== state.botSeat) {
+        shrine.confirmed[state.botSeat] = action.confirm;
+      }
+      if (shrine.confirmed.p1 && shrine.confirmed.p2) resolveLoomVerdict(state);
+      return;
+    }
+
     case 'ADVANCE': {
-      assert(['reward', 'event', 'rest', 'shop'].includes(state.phase), 'cannot advance now');
+      assert(['reward', 'event', 'rest', 'shop', 'loom'].includes(state.phase), 'cannot advance now');
+      if (state.phase === 'loom') {
+        assert(state.truth?.shrine?.verdict, 'the loom has not spoken yet');
+        // solo: the bot follows the human out of the shrine
+        if (state.botSeat && action.player !== state.botSeat) {
+          state.advanceReady[state.botSeat] = true;
+        }
+      }
       if (state.phase === 'reward') {
         const r = state.reward!;
         assert(r.picked.p1 !== null && r.picked.p2 !== null, 'both players must pick first');
@@ -620,6 +658,69 @@ function randomUnownedRelic(state: GameState): string | null {
   const r = rngInt(state.rng, weighted.length);
   state.rng = r.state;
   return weighted[r.value].id;
+}
+
+/** nt-slice S6.4: the shrine's coveted stake — rarity-weighted TOWARD rares
+ *  (rare 3× / common 1×; inverse of drop weighting), never uniform, so the
+ *  wager never decouples from confidence (ruling 1). Relics are binary
+ *  rare/common today; the spec's rare-3×/uncommon-2× maps to this pending a
+ *  rarity tier (S6 designer question 1). */
+function stakeRelic(state: GameState): string | null {
+  const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
+  const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
+  if (pool.length === 0) return null;
+  const weighted = pool.flatMap((rel) => (rel.rare ? [rel, rel, rel] : [rel]));
+  const r = rngInt(state.rng, weighted.length);
+  state.rng = r.state;
+  return weighted[r.value].id;
+}
+
+/** nt-slice S6.4: both confirmed — the loom answers. The verdict is stated
+ *  completely here, before the boss node unlocks. */
+function resolveLoomVerdict(state: GameState): void {
+  const truth = state.truth!;
+  const shrine = truth.shrine!;
+  const verdict: Record<string, 'true' | 'false' | 'blank'> = {};
+  for (const q of QUESTIONS) {
+    const asserted = shrine.sheet[q.id];
+    verdict[q.id] = asserted === null ? 'blank' : asserted === truth.tuple[q.id] ? 'true' : 'false';
+  }
+  shrine.verdict = verdict;
+  shrine.stakeLost = Object.values(verdict).includes('false');
+
+  for (const q of QUESTIONS) {
+    const line =
+      verdict[q.id] === 'blank' ? `“${q.text}” — left unspoken.`
+      : verdict[q.id] === 'true' ? `“${q.text}” — ${ANSWERS_BY_ID[shrine.sheet[q.id]!].text} TRUE.`
+      : `“${q.text}” — falsely named. The loom does not forgive the naming.`;
+    state.log.push({ e: 'info', detail: line });
+    if (verdict[q.id] !== 'true') continue;
+    // every TRUE assertion pays its linked reveal (ruling 2)
+    switch (QUESTIONS_BY_ID[q.id].payoff) {
+      case 'bossFace': truth.reveals.bossFace = true; break;
+      case 'bossMechanic': truth.reveals.bossMechanic = true; break;
+      case 'healEach':
+        for (const pid of ['p1', 'p2'] as PlayerId[]) {
+          const p = state.players[pid];
+          p.hp = Math.min(p.maxHp, p.hp + 6);
+        }
+        state.log.push({ e: 'info', detail: 'The loom mends what it recognizes — both heal 6.' });
+        break;
+    }
+  }
+
+  if (shrine.stakeLost) {
+    // no in-run consolation (ruling 4); the codex still advances client-side
+    state.log.push({ e: 'info', detail: 'The stake unravels. The shrine keeps what was coveted.' });
+  } else if (shrine.stakeRelicId) {
+    const ownerRoll = rngInt(state.rng, 2);
+    state.rng = ownerRoll.state;
+    grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', shrine.stakeRelicId);
+  }
+  if (Object.values(verdict).every((v) => v === 'true')) {
+    truth.reveals.openingIntent = true;
+    state.log.push({ e: 'info', detail: 'All three named true. The loom shows you the first moment of the last fight.' });
+  }
 }
 
 function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: string; [k: string]: unknown }): void {
@@ -753,6 +854,42 @@ function enterNode(state: GameState): void {
       state.phase = 'event';
       return;
     }
+    case 'loom': {
+      // nt-slice S6.4: the Loom's Eye. Stake revealed BEFORE commitment
+      // (ruling 1); both boards pool into strike-outs NOW (ruling 6 — this
+      // is where eliminations materialize); over-collected questions arrive
+      // pre-filled (auto-completion, earned).
+      const truth = state.truth!;
+      const struck: Record<string, Record<string, { eventId: string; holder: PlayerId }[]>> = {};
+      for (const q of QUESTIONS) struck[q.id] = {};
+      for (const holder of ['p1', 'p2'] as PlayerId[]) {
+        for (const pin of truth.boards[holder]) {
+          const def = FRAGMENTS_BY_ID[pin.fragmentId];
+          if (!def) continue;
+          for (const answerId of def.eliminates) {
+            (struck[def.bearsOn][answerId] ??= []).push({ eventId: pin.eventId, holder });
+          }
+        }
+      }
+      const sheet: Record<string, string | null> = {};
+      for (const q of QUESTIONS) {
+        const open = answersFor(q.id).filter((a) => !struck[q.id][a.id]);
+        // all-but-one struck → the last answer stands, pre-asserted (the
+        // routing paid for it); players may still return it to unspoken
+        sheet[q.id] = open.length === 1 ? open[0].id : null;
+      }
+      truth.shrine = {
+        stakeRelicId: stakeRelic(state),
+        sheet,
+        struck,
+        confirmed: { p1: false, p2: false },
+        verdict: null,
+        stakeLost: false,
+      };
+      state.phase = 'loom';
+      state.log.push({ e: 'info', detail: 'The Loom’s Eye opens. The shrine covets — and it is listening.' });
+      return;
+    }
     case 'rest':
       state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
       state.phase = 'rest';
@@ -807,7 +944,7 @@ function advanceAct(state: GameState): void {
     sayWitness(state, 'act2_start');
   } else if (state.map.act === 2) {
     healBetweenActs(state);
-    state.map = generateFinaleMap();
+    state.map = generateFinaleMap(!!state.tracks);
     state.phase = 'map';
     sayWitness(state, 'finale_start');
   } else {

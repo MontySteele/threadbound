@@ -130,13 +130,23 @@ export function generateActMap(rngState: number, act: 1 | 2, extraElite = false,
   };
 }
 
-/** Finale (§8): The Last Braid — rest → shop → The Unraveled. Linear. */
-export function generateFinaleMap(): MapState {
-  const nodes: MapNode[] = [
-    { id: 0, kind: 'rest', edges: [1], layer: 0, lane: 0 },
-    { id: 1, kind: 'shop', edges: [2], layer: 1, lane: 0 },
-    { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'finale_boss' },
-  ];
+/** Finale (§8): The Last Braid — rest → shop → The Unraveled. Linear.
+ *  nt-slice: flagged runs get the Loom's Eye FIRST, adjacent to (never
+ *  replacing) the pre-boss rest — the verdict lands before the rest so the
+ *  all-true boon (opening intent) can show there, and before the boss. */
+export function generateFinaleMap(tracks = false): MapState {
+  const nodes: MapNode[] = tracks
+    ? [
+        { id: 0, kind: 'loom', edges: [1], layer: 0, lane: 0 },
+        { id: 1, kind: 'rest', edges: [2], layer: 1, lane: 0 },
+        { id: 2, kind: 'shop', edges: [3], layer: 2, lane: 0 },
+        { id: 3, kind: 'boss', edges: [], layer: 3, lane: 0, encounterId: 'finale_boss' },
+      ]
+    : [
+        { id: 0, kind: 'rest', edges: [1], layer: 0, lane: 0 },
+        { id: 1, kind: 'shop', edges: [2], layer: 1, lane: 0 },
+        { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'finale_boss' },
+      ];
   return { act: 3, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 };
 }
 
