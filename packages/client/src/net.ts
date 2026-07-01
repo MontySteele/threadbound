@@ -101,6 +101,12 @@ export class Net {
     this.send({ type: 'botspeed', speed });
   }
 
+  /** S6.3: re-send the profile claim (consent toggled mid-session) so the
+   *  server's both-consent check never reads a stale seat. */
+  updateProfile(): void {
+    this.send({ type: 'profile', profile: profileClaim() });
+  }
+
   join(code: string): void {
     this.send({ type: 'join', code, profile: profileClaim() });
   }

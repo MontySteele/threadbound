@@ -16,10 +16,15 @@ import { buildSha } from './build';
 import { BotSpeed, SoloBotDriver } from './solo';
 
 /** S4.5: a browser profile's claim, sent at room join. Claims, not authority
- *  — the server clamps ascension and builds the unlock union itself. */
+ *  — the server clamps ascension and builds the unlock union itself.
+ *  S6.3: also carries the anonymous installId and the seat's opt-in telemetry
+ *  consent (the both-consent rule reads these; consent claims can only ever
+ *  SUPPRESS a file, so a forged claim gains nothing). */
 export interface ProfileClaim {
   unlockedCards: string[];
   ascensionUnlocked: Record<string, number>;
+  installId?: string;
+  telemetryConsent?: boolean;
 }
 
 export interface Seat {
@@ -313,11 +318,20 @@ export class GameServer {
     }
   }
 
+  /** S6.3 both-consent rule (RATIFIED, designer 2026-07-01): a run's
+   *  telemetry file is written only if EVERY human seat opted in (solo: the
+   *  one human). No one's file describes an unconsented partner. */
+  private bothConsent(room: Room): boolean {
+    const humans = Object.values(room.seats).filter((s): s is Seat => !!s && !s.bot);
+    return humans.length > 0 && humans.every((s) => s.claim?.telemetryConsent === true);
+  }
+
   /** M3-A1: per-run telemetry file when a run ends, for human-uplift calibration. */
   private maybeWriteTelemetry(room: Room): void {
     const dir = this.opts.humanTelemetryDir;
     if (!dir || room.telemetryWritten) return;
     if (room.state.phase !== 'game_over' && room.state.phase !== 'victory') return;
+    if (!this.bothConsent(room)) return; // S6.3: either seat opting out = no file
     room.telemetryWritten = true;
     try {
       fs.mkdirSync(dir, { recursive: true });
@@ -335,6 +349,11 @@ export class GameServer {
         characters: {
           p1: room.state.players.p1.character,
           p2: room.state.players.p2.character,
+        },
+        // S6.3: anonymous ids so runs group without identity (bot seat: none)
+        installIds: {
+          p1: room.seats.p1?.claim?.installId,
+          p2: room.seats.p2?.claim?.installId,
         },
         outcome: room.state.phase,
         act: room.state.map.act,
@@ -382,7 +401,11 @@ export class GameServer {
         if (Number.isFinite(v)) ascensionUnlocked[k] = Math.max(0, Math.min(5, Math.floor(v)));
       }
     }
-    return { unlockedCards, ascensionUnlocked };
+    const claim: ProfileClaim = { unlockedCards, ascensionUnlocked };
+    // S6.3: anonymous id + consent ride the claim
+    if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
+    if (r.telemetryConsent === true) claim.telemetryConsent = true;
+    return claim;
   }
 
   /** S4.4: highest ascension this room may start at — the minimum over every
@@ -627,6 +650,15 @@ export class GameServer {
         return;
       }
 
+      case 'profile': {
+        // S6.3: the settings consent toggle re-sends the claim mid-session —
+        // the seat's stored claim must follow it or both-consent reads stale
+        if (!ctx.room || !ctx.pid) return;
+        const seat = ctx.room.seats[ctx.pid];
+        if (seat && !seat.bot) seat.claim = this.sanitizeClaim(msg.profile);
+        return;
+      }
+
       case 'botspeed': {
         // S1.2: settings toggle — paced (default) / instant (testing)
         if (!ctx.room?.bot) return;
@@ -698,6 +730,14 @@ export class GameServer {
   // ---- static client -------------------------------------------------------
 
   private serveStatic(req: http.IncomingMessage, res: http.ServerResponse): void {
+    const urlPathRaw = (req.url ?? '/').split('?')[0];
+    if (urlPathRaw === '/data-note') {
+      // S6.3: the plain-language data note, linked from the consent card and
+      // the title footer — a relative path so every origin serves its own
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(DATA_NOTE_HTML.replace('%BUILD%', `${CONTENT_VERSION} · ${buildSha()}`));
+      return;
+    }
     const MIME: Record<string, string> = {
       '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
       '.svg': 'image/svg+xml', '.json': 'application/json', '.map': 'application/json',
@@ -720,3 +760,33 @@ export class GameServer {
     fs.createReadStream(file).pipe(res);
   }
 }
+
+/** S6.3 data note — served at /data-note, written for players, not lawyers. */
+const DATA_NOTE_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threadbound — data note</title>
+<style>body{background:#14110f;color:#d8d2c8;font:16px/1.6 Georgia,serif;max-width:620px;margin:40px auto;padding:0 16px}
+h1{color:#d4af6f;font-size:1.4em}h2{color:#d4af6f;font-size:1.05em}a{color:#d4af6f}</style></head><body>
+<h1>Threadbound — what we collect (and what we never do)</h1>
+<p>Threadbound can record <b>anonymous gameplay statistics</b> to help balance
+the game. This is <b>opt-in</b>: nothing is recorded unless you say yes, and
+in a two-player run <b>both players</b> must have said yes — otherwise no
+file is written at all.</p>
+<h2>If you opt in, a finished run records</h2>
+<ul>
+<li>gameplay statistics (cards played, damage, HP lost, thread spent, gold, outcome)</li>
+<li>the run's seed and difficulty settings</li>
+<li>the game's build version</li>
+<li>a random anonymous id stored in your browser — it groups your runs
+    together, nothing more. Clearing your browser data makes a new one;
+    it never follows you across devices.</li>
+</ul>
+<h2>Never collected</h2>
+<ul>
+<li>names, emails, accounts (there are none)</li>
+<li>chat or voice (the game has none)</li>
+<li>anything you type — except feedback or bug-report text you explicitly send</li>
+</ul>
+<p>You can change your choice any time in the in-game settings (the ♪ menu).</p>
+<p style="opacity:.6">build %BUILD%</p>
+</body></html>`;

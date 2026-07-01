@@ -7,7 +7,13 @@
 import { CharacterId } from '@threadbound/engine';
 
 export interface Profile {
-  version: 1;
+  version: 2;
+  /** S6.3: anonymous random id — groups runs without identity. Regenerated
+   *  if the profile is wiped; explicitly NOT tracking across devices. */
+  installId: string;
+  /** S6.3 opt-in telemetry consent: null = never asked (card shows when the
+   *  server declares collection active), true/false = the stored choice. */
+  telemetryConsent: boolean | null;
   clears: Record<CharacterId, { count: number; bestAscension: number }>;
   unlockedCards: string[];
   ascensionUnlocked: Record<CharacterId, number>;
@@ -16,9 +22,16 @@ export interface Profile {
 const KEY = 'tb_profile';
 const ASCENSION_CAP = 5;
 
+function newInstallId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `xx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function emptyProfile(): Profile {
   return {
-    version: 1,
+    version: 2,
+    installId: newInstallId(),
+    telemetryConsent: null,
     clears: { vess: { count: 0, bestAscension: -1 }, bram: { count: 0, bestAscension: -1 } },
     unlockedCards: [],
     ascensionUnlocked: { vess: 0, bram: 0 },
@@ -42,6 +55,12 @@ function normalize(raw: unknown): Profile {
   if (Array.isArray(r.unlockedCards)) {
     p.unlockedCards = (r.unlockedCards as unknown[]).filter((x): x is string => typeof x === 'string');
   }
+  // S6.3 (v1 → v2): keep a stored installId; a missing one gets the fresh
+  // uuid emptyProfile generated. Consent defaults to null (= never asked).
+  if (typeof r.installId === 'string' && r.installId.length >= 8 && r.installId.length <= 64) {
+    p.installId = r.installId;
+  }
+  if (r.telemetryConsent === true || r.telemetryConsent === false) p.telemetryConsent = r.telemetryConsent;
   return p;
 }
 
@@ -53,7 +72,18 @@ export function loadProfile(): Profile {
   if (!hasStorage()) return emptyProfile();
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? normalize(JSON.parse(raw)) : emptyProfile();
+    if (!raw) {
+      // S6.3: the installId must be stable from the very first load
+      const fresh = emptyProfile();
+      saveProfile(fresh);
+      return fresh;
+    }
+    const parsed = JSON.parse(raw);
+    const p = normalize(parsed);
+    // S6.3 migration: a v1 profile gets its installId minted exactly once —
+    // persist it so the id is stable across loads
+    if (parsed?.version !== 2 || parsed?.installId !== p.installId) saveProfile(p);
+    return p;
   } catch {
     return emptyProfile();
   }
@@ -85,9 +115,12 @@ function fromB64(s: string): string {
   return Buffer.from(s, 'base64').toString('utf8');
 }
 
-/** base64(JSON) + '.' + short checksum. */
+/** base64(JSON) + '.' + short checksum. The export string is PROGRESS, not
+ *  identity: installId + consent stay device-local (S6.3 — no tracking
+ *  across devices; a wiped profile regenerates its id). */
 export function exportProfile(p: Profile): string {
-  const json = JSON.stringify(p);
+  const { installId: _id, telemetryConsent: _tc, ...progress } = p;
+  const json = JSON.stringify(progress);
   return `${toB64(json)}.${hash32(json).toString(36)}`;
 }
 
@@ -99,7 +132,7 @@ export function importProfile(s: string): Profile | null {
     const json = fromB64(s.trim().slice(0, dot));
     if (hash32(json).toString(36) !== s.trim().slice(dot + 1)) return null;
     const parsed = JSON.parse(json);
-    if (parsed?.version !== 1) return null;
+    if (parsed?.version !== 1 && parsed?.version !== 2) return null;
     return normalize(parsed);
   } catch {
     return null;
@@ -109,6 +142,9 @@ export function importProfile(s: string): Profile | null {
 /** Max/union semantics — merging never downgrades either side. */
 export function mergeProfiles(a: Profile, b: Profile): Profile {
   const out = emptyProfile();
+  // device-local fields follow THIS device (a), never the imported side
+  out.installId = a.installId;
+  out.telemetryConsent = a.telemetryConsent;
   for (const c of ['vess', 'bram'] as CharacterId[]) {
     out.clears[c] = {
       count: Math.max(a.clears[c].count, b.clears[c].count),
@@ -135,8 +171,28 @@ export function recordClear(character: CharacterId, ascension: number): Profile 
   return p;
 }
 
-/** The claim sent at room join (create/join/hello). */
-export function profileClaim(): { unlockedCards: string[]; ascensionUnlocked: Record<CharacterId, number> } {
+/** S6.3: settings toggle + consent card both land here. */
+export function setTelemetryConsent(consent: boolean): Profile {
   const p = loadProfile();
-  return { unlockedCards: p.unlockedCards, ascensionUnlocked: p.ascensionUnlocked };
+  p.telemetryConsent = consent;
+  saveProfile(p);
+  return p;
+}
+
+/** The claim sent at room join (create/join/hello). S6.3: carries the
+ *  anonymous installId and this seat's telemetry consent — the server's
+ *  both-consent rule reads these claims. */
+export function profileClaim(): {
+  unlockedCards: string[];
+  ascensionUnlocked: Record<CharacterId, number>;
+  installId: string;
+  telemetryConsent: boolean | null;
+} {
+  const p = loadProfile();
+  return {
+    unlockedCards: p.unlockedCards,
+    ascensionUnlocked: p.ascensionUnlocked,
+    installId: p.installId,
+    telemetryConsent: p.telemetryConsent,
+  };
 }

@@ -10,7 +10,7 @@ import {
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
-import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
+import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile, setTelemetryConsent } from './profile';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
@@ -94,6 +94,7 @@ export default function App(): JSX.Element {
   const [toast, setToast] = useState('');
   // S6.2/S6.3: server-declared lifecycle status (drain, telemetry collection)
   const [status, setStatus] = useState<ServerStatus | null>(null);
+  const [, consentTick] = useState(0);
   const netRef = useRef<Net | null>(null);
 
   useEffect(() => {
@@ -177,10 +178,15 @@ export default function App(): JSX.Element {
   if (new URLSearchParams(location.search).has('style')) return <StyleScreen />;
   if (!net || !connected) return <div className="center">Connecting…</div>;
 
+  // S6.3: the consent card appears ONLY when the server declares telemetry
+  // collection active AND this browser has never answered. Local dev never asks.
+  const needConsent = !!status?.telemetryActive && loadProfile().telemetryConsent === null;
+
   return (
     <>
       <div id="fx-overlay" />
       <VersionFooter />
+      {needConsent && <ConsentCard net={net} onDone={() => consentTick((n) => n + 1)} />}
       <InspectPanel />
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
@@ -206,7 +212,7 @@ export default function App(): JSX.Element {
                 </button>
               )}
               <button className="chip" data-gp="META" title="fullscreen (f)" onClick={toggleFullscreen}>⛶</button>
-              <Settings net={net} solo={!!state.botSeat} />
+              <Settings net={net} solo={!!state.botSeat} telemetryActive={!!status?.telemetryActive} />
               <span className={partnerOn ? 'on' : 'off'}>
                 {state.botSeat ? '● the Witness' : partnerOn ? '● partner' : '○ partner'}
               </span>
@@ -261,6 +267,37 @@ function VersionFooter(): JSX.Element {
   return <div className="version-footer">{VERSION_STAMP}</div>;
 }
 
+/** S6.3 opt-in consent card (first launch, only while the server declares
+ *  telemetry collection active). Plain language; the choice lives in the
+ *  profile and is changeable in settings (♪). */
+function ConsentCard({ net, onDone }: { net: Net; onDone: () => void }): JSX.Element {
+  const choose = (consent: boolean) => {
+    setTelemetryConsent(consent);
+    net.updateProfile(); // refresh the seat's claim if already in a room
+    onDone();
+  };
+  return (
+    <div className="feedback-overlay consent-card">
+      <div className="tutorial-step">A QUESTION, BEFORE THE DESCENT</div>
+      <p>
+        This server can record <b>anonymous gameplay statistics</b> from finished runs to help
+        balance the game: cards played, damage, HP lost, the run’s seed, the build version, and a
+        random anonymous id stored in this browser.
+      </p>
+      <p>
+        <b>Never collected:</b> names, emails, chat, or anything you type — except feedback you
+        explicitly send. In a two-player run a file is written only if <b>both</b> players say yes.
+      </p>
+      <p className="muted">
+        <a href="data-note" target="_blank" rel="noreferrer">read the full data note</a> · change
+        your mind any time in settings (♪)
+      </p>
+      <button className="big" data-gp="META" onClick={() => choose(true)}>Yes — count my runs</button>
+      <button data-gp="META" onClick={() => choose(false)}>No thanks</button>
+    </div>
+  );
+}
+
 function HintBar(): JSX.Element | null {
   if (!controller.active) return null;
   const g = GLYPHS[controller.flavor];
@@ -279,7 +316,7 @@ function HintBar(): JSX.Element | null {
   );
 }
 
-function Settings({ net, solo }: { net: Net; solo: boolean }): JSX.Element {
+function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; telemetryActive: boolean }): JSX.Element {
   const [open, setOpen] = useState(false);
   const [, tick] = useState(0);
   const [botSpeed, setBotSpeed] = useState<'paced' | 'instant'>(
@@ -297,6 +334,18 @@ function Settings({ net, solo }: { net: Net; solo: boolean }): JSX.Element {
                 onChange={(e) => { audio.setVolume(k, Number(e.target.value)); tick((n) => n + 1); }} />
             </label>
           ))}
+          {telemetryActive && (
+            // S6.3: consent is changeable here any time collection is active
+            <label title="anonymous run statistics — see /data-note">
+              share run stats
+              <input type="checkbox" checked={loadProfile().telemetryConsent === true}
+                onChange={(e) => {
+                  setTelemetryConsent(e.target.checked);
+                  net.updateProfile();
+                  tick((n) => n + 1);
+                }} />
+            </label>
+          )}
           {solo && (
             <label>
               bot speed

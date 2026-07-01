@@ -3,9 +3,16 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  Profile,
   emptyProfile, exportProfile, importProfile, loadProfile, mergeProfiles,
-  recordClear, saveProfile,
+  recordClear, saveProfile, setTelemetryConsent,
 } from '../src/profile';
+
+/** installId is random per emptyProfile() — compare progress fields only. */
+const progress = (p: Profile) => {
+  const { installId: _id, telemetryConsent: _tc, ...rest } = p;
+  return rest;
+};
 
 // node has no localStorage — give the module a tiny stand-in
 const store = new Map<string, string>();
@@ -28,12 +35,14 @@ describe('profile export/import round-trip (gate 6)', () => {
     const exported = exportProfile(loadProfile());
 
     store.clear(); // the wipe
-    expect(loadProfile()).toEqual(emptyProfile());
+    expect(progress(loadProfile())).toEqual(progress(emptyProfile()));
 
     const imported = importProfile(exported);
     expect(imported).not.toBeNull();
     saveProfile(mergeProfiles(loadProfile(), imported!));
-    expect(loadProfile()).toEqual(p);
+    // S6.3: progress round-trips; installId/consent are device-local and
+    // regenerate on a wipe — they are NOT carried by the export string
+    expect(progress(loadProfile())).toEqual(progress(p));
   });
 
   it('rejects corrupted strings cleanly', () => {
@@ -60,6 +69,38 @@ describe('profile export/import round-trip (gate 6)', () => {
     expect(m.clears.vess).toEqual({ count: 5, bestAscension: 4 });
     expect(m.ascensionUnlocked).toEqual({ vess: 2, bram: 1 });
     expect(m.unlockedCards.sort()).toEqual(['x', 'y']);
+  });
+});
+
+describe('S6.3 installId + telemetry consent (profile v2)', () => {
+  it('mints a stable installId once, including for migrated v1 profiles', () => {
+    const v1 = { version: 1, clears: { vess: { count: 2, bestAscension: 0 }, bram: { count: 0, bestAscension: -1 } }, unlockedCards: [], ascensionUnlocked: { vess: 1, bram: 0 } };
+    store.set('tb_profile', JSON.stringify(v1));
+    const first = loadProfile();
+    expect(first.version).toBe(2);
+    expect(first.installId.length).toBeGreaterThanOrEqual(8);
+    expect(first.telemetryConsent).toBeNull(); // never asked
+    expect(first.clears.vess.count).toBe(2); // progress survives the bump
+    expect(loadProfile().installId).toBe(first.installId); // stable across loads
+  });
+
+  it('export string never carries installId or consent; merge keeps the local ones', () => {
+    const p = loadProfile();
+    setTelemetryConsent(true);
+    expect(exportProfile(loadProfile())).not.toContain(p.installId);
+    const imported = importProfile(exportProfile(loadProfile()))!;
+    expect(imported.installId).not.toBe(p.installId); // freshly minted on import
+    const merged = mergeProfiles(loadProfile(), imported);
+    expect(merged.installId).toBe(p.installId);
+    expect(merged.telemetryConsent).toBe(true);
+  });
+
+  it('consent round-trips through the settings toggle', () => {
+    expect(loadProfile().telemetryConsent).toBeNull();
+    setTelemetryConsent(true);
+    expect(loadProfile().telemetryConsent).toBe(true);
+    setTelemetryConsent(false);
+    expect(loadProfile().telemetryConsent).toBe(false);
   });
 });
 
