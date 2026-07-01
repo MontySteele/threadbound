@@ -31,7 +31,8 @@ export type EffectOp =
   | { op: 'damageAll'; amount: number; primary?: boolean }
   // damage equal to base + perHex * target's Hex stacks (does not detonate).
   // Telemetry: logs to the HexScaling bucket (M2-B1).
-  | { op: 'damagePerHex'; base: number; perHex: number; primary?: boolean }
+  // max = S5.1 per-play ceiling on the hex-scaled total (applied pre-Momentum)
+  | { op: 'damagePerHex'; base: number; perHex: number; max?: number; primary?: boolean }
   // Haymaker: +Momentum×mult damage rider, and optionally skip the halving
   | { op: 'momentumStrikeBonus'; mult: number; keepMomentum?: boolean }
   // M2-A4: this card's Momentum bonus applies to EVERY hit (rare design space)

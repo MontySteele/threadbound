@@ -20,7 +20,7 @@ def({
   needsTarget: true,
   text: 'Apply 4 Hex.',
   base: [{ op: 'hex', amount: 4, primary: true }], // M2-B1 lever 3: 3 → 4
-  link: { condition: 'any', text: 'Apply 1 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 1 }] },
+  link: { condition: 'Strike', text: 'Apply 1 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 1 }] },
   mutation: {
     name: 'Cinder Needlework', text: 'Apply 2 Hex. Gain 2 Momentum.',
     base: [{ op: 'hex', amount: 2, primary: true }, { op: 'momentum', amount: 2 }],
@@ -67,7 +67,7 @@ def({
   id: 'wardknot', name: 'Wardknot', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
   text: 'Gain 5 Block.',
   base: [{ op: 'block', amount: 5, primary: true }],
-  link: { condition: 'any', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
+  link: { condition: 'Surge', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
 });
 def({
   id: 'loose_stitch', name: 'Loose Stitch', character: 'vess', rarity: 'common', cost: 0, tag: 'Surge',
@@ -79,7 +79,7 @@ def({
   id: 'quickening', name: 'Quickening', character: 'vess', rarity: 'common', cost: 1, tag: 'Surge',
   text: 'Draw 2.',
   base: [{ op: 'draw', amount: 2 }],
-  link: { condition: 'any', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: Rite too sparse for a common link
+  link: { condition: 'Guard', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: Rite too sparse for a common link
 });
 def({
   id: 'mendthread', name: 'Mendthread', character: 'vess', rarity: 'common', cost: 1, tag: 'Rite',
@@ -103,7 +103,7 @@ def({
 def({
   id: 'saturate', name: 'Saturate', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Hex', // lever 3: cost 2 → 1
   needsTarget: true,
-  text: 'Double the target’s Hex.',
+  text: 'Double the target’s Hex (max +6).',
   base: [{ op: 'doubleHex' }],
   link: { condition: 'Surge', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
 });
@@ -222,14 +222,14 @@ def({
   id: 'kindle', name: 'Kindle', character: 'bram', rarity: 'common', cost: 1, tag: 'Rite',
   text: 'Gain 1 Thread. Gain 1 Momentum.',
   base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 1, primary: true }],
-  link: { condition: 'Hex', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
+  link: { condition: 'Strike', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
 });
 def({
   id: 'followthrough', name: 'Followthrough', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 6.',
   base: [{ op: 'damage', amount: 6, primary: true }],
-  link: { condition: 'Hex', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] },
+  link: { condition: 'Surge', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] }, // S5.2: Hex → Surge (Table A)
 });
 
 // Uncommons (7) — self-similar scarce (§2.3): Haymaker, Dig In (both §9 samples).
@@ -323,10 +323,10 @@ def({
   // detonation's pierce). The burst payoff lives on her partner.
   id: 'worn_knife', name: 'Worn Knife', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   starterOnly: true, needsTarget: true,
-  text: 'Deal 2. +1 damage per Hex on the target (does not detonate).',
-  base: [{ op: 'damagePerHex', base: 2, perHex: 1, primary: true }],
+  text: 'Deal 2. +1 damage per Hex on the target, max 12 (does not detonate).',
+  base: [{ op: 'damagePerHex', base: 2, perHex: 1, max: 12, primary: true }],
   mutation: { name: 'Cinder-honed Knife', text: 'Deal 4. Gain 1 Momentum.', base: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Deal 4. +1 damage per Hex on the target (does not detonate).', base: [{ op: 'damagePerHex', base: 4, perHex: 1, primary: true }] },
+  upgrade: { text: 'Deal 4. +1 damage per Hex on the target, max 12 (does not detonate).', base: [{ op: 'damagePerHex', base: 4, perHex: 1, max: 12, primary: true }] },
 });
 def({
   // §14.11: the burst payoff, cross-player by construction — Bram detonates
@@ -349,7 +349,7 @@ def({
   text: 'Gain 4 Block.',
   base: [{ op: 'block', amount: 4, primary: true }],
   mutation: { name: 'Riveted Patchwork', text: 'Gain 3 Block. Gain 1 Momentum.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+  upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 def({
   id: 'jab', name: 'Jab', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
@@ -365,7 +365,7 @@ def({
   text: 'Gain 4 Block.',
   base: [{ op: 'block', amount: 4, primary: true }],
   mutation: { name: 'Stitched Brace-Up', text: 'Gain 3 Block. Gain 1 Thread.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'thread', amount: 1 }] },
-  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+  upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 
 // M2-A5 starter decks; §14.11: one Hatpin/Jab slot becomes the payoff card

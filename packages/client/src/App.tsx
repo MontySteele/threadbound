@@ -1237,9 +1237,7 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </>
       )}
       <div>
-        {!treasureOnly && r.picked[you] !== null && r.coveted[you] === null && me.covetCharges > 0 && r.picked[partner] !== null && (
-          <button data-gp="META" onClick={() => net.act({ type: 'COVET_PICK', pick: 'pass' } as any)}>Pass on Coveting</button>
-        )}{' '}
+        {/* OQ#42: no separate "Pass on Coveting" — ADVANCE auto-passes an undecided Covet */}
         <button className="big" data-gp="META" disabled={(!treasureOnly && (r.picked.p1 === null || r.picked.p2 === null)) || state.advanceReady[you]}
           onClick={() => net.act({ type: 'ADVANCE' } as any)}>
           {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}

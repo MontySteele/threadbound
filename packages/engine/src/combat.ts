@@ -290,7 +290,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
         case 'damagePerHex': {
           const tgt = retarget(slot.targetId);
           if (!tgt) break;
-          let amt = sc(eff.base + eff.perHex * tgt.hex, eff.primary);
+          let amt = Math.min(sc(eff.base + eff.perHex * tgt.hex, eff.primary), eff.max ?? Infinity);
           if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
           hit(owner, tgt, amt);
           break;
@@ -317,7 +317,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
         }
         case 'hex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += sc(eff.amount, eff.primary); break; }
         case 'hexAll': for (const tgt of living()) tgt.hex += sc(eff.amount, eff.primary); break;
-        case 'doubleHex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex *= 2; break; }
+        case 'doubleHex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += Math.min(tgt.hex, DOUBLE_HEX_CAP); break; }
         case 'vulnerable': { const tgt = retarget(slot.targetId); if (tgt) tgt.vulnerable += eff.amount; break; }
         case 'momentum': mom[owner] += sc(eff.amount, eff.primary); break;
         default: break; // non-damaging ops don't affect the enemy-damage forecast
@@ -411,6 +411,7 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
 
 /** M2-B1 Hex rebalance lever 2: raised 3 → 4 after sim baselining (Part C). */
 export const DETONATION_DAMAGE = 4;
+export const DOUBLE_HEX_CAP = 6; // S5.1: doubling adds at most +6 — the engine goes linear past 6 (OQ#28/#43)
 
 function gainThread(state: GameState, amount: number): void {
   state.thread = Math.min(state.threadMax, state.thread + amount);
@@ -535,7 +536,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     case 'damagePerHex': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy) return;
-      const amt = applyMomentum(ctx, scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), 0);
+      const amt = applyMomentum(ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
       // M2-B1: hex-scaling damage gets its own attribution bucket
       dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt), owner.id);
       break;
@@ -588,7 +589,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     }
     case 'doubleHex': {
       const enemy = retarget(state, ctx.targetId);
-      if (enemy) enemy.hex *= 2;
+      if (enemy) enemy.hex += Math.min(enemy.hex, DOUBLE_HEX_CAP);
       break;
     }
     case 'detonate': {

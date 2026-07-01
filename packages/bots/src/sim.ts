@@ -129,7 +129,12 @@ async function main(): Promise<void> {
     // 20-30 was guessed against the pre-§14.10 starter (no detonating Hatpin).
     // Widened per the review pass with burst texture verified healthy (avg
     // 3.12 stacks/detonation); re-derive honestly in Part A.
-    { name: 'Hex damage share 25–45% (provisional, §14.10)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 },
+    // S5 designer amendment (2026-07-01, gate 4): the band gates PAIR=vb
+    // only — mirror pairs' shares are structural (a hex mirror's damage is
+    // hex-flavored by construction) and read as telemetry, not gates.
+    PAIR === 'vb'
+      ? { name: 'Hex damage share 25–45% (vb gate, §14.10 + S5)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 }
+      : { name: `Hex damage share (telemetry only for ${PAIR}, S5 gate-4 amendment)`, value: `${hexShare.toFixed(1)}%`, pass: true },
   ];
 
   console.log('\n================ TELEMETRY SUMMARY (M2 Part C) ================');

@@ -75,8 +75,11 @@ const envScale = (name: string, fallback: number): number => {
   }
   return fallback;
 };
-export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.5);
-export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.35);
+// S5.5 (2026-07-01, designer conditional-yes): eased one notch from 1.5/1.35
+// after the S5.1 hex cuts lengthened fights — act-1 HP loss read 25.4–26.9
+// across all pairs vs the 16–22 band on the post-Table-A/B battery.
+export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.45);
+export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {

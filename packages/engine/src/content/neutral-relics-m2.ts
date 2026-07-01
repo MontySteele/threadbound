@@ -49,7 +49,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 3, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+      link: { condition: 'Strike', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
     },
   },
   {
@@ -67,20 +67,22 @@ export const NEUTRAL_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'stolen_breath', name: 'Stolen Breath', character: 'neutral', rarity: 'common', cost: 0, tag: 'Surge',
-    text: 'Draw 1.',
+    // OQ#30 (S5.4): designer's ruling direction — the free self-replacing
+    // chain filler now Exhausts (once per combat).
+    id: 'stolen_breath', name: 'Stolen Breath', character: 'neutral', rarity: 'common', cost: 0, tag: 'Surge', exhaust: true,
+    text: 'Draw 1. Exhaust.',
     base: [{ op: 'draw', amount: 1 }],
-    link: { condition: 'any', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
+    link: { condition: 'Rite', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // S5.2 Table B: back to Rite (pre-§4 condition)
     mutation: {
-      name: 'Held Breath', text: 'Draw 1. Gain 2 Block.',
+      name: 'Caught Breath', text: 'Draw 1. Gain 2 Block.', // OQ#47: renamed from "Held Breath" (collided with Bram's uncommon)
       base: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 2 }],
     },
     // PT2 fix: the upgrade was a byte-identical copy of the base link — a
     // no-op "+". Smallest real deepening; the card's overall power level is
     // OQ#30's call, so the base stays untouched.
     upgrade: {
-      text: 'Draw 1. Link (any): Gain Kindled 2.',
-      link: { condition: 'any', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
+      text: 'Draw 1. Link (Rite): Gain Kindled 2. Exhaust.',
+      link: { condition: 'Rite', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
     },
   },
   {
@@ -93,7 +95,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 2 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'You and your partner each gain 3 Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
+      link: { condition: 'Guard', text: 'You and your partner each gain 3 Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
     },
   },
   {
@@ -107,7 +109,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Deal 4 more.', effects: [{ op: 'damage', amount: 4 }] },
+      link: { condition: 'Surge', text: 'Deal 4 more.', effects: [{ op: 'damage', amount: 4 }] },
     },
   },
   {
@@ -134,7 +136,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Draw 1 and gain 1 Block.', effects: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 1 }] },
+      link: { condition: 'Guard', text: 'Draw 1 and gain 1 Block.', effects: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 1 }] },
     },
   },
 
@@ -164,7 +166,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
+      link: { condition: 'Surge', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     },
   },
   {
@@ -172,7 +174,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'linked_shields', name: 'Linked Shields', character: 'neutral', rarity: 'uncommon', cost: 2, tag: 'Guard',
     text: 'Gain 7 Block.',
     base: [{ op: 'block', amount: 7, primary: true }],
-    link: { condition: 'Guard', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+    link: { condition: 'Guard', text: 'Your partner gains 6 Block.', effects: [{ op: 'partnerBlock', amount: 6 }] }, // OQ#34: 4 → 6 (co-op half is the identity)
     mutation: {
       name: 'Unlinked Shield', text: 'Gain 5 Block. Draw 1.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'draw', amount: 1 }],
@@ -191,20 +193,20 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Gain Kindled 1 and your partner draws 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
+      link: { condition: 'Strike', text: 'Gain Kindled 1 and your partner draws 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     },
   },
   {
     id: 'shared_sigil', name: 'Shared Sigil', character: 'neutral', rarity: 'uncommon', cost: 1, tag: 'Hex',
     text: 'Apply 2 Hex to ALL enemies.',
     base: [{ op: 'hexAll', amount: 2, primary: true }],
-    link: { condition: 'any', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: widened from Rite
+    link: { condition: 'Guard', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Split Sigil', text: 'Apply 1 Hex to ALL enemies. Draw 1.',
       base: [{ op: 'hexAll', amount: 1, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'any', text: 'Your partner draws 1 and gains 2 Block.', effects: [{ op: 'partnerDraw', amount: 1 }, { op: 'partnerBlock', amount: 2 }] },
+      link: { condition: 'Guard', text: 'Your partner draws 1 and gains 2 Block.', effects: [{ op: 'partnerDraw', amount: 1 }, { op: 'partnerBlock', amount: 2 }] },
     },
   },
 
