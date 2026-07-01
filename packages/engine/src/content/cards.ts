@@ -222,14 +222,14 @@ def({
   id: 'kindle', name: 'Kindle', character: 'bram', rarity: 'common', cost: 1, tag: 'Rite',
   text: 'Gain 1 Thread. Gain 1 Momentum.',
   base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 1, primary: true }],
-  link: { condition: 'Hex', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
+  link: { condition: 'Strike', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
 });
 def({
   id: 'followthrough', name: 'Followthrough', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 6.',
   base: [{ op: 'damage', amount: 6, primary: true }],
-  link: { condition: 'Hex', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] },
+  link: { condition: 'Surge', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] }, // S5.2: Hex → Surge (Table A)
 });
 
 // Uncommons (7) — self-similar scarce (§2.3): Haymaker, Dig In (both §9 samples).

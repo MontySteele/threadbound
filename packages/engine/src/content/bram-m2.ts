@@ -90,14 +90,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Deal 5. Gain 1 Momentum.',
     base: [{ op: 'damage', amount: 5, primary: true }, { op: 'momentum', amount: 1 }],
-    link: { condition: 'Hex', text: 'Apply 1 Vulnerable.', effects: [{ op: 'vulnerable', amount: 1 }] },
+    link: { condition: 'Surge', text: 'Apply 1 Vulnerable.', effects: [{ op: 'vulnerable', amount: 1 }] }, // S5.2: Hex → Surge (Table A)
     mutation: {
       name: 'Stitched Body Blow', text: 'Deal 5. Apply 1 Hex.',
       base: [{ op: 'damage', amount: 5, primary: true }, { op: 'hex', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 5. Gain 1 Momentum. Link (Hex): apply 1 Vulnerable and 1 Weak.',
-      link: { condition: 'Hex', text: 'Apply 1 Vulnerable and 1 Weak.', effects: [{ op: 'vulnerable', amount: 1 }, { op: 'weak', amount: 1 }] },
+      text: 'Deal 5. Gain 1 Momentum. Link (Surge): apply 1 Vulnerable and 1 Weak.',
+      link: { condition: 'Surge', text: 'Apply 1 Vulnerable and 1 Weak.', effects: [{ op: 'vulnerable', amount: 1 }, { op: 'weak', amount: 1 }] },
     },
   },
   {
@@ -191,14 +191,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     id: 'fan_the_flames', name: 'Fan the Flames', character: 'bram', rarity: 'common', cost: 1, tag: 'Surge',
     text: 'Gain 3 Momentum.',
     base: [{ op: 'momentum', amount: 3, primary: true }],
-    link: { condition: 'Hex', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
+    link: { condition: 'Strike', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
     mutation: {
       name: 'Hexbound Fan the Flames', text: 'Gain 1 Momentum. Apply 2 Hex to ALL enemies.',
       base: [{ op: 'momentum', amount: 1, primary: true }, { op: 'hexAll', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 3 Momentum. Link (Hex): draw 2.',
-      link: { condition: 'Hex', text: 'Draw 2.', effects: [{ op: 'draw', amount: 2 }] },
+      text: 'Gain 3 Momentum. Link (Strike): draw 2.',
+      link: { condition: 'Strike', text: 'Draw 2.', effects: [{ op: 'draw', amount: 2 }] },
     },
   },
   {
@@ -314,14 +314,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     id: 'cinder_cloak', name: 'Cinder Cloak', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Guard',
     text: 'Gain 7 Block.',
     base: [{ op: 'block', amount: 7, primary: true }],
-    link: { condition: 'Hex', text: 'Apply 1 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 1 }] },
+    link: { condition: 'Strike', text: 'Apply 1 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
     mutation: {
       name: 'Hexbound Cinder Cloak', text: 'Gain 5 Block. Apply 2 Hex to ALL enemies.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hexAll', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 7 Block. Link (Hex): apply 2 Hex to ALL enemies.',
-      link: { condition: 'Hex', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
+      text: 'Gain 7 Block. Link (Strike): apply 2 Hex to ALL enemies.',
+      link: { condition: 'Strike', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
     },
   },
   {
@@ -610,8 +610,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Hex): apply 1 Weak and 1 Vulnerable.',
-      link: { condition: 'Hex', text: 'Apply 1 Weak and 1 Vulnerable.', effects: [{ op: 'weak', amount: 1 }, { op: 'vulnerable', amount: 1 }] },
+      text: 'Deal 6. Link (Surge): apply 1 Weak and 1 Vulnerable.',
+      link: { condition: 'Surge', text: 'Apply 1 Weak and 1 Vulnerable.', effects: [{ op: 'weak', amount: 1 }, { op: 'vulnerable', amount: 1 }] },
     },
   },
 
