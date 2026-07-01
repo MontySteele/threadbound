@@ -231,6 +231,11 @@ export interface EnemyState {
   untargetable: boolean;
   scriptIndex: number;
   intent: EnemyIntent;
+  /** nt-slice S6.5 (flagged finale boss only) — all three are RENDERED
+   *  strings, safe to cross the wire; the pools stay server-side. */
+  nameOverride?: string; // real face name, when earned at the shrine
+  telegraph?: string | null; // whispered one turn before a hidden mechanic's first firing
+  revealedMechanics?: string[]; // reveal lines earned at the shrine
 }
 
 // ---------------------------------------------------------------------------
@@ -363,6 +368,10 @@ export interface TruthState {
    *  only countable stubs of the partner's (spec ruling 5). */
   boards: Record<PlayerId, PinnedFragment[]>;
   shrine: ShrineState | null;
+  /** nt-slice S6.5: the finale boss's rolled identity — face keyed off the
+   *  q_what answer; two live mechanics ([0] q_what-bound, [1] q_why-bound).
+   *  SERVER-SECRET until revealed. */
+  boss: { faceAnswerId: string; liveMechanics: string[] };
   /** payoffs earned at the verdict, consumed by the boss layer (S6.5):
    *  bossFace = real name + mechanic 1 in the intent UI · bossMechanic =
    *  mechanic 2 · openingIntent = the all-true boon (full opening turn

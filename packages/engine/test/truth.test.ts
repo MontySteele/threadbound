@@ -468,3 +468,99 @@ describe("the Loom's Eye (S6.4)", () => {
     expect(rares / total).toBeGreaterThan(rareShare * 1.8);
   });
 });
+
+// ---------------------------------------------------------------------------
+// S6.5: boss faces, live mechanics, telegraphs
+// ---------------------------------------------------------------------------
+
+import { startCombat } from '../src/combat';
+import { FACE_BY_ANSWER, FACES, mechanicFireTurns, rollLiveMechanics } from '../src/content/faces';
+
+function bossFight(seed: number, reveals?: Partial<{ bossFace: boolean; bossMechanic: boolean }>) {
+  const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+  for (const pid of ['p1', 'p2'] as const) {
+    state.players[pid].maxHp = 999;
+    state.players[pid].hp = 999;
+  }
+  if (reveals) Object.assign(state.truth!.reveals, reveals);
+  state.map = generateFinaleMap(true);
+  state.map.position = 3;
+  startCombat(state, ['the_unraveled']);
+  return state;
+}
+
+describe('boss faces (S6.5)', () => {
+  it('face content: two faces on the q_what answers, 3 mechanics each, all lines authored', () => {
+    expect(FACES.length).toBe(2);
+    expect(Object.keys(FACE_BY_ANSWER).sort()).toEqual(answersFor('q_what').map((a) => a.id).sort());
+    for (const f of FACES) {
+      expect(f.mechanicPool.length, f.answerId).toBe(3);
+      for (const m of f.mechanicPool) {
+        expect(m.telegraphLine.length, m.id).toBeGreaterThan(0);
+        expect(m.revealLine.length, m.id).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('run roll: face = the rolled q_what answer; two DISTINCT live mechanics from that face', () => {
+    for (let seed = 0; seed < 40; seed++) {
+      const s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+      const boss = s.truth!.boss;
+      expect(boss.faceAnswerId).toBe(s.truth!.tuple.q_what);
+      expect(boss.liveMechanics.length).toBe(2);
+      expect(boss.liveMechanics[0]).not.toBe(boss.liveMechanics[1]);
+      const pool = FACE_BY_ANSWER[boss.faceAnswerId].mechanicPool.map((m) => m.id);
+      for (const mid of boss.liveMechanics) expect(pool).toContain(mid);
+    }
+    // both mechanic orderings reachable
+    const seen = new Set<string>();
+    for (let s = 0; s < 200; s++) seen.add(rollLiveMechanics('a_peal', s).value.join(','));
+    expect(seen.size).toBe(6); // 3P2 orderings
+  });
+
+  it('unrevealed: mechanics take over the intent on turns 3/5 and telegraph exactly one turn before first firing', () => {
+    let s = bossFight(21);
+    const face = FACE_BY_ANSWER[s.truth!.boss.faceAnswerId];
+    const mech = (slot: number) => face.mechanicPool.find((m) => m.id === s.truth!.boss.liveMechanics[slot])!;
+    const telegraphs: string[] = [];
+    const intentAt: Record<number, string> = {};
+    for (let round = 0; round < 8; round++) {
+      const boss = s.combat!.enemies[0];
+      intentAt[s.combat!.turn] = boss.intent.kind;
+      if (boss.telegraph) telegraphs.push(`${s.combat!.turn}:${boss.telegraph}`);
+      s = reduce(s, { type: 'SET_READY', player: 'p1', ready: true });
+      s = reduce(s, { type: 'SET_READY', player: 'p2', ready: true });
+    }
+    expect(intentAt[3]).toBe(mech(0).intent.kind);
+    expect(intentAt[5]).toBe(mech(1).intent.kind);
+    expect(intentAt[7]).toBe(mech(0).intent.kind); // period 4
+    // telegraphs surfaced with the first-fire intents, once each
+    expect(telegraphs).toEqual([`3:${mech(0).telegraphLine}`, `5:${mech(1).telegraphLine}`]);
+    expect(s.combat!.enemies[0].nameOverride).toBeUndefined();
+  });
+
+  it('revealed at the shrine: real name + reveal lines from combat start, no telegraphs', () => {
+    let s = bossFight(21, { bossFace: true, bossMechanic: true });
+    const face = FACE_BY_ANSWER[s.truth!.boss.faceAnswerId];
+    const boss0 = s.combat!.enemies[0];
+    expect(boss0.nameOverride).toBe(face.realName);
+    expect(boss0.revealedMechanics!.length).toBe(2);
+    for (let round = 0; round < 6; round++) {
+      expect(s.combat!.enemies[0].telegraph ?? null).toBeNull();
+      s = reduce(s, { type: 'SET_READY', player: 'p1', ready: true });
+      s = reduce(s, { type: 'SET_READY', player: 'p2', ready: true });
+    }
+  });
+
+  it('the flagged boss opens deterministically at script index 0', () => {
+    for (const seed of [1, 2, 3]) {
+      const s = bossFight(seed);
+      expect(s.combat!.enemies[0].scriptIndex).toBe(0);
+    }
+  });
+
+  it('schedule helper: slot 0 → 3,7,11…; slot 1 → 5,9,13…', () => {
+    expect(mechanicFireTurns(0)).toEqual({ first: 3, period: 4 });
+    expect(mechanicFireTurns(1)).toEqual({ first: 5, period: 4 });
+  });
+});

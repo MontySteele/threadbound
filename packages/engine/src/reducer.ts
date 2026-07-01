@@ -4,8 +4,8 @@
 // Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardDef, CardInstance, CharacterId, GameState, GoldSource, IllegalAction, MapNode,
-  PlayerId, PlayerState, Rarity, RestOption, Telemetry,
+  Action, CardDef, CardInstance, CharacterId, EnemyIntent, GameState, GoldSource, IllegalAction,
+  MapNode, PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
@@ -14,9 +14,10 @@ import {
   computeLinksFired, effectiveDef, emptyActStats, findInstance, hasPassive, otherPlayer,
   resolveTurn, runHooks, startCombat, startTurn,
 } from './combat';
-import { ASCENSION_MAX, ascensionMods } from './ascension';
+import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
+import { rollLiveMechanics } from './content/faces';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
@@ -170,10 +171,15 @@ function apply(state: GameState, action: Action): void {
         state.tracks = true;
         const truthRoll = rollTruth(state.rng);
         state.rng = truthRoll.state;
+        // the boss wears the q_what answer; its live mechanics roll now so
+        // the whole run replays from the seed (S6.5)
+        const mechs = rollLiveMechanics(truthRoll.value.q_what, state.rng);
+        state.rng = mechs.state;
         state.truth = {
           tuple: truthRoll.value,
           boards: { p1: [], p2: [] },
           shrine: null,
+          boss: { faceAnswerId: truthRoll.value.q_what, liveMechanics: mechs.value },
           reveals: { bossFace: false, bossMechanic: false, openingIntent: false },
         };
       }
@@ -660,6 +666,24 @@ function randomUnownedRelic(state: GameState): string | null {
   return weighted[r.value].id;
 }
 
+/** nt-slice S6.5: server-side intent prose for the rest-site boon line. */
+function describeIntent(it: EnemyIntent): string {
+  switch (it.kind) {
+    case 'attack': return `${it.amount}${it.times && it.times > 1 ? `×${it.times}` : ''} damage`;
+    case 'attack_all': return `${it.amount} damage to BOTH of you`;
+    case 'attack_momentum': return `${it.base}+ damage, growing with Momentum`;
+    case 'attack_drain': return `${it.amount} damage and a drain of ${it.threadDrain} Thread`;
+    case 'attack_fray': return `${it.amount} damage and Fray on you both`;
+    case 'block': return `${it.amount} Block`;
+    case 'block_all': return `${it.amount} Block across its line`;
+    case 'buff_strength': return `+${it.amount} Strength`;
+    case 'buff_strength_all': return `+${it.amount} Strength to its line`;
+    case 'debuff_weak': return `${it.amount} Weak`;
+    case 'debuff_vulnerable': return `${it.amount} Vulnerable`;
+    case 'sever': return 'a severing of its binding';
+  }
+}
+
 /** nt-slice S6.4: the shrine's coveted stake — rarity-weighted TOWARD rares
  *  (rare 3× / common 1×; inverse of drop weighting), never uniform, so the
  *  wager never decouples from confidence (ruling 1). Relics are binary
@@ -894,6 +918,16 @@ function enterNode(state: GameState): void {
       state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
       state.phase = 'rest';
       sayWitness(state, 'rest_site');
+      // nt-slice S6.5: the all-true completion boon — the full opening turn,
+      // shown at the pre-boss rest (the flagged boss always opens at script 0)
+      if (state.truth?.reveals.openingIntent && state.map.act === 3) {
+        const bossDef = ENEMIES[ENCOUNTERS['finale_boss'].enemies[0]];
+        const opening = scaleIntent(bossDef.script[0], ascensionMods(state.ascension).dmgScale);
+        state.log.push({
+          e: 'info',
+          detail: `The loom's boon — you have seen this moment: it opens with ${describeIntent(opening)}. Its hidden workings first stir on turns 3 and 5.`,
+        });
+      }
       return;
     case 'shop':
       state.shop = generateShop(state);
