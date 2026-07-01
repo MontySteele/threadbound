@@ -37,8 +37,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 3, times: 2, primary: true }, { op: 'hex', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 3 twice. Link (any): gain 3 Momentum.',
-      link: { condition: 'any', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      text: 'Deal 3 twice. Link (Surge): gain 3 Momentum.',
+      link: { condition: 'Surge', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
     },
   },
   {
@@ -67,8 +67,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 2, primary: true }, { op: 'hex', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 3. Link (any): deal 7 instead.',
-      link: { condition: 'any', text: 'Deal 7 instead.', effects: [{ op: 'damage', amount: 7, primary: true }], replace: true },
+      text: 'Deal 3. Link (Guard): deal 7 instead.',
+      link: { condition: 'Guard', text: 'Deal 7 instead.', effects: [{ op: 'damage', amount: 7, primary: true }], replace: true },
     },
   },
   {
@@ -81,8 +81,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damageAll', amount: 4, primary: true }, { op: 'hexAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 5 to ALL enemies. Link (any): gain 5 Block.',
-      link: { condition: 'any', text: 'Gain 5 Block.', effects: [{ op: 'block', amount: 5 }] },
+      text: 'Deal 5 to ALL enemies. Link (Guard): gain 5 Block.',
+      link: { condition: 'Guard', text: 'Gain 5 Block.', effects: [{ op: 'block', amount: 5 }] },
     },
   },
   {
@@ -111,8 +111,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 5 Block. Bind the target enemy to you. Link (any): gain 5 more Block.',
-      link: { condition: 'any', text: 'Gain 5 more Block.', effects: [{ op: 'block', amount: 5 }] },
+      text: 'Gain 5 Block. Bind the target enemy to you. Link (Surge): gain 5 more Block.',
+      link: { condition: 'Surge', text: 'Gain 5 more Block.', effects: [{ op: 'block', amount: 5 }] },
     },
   },
   {
@@ -140,8 +140,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hex', amount: 4, primary: true }],
     },
     upgrade: {
-      text: 'Apply 3 Hex. Link (any): gain 3 Momentum.',
-      link: { condition: 'any', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      text: 'Apply 3 Hex. Link (Strike): gain 3 Momentum.',
+      link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
     },
   },
   {
@@ -154,8 +154,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hexAll', amount: 2, primary: true }, { op: 'weakAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 2 Hex to ALL enemies. Link (any): apply 3 to all instead.',
-      link: { condition: 'any', text: 'Apply 3 to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }], replace: true },
+      text: 'Apply 2 Hex to ALL enemies. Link (Surge): apply 3 to all instead.',
+      link: { condition: 'Surge', text: 'Apply 3 to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }], replace: true },
     },
   },
   {
@@ -183,8 +183,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hexAll', amount: 1, primary: true }],
     },
     upgrade: {
-      text: 'Gain 2 Momentum. Link (any): draw 1 and gain 1 more Momentum.',
-      link: { condition: 'any', text: 'Draw 1 and gain 1 more Momentum.', effects: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }] },
+      text: 'Gain 2 Momentum. Link (Strike): draw 1 and gain 1 more Momentum.',
+      link: { condition: 'Strike', text: 'Draw 1 and gain 1 more Momentum.', effects: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }] },
     },
   },
   {
@@ -211,8 +211,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Gain Kindled 1. Gain 2 Block. Link (any): gain 1 Thread.',
-      link: { condition: 'any', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
+      text: 'Gain Kindled 1. Gain 2 Block. Link (Strike): gain 1 Thread.',
+      link: { condition: 'Strike', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
     },
   },
   {
@@ -226,8 +226,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       link: { condition: 'Surge', text: 'Your partner gains 3 Block.', effects: [{ op: 'partnerBlock', amount: 3 }] },
     },
     upgrade: {
-      text: 'Gain 1 Thread. Gain 3 Block. Link (any): your partner gains 4 Block.',
-      link: { condition: 'any', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+      text: 'Gain 1 Thread. Gain 3 Block. Link (Surge): your partner gains 4 Block.',
+      link: { condition: 'Surge', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
     },
   },
 
@@ -246,8 +246,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 6, primary: true }, { op: 'block', amount: 4 }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 8. Gain 4 Block. Link (any): gain 3 Momentum and 3 more Block.',
-      link: { condition: 'any', text: 'Gain 3 Momentum and 3 more Block.', effects: [{ op: 'momentum', amount: 3 }, { op: 'block', amount: 3 }] },
+      text: 'Deal 8. Gain 4 Block. Link (Guard): gain 3 Momentum and 3 more Block.',
+      link: { condition: 'Guard', text: 'Gain 3 Momentum and 3 more Block.', effects: [{ op: 'momentum', amount: 3 }, { op: 'block', amount: 3 }] },
     },
   },
   {
@@ -261,8 +261,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 3, times: 2, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 3 twice. Link (any): deal 3 four times instead.',
-      link: { condition: 'any', text: 'Deal 3 four times instead.', effects: [{ op: 'damage', amount: 3, times: 4, primary: true }], replace: true },
+      text: 'Deal 3 twice. Link (Surge): deal 3 four times instead.',
+      link: { condition: 'Surge', text: 'Deal 3 four times instead.', effects: [{ op: 'damage', amount: 3, times: 4, primary: true }], replace: true },
     },
   },
   {
@@ -285,14 +285,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Deal 18.',
     base: [{ op: 'damage', amount: 18, primary: true }],
-    link: { condition: 'any', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
+    link: { condition: 'Guard', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
     mutation: {
       name: 'Stitched Breaker', text: 'Deal 12. Apply 4 Hex.',
       base: [{ op: 'damage', amount: 12, primary: true }, { op: 'hex', amount: 4 }],
     },
     upgrade: {
-      text: 'Deal 18. Link (any): gain Kindled 2.',
-      link: { condition: 'any', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
+      text: 'Deal 18. Link (Guard): gain Kindled 2.',
+      link: { condition: 'Guard', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
     },
   },
   {
@@ -306,8 +306,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 9, primary: true }, { op: 'hexAll', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 11 Block. Bind the target enemy to you. Link (any): your partner gains 5 Block.',
-      link: { condition: 'any', text: 'Your partner gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
+      text: 'Gain 11 Block. Bind the target enemy to you. Link (Strike): your partner gains 5 Block.',
+      link: { condition: 'Strike', text: 'Your partner gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
     },
   },
   {
@@ -335,8 +335,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       link: { condition: 'Surge', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
     },
     upgrade: {
-      text: 'Gain 8 Block. Your partner gains 4 Block. Link (any): gain Kindled 1 and your partner gains Kindled 1.',
-      link: { condition: 'any', text: 'Gain Kindled 1 and your partner gains Kindled 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'partnerKindled', amount: 1 }] },
+      text: 'Gain 8 Block. Your partner gains 4 Block. Link (Surge): gain Kindled 1 and your partner gains Kindled 1.',
+      link: { condition: 'Surge', text: 'Gain Kindled 1 and your partner gains Kindled 1.', effects: [{ op: 'kindled', amount: 1 }, { op: 'partnerKindled', amount: 1 }] },
     },
   },
   {
@@ -351,8 +351,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       link: { condition: 'Strike', text: 'Apply 2 more Hex.', effects: [{ op: 'hex', amount: 2 }] },
     },
     upgrade: {
-      text: 'Apply 3 Hex. Gain 1 Momentum. Link (any): deal 6.',
-      link: { condition: 'any', text: 'Deal 6.', effects: [{ op: 'damage', amount: 6 }] },
+      text: 'Apply 3 Hex. Gain 1 Momentum. Link (Strike): deal 6.',
+      link: { condition: 'Strike', text: 'Deal 6.', effects: [{ op: 'damage', amount: 6 }] },
     },
   },
   {
@@ -366,8 +366,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hex', amount: 5, primary: true }, { op: 'weak', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 4 Hex. Link (any): apply 3 more and gain 1 Thread.',
-      link: { condition: 'any', text: 'Apply 3 more and gain 1 Thread.', effects: [{ op: 'hex', amount: 3 }, { op: 'thread', amount: 1 }] },
+      text: 'Apply 4 Hex. Link (Rite): apply 3 more and gain 1 Thread.',
+      link: { condition: 'Rite', text: 'Apply 3 more and gain 1 Thread.', effects: [{ op: 'hex', amount: 3 }, { op: 'thread', amount: 1 }] },
     },
   },
   {
@@ -381,9 +381,9 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hexAll', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Gain 3 Momentum. Keep. Link (any): gain 3 Block.',
+      text: 'Gain 3 Momentum. Keep. Link (Guard): gain 3 Block.',
       base: [{ op: 'momentum', amount: 3, primary: true }],
-      link: { condition: 'any', text: 'Gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
+      link: { condition: 'Guard', text: 'Gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
     },
   },
   {
@@ -523,8 +523,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 4. Gain 2 Momentum. Link (any): gain 5 Momentum instead.',
-      link: { condition: 'any', text: 'Gain 5 Momentum instead.', effects: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 5 }], replace: true },
+      text: 'Deal 4. Gain 2 Momentum. Link (Surge): gain 5 Momentum instead.',
+      link: { condition: 'Surge', text: 'Gain 5 Momentum instead.', effects: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 5 }], replace: true },
     },
   },
   rendcall: {
@@ -539,8 +539,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (any): gain 3 Momentum.',
-      link: { condition: 'any', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      text: 'Gain 6 Block. Link (Strike): gain 3 Momentum.',
+      link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
     },
   },
   bellows: {
@@ -549,8 +549,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'hex', amount: 2, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 2 Momentum. Draw 1. Link (any): also gain 3 Block.',
-      link: { condition: 'any', text: 'Also gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
+      text: 'Gain 2 Momentum. Draw 1. Link (Guard): also gain 3 Block.',
+      link: { condition: 'Guard', text: 'Also gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
     },
   },
   second_wind: {
@@ -559,8 +559,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain Kindled 1. Draw 1. Link (any): also gain 1 Thread and Kindled 1.',
-      link: { condition: 'any', text: 'Also gain 1 Thread and Kindled 1.', effects: [{ op: 'thread', amount: 1 }, { op: 'kindled', amount: 1 }] },
+      text: 'Gain Kindled 1. Draw 1. Link (Strike): also gain 1 Thread and Kindled 1.',
+      link: { condition: 'Strike', text: 'Also gain 1 Thread and Kindled 1.', effects: [{ op: 'thread', amount: 1 }, { op: 'kindled', amount: 1 }] },
     },
   },
   hammerfall: {
@@ -569,8 +569,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 7, primary: true }, { op: 'hex', amount: 3 }],
     },
     upgrade: {
-      text: 'Deal 10. Link (any): gain 6 Block.',
-      link: { condition: 'any', text: 'Gain 6 Block.', effects: [{ op: 'block', amount: 6 }] },
+      text: 'Deal 10. Link (Guard): gain 6 Block.',
+      link: { condition: 'Guard', text: 'Gain 6 Block.', effects: [{ op: 'block', amount: 6 }] },
     },
   },
   spark: {
@@ -580,8 +580,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       link: { condition: 'Strike', text: 'Apply 1 more Hex.', effects: [{ op: 'hex', amount: 1 }] },
     },
     upgrade: {
-      text: 'Apply 2 Hex. Link (any): deal 5.',
-      link: { condition: 'any', text: 'Deal 5.', effects: [{ op: 'damage', amount: 5 }] },
+      text: 'Apply 2 Hex. Link (Strike): deal 5.',
+      link: { condition: 'Strike', text: 'Deal 5.', effects: [{ op: 'damage', amount: 5 }] },
     },
   },
   brace: {
@@ -590,8 +590,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'thread', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 7 Block. Link (any): draw 1 and gain Kindled 1.',
-      link: { condition: 'any', text: 'Draw 1 and gain Kindled 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }] },
+      text: 'Gain 7 Block. Link (Surge): draw 1 and gain Kindled 1.',
+      link: { condition: 'Surge', text: 'Draw 1 and gain Kindled 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }] },
     },
   },
   kindle: {
@@ -600,8 +600,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'thread', amount: 1 }, { op: 'hex', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Gain 1 Thread. Gain 1 Momentum. Link (any): draw 1 and gain 1 more Momentum.',
-      link: { condition: 'any', text: 'Draw 1 and gain 1 more Momentum.', effects: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }] },
+      text: 'Gain 1 Thread. Gain 1 Momentum. Link (Strike): draw 1 and gain 1 more Momentum.',
+      link: { condition: 'Strike', text: 'Draw 1 and gain 1 more Momentum.', effects: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }] },
     },
   },
   followthrough: {
@@ -653,8 +653,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       link: { condition: 'Strike', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
     },
     upgrade: {
-      text: 'Draw 2. Link (any): gain 3 Momentum.',
-      link: { condition: 'any', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      text: 'Draw 2. Link (Strike): gain 3 Momentum.',
+      link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
     },
   },
   pyre_vault: {
@@ -663,8 +663,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damageAll', amount: 5, primary: true }, { op: 'hexAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 7 to ALL enemies. Link (any): gain 3 Momentum.',
-      link: { condition: 'any', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      text: 'Deal 7 to ALL enemies. Link (Surge): gain 3 Momentum.',
+      link: { condition: 'Surge', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
     },
   },
   shoulder_through: {

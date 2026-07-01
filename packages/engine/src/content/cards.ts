@@ -20,7 +20,7 @@ def({
   needsTarget: true,
   text: 'Apply 4 Hex.',
   base: [{ op: 'hex', amount: 4, primary: true }], // M2-B1 lever 3: 3 → 4
-  link: { condition: 'any', text: 'Apply 1 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 1 }] },
+  link: { condition: 'Strike', text: 'Apply 1 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 1 }] },
   mutation: {
     name: 'Cinder Needlework', text: 'Apply 2 Hex. Gain 2 Momentum.',
     base: [{ op: 'hex', amount: 2, primary: true }, { op: 'momentum', amount: 2 }],
@@ -67,7 +67,7 @@ def({
   id: 'wardknot', name: 'Wardknot', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
   text: 'Gain 5 Block.',
   base: [{ op: 'block', amount: 5, primary: true }],
-  link: { condition: 'any', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
+  link: { condition: 'Surge', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
 });
 def({
   id: 'loose_stitch', name: 'Loose Stitch', character: 'vess', rarity: 'common', cost: 0, tag: 'Surge',
@@ -79,7 +79,7 @@ def({
   id: 'quickening', name: 'Quickening', character: 'vess', rarity: 'common', cost: 1, tag: 'Surge',
   text: 'Draw 2.',
   base: [{ op: 'draw', amount: 2 }],
-  link: { condition: 'any', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: Rite too sparse for a common link
+  link: { condition: 'Guard', text: 'Your partner draws 1.', effects: [{ op: 'partnerDraw', amount: 1 }] }, // §4: Rite too sparse for a common link
 });
 def({
   id: 'mendthread', name: 'Mendthread', character: 'vess', rarity: 'common', cost: 1, tag: 'Rite',
@@ -349,7 +349,7 @@ def({
   text: 'Gain 4 Block.',
   base: [{ op: 'block', amount: 4, primary: true }],
   mutation: { name: 'Riveted Patchwork', text: 'Gain 3 Block. Gain 1 Momentum.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+  upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 def({
   id: 'jab', name: 'Jab', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
@@ -365,7 +365,7 @@ def({
   text: 'Gain 4 Block.',
   base: [{ op: 'block', amount: 4, primary: true }],
   mutation: { name: 'Stitched Brace-Up', text: 'Gain 3 Block. Gain 1 Thread.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'thread', amount: 1 }] },
-  upgrade: { text: 'Gain 5 Block. Link (any): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'any', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+  upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 
 // M2-A5 starter decks; §14.11: one Hatpin/Jab slot becomes the payoff card
