@@ -394,6 +394,58 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .tapestry-stub { background: var(--ink-2); min-width: 200px; margin: 0; }
 .tapestry-stub-line { margin-top: 4px; color: var(--text-dim); font-size: 0.9em; }
 
+/* ---- S6.7 the Loom's Eye (nt slice) — shrine phase screen. The shrine is a
+   MOMENT (spec pass/fail: stake reveal + shared sheet produce table talk):
+   the stake and verdict get weight; everything stays in the house language. */
+.loom { max-width: 860px; margin: 0 auto; }
+.loom-stake {
+  margin: 12px auto 18px; padding: 18px 26px; max-width: 560px;
+  background: radial-gradient(ellipse at 50% 0%, #d4af6f14 0%, transparent 60%), var(--panel);
+  border: 1px solid color-mix(in srgb, var(--thread-gold) 45%, transparent); border-radius: var(--radius);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--thread-gold) 14%, transparent);
+}
+.loom-stake-label { color: var(--text-dim); letter-spacing: 0.14em; font-size: 0.8em; }
+.loom-stake-name { font-family: var(--font-display); font-size: 1.5em; margin: 6px 0 2px;
+  color: var(--thread-gold); text-shadow: 0 0 16px color-mix(in srgb, var(--thread-gold) 35%, transparent); }
+.loom-stake-text { color: var(--text-dim); font-size: 0.92em; }
+.loom-rarity { margin-left: 10px; font-family: var(--font-body, inherit); font-size: 0.55em; vertical-align: middle;
+  border: 1px solid var(--line); border-radius: 9px; padding: 1px 8px; color: var(--text-dim);
+  letter-spacing: 0.1em; text-shadow: none; }
+.loom-rarity-rare { border-color: var(--thread-gold); color: var(--thread-gold); }
+/* unraveled: the coveted thing frays out of reach (ruling 4 — no consolation) */
+.loom-stake-lost { border-color: var(--danger); box-shadow: none; filter: saturate(0.4); }
+.loom-stake-lost .loom-stake-name { color: var(--text-dim); text-decoration: line-through; text-shadow: none; }
+.loom-stake-fate { margin-top: 8px; font-family: var(--font-display); font-style: italic; }
+.loom-stake-lost .loom-stake-fate { color: var(--danger); filter: none; }
+
+.loom-sheet { text-align: left; margin: 6px 0 14px; }
+.loom-row { padding: 10px 4px; border-bottom: 1px solid var(--line-soft); }
+.loom-question { font-family: var(--font-display); font-size: 1.08em; margin-bottom: 6px; }
+.loom-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.loom-chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 6px 12px; font-size: 0.92em; }
+button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
+.loom-asserted { border-color: var(--thread-gold); color: var(--thread-gold);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--thread-gold) 25%, transparent); }
+.loom-unspoken { border-style: dashed; color: var(--text-dim); }
+.loom-unspoken.loom-asserted { color: var(--thread-gold); }
+/* struck by pooled evidence — dimmed, dead, source noted (ruling 6) */
+.loom-struck { opacity: 0.55; background: var(--ink-2); cursor: default; }
+.loom-struck-src { color: var(--text-dim); font-size: 0.82em; letter-spacing: 0.04em; }
+
+.loom-confirm { display: flex; justify-content: center; gap: 26px; margin: 8px 0 4px; }
+
+.loom-verdict { max-width: 640px; margin: 8px auto 16px; text-align: left; }
+.loom-verdict-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: center;
+  padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+.loom-verdict-row .loom-question { margin-bottom: 0; font-size: 1.15em; }
+.loom-verdict-answer { grid-row: 2; color: var(--text-dim); font-style: italic; }
+.loom-verdict-mark { grid-row: 1 / span 2; font-family: var(--font-display); font-size: 1.3em;
+  letter-spacing: 0.18em; color: var(--text-dim); }
+.loom-verdict-true .loom-verdict-mark { color: var(--thread-gold);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--thread-gold) 40%, transparent); }
+.loom-verdict-false .loom-verdict-mark { color: var(--danger); }
+
 .game-title { font-size: 2.6em; letter-spacing: 0.4em; margin-bottom: 4px; text-shadow: 0 0 24px color-mix(in srgb, var(--thread) 30%, transparent); }
 .title-cord { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 14px; }
 .title-frame { width: 100px; height: 100px; border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--ink-2); transition: box-shadow 0.6s, border-color 0.6s; }

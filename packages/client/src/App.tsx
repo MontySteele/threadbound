@@ -21,6 +21,7 @@ import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
+import { LoomEye } from './LoomEye';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -29,8 +30,10 @@ export const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', 
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
-  combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦',
+  combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦', loom: '◉',
 };
+// S6.7: kinds whose display name isn't the kind itself (the finale shrine)
+const NODE_NAME: Record<string, string> = { loom: 'The Loom’s Eye' };
 
 function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | undefined {
   const p = state.players[owner];
@@ -541,6 +544,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
       return <Rest state={state} net={net} />;
     case 'shop':
       return <Shop state={state} net={net} />;
+    case 'loom':
+      return <LoomEye state={state} net={net} />;
     case 'victory':
       return (
         <div className="center end-screen end-victory">
@@ -571,7 +576,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
 
 function nodeLabel(map: ClientState['map'], id: number): string {
   const n = map.nodes.find((x) => x.id === id);
-  return n ? `${NODE_ICON[n.kind]} ${n.kind}` : '?';
+  return n ? `${NODE_ICON[n.kind]} ${NODE_NAME[n.kind] ?? n.kind}` : '?';
 }
 
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -655,7 +660,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               disabled={!can}
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
             >
-              {NODE_ICON[n.kind]} {n.kind}
+              {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
               {(myPick || theirPick) && (
                 <span className="pick-tags">
                   {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
