@@ -16,7 +16,7 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
-import { rollTruth } from './content/truth';
+import { rollTruth, serveFragments } from './content/truth';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -160,7 +160,7 @@ function apply(state: GameState, action: Action): void {
       state.ascension = ascension;
       state.ascensionVotes = { p1: ascension, p2: ascension };
       state.unlockedCards = action.unlockedCards ?? [];
-      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite);
+      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks);
       state.rng = gen.rng;
       state.map = gen.map;
       // nt-slice: the truth roll happens LAST in START_RUN so the unflagged
@@ -686,6 +686,32 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       state.log.push({ e: 'info', detail: `${CARDS[removed.defId].name} unravels and is gone.` });
       break;
     }
+    case 'fragments': {
+      // nt-slice S6.2: asymmetric clue delivery. Fragment A pins to the
+      // actor's Tapestry, B to the partner's. Rendered text only ever lands
+      // on the owning player's board — never the shared log (ruling 5); the
+      // elimination mapping stays inside content/truth.ts (§11 extension).
+      if (!state.truth || !state.event) break;
+      const actor = state.event.subject;
+      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng);
+      state.rng = served.state;
+      const pins: Array<[PlayerId, typeof served.a]> = [
+        [actor, served.a],
+        [otherPlayer(actor), served.b],
+      ];
+      for (const [pid, fragment] of pins) {
+        if (!fragment) continue;
+        state.truth.boards[pid].push({
+          fragmentId: fragment.id,
+          eventId: fragment.eventId,
+          act: state.map.act,
+          questionId: fragment.bearsOn,
+          text: fragment.text,
+        });
+      }
+      state.log.push({ e: 'info', detail: 'Threads pull loose and pin to your Tapestries.' });
+      break;
+    }
     case 'nothing':
       break;
   }
@@ -774,7 +800,7 @@ function healBetweenActs(state: GameState): void {
 function advanceAct(state: GameState): void {
   if (state.map.act === 1) {
     healBetweenActs(state);
-    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite);
+    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks);
     state.rng = gen.rng;
     state.map = gen.map;
     state.phase = 'map';

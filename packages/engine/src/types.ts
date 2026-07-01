@@ -248,6 +248,10 @@ export type EventEffectOp =
   | { op: 'thread'; amount: number } // affects next combat start via pendingThread
   | { op: 'upgradeRandom' }
   | { op: 'removeRandomStarter' }
+  /** nt-slice: serve this clue event's fragments — rendered text pinned to
+   *  the actor's and partner's Tapestries server-side. The fragment table
+   *  (content/truth.ts) picks variants consistent with the rolled truth. */
+  | { op: 'fragments' }
   | { op: 'nothing' };
 
 export interface EventOptionDef {
@@ -265,6 +269,9 @@ export interface EventDef {
   crossed: boolean;
   /** crossed events: 60% consequence / 40% comedy (M2-B5) */
   tone?: 'consequence' | 'comedy';
+  /** nt-slice clue event: only enters the pool when tracks is set, at
+   *  elevated queue weight (map.ts) */
+  clue?: boolean;
   prose: string;
   options: EventOptionDef[];
 }

@@ -8,17 +8,39 @@ import { eventsForAct } from './content/registry';
 
 const LAYERS = 6; // + boss layer
 
-export function generateActMap(rngState: number, act: 1 | 2, extraElite = false): { map: MapState; rng: number } {
+export function generateActMap(rngState: number, act: 1 | 2, extraElite = false, tracks = false): { map: MapState; rng: number } {
   let rng = rngState;
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
-  const events = eventsForAct(act).map((e) => e.id);
+  const eventDefs = eventsForAct(act, tracks);
+  const events = eventDefs.map((e) => e.id);
   let eventQueue: string[] = [];
   const nextEvent = (): string => {
     if (eventQueue.length === 0) {
-      const r = rngShuffle(rng, events);
-      rng = r.state;
-      eventQueue = r.value;
+      if (tracks) {
+        // nt-slice S6.2: weighted order — clue events carry 2× queue weight,
+        // so they surface earlier among the few event nodes a run visits.
+        // Sample-without-replacement; unflagged runs keep the plain shuffle
+        // (and its exact rng consumption) below.
+        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue ? 2 : 1 }));
+        while (pool.length > 0) {
+          const total = pool.reduce((sum, p) => sum + p.w, 0);
+          const r = rngInt(rng, total);
+          rng = r.state;
+          let acc = 0;
+          let idx = 0;
+          for (let i = 0; i < pool.length; i++) {
+            acc += pool[i].w;
+            if (r.value < acc) { idx = i; break; }
+          }
+          eventQueue.push(pool[idx].id);
+          pool.splice(idx, 1);
+        }
+      } else {
+        const r = rngShuffle(rng, events);
+        rng = r.state;
+        eventQueue = r.value;
+      }
     }
     return eventQueue.shift()!;
   };

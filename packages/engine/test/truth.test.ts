@@ -4,8 +4,12 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  ANSWERS, ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, VALID_COMBOS, answersFor, rollTruth,
+  ANSWERS, ANSWERS_BY_ID, FRAGMENTS, QUESTIONS, QUESTIONS_BY_ID, VALID_COMBOS,
+  answersFor, rollTruth, serveFragments,
 } from '../src/content/truth';
+import { CLUE_EVENTS } from '../src/content/clue-events';
+import { eventsForAct } from '../src/content/registry';
+import { generateActMap } from '../src/map';
 import { initialState, reduce } from '../src/reducer';
 
 describe('truth content covenant (slice scope)', () => {
@@ -97,11 +101,168 @@ describe('START_RUN flag threading (S6.0 covenant)', () => {
     expect(start(true).truth!.tuple).toEqual(on.truth!.tuple);
   });
 
-  it('flag on: map generation is identical to flag off (truth roll happens last)', () => {
-    const on = start(true);
-    const off = start();
-    expect(JSON.stringify(on.map)).toBe(JSON.stringify(off.map));
-    // exactly one extra rng advance, spent on the truth roll
-    expect(on.rng).not.toBe(off.rng);
+  it('flag on: the act map can place clue events (S6.2 weighted pool)', () => {
+    // flagged maps may legitimately differ from unflagged ones (clue events
+    // join the queue at 2× weight); the covenant is only flag-off ≡ pre-slice
+    let clueNodes = 0;
+    let eventNodes = 0;
+    for (let seed = 0; seed < 30; seed++) {
+      const flagged = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+      for (const n of flagged.map.nodes) {
+        if (!n.eventId) continue;
+        eventNodes++;
+        if (CLUE_EVENTS.some((e) => e.id === n.eventId)) clueNodes++;
+      }
+    }
+    expect(eventNodes).toBeGreaterThan(0);
+    // 6 clue events at weight 2 among ~19 events ⇒ clue share ≈ 12/25; the
+    // exact rate is tuning (S6 designer question 2), presence is the gate
+    expect(clueNodes).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S6.2: clue events + asymmetric fragments
+// ---------------------------------------------------------------------------
+
+describe('clue event covenant (S6.2, spec coverage audit)', () => {
+  it('six clue events: act 0, uncrossed, flagged clue', () => {
+    expect(CLUE_EVENTS.length).toBe(6);
+    for (const e of CLUE_EVENTS) {
+      expect(e.clue, e.id).toBe(true);
+      expect(e.act, e.id).toBe(0);
+      expect(e.crossed, e.id).toBe(false);
+    }
+  });
+
+  it('each event has exactly one clue option with a REAL cost, and a real non-clue choice', () => {
+    for (const e of CLUE_EVENTS) {
+      const clueOpts = e.options.filter((o) => o.effects.some((f) => f.op === 'fragments'));
+      expect(clueOpts.length, e.id).toBe(1);
+      const clue = clueOpts[0];
+      const isCost = (f: { op: string; amount?: number }) =>
+        f.op === 'loseHp' || f.op === 'pendingFray' || (f.op === 'gold' && (f.amount ?? 0) < 0);
+      expect(clue.effects.some(isCost), `${e.id}: clue option must cost something`).toBe(true);
+      const others = e.options.filter((o) => o !== clue);
+      expect(others.length, e.id).toBeGreaterThanOrEqual(1);
+      for (const o of others) {
+        expect(o.effects.some((f) => f.op !== 'nothing'), `${e.id}/${o.id}: non-clue option must have real value`).toBe(true);
+        expect(o.effects.some((f) => f.op === 'fragments'), e.id).toBe(false);
+      }
+    }
+  });
+
+  it('fragments: bear one question, eliminate exactly one answer of it, strength 1', () => {
+    for (const f of FRAGMENTS) {
+      expect(f.eliminates.length, f.id).toBe(1);
+      expect(f.strength, f.id).toBe(1);
+      expect(ANSWERS_BY_ID[f.eliminates[0]].questionId, f.id).toBe(f.bearsOn);
+      expect(f.text.length, f.id).toBeGreaterThan(0);
+      expect(CLUE_EVENTS.some((e) => e.id === f.eventId), f.id).toBe(true);
+    }
+  });
+
+  it("per event: channel A and B bear DIFFERENT questions (no event resolves a question alone)", () => {
+    for (const e of CLUE_EVENTS) {
+      const slotQuestion = (channel: 'actor' | 'partner') => {
+        const qs = new Set(FRAGMENTS.filter((f) => f.eventId === e.id && f.channel === channel).map((f) => f.bearsOn));
+        expect(qs.size, `${e.id}/${channel}: one question per slot`).toBe(1);
+        return [...qs][0];
+      };
+      expect(slotQuestion('actor'), e.id).not.toBe(slotQuestion('partner'));
+    }
+  });
+
+  it('per slot: variants cover every answer, so a consistent fragment exists under any truth', () => {
+    for (const e of CLUE_EVENTS) {
+      for (const channel of ['actor', 'partner'] as const) {
+        const slot = FRAGMENTS.filter((f) => f.eventId === e.id && f.channel === channel);
+        const q = slot[0].bearsOn;
+        const covered = new Set(slot.map((f) => f.eliminates[0]));
+        expect([...covered].sort(), `${e.id}/${channel}`).toEqual(answersFor(q).map((a) => a.id).sort());
+      }
+    }
+  });
+
+  it('coverage: every question reachable from ≥3 events, on both channels combined', () => {
+    for (const q of QUESTIONS) {
+      const events = new Set(FRAGMENTS.filter((f) => f.bearsOn === q.id).map((f) => f.eventId));
+      expect(events.size, q.id).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('serveFragments never serves a fragment that eliminates the true answer (all 12 truths × 6 events)', () => {
+    for (const combo of VALID_COMBOS) {
+      const tuple = combo as unknown as Record<string, string>;
+      for (const e of CLUE_EVENTS) {
+        const served = serveFragments(e.id, tuple, 777);
+        for (const f of [served.a, served.b]) {
+          expect(f, `${e.id} under ${JSON.stringify(combo)}`).toBeTruthy();
+          expect(f!.eliminates.includes(tuple[f!.bearsOn]), f!.id).toBe(false);
+        }
+        expect(served.a!.channel).toBe('actor');
+        expect(served.b!.channel).toBe('partner');
+      }
+    }
+  });
+
+  it('pool gating: clue events only enter eventsForAct when tracks is set', () => {
+    for (const act of [1, 2] as const) {
+      expect(eventsForAct(act).some((e) => e.clue)).toBe(false);
+      expect(eventsForAct(act, true).filter((e) => e.clue).length).toBe(6);
+    }
+    // and unflagged maps never place one
+    for (let seed = 0; seed < 20; seed++) {
+      const { map } = generateActMap(seed, 1);
+      for (const n of map.nodes) {
+        if (n.eventId) expect(CLUE_EVENTS.some((e) => e.id === n.eventId), n.eventId).toBe(false);
+      }
+    }
+  });
+});
+
+describe('fragment delivery (S6.2)', () => {
+  const flaggedRunAtEvent = (eventId: string, seed = 7) => {
+    const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+    // drop the run directly into the event phase (unit seam — node routing is
+    // covered by map tests); subject chose, uncrossed ⇒ chooser === subject
+    state.phase = 'event';
+    state.event = { eventId, chooser: 'p1', subject: 'p1', chosen: null };
+    return state;
+  };
+
+  it('pins fragment A to the actor and B to the partner, consistent with the truth', () => {
+    const state = flaggedRunAtEvent('nt_unrung_bell');
+    const hpBefore = state.players.p1.hp;
+    const next = reduce(state, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'ring' });
+    expect(next.players.p1.hp).toBe(hpBefore - 4); // the clue still costs
+    const { p1, p2 } = next.truth!.boards;
+    expect(p1.length).toBe(1);
+    expect(p2.length).toBe(1);
+    expect(p1[0].questionId).toBe('q_what');
+    expect(p2[0].questionId).toBe('q_why');
+    for (const [pid, pin] of [['p1', p1[0]], ['p2', p2[0]]] as const) {
+      const def = FRAGMENTS.find((f) => f.id === pin.fragmentId)!;
+      expect(def.channel).toBe(pid === 'p1' ? 'actor' : 'partner');
+      expect(pin.text).toBe(def.text);
+      expect(def.eliminates.includes(next.truth!.tuple[def.bearsOn]), def.id).toBe(false);
+      expect(pin.act).toBe(1);
+    }
+  });
+
+  it('fragment text never enters the shared log', () => {
+    const state = flaggedRunAtEvent('nt_flooded_crypt');
+    const next = reduce(state, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'wade' });
+    const logText = JSON.stringify(next.log) + JSON.stringify(next.event);
+    for (const board of [next.truth!.boards.p1, next.truth!.boards.p2]) {
+      for (const pin of board) expect(logText.includes(pin.text)).toBe(false);
+    }
+  });
+
+  it('the non-clue option pins nothing', () => {
+    const state = flaggedRunAtEvent('nt_unrung_bell');
+    const next = reduce(state, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'scavenge' });
+    expect(next.truth!.boards.p1.length).toBe(0);
+    expect(next.truth!.boards.p2.length).toBe(0);
   });
 });
