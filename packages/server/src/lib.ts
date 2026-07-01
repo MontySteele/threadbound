@@ -59,6 +59,8 @@ export interface Room {
   seats: Partial<Record<PlayerId, Seat>>;
   actionLog: Action[];
   lastActivity: number;
+  /** S6.4: wall-clock run start — telemetry needs run minutes + completion rate */
+  startedAt?: number;
   telemetryWritten?: boolean;
   feedback: FeedbackEntry[];
   /** S1: solo room — persisted so the bot survives restarts with the room */
@@ -234,6 +236,7 @@ export class GameServer {
       state: room.state,
       actionLog: room.actionLog,
       lastActivity: room.lastActivity,
+      startedAt: room.startedAt,
       seats: Object.fromEntries(
         Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot, claim: seat!.claim }]),
       ),
@@ -296,6 +299,7 @@ export class GameServer {
           state: this.migrateState(r.state),
           actionLog: r.actionLog ?? [],
           lastActivity: r.lastActivity ?? this.now(),
+          startedAt: r.startedAt,
           seats: {},
           feedback: r.feedback ?? [],
           bot: r.bot,
@@ -324,6 +328,30 @@ export class GameServer {
   private bothConsent(room: Room): boolean {
     const humans = Object.values(room.seats).filter((s): s is Seat => !!s && !s.bot);
     return humans.length > 0 && humans.every((s) => s.claim?.telemetryConsent === true);
+  }
+
+  /** S6.4: one start line per consented run, date-rotated JSONL beside the
+   *  run files — aggregate-human.mjs computes started-vs-finished from it. */
+  private writeStartStamp(room: Room): void {
+    const dir = this.opts.humanTelemetryDir;
+    if (!dir || !this.bothConsent(room)) return;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const day = new Date(this.now()).toISOString().slice(0, 10);
+      fs.appendFileSync(path.join(dir, `starts-${day}.jsonl`), JSON.stringify({
+        ts: this.now(),
+        code: room.code,
+        seed: room.state.seed,
+        mode: room.bot ? 'solo' : 'pair',
+        buildSha: buildSha(),
+        contentVersion: CONTENT_VERSION,
+        ascension: room.state.ascension ?? 0,
+        characters: { p1: room.state.players.p1.character, p2: room.state.players.p2.character },
+        installIds: { p1: room.seats.p1?.claim?.installId, p2: room.seats.p2?.claim?.installId },
+      }) + '\n');
+    } catch (err) {
+      console.error('start stamp write failed', err);
+    }
   }
 
   /** M3-A1: per-run telemetry file when a run ends, for human-uplift calibration. */
@@ -357,6 +385,9 @@ export class GameServer {
         },
         outcome: room.state.phase,
         act: room.state.map.act,
+        // S6.4: wall-clock bounds → median run minutes in the aggregator
+        startedAt: room.startedAt,
+        endedAt: this.now(),
         // S4.4: every telemetry file carries its difficulty, scales AND rung
         ascension: room.state.ascension ?? 0,
         seed: room.state.seed,
@@ -596,6 +627,12 @@ export class GameServer {
         }
         // S4.5: pool = union of both players' unlocked sets (server-built)
         this.applyAction(ctx.room, socket, { type: 'START_RUN', seed, unlockedCards: this.unlockUnion(ctx.room) });
+        // S6.4: run start stamp — the completion-rate denominator (a run
+        // abandoned mid-way never writes an end-of-run file). Consented only.
+        if (ctx.room.state.phase !== 'lobby' && !ctx.room.startedAt) {
+          ctx.room.startedAt = this.now();
+          this.writeStartStamp(ctx.room);
+        }
         return;
       }
 
