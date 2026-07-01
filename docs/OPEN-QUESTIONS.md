@@ -540,3 +540,16 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     Fray stays immediate). Net: enemy Weak/Vuln last two effective turns, boss
     Fray bites for one. Difficulty nudge accepted (the two zero-fall clears had
     headroom). Covered by `pt3-status.test.ts`. §14.16.
+
+## S5 sprint (2026-07-01, s5-balance)
+
+47. **Second display-name collision: "Held Breath"** (found during S5.4 /
+    OQ#36): the neutral common Stolen Breath's MUTATION form was named
+    "Held Breath" — colliding with Bram's uncommon card of the same name
+    (same table-talk hazard as OQ#36).
+    **RULED + RESOLVED (designer sign-off, 2026-07-01):** mutation renamed
+    to **"Caught Breath"**. Same sign-off also resolved OQ#36 (Gathering
+    Slack's mutation "Stolen Breath" → **"Slipped Breath"**), OQ#34
+    (Linked Shields partner Block 4 → 6), and amended sim gate 4: the
+    Hex-share band applies to PAIR=vb only — mirror shares are telemetry,
+    not gates.

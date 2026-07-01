@@ -202,7 +202,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }],
     link: { condition: 'Hex', text: 'Draw 2 instead.', effects: [{ op: 'draw', amount: 2 }, { op: 'kindled', amount: 1 }], replace: true },
     mutation: {
-      name: 'Stolen Breath', text: 'Draw 1. Gain 2 Momentum.',
+      name: 'Slipped Breath', text: 'Draw 1. Gain 2 Momentum.', // OQ#36: renamed from "Stolen Breath" (collided with the neutral common)
       base: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {

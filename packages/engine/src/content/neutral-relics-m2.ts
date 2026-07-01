@@ -74,7 +74,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     base: [{ op: 'draw', amount: 1 }],
     link: { condition: 'Rite', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // S5.2 Table B: back to Rite (pre-§4 condition)
     mutation: {
-      name: 'Held Breath', text: 'Draw 1. Gain 2 Block.',
+      name: 'Caught Breath', text: 'Draw 1. Gain 2 Block.', // OQ#47: renamed from "Held Breath" (collided with Bram's uncommon)
       base: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 2 }],
     },
     // PT2 fix: the upgrade was a byte-identical copy of the base link — a
