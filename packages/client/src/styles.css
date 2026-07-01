@@ -426,3 +426,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .footer-links { margin-top: 18px; font-size: 0.8em; }
 .survey input, .bug-panel input { margin: 0 6px; }
 .bug-panel input { width: 240px; }
+
+/* S6.6 first-visit blurb */
+.blurb { max-width: 560px; text-align: left; }
+.blurb h3 { margin-top: 0; }

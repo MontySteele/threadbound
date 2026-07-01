@@ -459,6 +459,34 @@ function MicroSurvey({ net, runKey }: { net: Net; runKey: string }): JSX.Element
   );
 }
 
+/** S6.6 first-visit blurb: strangers arrive with no one to explain rooms.
+ *  Dismissible; the choice lives in localStorage. No accounts, no email. */
+function FirstVisitBlurb(): JSX.Element | null {
+  const [seen, setSeen] = useState(() => localStorage.getItem('tb_blurb_seen') === '1');
+  if (seen) return null;
+  return (
+    <div className="panel blurb">
+      <h3>New here? Threadbound in three lines</h3>
+      <p className="muted">
+        <b>Rooms are the whole lobby:</b> one of you creates a room and reads the 5-letter code to
+        the other, who joins with it. Refreshing is always safe — your seat waits for you.
+      </p>
+      <p className="muted">
+        <b>No partner handy?</b> Descend alone — the Witness (a grudging spirit) plays the other
+        seat. Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.
+      </p>
+      <p className="muted">
+        <b>Something felt great, bad, or broken?</b> Press <b>]</b> / <b>[</b> / <b>\</b> during a
+        run to stamp the moment, or use “report a bug…” in the ♪ menu — the links below the panels
+        do the rest.
+      </p>
+      <button className="chip" data-gp="META" onClick={() => { localStorage.setItem('tb_blurb_seen', '1'); setSeen(true); }}>
+        got it — don’t show this again
+      </button>
+    </div>
+  );
+}
+
 const LOBBY_GREETINGS = [
   'Ah. It brought a friend. The thread shudders with delight, presumably.',
   'Two of you now. The arithmetic of disappointment doubles.',
@@ -481,6 +509,7 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
         <div className="error">The loom is being restrung — no new rooms for a moment. Runs in progress play on; rejoining works.</div>
       )}
       {error && <div className="error">{error}</div>}
+      <FirstVisitBlurb />
       <div className="panel">
         <h3>Create a room</h3>
         <label>
