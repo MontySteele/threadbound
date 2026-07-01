@@ -10,6 +10,7 @@ import { VESS_M2_CARDS, VESS_M1_OVERLAYS } from './vess-m2';
 import { BRAM_M2_CARDS, BRAM_M1_OVERLAYS } from './bram-m2';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
+import { CLUE_EVENTS } from './clue-events';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
@@ -99,13 +100,16 @@ for (const def of Object.values(ENEMIES)) {
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };
-for (const ev of M2_EVENTS) {
+for (const ev of [...M2_EVENTS, ...CLUE_EVENTS]) {
   if (EVENTS[ev.id]) throw new Error(`duplicate event id ${ev.id}`);
   EVENTS[ev.id] = ev;
 }
 
-export function eventsForAct(act: 1 | 2): EventDef[] {
-  return Object.values(EVENTS).filter((e) => e.act === act || e.act === 0);
+/** nt-slice: clue events enter the pool only on flagged (tracks) runs. */
+export function eventsForAct(act: 1 | 2, tracks = false): EventDef[] {
+  return Object.values(EVENTS).filter(
+    (e) => (e.act === act || e.act === 0) && (tracks || !e.clue),
+  );
 }
 
 // ---- relics ---------------------------------------------------------------------

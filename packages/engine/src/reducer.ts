@@ -4,8 +4,8 @@
 // Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardDef, CardInstance, CharacterId, GameState, GoldSource, IllegalAction, MapNode,
-  PlayerId, PlayerState, Rarity, RestOption, Telemetry,
+  Action, CardDef, CardInstance, CharacterId, EnemyIntent, GameState, GoldSource, IllegalAction,
+  MapNode, PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
@@ -14,8 +14,11 @@ import {
   computeLinksFired, effectiveDef, emptyActStats, findInstance, hasPassive, otherPlayer,
   resolveTurn, runHooks, startCombat, startTurn,
 } from './combat';
-import { ASCENSION_MAX, ascensionMods } from './ascension';
+import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
+import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
+import { rollLiveMechanics } from './content/faces';
+import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -159,9 +162,38 @@ function apply(state: GameState, action: Action): void {
       state.ascension = ascension;
       state.ascensionVotes = { p1: ascension, p2: ascension };
       state.unlockedCards = action.unlockedCards ?? [];
-      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite);
+      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks);
       state.rng = gen.rng;
       state.map = gen.map;
+      // nt-slice: the truth roll happens LAST in START_RUN so the unflagged
+      // rng stream is untouched (S6.0 covenant — flag off ⇒ pre-slice states)
+      if (action.tracks) {
+        state.tracks = true;
+        const truthRoll = rollTruth(state.rng);
+        state.rng = truthRoll.state;
+        // the boss wears the q_what answer; its live mechanics roll now so
+        // the whole run replays from the seed (S6.5)
+        const mechs = rollLiveMechanics(truthRoll.value.q_what, state.rng);
+        state.rng = mechs.state;
+        state.truth = {
+          tuple: truthRoll.value,
+          boards: { p1: [], p2: [] },
+          shrine: null,
+          boss: { faceAnswerId: truthRoll.value.q_what, liveMechanics: mechs.value },
+          reveals: { bossFace: false, bossMechanic: false, openingIntent: false },
+        };
+        state.telemetry.truth = {
+          clueEventsOffered: 0,
+          clueEventsTaken: 0,
+          fragmentsByPlayer: { p1: 0, p2: 0 },
+          boardOpensByAct: {},
+          sheetEdits: 0,
+          struckAtShrine: 0,
+          autoCompleted: 0,
+          outcome: null,
+          stake: null,
+        };
+      }
       state.phase = 'map';
       if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
       return;
@@ -519,8 +551,52 @@ function apply(state: GameState, action: Action): void {
       return;
     }
 
+    case 'BOARD_OPENED': {
+      // telemetry only (is the log used?) — no rules effect, flagged runs only
+      const tt = state.telemetry.truth;
+      if (tt) tt.boardOpensByAct[state.map.act] = (tt.boardOpensByAct[state.map.act] ?? 0) + 1;
+      return;
+    }
+
+    case 'LOOM_SHEET_SET': {
+      assert(state.phase === 'loom' && state.truth?.shrine, 'not at the Loom’s Eye');
+      const shrine = state.truth!.shrine!;
+      assert(shrine.verdict === null, 'the loom has already spoken');
+      assert(QUESTIONS_BY_ID[action.questionId], 'no such question');
+      if (action.answerId !== null) {
+        assert(ANSWERS_BY_ID[action.answerId]?.questionId === action.questionId, 'answer does not fit the question');
+        assert(!shrine.struck[action.questionId]?.[action.answerId], 'that answer is struck out');
+      }
+      if (shrine.sheet[action.questionId] === action.answerId) return;
+      shrine.sheet[action.questionId] = action.answerId;
+      // one shared sheet (ruling 3): any edit reopens BOTH confirmations
+      shrine.confirmed = { p1: false, p2: false };
+      if (state.telemetry.truth) state.telemetry.truth.sheetEdits++;
+      return;
+    }
+
+    case 'LOOM_CONFIRM': {
+      assert(state.phase === 'loom' && state.truth?.shrine, 'not at the Loom’s Eye');
+      const shrine = state.truth!.shrine!;
+      assert(shrine.verdict === null, 'the loom has already spoken');
+      shrine.confirmed[action.player] = action.confirm;
+      // solo: the Witness speaks with the human's voice at the shrine
+      if (state.botSeat && action.player !== state.botSeat) {
+        shrine.confirmed[state.botSeat] = action.confirm;
+      }
+      if (shrine.confirmed.p1 && shrine.confirmed.p2) resolveLoomVerdict(state);
+      return;
+    }
+
     case 'ADVANCE': {
-      assert(['reward', 'event', 'rest', 'shop'].includes(state.phase), 'cannot advance now');
+      assert(['reward', 'event', 'rest', 'shop', 'loom'].includes(state.phase), 'cannot advance now');
+      if (state.phase === 'loom') {
+        assert(state.truth?.shrine?.verdict, 'the loom has not spoken yet');
+        // solo: the bot follows the human out of the shrine
+        if (state.botSeat && action.player !== state.botSeat) {
+          state.advanceReady[state.botSeat] = true;
+        }
+      }
       if (state.phase === 'reward') {
         const r = state.reward!;
         assert(r.picked.p1 !== null && r.picked.p2 !== null, 'both players must pick first');
@@ -609,6 +685,95 @@ function randomUnownedRelic(state: GameState): string | null {
   return weighted[r.value].id;
 }
 
+/** nt-slice S6.5: server-side intent prose for the rest-site boon line. */
+function describeIntent(it: EnemyIntent): string {
+  switch (it.kind) {
+    case 'attack': return `${it.amount}${it.times && it.times > 1 ? `×${it.times}` : ''} damage`;
+    case 'attack_all': return `${it.amount} damage to BOTH of you`;
+    case 'attack_momentum': return `${it.base}+ damage, growing with Momentum`;
+    case 'attack_drain': return `${it.amount} damage and a drain of ${it.threadDrain} Thread`;
+    case 'attack_fray': return `${it.amount} damage and Fray on you both`;
+    case 'block': return `${it.amount} Block`;
+    case 'block_all': return `${it.amount} Block across its line`;
+    case 'buff_strength': return `+${it.amount} Strength`;
+    case 'buff_strength_all': return `+${it.amount} Strength to its line`;
+    case 'debuff_weak': return `${it.amount} Weak`;
+    case 'debuff_vulnerable': return `${it.amount} Vulnerable`;
+    case 'sever': return 'a severing of its binding';
+  }
+}
+
+/** nt-slice S6.4: the shrine's coveted stake — rarity-weighted TOWARD rares
+ *  (rare 3× / common 1×; inverse of drop weighting), never uniform, so the
+ *  wager never decouples from confidence (ruling 1). Relics are binary
+ *  rare/common today; the spec's rare-3×/uncommon-2× maps to this pending a
+ *  rarity tier (S6 designer question 1). */
+function stakeRelic(state: GameState): string | null {
+  const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
+  const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
+  if (pool.length === 0) return null;
+  const weighted = pool.flatMap((rel) => (rel.rare ? [rel, rel, rel] : [rel]));
+  const r = rngInt(state.rng, weighted.length);
+  state.rng = r.state;
+  return weighted[r.value].id;
+}
+
+/** nt-slice S6.4: both confirmed — the loom answers. The verdict is stated
+ *  completely here, before the boss node unlocks. */
+function resolveLoomVerdict(state: GameState): void {
+  const truth = state.truth!;
+  const shrine = truth.shrine!;
+  const verdict: Record<string, 'true' | 'false' | 'blank'> = {};
+  for (const q of QUESTIONS) {
+    const asserted = shrine.sheet[q.id];
+    verdict[q.id] = asserted === null ? 'blank' : asserted === truth.tuple[q.id] ? 'true' : 'false';
+  }
+  shrine.verdict = verdict;
+  shrine.stakeLost = Object.values(verdict).includes('false');
+  if (state.telemetry.truth) {
+    state.telemetry.truth.outcome = { ...verdict };
+    state.telemetry.truth.stake = {
+      relicId: shrine.stakeRelicId,
+      rare: !!(shrine.stakeRelicId && RELICS_BY_ID[shrine.stakeRelicId]?.rare),
+      lost: shrine.stakeLost,
+    };
+  }
+
+  for (const q of QUESTIONS) {
+    const line =
+      verdict[q.id] === 'blank' ? `“${q.text}” — left unspoken.`
+      : verdict[q.id] === 'true' ? `“${q.text}” — ${ANSWERS_BY_ID[shrine.sheet[q.id]!].text} TRUE.`
+      : `“${q.text}” — falsely named. The loom does not forgive the naming.`;
+    state.log.push({ e: 'info', detail: line });
+    if (verdict[q.id] !== 'true') continue;
+    // every TRUE assertion pays its linked reveal (ruling 2)
+    switch (QUESTIONS_BY_ID[q.id].payoff) {
+      case 'bossFace': truth.reveals.bossFace = true; break;
+      case 'bossMechanic': truth.reveals.bossMechanic = true; break;
+      case 'healEach':
+        for (const pid of ['p1', 'p2'] as PlayerId[]) {
+          const p = state.players[pid];
+          p.hp = Math.min(p.maxHp, p.hp + 6);
+        }
+        state.log.push({ e: 'info', detail: 'The loom mends what it recognizes — both heal 6.' });
+        break;
+    }
+  }
+
+  if (shrine.stakeLost) {
+    // no in-run consolation (ruling 4); the codex still advances client-side
+    state.log.push({ e: 'info', detail: 'The stake unravels. The shrine keeps what was coveted.' });
+  } else if (shrine.stakeRelicId) {
+    const ownerRoll = rngInt(state.rng, 2);
+    state.rng = ownerRoll.state;
+    grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', shrine.stakeRelicId);
+  }
+  if (Object.values(verdict).every((v) => v === 'true')) {
+    truth.reveals.openingIntent = true;
+    state.log.push({ e: 'info', detail: 'All three named true. The loom shows you the first moment of the last fight.' });
+  }
+}
+
 function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: string; [k: string]: unknown }): void {
   switch (eff.op) {
     case 'heal':
@@ -673,6 +838,35 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       state.log.push({ e: 'info', detail: `${CARDS[removed.defId].name} unravels and is gone.` });
       break;
     }
+    case 'fragments': {
+      // nt-slice S6.2: asymmetric clue delivery. Fragment A pins to the
+      // actor's Tapestry, B to the partner's. Rendered text only ever lands
+      // on the owning player's board — never the shared log (ruling 5); the
+      // elimination mapping stays inside content/truth.ts (§11 extension).
+      if (!state.truth || !state.event) break;
+      const actor = state.event.subject;
+      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng);
+      state.rng = served.state;
+      const pins: Array<[PlayerId, typeof served.a]> = [
+        [actor, served.a],
+        [otherPlayer(actor), served.b],
+      ];
+      const tt = state.telemetry.truth;
+      if (tt) tt.clueEventsTaken++;
+      for (const [pid, fragment] of pins) {
+        if (!fragment) continue;
+        state.truth.boards[pid].push({
+          fragmentId: fragment.id,
+          eventId: fragment.eventId,
+          act: state.map.act,
+          questionId: fragment.bearsOn,
+          text: fragment.text,
+        });
+        if (tt) tt.fragmentsByPlayer[pid]++;
+      }
+      state.log.push({ e: 'info', detail: 'Threads pull loose and pin to your Tapestries.' });
+      break;
+    }
     case 'nothing':
       break;
   }
@@ -702,6 +896,7 @@ function enterNode(state: GameState): void {
     }
     case 'event': {
       const def = EVENTS[node.eventId!];
+      if (def.clue && state.telemetry.truth) state.telemetry.truth.clueEventsOffered++;
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       const subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
@@ -714,10 +909,61 @@ function enterNode(state: GameState): void {
       state.phase = 'event';
       return;
     }
+    case 'loom': {
+      // nt-slice S6.4: the Loom's Eye. Stake revealed BEFORE commitment
+      // (ruling 1); both boards pool into strike-outs NOW (ruling 6 — this
+      // is where eliminations materialize); over-collected questions arrive
+      // pre-filled (auto-completion, earned).
+      const truth = state.truth!;
+      const struck: Record<string, Record<string, { eventId: string; holder: PlayerId }[]>> = {};
+      for (const q of QUESTIONS) struck[q.id] = {};
+      for (const holder of ['p1', 'p2'] as PlayerId[]) {
+        for (const pin of truth.boards[holder]) {
+          const def = FRAGMENTS_BY_ID[pin.fragmentId];
+          if (!def) continue;
+          for (const answerId of def.eliminates) {
+            (struck[def.bearsOn][answerId] ??= []).push({ eventId: pin.eventId, holder });
+          }
+        }
+      }
+      const sheet: Record<string, string | null> = {};
+      for (const q of QUESTIONS) {
+        const open = answersFor(q.id).filter((a) => !struck[q.id][a.id]);
+        // all-but-one struck → the last answer stands, pre-asserted (the
+        // routing paid for it); players may still return it to unspoken
+        sheet[q.id] = open.length === 1 ? open[0].id : null;
+      }
+      const tt = state.telemetry.truth;
+      if (tt) {
+        tt.struckAtShrine = Object.values(struck).reduce((sum, byAns) => sum + Object.keys(byAns).length, 0);
+        tt.autoCompleted = Object.values(sheet).filter((v) => v !== null).length;
+      }
+      truth.shrine = {
+        stakeRelicId: stakeRelic(state),
+        sheet,
+        struck,
+        confirmed: { p1: false, p2: false },
+        verdict: null,
+        stakeLost: false,
+      };
+      state.phase = 'loom';
+      state.log.push({ e: 'info', detail: 'The Loom’s Eye opens. The shrine covets — and it is listening.' });
+      return;
+    }
     case 'rest':
       state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
       state.phase = 'rest';
       sayWitness(state, 'rest_site');
+      // nt-slice S6.5: the all-true completion boon — the full opening turn,
+      // shown at the pre-boss rest (the flagged boss always opens at script 0)
+      if (state.truth?.reveals.openingIntent && state.map.act === 3) {
+        const bossDef = ENEMIES[ENCOUNTERS['finale_boss'].enemies[0]];
+        const opening = scaleIntent(bossDef.script[0], ascensionMods(state.ascension).dmgScale);
+        state.log.push({
+          e: 'info',
+          detail: `The loom's boon — you have seen this moment: it opens with ${describeIntent(opening)}. Its hidden workings first stir on turns 3 and 5.`,
+        });
+      }
       return;
     case 'shop':
       state.shop = generateShop(state);
@@ -761,14 +1007,14 @@ function healBetweenActs(state: GameState): void {
 function advanceAct(state: GameState): void {
   if (state.map.act === 1) {
     healBetweenActs(state);
-    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite);
+    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks);
     state.rng = gen.rng;
     state.map = gen.map;
     state.phase = 'map';
     sayWitness(state, 'act2_start');
   } else if (state.map.act === 2) {
     healBetweenActs(state);
-    state.map = generateFinaleMap();
+    state.map = generateFinaleMap(!!state.tracks);
     state.phase = 'map';
     sayWitness(state, 'finale_start');
   } else {

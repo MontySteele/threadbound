@@ -12,6 +12,7 @@ import {
   PassiveId, PlayerId, PlayerState,
 } from './types';
 import { rngInt, rngShuffle } from './rng';
+import { FACE_BY_ANSWER, mechanicFireTurns } from './content/faces';
 import { ascensionMods, scaleIntent } from './ascension';
 import { maybeSaySolo, sayWitness } from './witness-draw';
 
@@ -926,7 +927,33 @@ export function resolveTurn(state: GameState): void {
     // S4.4 A2: intents are stored scaled, so every displayed number is the
     // truth the hit will use (same contract as the §14.8 registry scales)
     enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale);
+    // nt-slice S6.5: the face's live mechanics override the script on their
+    // fixed turns; hidden ones whisper one turn before their first firing
+    applyBossMechanicIntent(state, enemy, combat.turn + 1);
   }
+}
+
+/** nt-slice S6.5: if `upcomingTurn` is a live-mechanic turn for the flagged
+ *  finale boss, swap the mechanic in as the (fully visible, scaled) intent.
+ *  Unrevealed mechanics telegraph exactly once, the turn before they first
+ *  fire; revealed ones were named in the intent UI from the start. */
+function applyBossMechanicIntent(state: GameState, enemy: EnemyState, upcomingTurn: number): void {
+  if (!state.truth) return;
+  const def = ENEMIES[enemy.defId];
+  if (!def.boss || def.act !== 3) return;
+  enemy.telegraph = null;
+  const face = FACE_BY_ANSWER[state.truth.boss.faceAnswerId];
+  state.truth.boss.liveMechanics.forEach((mechId, slot) => {
+    const { first, period } = mechanicFireTurns(slot);
+    if (upcomingTurn < first || (upcomingTurn - first) % period !== 0) return;
+    const mech = face.mechanicPool.find((m) => m.id === mechId)!;
+    enemy.intent = scaleIntent(mech.intent, ascensionMods(state.ascension).dmgScale);
+    const revealed = slot === 0 ? state.truth!.reveals.bossFace : state.truth!.reveals.bossMechanic;
+    if (upcomingTurn === first && !revealed) {
+      enemy.telegraph = mech.telegraphLine;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: mech.telegraphLine });
+    }
+  });
 }
 
 /**
@@ -1182,6 +1209,32 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       intent: scaleIntent(def.script[start.value], mods.dmgScale),
     });
   });
+
+  // nt-slice S6.5: the flagged finale boss wears its face. The opening index
+  // is pinned to 0 (roll above still consumed — the flag adds no rolls) so
+  // the all-true boon can honestly show the opening at the pre-boss rest.
+  // Shrine reveals surface here as rendered strings only.
+  if (state.truth) {
+    for (const es of enemies) {
+      const def = ENEMIES[es.defId];
+      if (!def.boss || def.act !== 3) continue;
+      es.scriptIndex = 0;
+      es.intent = scaleIntent(def.script[0], mods.dmgScale);
+      const face = FACE_BY_ANSWER[state.truth.boss.faceAnswerId];
+      const lines: string[] = [];
+      if (state.truth.reveals.bossFace) {
+        es.nameOverride = face.realName;
+        const m = face.mechanicPool.find((x) => x.id === state.truth!.boss.liveMechanics[0])!;
+        lines.push(m.revealLine);
+      }
+      if (state.truth.reveals.bossMechanic) {
+        const m = face.mechanicPool.find((x) => x.id === state.truth!.boss.liveMechanics[1])!;
+        lines.push(m.revealLine);
+      }
+      if (lines.length > 0) es.revealedMechanics = lines;
+      es.telegraph = null;
+    }
+  }
 
   // chorus pool: all members share the lowest rolled HP so the bar reads true
   const chorusMembers = enemies.filter((e) => ENEMIES[e.defId]?.chorus);

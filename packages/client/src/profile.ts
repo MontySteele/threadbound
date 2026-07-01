@@ -4,13 +4,17 @@
 // everything here as a CLAIM and clamps (§11) — this file is bookkeeping,
 // not authority.
 
-import { CharacterId } from '@threadbound/engine';
+import { AnswerDef, ANSWERS_BY_ID, CharacterId } from '@threadbound/engine';
 
 export interface Profile {
-  version: 1;
+  version: 2;
   clears: Record<CharacterId, { count: number; bestAscension: number }>;
   unlockedCards: string[];
   ascensionUnlocked: Record<CharacterId, number>;
+  /** S6.8 codex — answer IDS (not prose), permanent, insertion-ordered.
+   *  truths: proven TRUE at a Loom's Eye verdict; eliminations: asserted
+   *  answers proven FALSE (engaged-but-wrong still advances the meta). */
+  codex: { truths: string[]; eliminations: string[] };
 }
 
 const KEY = 'tb_profile';
@@ -18,11 +22,19 @@ const ASCENSION_CAP = 5;
 
 export function emptyProfile(): Profile {
   return {
-    version: 1,
+    version: 2,
     clears: { vess: { count: 0, bestAscension: -1 }, bram: { count: 0, bestAscension: -1 } },
     unlockedCards: [],
     ascensionUnlocked: { vess: 0, bram: 0 },
+    codex: { truths: [], eliminations: [] },
   };
+}
+
+/** Codex entries must be real answer ids — drop strings the content set
+ *  doesn't know (and anything that isn't a string), dedup, keep order. */
+function validAnswerIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string' && x in ANSWERS_BY_ID))];
 }
 
 /** Defensive shape repair — a profile is user-editable storage. */
@@ -42,6 +54,10 @@ function normalize(raw: unknown): Profile {
   if (Array.isArray(r.unlockedCards)) {
     p.unlockedCards = (r.unlockedCards as unknown[]).filter((x): x is string => typeof x === 'string');
   }
+  // v1 profiles have no codex — upgrade to empty; v2 garbage gets filtered
+  const codex = r.codex as Record<string, unknown> | undefined;
+  p.codex.truths = validAnswerIds(codex?.truths);
+  p.codex.eliminations = validAnswerIds(codex?.eliminations);
   return p;
 }
 
@@ -99,7 +115,8 @@ export function importProfile(s: string): Profile | null {
     const json = fromB64(s.trim().slice(0, dot));
     if (hash32(json).toString(36) !== s.trim().slice(dot + 1)) return null;
     const parsed = JSON.parse(json);
-    if (parsed?.version !== 1) return null;
+    // v1 exports predate the codex — normalize upgrades them
+    if (parsed?.version !== 1 && parsed?.version !== 2) return null;
     return normalize(parsed);
   } catch {
     return null;
@@ -117,6 +134,9 @@ export function mergeProfiles(a: Profile, b: Profile): Profile {
     out.ascensionUnlocked[c] = Math.max(a.ascensionUnlocked[c], b.ascensionUnlocked[c]);
   }
   out.unlockedCards = [...new Set([...a.unlockedCards, ...b.unlockedCards])];
+  // codex union — never removes; base order first, then incoming novelties
+  out.codex.truths = [...new Set([...a.codex.truths, ...b.codex.truths])];
+  out.codex.eliminations = [...new Set([...a.codex.eliminations, ...b.codex.eliminations])];
   return out;
 }
 
@@ -135,8 +155,31 @@ export function recordClear(character: CharacterId, ascension: number): Profile 
   return p;
 }
 
+/** S6.8 codex writes at a Loom's Eye verdict. Ids are validated against the
+ *  content set; only novel ids append (insertion order = discovery order). */
+export function recordCodex(truths: string[], eliminations: string[]): void {
+  const p = loadProfile();
+  for (const id of validAnswerIds(truths)) {
+    if (!p.codex.truths.includes(id)) p.codex.truths.push(id);
+  }
+  for (const id of validAnswerIds(eliminations)) {
+    if (!p.codex.eliminations.includes(id)) p.codex.eliminations.push(id);
+  }
+  saveProfile(p);
+}
+
+/** Resolve stored codex ids to answer defs (title-screen list, future UI). */
+export function codexEntries(): { truths: AnswerDef[]; eliminations: AnswerDef[] } {
+  const p = loadProfile();
+  return {
+    truths: p.codex.truths.map((id) => ANSWERS_BY_ID[id]),
+    eliminations: p.codex.eliminations.map((id) => ANSWERS_BY_ID[id]),
+  };
+}
+
 /** The claim sent at room join (create/join/hello). */
 export function profileClaim(): { unlockedCards: string[]; ascensionUnlocked: Record<CharacterId, number> } {
   const p = loadProfile();
+  // codex deliberately excluded: pure client-side narrative bookkeeping — the server has no use for it.
   return { unlockedCards: p.unlockedCards, ascensionUnlocked: p.ascensionUnlocked };
 }

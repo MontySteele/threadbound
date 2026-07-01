@@ -20,16 +20,20 @@ import { ResolutionTheater, isResolution } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
+import { TapestryOverlay } from './TapestryOverlay';
+import { LoomEye } from './LoomEye';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
 type Character = 'vess' | 'bram';
-const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
+export const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
-  combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦',
+  combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦', loom: '◉',
 };
+// S6.7: kinds whose display name isn't the kind itself (the finale shrine)
+const NODE_NAME: Record<string, string> = { loom: 'The Loom’s Eye' };
 
 function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | undefined {
   const p = state.players[owner];
@@ -49,8 +53,9 @@ function enemyName(combat: ClientState['combat'], enemyId: string): string {
   if (!combat) return enemyId;
   const enemy = combat.enemies.find((e) => e.id === enemyId);
   if (!enemy) return enemyId;
-  const name = ENEMIES[enemy.defId]?.name ?? enemy.defId;
-  const sameName = combat.enemies.filter((e) => (ENEMIES[e.defId]?.name ?? e.defId) === name);
+  // nt-slice S6.5: the shrine's bossFace reveal renames the finale boss
+  const name = enemy.nameOverride ?? ENEMIES[enemy.defId]?.name ?? enemy.defId;
+  const sameName = combat.enemies.filter((e) => (e.nameOverride ?? ENEMIES[e.defId]?.name ?? e.defId) === name);
   if (sameName.length < 2) return name;
   return `${name} ${sameName.findIndex((e) => e.id === enemyId) + 1}`;
 }
@@ -89,13 +94,19 @@ export default function App(): JSX.Element {
   const [, padTick] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [deckOpen, setDeckOpen] = useState(false);
+  const [tapestryOpen, setTapestryOpen] = useState(false);
   const [concedeOpen, setConcedeOpen] = useState(false);
   const [toast, setToast] = useState('');
   const netRef = useRef<Net | null>(null);
+  // S6.6: the `t` hotkey exists only when the server pushed a truth
+  // projection — a ref, because the key handler outlives any one state
+  const truthRef = useRef(false);
+  const prevBoardLen = useRef<number | null>(null);
 
   useEffect(() => {
     netRef.current = new Net({
       onState: (s) => {
+        truthRef.current = !!s.truth;
         setState(s);
         if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
       },
@@ -117,6 +128,13 @@ export default function App(): JSX.Element {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
       if (e.key === 'd') setDeckOpen((o) => !o);
+      else if (e.key === 't' && truthRef.current) {
+        // S6.6 · S6.8: opens report to telemetry (board-use signal)
+        setTapestryOpen((o) => {
+          if (!o) netRef.current?.act({ type: 'BOARD_OPENED' });
+          return !o;
+        });
+      }
       else if (e.key === 'f') toggleFullscreen();
       else if (e.key === '[') netRef.current?.feedback('bad');
       else if (e.key === ']') netRef.current?.feedback('good');
@@ -161,6 +179,18 @@ export default function App(): JSX.Element {
     }
   }, [state?.phase, joined?.code]);
 
+  // S6.6 pin toast: a fragment landed on YOUR board since the last state.
+  // Growth only (never on first sight of a board — reconnects stay quiet);
+  // the fragment itself is read on the Tapestry, not here.
+  useEffect(() => {
+    const len = state?.truth ? state.truth.board.length : null;
+    if (len !== null && prevBoardLen.current !== null && len > prevBoardLen.current) {
+      setToast('A thread pins to your Tapestry — T to view.');
+      setTimeout(() => setToast(''), 2600);
+    }
+    prevBoardLen.current = len;
+  }, [state?.truth]);
+
   // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
   useEffect(() => {
     const act = state && state.phase !== 'lobby' ? state.map.act : 0;
@@ -195,6 +225,15 @@ export default function App(): JSX.Element {
                   Deck (d) · {state.players[state.you].deck.length}
                 </button>
               )}
+              {state.phase !== 'lobby' && state.truth && (
+                // S6.6: only on flagged runs — no truth projection, no board
+                <button className="chip" data-gp="META" onClick={() => {
+                  if (!tapestryOpen) net.act({ type: 'BOARD_OPENED' }); // S6.8 telemetry
+                  setTapestryOpen(!tapestryOpen);
+                }}>
+                  Tapestry (t) · {state.truth.board.length}
+                </button>
+              )}
               {!['lobby', 'game_over', 'victory'].includes(state.phase) && (
                 <button className="chip" data-gp="META" onClick={() => setConcedeOpen(!concedeOpen)}>
                   abandon…
@@ -215,6 +254,7 @@ export default function App(): JSX.Element {
           <Hints state={state} />
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
+          {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
           {concedeOpen && !['lobby', 'game_over', 'victory'].includes(state.phase) && (
             <div className="feedback-overlay">
               <div className="tutorial-step">ABANDON RUN</div>
@@ -514,6 +554,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
       return <Rest state={state} net={net} />;
     case 'shop':
       return <Shop state={state} net={net} />;
+    case 'loom':
+      return <LoomEye state={state} net={net} />;
     case 'victory':
       return (
         <div className="center end-screen end-victory">
@@ -544,7 +586,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
 
 function nodeLabel(map: ClientState['map'], id: number): string {
   const n = map.nodes.find((x) => x.id === id);
-  return n ? `${NODE_ICON[n.kind]} ${n.kind}` : '?';
+  return n ? `${NODE_ICON[n.kind]} ${NODE_NAME[n.kind] ?? n.kind}` : '?';
 }
 
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -628,7 +670,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               disabled={!can}
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
             >
-              {NODE_ICON[n.kind]} {n.kind}
+              {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
               {(myPick || theirPick) && (
                 <span className="pick-tags">
                   {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
@@ -828,6 +870,12 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
               <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
+              {/* nt-slice S6.5: shrine-earned mechanic reveals + the pre-fire
+                  whisper of a hidden mechanic — rendered strings only */}
+              {e.hp > 0 && e.revealedMechanics?.map((line, m) => (
+                <div key={m} className="mech-reveal">{line}</div>
+              ))}
+              {e.hp > 0 && e.telegraph && <div className="mech-telegraph">{e.telegraph}</div>}
               <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
                 {e.untargetable ? 'unbound — untargetable'
                   : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`
