@@ -37,8 +37,38 @@ cloudflared tunnel --url http://localhost:8080
 `https://….trycloudflare.com` URL — send that plus the room code. WebSockets
 and TLS work through it out of the box (the client derives `wss://` from the
 page origin automatically). For recurring sessions, prefer Tailscale
-(`tailscale serve`) or the small-VPS/Fly.io deployment; avoid router
+(`tailscale serve`) or the hosted deployment below; avoid router
 port-forwarding (CGNAT-hostile, and serves plain `ws://` to the internet).
+
+### Hosted deployment (S6 — where the public plays)
+
+The quick tunnel stays the documented way to play from source; the hosted
+URL is simply where strangers play. `Dockerfile` builds all workspaces into
+one image (the server serves the client dist + websockets); `render.yaml`
+is a ready blueprint for the ruled platform (Render Starter + a persistent
+disk at `/data` — snapshots, telemetry, and feedback survive deploys, so a
+deploy costs players one refresh).
+
+Everything is env-driven with local-safe defaults (S6.7 — nothing assumes
+Render):
+
+| env | default | hosted value |
+|---|---|---|
+| `HUMAN_TELEMETRY` | off (`--human-session` → `./telemetry`) | `/data/telemetry` |
+| `TB_FEEDBACK_DIR` | `./feedback` | `/data/feedback` |
+| `PERSIST` | `.threadbound-rooms.json` | `/data/threadbound-rooms.json` |
+| `TB_MAX_ROOMS` | 200 | 200 |
+| `TB_ROOM_RATE` | 10 creates/IP/min | 10 |
+| `TB_DRAIN` | off | `1` for a maintenance window |
+| `BUILD_SHA` | `dev+<git short-hash>` | injected at image build |
+
+Rate limiting is proxy-aware (`CF-Connecting-IP` → `X-Forwarded-For` → raw
+socket), so it works identically behind Render's proxy and a `cloudflared`
+tunnel. When `HUMAN_TELEMETRY` is on, clients are shown an opt-in consent
+card (see `/data-note`); a run's telemetry file is written only if **both**
+seats opted in. Pull hosted data local with
+`TB_SSH_HOST=<ssh-addr> scripts/pull-telemetry.sh`, then aggregate it into
+the battery format with `node scripts/aggregate-human.mjs <dir>`.
 
 ### Playtest instrumentation
 
