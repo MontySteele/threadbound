@@ -74,7 +74,7 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 3 Hex. Link (Rite): gain 3 Block and 1 Thread.',
+      text: 'Apply 3 Hex. Link (Guard): gain 3 Block and 1 Thread.',
       link: { condition: 'Guard', text: 'Gain 3 Block and 1 Thread.', effects: [{ op: 'block', amount: 3 }, { op: 'thread', amount: 1 }] },
     },
   },
