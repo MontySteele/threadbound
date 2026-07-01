@@ -382,6 +382,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .deck-row { justify-content: flex-start; }
 .partner-hand { margin-top: 4px; }
 
+/* ---- S6.6 the Tapestry (nt slice) — evidence board overlay ---- */
+.tapestry-columns { display: flex; gap: 14px; align-items: flex-start; }
+.tapestry-col { flex: 1; min-width: 0; }
+.tapestry-card { background: var(--panel-2); border: 1px solid var(--line-soft); border-left: 3px solid var(--line);
+  border-radius: var(--radius); padding: 8px 10px; margin: 8px 0; }
+.tapestry-tag { color: var(--text-dim); font-size: 0.78em; letter-spacing: 0.06em; }
+.tapestry-text { margin-top: 4px; font-family: var(--font-display); font-style: italic; }
+/* face-down: no prose crosses screens (ruling 5) — the card is a prompt */
+.tapestry-stub-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.tapestry-stub { background: var(--ink-2); min-width: 200px; margin: 0; }
+.tapestry-stub-line { margin-top: 4px; color: var(--text-dim); font-size: 0.9em; }
+
 .game-title { font-size: 2.6em; letter-spacing: 0.4em; margin-bottom: 4px; text-shadow: 0 0 24px color-mix(in srgb, var(--thread) 30%, transparent); }
 .title-cord { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 14px; }
 .title-frame { width: 100px; height: 100px; border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--ink-2); transition: box-shadow 0.6s, border-color 0.6s; }
