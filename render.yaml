@@ -1,0 +1,29 @@
+# Render blueprint (S6.2 — platform ruled: Starter tier + a small persistent
+# disk at /data, free *.onrender.com subdomain for the soft release).
+# Deploys are git-push: Render rebuilds the Docker image and restarts; the
+# server snapshots rooms to PERSIST on SIGTERM and restores on boot, so a
+# deploy costs players one refresh (sign-off gate 9 verifies this live).
+
+services:
+  - type: web
+    name: threadbound
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    disk:
+      name: threadbound-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: HUMAN_TELEMETRY
+        value: /data/telemetry
+      - key: TB_FEEDBACK_DIR
+        value: /data/feedback
+      - key: PERSIST
+        value: /data/threadbound-rooms.json
+      - key: TB_MAX_ROOMS
+        value: "200"
+      - key: TB_ROOM_RATE
+        value: "10"
+      # maintenance window: set TB_DRAIN=1 in the dashboard, save, and the
+      # title screen shows "the loom is being restrung"; unset to reopen

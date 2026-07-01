@@ -6,7 +6,9 @@ import react from '@vitejs/plugin-react';
 // short-hash as `dev+<sha>`, else plain `dev` (S6.7: never crashes a
 // source checkout without git).
 function buildSha(): string {
-  if (process.env.BUILD_SHA) return process.env.BUILD_SHA;
+  const env = process.env.BUILD_SHA;
+  // platforms hand over the full 40-char commit — keep the stamp short
+  if (env) return /^[0-9a-f]{12,40}$/i.test(env) ? env.slice(0, 7) : env;
   try {
     const sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     return sha ? `dev+${sha}` : 'dev';
