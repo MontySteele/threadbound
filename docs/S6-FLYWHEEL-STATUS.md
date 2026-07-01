@@ -105,10 +105,26 @@ zero gameplay-surface diffs vs main (the engine diff is 5 lines — the
 
 ### Battery spot-check (gate 7): 30-run vb, seed set 1000, A0
 
-%BATTERY%
+| metric | S6 tip (30 runs) | S5 final (50 runs) |
+|---|---|---|
+| win rate | 30% (9/30) | 28% |
+| act-1 HP lost/combat | 23.6 | 22.7 |
+| link-fire act 1 / act 2 | 52.0% / 57.5% | 52.1% / 57.4% |
+| Hex damage share | 41.1% | 44.3% |
+| avg stacks/detonation | 3.85 | 4.16 |
+| Worn Knife mean damage | 7.71 | 7.74 |
+| thread spent/combat | 4.08 | ~4 |
+| gates | ALL PASS (6/6) | ALL PASS |
 
-S5 final reference (50 runs, same seed set): 28% win, act-1 HP/combat
-22.7, link-fire 52.1/57.4, Hex share 44.3%, Worn Knife 7.74. %VERDICT%
+Within noise of the S5 final on every band (the S5 report puts win-rate
+noise at ±4.6% even at 100 runs) — the gameplay surface did not move.
+
+One real catch from this gate: the first two battery attempts timed out
+on run 11 — the new S6.2 rate limit was throttling the harness's own
+creates (10 rooms/min from one loopback IP; bot runs finish in seconds).
+Fixed by lifting `TB_ROOM_RATE` inside the sim harness only (commit
+`aa07d10`); production defaults stay strict, and the failing run's seed
+replayed clean in isolation both before and after the fix.
 
 ## HUMAN-ONLY sign-off gates (cannot be performed by this sprint's agent)
 
