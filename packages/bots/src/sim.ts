@@ -10,6 +10,9 @@
 
 process.env.PORT = process.env.PORT ?? '0';
 process.env.PERSIST = ''; // sims never persist rooms
+// S6.2: bot runs finish in seconds, so a battery creates rooms far faster
+// than any human IP legitimately could — lift the harness's own limit
+process.env.TB_ROOM_RATE = process.env.TB_ROOM_RATE ?? '100000';
 
 import { server } from '@threadbound/server';
 import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId } from '@threadbound/engine';
