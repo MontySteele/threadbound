@@ -323,10 +323,10 @@ def({
   // detonation's pierce). The burst payoff lives on her partner.
   id: 'worn_knife', name: 'Worn Knife', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   starterOnly: true, needsTarget: true,
-  text: 'Deal 2. +1 damage per Hex on the target (does not detonate).',
-  base: [{ op: 'damagePerHex', base: 2, perHex: 1, primary: true }],
+  text: 'Deal 2. +1 damage per Hex on the target, max 12 (does not detonate).',
+  base: [{ op: 'damagePerHex', base: 2, perHex: 1, max: 12, primary: true }],
   mutation: { name: 'Cinder-honed Knife', text: 'Deal 4. Gain 1 Momentum.', base: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Deal 4. +1 damage per Hex on the target (does not detonate).', base: [{ op: 'damagePerHex', base: 4, perHex: 1, primary: true }] },
+  upgrade: { text: 'Deal 4. +1 damage per Hex on the target, max 12 (does not detonate).', base: [{ op: 'damagePerHex', base: 4, perHex: 1, max: 12, primary: true }] },
 });
 def({
   // §14.11: the burst payoff, cross-player by construction — Bram detonates

@@ -290,7 +290,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
         case 'damagePerHex': {
           const tgt = retarget(slot.targetId);
           if (!tgt) break;
-          let amt = sc(eff.base + eff.perHex * tgt.hex, eff.primary);
+          let amt = Math.min(sc(eff.base + eff.perHex * tgt.hex, eff.primary), eff.max ?? Infinity);
           if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
           hit(owner, tgt, amt);
           break;
@@ -536,7 +536,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     case 'damagePerHex': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy) return;
-      const amt = applyMomentum(ctx, scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), 0);
+      const amt = applyMomentum(ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
       // M2-B1: hex-scaling damage gets its own attribution bucket
       dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt), owner.id);
       break;
