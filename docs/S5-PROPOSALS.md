@@ -1,6 +1,23 @@
 # S5 Proposal Table — designer sign-off required (gate 8)
 
-Status: DRAFT, nothing below is committed. Per the S5.2 protocol, no re-aim
+## DESIGNER SIGN-OFF (2026-07-01) — RECORDED
+
+- Gate 4 AMENDED: hex-share band applies to vb only; mirror shares are
+  telemetry, not gates. STOP resolved, no third lever.
+- S5.5: CONDITIONAL YES — apply Tables A/B, re-battery; ease anchor
+  1.45/1.30 only if act-1 HP still > 22. Own commit, own battery delta.
+- Table A: APPROVED (all 5). Watch the vb delta specifically.
+- Table B: APPROVED — blanket revert-to-base at common/uncommon; the 7
+  base-'any' rows ruled base AND upgrade together to the proposed named
+  tag. Table A applied before Table B (Kindle).
+- S5.3: HOLD until post-A/B battery; if bb needs it, ship #1 (Pummel)
+  only, then re-measure before #2/#3.
+- OQ#34: partner Block 4 → 6. OQ#36: Gathering Slack's mutation →
+  "Slipped Breath". OQ#47 (new): Stolen Breath's mutation → "Caught
+  Breath", logged resolved.
+
+
+Status: SIGNED OFF and implemented per the record above (originally: DRAFT). Per the S5.2 protocol, no re-aim
 lands unapproved. Prepared 2026-07-01 on `s5-balance`.
 
 Already landed (pre-decided by the sprint doc, separate commits):
