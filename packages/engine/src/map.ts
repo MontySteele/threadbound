@@ -8,17 +8,39 @@ import { eventsForAct } from './content/registry';
 
 const LAYERS = 6; // + boss layer
 
-export function generateActMap(rngState: number, act: 1 | 2, extraElite = false): { map: MapState; rng: number } {
+export function generateActMap(rngState: number, act: 1 | 2, extraElite = false, tracks = false): { map: MapState; rng: number } {
   let rng = rngState;
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
-  const events = eventsForAct(act).map((e) => e.id);
+  const eventDefs = eventsForAct(act, tracks);
+  const events = eventDefs.map((e) => e.id);
   let eventQueue: string[] = [];
   const nextEvent = (): string => {
     if (eventQueue.length === 0) {
-      const r = rngShuffle(rng, events);
-      rng = r.state;
-      eventQueue = r.value;
+      if (tracks) {
+        // nt-slice S6.2: weighted order — clue events carry 2× queue weight,
+        // so they surface earlier among the few event nodes a run visits.
+        // Sample-without-replacement; unflagged runs keep the plain shuffle
+        // (and its exact rng consumption) below.
+        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue ? 2 : 1 }));
+        while (pool.length > 0) {
+          const total = pool.reduce((sum, p) => sum + p.w, 0);
+          const r = rngInt(rng, total);
+          rng = r.state;
+          let acc = 0;
+          let idx = 0;
+          for (let i = 0; i < pool.length; i++) {
+            acc += pool[i].w;
+            if (r.value < acc) { idx = i; break; }
+          }
+          eventQueue.push(pool[idx].id);
+          pool.splice(idx, 1);
+        }
+      } else {
+        const r = rngShuffle(rng, events);
+        rng = r.state;
+        eventQueue = r.value;
+      }
     }
     return eventQueue.shift()!;
   };
@@ -108,13 +130,23 @@ export function generateActMap(rngState: number, act: 1 | 2, extraElite = false)
   };
 }
 
-/** Finale (§8): The Last Braid — rest → shop → The Unraveled. Linear. */
-export function generateFinaleMap(): MapState {
-  const nodes: MapNode[] = [
-    { id: 0, kind: 'rest', edges: [1], layer: 0, lane: 0 },
-    { id: 1, kind: 'shop', edges: [2], layer: 1, lane: 0 },
-    { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'finale_boss' },
-  ];
+/** Finale (§8): The Last Braid — rest → shop → The Unraveled. Linear.
+ *  nt-slice: flagged runs get the Loom's Eye FIRST, adjacent to (never
+ *  replacing) the pre-boss rest — the verdict lands before the rest so the
+ *  all-true boon (opening intent) can show there, and before the boss. */
+export function generateFinaleMap(tracks = false): MapState {
+  const nodes: MapNode[] = tracks
+    ? [
+        { id: 0, kind: 'loom', edges: [1], layer: 0, lane: 0 },
+        { id: 1, kind: 'rest', edges: [2], layer: 1, lane: 0 },
+        { id: 2, kind: 'shop', edges: [3], layer: 2, lane: 0 },
+        { id: 3, kind: 'boss', edges: [], layer: 3, lane: 0, encounterId: 'finale_boss' },
+      ]
+    : [
+        { id: 0, kind: 'rest', edges: [1], layer: 0, lane: 0 },
+        { id: 1, kind: 'shop', edges: [2], layer: 1, lane: 0 },
+        { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'finale_boss' },
+      ];
   return { act: 3, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 };
 }
 

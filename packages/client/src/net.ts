@@ -1,12 +1,16 @@
 // WebSocket plumbing: the client renders state and sends intents — it never
 // computes game outcomes (§11). Session token in localStorage → reconnection.
 
-import { Action, GameState, PlayerId } from '@threadbound/engine';
+import { Action, ClientTruthView, GameState, PlayerId } from '@threadbound/engine';
 import { profileClaim } from './profile';
 
-export interface ClientState extends GameState {
+// nt-slice (§11 extension): the client's `truth` is the per-viewer
+// projection, never the engine's TruthState — the server swaps it in
+// redactFor before anything crosses the wire.
+export interface ClientState extends Omit<GameState, 'truth'> {
   you: PlayerId;
   counts: Record<PlayerId, { hand: number; draw: number }>;
+  truth?: ClientTruthView;
 }
 
 /** S6.2/S6.3: server lifecycle status, sent once per connection. */

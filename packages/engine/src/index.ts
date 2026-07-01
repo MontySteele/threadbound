@@ -14,6 +14,13 @@ export {
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
+// nt-slice §11 extension: the truth surface meant for clients is the
+// projection plus the public ontology (questions/answers — board columns and
+// sheet chips). content/truth.ts (combo table, fragments, eliminations) is
+// deliberately NOT re-exported; only the reducer touches it.
+export { clientTruthView } from './truth-view';
+export type { ClientTruthView, ClientShrineView, TruthStub } from './truth-view';
+export { QUESTIONS, ANSWERS, QUESTIONS_BY_ID, ANSWERS_BY_ID, answersFor } from './content/questions';
 export {
   CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, LOCKED_CARDS, eventsForAct,
   PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE,

@@ -31,6 +31,7 @@
   --danger-bg: #3a1d1a;
   --good: #8fd48f;
   --kindled: #ffd470;
+  --thread-gold: var(--thread); /* the Witness channel on the Tapestry (nt slice, ruling 8) */
 
   /* type: serif for names/Witness, system workhorse for UI */
   --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;

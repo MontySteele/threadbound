@@ -141,6 +141,19 @@ export class BotPolicy {
         return this.playRest(view);
       case 'shop':
         return this.playShop(view);
+      case 'loom': {
+        // nt-slice S6.8: sims speak only the pre-filled certainties (the
+        // shrine sheet arrives auto-completed where evidence allows) — they
+        // confirm as-is and move on. Solo: the human drives; the engine
+        // mirrors this seat's confirm/advance.
+        if (this.mode === 'solo') return null;
+        const shrine = view.truth?.shrine;
+        if (!shrine) return null;
+        if (shrine.verdict) {
+          return view.advanceReady[you] ? null : { type: 'ADVANCE', player: you };
+        }
+        return shrine.confirmed[you] ? null : { type: 'LOOM_CONFIRM', player: you, confirm: true };
+      }
       default:
         return null; // lobby / victory / game_over — nothing to decide
     }

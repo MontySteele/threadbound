@@ -16,6 +16,7 @@ export type Phase =
   | 'combat'
   | 'reward'
   | 'event'
+  | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
   | 'rest'
   | 'shop' // M2-B4
   | 'game_over'
@@ -230,6 +231,11 @@ export interface EnemyState {
   untargetable: boolean;
   scriptIndex: number;
   intent: EnemyIntent;
+  /** nt-slice S6.5 (flagged finale boss only) — all three are RENDERED
+   *  strings, safe to cross the wire; the pools stay server-side. */
+  nameOverride?: string; // real face name, when earned at the shrine
+  telegraph?: string | null; // whispered one turn before a hidden mechanic's first firing
+  revealedMechanics?: string[]; // reveal lines earned at the shrine
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +254,10 @@ export type EventEffectOp =
   | { op: 'thread'; amount: number } // affects next combat start via pendingThread
   | { op: 'upgradeRandom' }
   | { op: 'removeRandomStarter' }
+  /** nt-slice: serve this clue event's fragments — rendered text pinned to
+   *  the actor's and partner's Tapestries server-side. The fragment table
+   *  (content/truth.ts) picks variants consistent with the rolled truth. */
+  | { op: 'fragments' }
   | { op: 'nothing' };
 
 export interface EventOptionDef {
@@ -265,11 +275,111 @@ export interface EventDef {
   crossed: boolean;
   /** crossed events: 60% consequence / 40% comedy (M2-B5) */
   tone?: 'consequence' | 'comedy';
+  /** nt-slice clue event: only enters the pool when tracks is set, at
+   *  elevated queue weight (map.ts) */
+  clue?: boolean;
   prose: string;
   options: EventOptionDef[];
 }
 
-export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure';
+// ---------------------------------------------------------------------------
+// Narrative truth system (nt-slice — docs/threadbound_narrative_track_slice.md).
+// Flag-gated behind TB_TRACKS: with the flag off, none of this state exists
+// and the rng stream is untouched. Lore text is PROVISIONAL until the lore
+// bible session; the STRUCTURE is the commitment.
+// ---------------------------------------------------------------------------
+
+export type QuestionKind = 'world' | 'self';
+
+export interface QuestionDef {
+  id: string;
+  text: string;
+  /** world questions key boss reveals; self questions key personal payoffs */
+  kind: QuestionKind;
+  /** payoff binding, interpreted at the shrine/boss layers.
+   *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
+   *  healEach (provisional heal 6 each). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach';
+}
+
+export interface AnswerDef {
+  questionId: string;
+  id: string;
+  /** answer chip text on the shared sheet */
+  text: string;
+  /** prose written to the codex when this answer is proven true */
+  codexTruthEntry: string;
+}
+
+export interface FragmentDef {
+  id: string;
+  eventId: string;
+  /** fragment A goes to the event's actor; B to the partner (Witness in solo) */
+  channel: 'actor' | 'partner';
+  text: string;
+  bearsOn: string; // questionId
+  /** answerIds struck by this fragment — SERVER-SECRET (§11 extension);
+   *  materializes only as pooled strike-outs at the Loom's Eye */
+  eliminates: string[];
+  /** ascension-fraying reserve (spec ruling 9) — carried from day one,
+   *  always 1 in the slice */
+  strength: number;
+}
+
+/** A fragment as pinned to ONE player's Tapestry — the client-visible shape.
+ *  Rendered text only; the elimination mapping never leaves the server. */
+export interface PinnedFragment {
+  fragmentId: string;
+  eventId: string;
+  act: number;
+  questionId: string;
+  text: string;
+}
+
+/** Who struck an answer, shown on the sheet ("source noted", ruling 6). */
+export interface StruckSource {
+  eventId: string;
+  holder: PlayerId;
+}
+
+export interface ShrineState {
+  /** the coveted relic, revealed BEFORE commitment (spec ruling 1);
+   *  null only in the degenerate every-relic-owned case */
+  stakeRelicId: string | null;
+  /** one shared sheet (spec ruling 3): questionId → asserted answerId,
+   *  or null = leave unspoken */
+  sheet: Record<string, string | null>;
+  /** pooled strike-outs per question, computed server-side from BOTH boards.
+   *  Sources are stored pre-rendered ({event, holder} — never fragment ids)
+   *  so the client projection needs no access to the fragment table. */
+  struck: Record<string, Record<string, StruckSource[]>>;
+  /** both must confirm the same filled state; any edit resets both */
+  confirmed: Record<PlayerId, boolean>;
+  /** per-question verdict, null until both confirm; stated completely
+   *  before the boss node unlocks */
+  verdict: Record<string, 'true' | 'false' | 'blank'> | null;
+  stakeLost: boolean;
+}
+
+export interface TruthState {
+  /** questionId → rolled answerId. SERVER-SECRET; stripped by redaction. */
+  tuple: Record<string, string>;
+  /** per-player pinned fragments. Each client receives its OWN board and
+   *  only countable stubs of the partner's (spec ruling 5). */
+  boards: Record<PlayerId, PinnedFragment[]>;
+  shrine: ShrineState | null;
+  /** nt-slice S6.5: the finale boss's rolled identity — face keyed off the
+   *  q_what answer; two live mechanics ([0] q_what-bound, [1] q_why-bound).
+   *  SERVER-SECRET until revealed. */
+  boss: { faceAnswerId: string; liveMechanics: string[] };
+  /** payoffs earned at the verdict, consumed by the boss layer (S6.5):
+   *  bossFace = real name + mechanic 1 in the intent UI · bossMechanic =
+   *  mechanic 2 · openingIntent = the all-true boon (full opening turn
+   *  shown at the pre-boss rest) */
+  reveals: { bossFace: boolean; bossMechanic: boolean; openingIntent: boolean };
+}
+
+export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure' | 'loom';
 
 export interface MapNode {
   id: number;
@@ -463,6 +573,12 @@ export interface GameState {
    *  run start. Only consulted for ids in LOCKED_CARDS (empty until a locked
    *  set is authored), so the default ships with everything unlocked. */
   unlockedCards: string[];
+  /** nt-slice: narrative truth run flag (server reads TB_TRACKS and passes it
+   *  through START_RUN). Absent — not false — when unflagged, so flag-off
+   *  serialized state is byte-identical to pre-slice state. */
+  tracks?: true;
+  /** nt-slice run state; present only when tracks is set */
+  truth?: TruthState;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -537,6 +653,24 @@ export interface Telemetry {
   /** S4.3 (OQ#27): discounted Pulses fired by the Ring — is the relic dead
    *  at human Pulse rates? */
   ringDiscountsFired: number;
+  /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
+   *  is judged on this). Present only on flagged runs. */
+  truth?: {
+    clueEventsOffered: number;
+    clueEventsTaken: number;
+    fragmentsByPlayer: Record<PlayerId, number>;
+    /** T-key opens per act — is the board used? (client-reported) */
+    boardOpensByAct: Record<number, number>;
+    /** sheet-edit churn at the shrine (talk proxy) */
+    sheetEdits: number;
+    /** answers struck by pooled evidence at shrine entry */
+    struckAtShrine: number;
+    /** questions arriving pre-filled (all-but-one struck) */
+    autoCompleted: number;
+    /** per-question outcome, written at the verdict */
+    outcome: Record<string, 'blank' | 'true' | 'false'> | null;
+    stake: { relicId: string | null; rare: boolean; lost: boolean } | null;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -546,7 +680,8 @@ export interface Telemetry {
 export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[] }
+  /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean }
   /** S4.4: lobby ascension vote — both players must land on the same level */
   | { type: 'SET_ASCENSION'; player: PlayerId; level: number }
   | { type: 'NODE_PICK'; player: PlayerId; nodeId: number } // M2-B3
@@ -565,6 +700,16 @@ export type Action =
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }
   | { type: 'SHOP_BUY'; player: PlayerId; itemId: string } // M2-B4
   | { type: 'SHOP_REMOVE'; player: PlayerId; itemId: string; cardInstanceId: string }
+  /** nt-slice S6.8: client-reported Tapestry open (telemetry only, no rules
+   *  effect) — flagged runs only */
+  | { type: 'BOARD_OPENED'; player: PlayerId }
+  /** nt-slice S6.4: edit the ONE shared sheet (ruling 3) — assert an answer
+   *  or return the question to unspoken (null). Any edit resets both
+   *  confirmations. */
+  | { type: 'LOOM_SHEET_SET'; player: PlayerId; questionId: string; answerId: string | null }
+  /** both must confirm the same filled state; the verdict resolves when the
+   *  second confirmation lands */
+  | { type: 'LOOM_CONFIRM'; player: PlayerId; confirm: boolean }
   | { type: 'ADVANCE'; player: PlayerId }
   /** abandon the run — both must confirm; even quitting is co-op */
   | { type: 'CONCEDE'; player: PlayerId; confirm: boolean };

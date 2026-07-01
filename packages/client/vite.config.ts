@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -23,6 +24,14 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __BUILD_SHA__: JSON.stringify(buildSha()),
+  },
+  resolve: {
+    alias: [
+      // §11 extension (nt-slice): the engine's secret narrative content must
+      // not ship in the browser bundle — swap it for the throwing stub. The
+      // bundle-secrecy test enforces this stays effective.
+      { find: /^\.{1,2}\/content\/(truth|faces)(\.js)?$/, replacement: path.resolve(__dirname, 'src/engine-secret-stub.ts') },
+    ],
   },
   server: {
     proxy: {

@@ -10,7 +10,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, CONTENT_VERSION, GameState, IllegalAction, PlayerId,
   PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE,
-  emptyTelemetry, initialState, reduce, hashState,
+  clientTruthView, emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
 import { buildSha } from './build';
 import { BotSpeed, SoloBotDriver } from './solo';
@@ -75,6 +75,10 @@ export interface Room {
   startedAt?: number;
   telemetryWritten?: boolean;
   feedback: FeedbackEntry[];
+  /** nt-slice S6.8: wall-clock time at the Loom's Eye (talk proxy). Clock
+   *  lives here — the engine stays deterministic. */
+  loomEnteredAt?: number;
+  loomResolvedAt?: number;
   /** S1: solo room — persisted so the bot survives restarts with the room */
   bot?: { seat: PlayerId; speed: BotSpeed };
 }
@@ -404,6 +408,10 @@ export class GameServer {
         ascension: room.state.ascension ?? 0,
         seed: room.state.seed,
         telemetry: room.state.telemetry,
+        // nt-slice S6.8: talk proxy — seconds between shrine entry and verdict
+        ...(room.loomEnteredAt && room.loomResolvedAt
+          ? { secondsAtShrine: Math.round((room.loomResolvedAt - room.loomEnteredAt) / 1000) }
+          : {}),
         actions: room.actionLog.length,
         feedback: room.feedback,
       }, null, 2));
@@ -503,7 +511,10 @@ export class GameServer {
 
   /** Hands are open information (designer ruling, OQ#22) — co-op has no
    *  hidden-hand stakes and you'd say it on voice anyway. Only the draw
-   *  piles stay redacted: their ORDER is the one true unknown. */
+   *  piles stay redacted: their ORDER is the one true unknown.
+   *  nt-slice (§11 extension): truth state is replaced wholesale by the
+   *  per-viewer projection — tuple, eliminations, and partner fragment text
+   *  never cross the wire. */
   private redactFor(state: GameState, viewer: PlayerId): unknown {
     const clone: GameState = structuredClone(state);
     const other: PlayerId = viewer === 'p1' ? 'p2' : 'p1';
@@ -513,7 +524,8 @@ export class GameServer {
     };
     clone.players.p1.draw = [];
     clone.players.p2.draw = [];
-    return { ...clone, counts, you: viewer };
+    const truth = clone.truth ? clientTruthView(clone.truth, viewer, clone.botSeat) : undefined;
+    return { ...clone, ...(truth ? { truth } : {}), counts, you: viewer };
   }
 
   private send(socket: WebSocket | null, msg: unknown): void {
@@ -657,7 +669,13 @@ export class GameServer {
           }
         }
         // S4.5: pool = union of both players' unlocked sets (server-built)
-        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed, unlockedCards: this.unlockUnion(ctx.room) });
+        // nt-slice: TB_TRACKS gates the narrative truth system; the pure
+        // engine never reads env, so the flag crosses here
+        this.applyAction(ctx.room, socket, {
+          type: 'START_RUN', seed,
+          unlockedCards: this.unlockUnion(ctx.room),
+          tracks: !!process.env.TB_TRACKS,
+        });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
         if (ctx.room.state.phase !== 'lobby' && !ctx.room.startedAt) {
@@ -806,6 +824,11 @@ export class GameServer {
     try {
       room.state = reduce(room.state, action);
       room.actionLog.push(action);
+      // nt-slice S6.8: stamp shrine entry/verdict for time-at-shrine telemetry
+      if (room.state.phase === 'loom' && !room.loomEnteredAt) room.loomEnteredAt = this.now();
+      if (room.loomEnteredAt && !room.loomResolvedAt && room.state.truth?.shrine?.verdict) {
+        room.loomResolvedAt = this.now();
+      }
       this.broadcastState(room);
       this.maybeWriteTelemetry(room);
       if (room.bot && (room.state.phase === 'game_over' || room.state.phase === 'victory')) {
