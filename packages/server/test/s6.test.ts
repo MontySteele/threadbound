@@ -122,6 +122,45 @@ describe('both-consent telemetry rule (S6.3, ratified 2026-07-01)', () => {
   });
 });
 
+describe('feedback funnel records (S6.5)', () => {
+  it('stamps, bug reports, and surveys land date-rotated with build + room + seed attached', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tb-fb-'));
+    const { port } = await mkServer({ feedbackDir: dir });
+    const a = new Client(port);
+    await a.open();
+    a.send({ type: 'create', character: 'vess', solo: true });
+    await a.nextOf('joined');
+    a.send({ type: 'start', seed: 42 });
+    await a.nextOf('state');
+    a.send({ type: 'feedback', mood: 'good' });
+    await a.nextOf('feedback_ack');
+    a.send({ type: 'bug', note: 'the knot untied itself' });
+    await a.nextOf('bug_ack');
+    a.send({ type: 'survey', rating: 4, note: 'tense' });
+    await a.nextOf('survey_ack');
+    a.send({ type: 'survey', rating: 99 }); // out of band — dropped
+
+    const files = fs.readdirSync(dir);
+    expect(files.length).toBe(1);
+    expect(files[0]).toMatch(/^feedback-\d{4}-\d{2}-\d{2}\.jsonl$/);
+    const lines = fs.readFileSync(path.join(dir, files[0]), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    expect(lines.map((l) => l.kind)).toEqual(['stamp', 'bug', 'survey']);
+    for (const l of lines) {
+      expect(l.buildSha).toBeTruthy();
+      expect(l.contentVersion).toBeTruthy();
+      expect(l.room).toHaveLength(5);
+      expect(l.seed).toBe(42);
+      expect(l.mode).toBe('solo');
+    }
+    const bug = lines[1];
+    expect(bug.note).toBe('the knot untied itself');
+    expect(bug.characters).toEqual({ p1: 'vess', p2: 'bram' });
+    expect(bug.ascension).toBe(0);
+    expect(bug.act).toBeGreaterThanOrEqual(1);
+    expect(lines[2].rating).toBe(4);
+  });
+});
+
 describe('proxy-aware client IP (S6.2)', () => {
   const req = (headers: http.IncomingHttpHeaders, remote?: string): http.IncomingMessage =>
     ({ headers, socket: { remoteAddress: remote } } as unknown as http.IncomingMessage);

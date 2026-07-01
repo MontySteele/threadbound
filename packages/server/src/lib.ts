@@ -41,8 +41,15 @@ export interface FeedbackEntry {
   // S6.1: feedback pooled across patches is unusable without its build
   buildSha: string;
   contentVersion: string;
+  /** S6.5 record kinds: stamp = in-run feeling; bug = one-tap repro artifact;
+   *  survey = end-of-run micro-survey */
+  kind: 'stamp' | 'bug' | 'survey';
+  /** S6.5: every record carries room + seed — "needs a seed + turn to repro"
+   *  OQs become one-tap artifacts */
+  room: string;
+  seed: number;
   player: PlayerId;
-  mood: 'good' | 'bad' | 'note';
+  mood?: 'good' | 'bad' | 'note';
   /** S1.3: solo stamps must never pollute pair-calibration baselines */
   mode: 'solo' | 'pair';
   note?: string;
@@ -51,6 +58,11 @@ export interface FeedbackEntry {
   act: number;
   turn?: number;
   node?: number;
+  /** bug reports: the rest of what a repro needs */
+  characters?: Record<PlayerId, CharacterId>;
+  ascension?: number;
+  /** survey: how was this run, 1–5 */
+  rating?: number;
 }
 
 export interface Room {
@@ -401,6 +413,25 @@ export class GameServer {
     }
   }
 
+  /** S6.5: the context every feedback-funnel record shares. */
+  private feedbackBase(room: Room, pid: PlayerId, kind: FeedbackEntry['kind']): FeedbackEntry {
+    const st = room.state;
+    return {
+      ts: this.now(),
+      buildSha: buildSha(),
+      contentVersion: CONTENT_VERSION,
+      kind,
+      room: room.code,
+      seed: st.seed,
+      player: pid,
+      mode: room.bot ? 'solo' : 'pair',
+      phase: st.phase,
+      act: st.map.act,
+      turn: st.combat?.turn,
+      node: st.map.position,
+    };
+  }
+
   /** S6.2: feedback + bug reports land in their own env-driven dir,
    *  date-rotated JSONL (falls back to the telemetry dir, as before S6). */
   private writeFeedback(entry: unknown): void {
@@ -667,23 +698,49 @@ export class GameServer {
         // M3 review: in-the-moment stamps beat post-session recall
         if (!ctx.room || !ctx.pid) return;
         const mood = ['good', 'bad', 'note'].includes(msg.mood) ? msg.mood : 'note';
-        const st = ctx.room.state;
         const entry: FeedbackEntry = {
-          ts: this.now(),
-          buildSha: buildSha(),
-          contentVersion: CONTENT_VERSION,
-          player: ctx.pid,
+          ...this.feedbackBase(ctx.room, ctx.pid, 'stamp'),
           mood,
-          mode: ctx.room.bot ? 'solo' : 'pair',
           note: typeof msg.note === 'string' ? msg.note.slice(0, 500) : undefined,
-          phase: st.phase,
-          act: st.map.act,
-          turn: st.combat?.turn,
-          node: st.map.position,
         };
         ctx.room.feedback.push(entry);
         this.writeFeedback(entry);
         this.send(socket, { type: 'feedback_ack', mood });
+        return;
+      }
+
+      case 'bug': {
+        // S6.5 one-tap bug report: seed, turn, act, build, pair, ascension —
+        // every "needs a seed + turn to repro" OQ becomes an artifact
+        if (!ctx.room || !ctx.pid) return;
+        const entry: FeedbackEntry = {
+          ...this.feedbackBase(ctx.room, ctx.pid, 'bug'),
+          note: typeof msg.note === 'string' ? msg.note.slice(0, 2000) : undefined,
+          characters: {
+            p1: ctx.room.state.players.p1.character,
+            p2: ctx.room.state.players.p2.character,
+          },
+          ascension: ctx.room.state.ascension ?? 0,
+        };
+        ctx.room.feedback.push(entry);
+        this.writeFeedback(entry);
+        this.send(socket, { type: 'bug_ack' });
+        return;
+      }
+
+      case 'survey': {
+        // S6.5 end-of-run micro-survey: 1–5 + optional text, never blocking
+        if (!ctx.room || !ctx.pid) return;
+        const rating = Math.floor(Number(msg.rating) || 0);
+        if (rating < 1 || rating > 5) return;
+        const entry: FeedbackEntry = {
+          ...this.feedbackBase(ctx.room, ctx.pid, 'survey'),
+          rating,
+          note: typeof msg.note === 'string' ? msg.note.slice(0, 500) : undefined,
+        };
+        ctx.room.feedback.push(entry);
+        this.writeFeedback(entry);
+        this.send(socket, { type: 'survey_ack' });
         return;
       }
 

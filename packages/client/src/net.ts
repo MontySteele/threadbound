@@ -68,6 +68,8 @@ export class Net {
         case 'presence': return this.events.onPresence(msg.partnerConnected);
         case 'status': return this.events.onStatus?.(msg);
         case 'feedback_ack': return this.events.onFeedbackAck?.(msg.mood);
+        case 'bug_ack': return this.events.onFeedbackAck?.('bug');
+        case 'survey_ack': return this.events.onFeedbackAck?.('survey');
         case 'error':
           if (msg.message === 'unknown session') {
             localStorage.removeItem(TOKEN_KEY);
@@ -131,5 +133,15 @@ export class Net {
   /** Playtest feedback stamp ([ bad / ] good / \ note, or pad L1+R1). */
   feedback(mood: 'good' | 'bad' | 'note', note?: string): void {
     this.send({ type: 'feedback', mood, note });
+  }
+
+  /** S6.5 one-tap bug report — the server attaches seed/turn/act/build/pair/ascension. */
+  bug(note?: string): void {
+    this.send({ type: 'bug', note });
+  }
+
+  /** S6.5 end-of-run micro-survey (1–5 + optional text). */
+  survey(rating: number, note?: string): void {
+    this.send({ type: 'survey', rating, note });
   }
 }

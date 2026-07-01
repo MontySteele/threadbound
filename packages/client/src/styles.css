@@ -421,3 +421,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .version-footer { position: fixed; bottom: 4px; right: 8px; z-index: 5; font-size: 0.68em;
   color: var(--text-dim); opacity: 0.65; pointer-events: auto; }
 .version-footer a { color: var(--text-dim); text-decoration: underline dotted; }
+
+/* S6.5 feedback funnel */
+.footer-links { margin-top: 18px; font-size: 0.8em; }
+.survey input, .bug-panel input { margin: 0 6px; }
+.bug-panel input { width: 240px; }

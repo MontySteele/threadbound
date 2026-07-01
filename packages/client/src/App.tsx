@@ -108,7 +108,9 @@ export default function App(): JSX.Element {
       onPresence: setPartnerOn,
       onConnection: setConnected,
       onFeedbackAck: (mood) => {
-        setToast(`stamped: felt ${mood === 'note' ? 'noted' : mood}`);
+        setToast(mood === 'bug' ? 'bug report sent — seed + build attached. Thank you.'
+          : mood === 'survey' ? 'noted — thank you.'
+          : `stamped: felt ${mood === 'note' ? 'noted' : mood}`);
         setTimeout(() => setToast(''), 1600);
       },
       onStatus: setStatus,
@@ -346,6 +348,8 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
                 }} />
             </label>
           )}
+          {/* S6.5: the pause/menu-area bug report lives here */}
+          <BugReportButton net={net} />
           {solo && (
             <label>
               bot speed
@@ -400,6 +404,57 @@ function TitleCord({ left, right }: {
       <div className={`title-frame ${right ? 'filled' : ''}`}>
         {right ? <CharacterSigil who={right} size={84} /> : <span className="title-empty">?</span>}
       </div>
+    </div>
+  );
+}
+
+// S6.5 community link — one obvious const.
+// TODO(designer): replace with the real invite once the Discord server exists
+// (ruled: small, 3–4 channels incl. #looking-for-thread).
+const DISCORD_URL = 'https://discord.gg/REPLACE-ME-threadbound';
+
+/** S6.5 one-tap bug report: the server attaches seed, turn, act, build,
+ *  pair, and ascension — the text is optional garnish. */
+function BugReportButton({ net }: { net: Net }): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  return open ? (
+    <span className="bug-panel">
+      <input placeholder="what went wrong? (optional)" value={text} onChange={(e) => setText(e.target.value)} />
+      <button className="chip" data-gp="META" onClick={() => { net.bug(text.trim() || undefined); setText(''); setOpen(false); }}>send</button>
+      <button className="chip" data-gp="META" onClick={() => setOpen(false)}>cancel</button>
+    </span>
+  ) : (
+    <button className="chip" data-gp="META" title="one tap attaches seed, turn, act, build, pair, ascension"
+      onClick={() => setOpen(true)}>report a bug…</button>
+  );
+}
+
+/** S6.5 end-of-run micro-survey: two items max, one-tap skippable, and never
+ *  in the way of the return-to-title button. Once per run (seed-keyed). */
+function MicroSurvey({ net, runKey }: { net: Net; runKey: string }): JSX.Element | null {
+  const [done, setDone] = useState(() => localStorage.getItem(`tb_survey_${runKey}`) === '1');
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState('');
+  if (done) return null;
+  const finish = (send: boolean) => {
+    localStorage.setItem(`tb_survey_${runKey}`, '1');
+    if (send && rating) net.survey(rating, text.trim() || undefined);
+    setDone(true);
+  };
+  return (
+    <div className="panel survey">
+      <b>How was this run?</b>{' '}
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button key={n} className="chip" data-gp="META"
+          style={rating === n ? { borderColor: 'var(--p1)' } : undefined}
+          onClick={() => setRating(n)}>{n}</button>
+      ))}
+      {rating > 0 && (
+        <input placeholder="a word or two (optional)" value={text} onChange={(e) => setText(e.target.value)} />
+      )}
+      {rating > 0 && <button className="chip" data-gp="META" onClick={() => finish(true)}>send</button>}
+      <button className="chip" data-gp="META" onClick={() => finish(false)}>skip</button>
     </div>
   );
 }
@@ -462,6 +517,14 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
         <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
       </div>
       <ProfilePanel />
+      {/* S6.5 title footer: version stamp lives in the fixed corner footer;
+          links stay relative to the page origin (S6.7 — no absolute URLs
+          except the community link, which is external by nature) */}
+      <p className="muted footer-links">
+        <a href="data-note" target="_blank" rel="noreferrer">what data this server collects</a>
+        {' · '}
+        <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
+      </p>
     </div>
   );
 }
@@ -585,7 +648,9 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <h2>The Unraveled lies still.</h2>
           <RunSummary state={state} won={true} />
           <p className="muted">A full clear — screenshot this for the calibration pile.</p>
+          <MicroSurvey net={net} runKey={String(state.seed)} />
           <button className="big" data-gp="META" onClick={() => net.leave()}>Leave room (descend again)</button>
+          <BugReportButton net={net} />
         </div>
       );
     case 'game_over':
@@ -594,7 +659,9 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <h2>The descent ends here.</h2>
           <RunSummary state={state} won={false} />
           <p className="muted">Death is a fresh run — screenshot this for the calibration pile first.</p>
+          <MicroSurvey net={net} runKey={String(state.seed)} />
           <button className="big" data-gp="META" onClick={() => net.leave()}>Leave room (descend again)</button>
+          <BugReportButton net={net} />
         </div>
       );
     default:
