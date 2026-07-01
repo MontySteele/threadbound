@@ -9,6 +9,14 @@ export interface ClientState extends GameState {
   counts: Record<PlayerId, { hand: number; draw: number }>;
 }
 
+/** S6.2/S6.3: server lifecycle status, sent once per connection. */
+export interface ServerStatus {
+  drain: boolean;
+  telemetryActive: boolean;
+  buildSha: string;
+  contentVersion: string;
+}
+
 export interface NetEvents {
   onState: (s: ClientState) => void;
   onJoined: (info: { token: string; code: string; playerId: PlayerId; character: string }) => void;
@@ -16,6 +24,7 @@ export interface NetEvents {
   onPresence: (partnerConnected: boolean) => void;
   onConnection: (up: boolean) => void;
   onFeedbackAck?: (mood: string) => void;
+  onStatus?: (status: ServerStatus) => void;
 }
 
 // Storage keys are namespaced by an optional ?tab= query param so one browser
@@ -57,6 +66,7 @@ export class Net {
           localStorage.setItem(CODE_KEY, msg.code);
           return this.events.onJoined(msg);
         case 'presence': return this.events.onPresence(msg.partnerConnected);
+        case 'status': return this.events.onStatus?.(msg);
         case 'feedback_ack': return this.events.onFeedbackAck?.(msg.mood);
         case 'error':
           if (msg.message === 'unknown session') {

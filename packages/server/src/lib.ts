@@ -65,12 +65,35 @@ export interface GameServerOptions {
   clientDist?: string;
   /** M3-A1: write per-run telemetry files for human playtest sessions */
   humanTelemetryDir?: string;
+  /** S6.2/S6.5: feedback + bug reports, date-rotated JSONL (env TB_FEEDBACK_DIR) */
+  feedbackDir?: string;
   /** path for graceful-restart room snapshots (M3-D) */
   persistPath?: string;
+  /** S6.2 hosted hardening: concurrent-room cap (env TB_MAX_ROOMS, default 200) */
+  maxRooms?: number;
+  /** S6.2: room creations per client IP per minute (env TB_ROOM_RATE, default 10 —
+   *  lenient enough for two players behind one NAT) */
+  roomCreatesPerMin?: number;
+  /** S6.2 drain flag (TB_DRAIN=1): no new rooms; existing rooms play on */
+  drain?: boolean;
   now?: () => number;
 }
 
 const HOUR = 3_600_000;
+const RATE_WINDOW_MS = 60_000;
+
+/** S6.2 proxy-aware client IP: behind Render's proxy or a cloudflared tunnel
+ *  every socket arrives from platform edge IPs — rate limiting on the raw
+ *  address would throttle everyone as one client. Cloudflare's header wins
+ *  (the tunnel case), then the standard proxy header, then the raw socket. */
+export function clientIp(req: http.IncomingMessage): string {
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf) return cf.trim();
+  const xff = req.headers['x-forwarded-for'];
+  const first = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
+  if (first) return first;
+  return req.socket?.remoteAddress ?? 'unknown';
+}
 
 export class GameServer {
   rooms = new Map<string, Room>();
@@ -81,15 +104,27 @@ export class GameServer {
   wss: WebSocketServer;
   private now: () => number;
   private timers: NodeJS.Timeout[] = [];
+  /** S6.2 rate limit: room-create timestamps per client IP (sliding window) */
+  private createTimes = new Map<string, number[]>();
 
   constructor(public opts: GameServerOptions) {
     this.now = opts.now ?? Date.now;
     this.server = http.createServer((req, res) => this.serveStatic(req, res));
     this.wss = new WebSocketServer({ server: this.server });
-    this.wss.on('connection', (socket) => {
+    this.wss.on('connection', (socket, req) => {
       (socket as any).isAlive = true;
       socket.on('pong', () => ((socket as any).isAlive = true));
-      const ctx: { room: Room | null; pid: PlayerId | null } = { room: null, pid: null };
+      const ctx: { room: Room | null; pid: PlayerId | null; ip: string } = { room: null, pid: null, ip: clientIp(req) };
+      // S6.2/S6.3 lifecycle status: the client needs to know about a drain
+      // window (title-screen message) and whether telemetry collection is
+      // active (the consent card only appears when it is).
+      this.send(socket, {
+        type: 'status',
+        drain: !!this.opts.drain,
+        telemetryActive: !!this.opts.humanTelemetryDir,
+        buildSha: buildSha(),
+        contentVersion: CONTENT_VERSION,
+      });
       socket.on('message', (raw) => this.handleMessage(socket, ctx, raw.toString()));
       socket.on('close', () => {
         if (ctx.room && ctx.pid) {
@@ -316,6 +351,20 @@ export class GameServer {
     }
   }
 
+  /** S6.2: feedback + bug reports land in their own env-driven dir,
+   *  date-rotated JSONL (falls back to the telemetry dir, as before S6). */
+  private writeFeedback(entry: unknown): void {
+    const dir = this.opts.feedbackDir ?? this.opts.humanTelemetryDir;
+    if (!dir) return;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const day = new Date(this.now()).toISOString().slice(0, 10);
+      fs.appendFileSync(path.join(dir, `feedback-${day}.jsonl`), JSON.stringify(entry) + '\n');
+    } catch (err) {
+      console.error('feedback write failed', err);
+    }
+  }
+
   // ---- protocol ------------------------------------------------------------
 
   /** S4.5: sanitize a client-sent profile claim. */
@@ -407,7 +456,20 @@ export class GameServer {
     }
   }
 
-  private handleMessage(socket: WebSocket, ctx: { room: Room | null; pid: PlayerId | null }, raw: string): void {
+  /** S6.2: sliding-window room-creation limit per client IP. */
+  private allowCreate(ip: string, now = this.now()): boolean {
+    const limit = this.opts.roomCreatesPerMin ?? 10;
+    const times = (this.createTimes.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+    if (times.length >= limit) {
+      this.createTimes.set(ip, times);
+      return false;
+    }
+    times.push(now);
+    this.createTimes.set(ip, times);
+    return true;
+  }
+
+  private handleMessage(socket: WebSocket, ctx: { room: Room | null; pid: PlayerId | null; ip?: string }, raw: string): void {
     let msg: any;
     try {
       msg = JSON.parse(raw);
@@ -417,6 +479,16 @@ export class GameServer {
 
     switch (msg.type) {
       case 'create': {
+        // S6.2 hosted hardening: drain window, room cap, per-IP rate limit
+        if (this.opts.drain) {
+          return this.send(socket, { type: 'error', message: 'the loom is being restrung — no new rooms just now. Runs in progress play on.' });
+        }
+        if (this.rooms.size >= (this.opts.maxRooms ?? 200)) {
+          return this.send(socket, { type: 'error', message: 'the loom is full — every frame is strung. Try again in a little while.' });
+        }
+        if (!this.allowCreate(ctx.ip ?? 'unknown')) {
+          return this.send(socket, { type: 'error', message: 'too many rooms from your address — give the loom a minute.' });
+        }
         const character: CharacterId = msg.character === 'bram' ? 'bram' : 'vess';
         // S1.1: solo rooms seat the in-process bot at p2; the human picks both
         // characters at the lobby (duplicates allowed — it's a debug tool too).
@@ -550,15 +622,7 @@ export class GameServer {
           node: st.map.position,
         };
         ctx.room.feedback.push(entry);
-        const dir = this.opts.humanTelemetryDir;
-        if (dir) {
-          try {
-            fs.mkdirSync(dir, { recursive: true });
-            fs.appendFileSync(path.join(dir, `feedback-${ctx.room.code}.jsonl`), JSON.stringify(entry) + '\n');
-          } catch (err) {
-            console.error('feedback write failed', err);
-          }
-        }
+        this.writeFeedback(entry);
         this.send(socket, { type: 'feedback_ack', mood });
         return;
       }

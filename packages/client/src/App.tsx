@@ -8,7 +8,7 @@ import {
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
   computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
-import { ClientState, Net } from './net';
+import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
 import { GLYPH, linkBody } from './keywords';
@@ -92,6 +92,8 @@ export default function App(): JSX.Element {
   const [deckOpen, setDeckOpen] = useState(false);
   const [concedeOpen, setConcedeOpen] = useState(false);
   const [toast, setToast] = useState('');
+  // S6.2/S6.3: server-declared lifecycle status (drain, telemetry collection)
+  const [status, setStatus] = useState<ServerStatus | null>(null);
   const netRef = useRef<Net | null>(null);
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function App(): JSX.Element {
         setToast(`stamped: felt ${mood === 'note' ? 'noted' : mood}`);
         setTimeout(() => setToast(''), 1600);
       },
+      onStatus: setStatus,
     });
     controller.onChange = () => padTick((n) => n + 1);
     controller.onInspect = (el) => inspectElement(el);
@@ -180,7 +183,7 @@ export default function App(): JSX.Element {
       <VersionFooter />
       <InspectPanel />
       {!joined || !state ? (
-        <Home net={net} error={error} />
+        <Home net={net} error={error} status={status} />
       ) : (
         <div className="app">
           <header>
@@ -359,7 +362,7 @@ const LOBBY_GREETINGS = [
   'Oh good, reinforcements. The Undercroft was getting worried.',
 ];
 
-function Home({ net, error }: { net: Net; error: string }): JSX.Element {
+function Home({ net, error, status }: { net: Net; error: string; status: ServerStatus | null }): JSX.Element {
   const [code, setCode] = useState('');
   const [character, setCharacter] = useState<Character>('vess');
   const [soloCharacter, setSoloCharacter] = useState<Character>('vess');
@@ -369,6 +372,10 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
       <h1 className="game-title">THREADBOUND</h1>
       <TitleCord left={null} right={null} />
       <p className="muted">Two spirit-binders, one thread. Bring a friend.</p>
+      {/* S6.2 drain window: no new rooms; runs in progress play on */}
+      {status?.drain && (
+        <div className="error">The loom is being restrung — no new rooms for a moment. Runs in progress play on; rejoining works.</div>
+      )}
       {error && <div className="error">{error}</div>}
       <div className="panel">
         <h3>Create a room</h3>
