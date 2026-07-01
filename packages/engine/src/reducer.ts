@@ -182,6 +182,17 @@ function apply(state: GameState, action: Action): void {
           boss: { faceAnswerId: truthRoll.value.q_what, liveMechanics: mechs.value },
           reveals: { bossFace: false, bossMechanic: false, openingIntent: false },
         };
+        state.telemetry.truth = {
+          clueEventsOffered: 0,
+          clueEventsTaken: 0,
+          fragmentsByPlayer: { p1: 0, p2: 0 },
+          boardOpensByAct: {},
+          sheetEdits: 0,
+          struckAtShrine: 0,
+          autoCompleted: 0,
+          outcome: null,
+          stake: null,
+        };
       }
       state.phase = 'map';
       if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
@@ -540,6 +551,13 @@ function apply(state: GameState, action: Action): void {
       return;
     }
 
+    case 'BOARD_OPENED': {
+      // telemetry only (is the log used?) — no rules effect, flagged runs only
+      const tt = state.telemetry.truth;
+      if (tt) tt.boardOpensByAct[state.map.act] = (tt.boardOpensByAct[state.map.act] ?? 0) + 1;
+      return;
+    }
+
     case 'LOOM_SHEET_SET': {
       assert(state.phase === 'loom' && state.truth?.shrine, 'not at the Loom’s Eye');
       const shrine = state.truth!.shrine!;
@@ -553,6 +571,7 @@ function apply(state: GameState, action: Action): void {
       shrine.sheet[action.questionId] = action.answerId;
       // one shared sheet (ruling 3): any edit reopens BOTH confirmations
       shrine.confirmed = { p1: false, p2: false };
+      if (state.telemetry.truth) state.telemetry.truth.sheetEdits++;
       return;
     }
 
@@ -711,6 +730,14 @@ function resolveLoomVerdict(state: GameState): void {
   }
   shrine.verdict = verdict;
   shrine.stakeLost = Object.values(verdict).includes('false');
+  if (state.telemetry.truth) {
+    state.telemetry.truth.outcome = { ...verdict };
+    state.telemetry.truth.stake = {
+      relicId: shrine.stakeRelicId,
+      rare: !!(shrine.stakeRelicId && RELICS_BY_ID[shrine.stakeRelicId]?.rare),
+      lost: shrine.stakeLost,
+    };
+  }
 
   for (const q of QUESTIONS) {
     const line =
@@ -824,6 +851,8 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
         [actor, served.a],
         [otherPlayer(actor), served.b],
       ];
+      const tt = state.telemetry.truth;
+      if (tt) tt.clueEventsTaken++;
       for (const [pid, fragment] of pins) {
         if (!fragment) continue;
         state.truth.boards[pid].push({
@@ -833,6 +862,7 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
           questionId: fragment.bearsOn,
           text: fragment.text,
         });
+        if (tt) tt.fragmentsByPlayer[pid]++;
       }
       state.log.push({ e: 'info', detail: 'Threads pull loose and pin to your Tapestries.' });
       break;
@@ -866,6 +896,7 @@ function enterNode(state: GameState): void {
     }
     case 'event': {
       const def = EVENTS[node.eventId!];
+      if (def.clue && state.telemetry.truth) state.telemetry.truth.clueEventsOffered++;
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       const subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
@@ -901,6 +932,11 @@ function enterNode(state: GameState): void {
         // all-but-one struck → the last answer stands, pre-asserted (the
         // routing paid for it); players may still return it to unspoken
         sheet[q.id] = open.length === 1 ? open[0].id : null;
+      }
+      const tt = state.telemetry.truth;
+      if (tt) {
+        tt.struckAtShrine = Object.values(struck).reduce((sum, byAns) => sum + Object.keys(byAns).length, 0);
+        tt.autoCompleted = Object.values(sheet).filter((v) => v !== null).length;
       }
       truth.shrine = {
         stakeRelicId: stakeRelic(state),

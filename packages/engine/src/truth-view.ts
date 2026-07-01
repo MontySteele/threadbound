@@ -29,9 +29,12 @@ export interface ClientShrineView {
 }
 
 export interface ClientTruthView {
-  /** your own pinned fragments, rendered text included */
-  board: PinnedFragment[];
-  /** the partner's threads, text and question withheld (ruling 5) */
+  /** your own pinned fragments, rendered text included. In solo the Witness
+   *  VOICES the partner channel (ruling 8): those pins appear here too,
+   *  marked witness, and pin to the thread-gold column. */
+  board: (PinnedFragment & { witness?: true })[];
+  /** the partner's threads, text and question withheld (ruling 5).
+   *  Always empty in solo — there is no second screen to protect. */
   partnerStubs: TruthStub[];
   shrine: ClientShrineView | null;
 }
@@ -47,8 +50,19 @@ function shrineView(shrine: ShrineState): ClientShrineView {
   };
 }
 
-export function clientTruthView(truth: TruthState, viewer: PlayerId): ClientTruthView {
+export function clientTruthView(truth: TruthState, viewer: PlayerId, botSeat?: PlayerId): ClientTruthView {
   const partner = otherPlayer(viewer);
+  if (botSeat && viewer !== botSeat) {
+    // solo (ruling 8): the bot's board is the Witness channel, spoken aloud
+    return {
+      board: [
+        ...truth.boards[viewer].map((p) => ({ ...p })),
+        ...truth.boards[partner].map((p) => ({ ...p, witness: true as const })),
+      ],
+      partnerStubs: [],
+      shrine: truth.shrine ? shrineView(truth.shrine) : null,
+    };
+  }
   return {
     board: truth.boards[viewer].map((p) => ({ ...p })),
     partnerStubs: truth.boards[partner].map((p) => ({ eventId: p.eventId, act: p.act })),

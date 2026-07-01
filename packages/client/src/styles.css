@@ -480,3 +480,9 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 @keyframes agreed-flash { 50% { filter: brightness(1.8); } }
 .pick-tags { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
 .pick-tag { color: var(--ink); font-size: 0.62em; font-weight: bold; padding: 0 6px; border-radius: 7px; letter-spacing: 0.04em; }
+
+/* nt-slice S6.5: boss mechanic reveals (shrine-earned) + hidden-mechanic
+   telegraph whisper on the enemy panel */
+.mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); }
+.mech-telegraph { margin-top: 3px; font-size: 0.82em; font-style: italic; color: var(--text-dim); animation: telegraph-pulse 1.6s ease-in-out infinite; }
+@keyframes telegraph-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }

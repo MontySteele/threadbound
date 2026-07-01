@@ -53,8 +53,9 @@ function enemyName(combat: ClientState['combat'], enemyId: string): string {
   if (!combat) return enemyId;
   const enemy = combat.enemies.find((e) => e.id === enemyId);
   if (!enemy) return enemyId;
-  const name = ENEMIES[enemy.defId]?.name ?? enemy.defId;
-  const sameName = combat.enemies.filter((e) => (ENEMIES[e.defId]?.name ?? e.defId) === name);
+  // nt-slice S6.5: the shrine's bossFace reveal renames the finale boss
+  const name = enemy.nameOverride ?? ENEMIES[enemy.defId]?.name ?? enemy.defId;
+  const sameName = combat.enemies.filter((e) => (e.nameOverride ?? ENEMIES[e.defId]?.name ?? e.defId) === name);
   if (sameName.length < 2) return name;
   return `${name} ${sameName.findIndex((e) => e.id === enemyId) + 1}`;
 }
@@ -127,7 +128,13 @@ export default function App(): JSX.Element {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
       if (e.key === 'd') setDeckOpen((o) => !o);
-      else if (e.key === 't' && truthRef.current) setTapestryOpen((o) => !o); // S6.6
+      else if (e.key === 't' && truthRef.current) {
+        // S6.6 · S6.8: opens report to telemetry (board-use signal)
+        setTapestryOpen((o) => {
+          if (!o) netRef.current?.act({ type: 'BOARD_OPENED' });
+          return !o;
+        });
+      }
       else if (e.key === 'f') toggleFullscreen();
       else if (e.key === '[') netRef.current?.feedback('bad');
       else if (e.key === ']') netRef.current?.feedback('good');
@@ -220,7 +227,10 @@ export default function App(): JSX.Element {
               )}
               {state.phase !== 'lobby' && state.truth && (
                 // S6.6: only on flagged runs — no truth projection, no board
-                <button className="chip" data-gp="META" onClick={() => setTapestryOpen(!tapestryOpen)}>
+                <button className="chip" data-gp="META" onClick={() => {
+                  if (!tapestryOpen) net.act({ type: 'BOARD_OPENED' }); // S6.8 telemetry
+                  setTapestryOpen(!tapestryOpen);
+                }}>
                   Tapestry (t) · {state.truth.board.length}
                 </button>
               )}
@@ -860,6 +870,12 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
               <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
+              {/* nt-slice S6.5: shrine-earned mechanic reveals + the pre-fire
+                  whisper of a hidden mechanic — rendered strings only */}
+              {e.hp > 0 && e.revealedMechanics?.map((line, m) => (
+                <div key={m} className="mech-reveal">{line}</div>
+              ))}
+              {e.hp > 0 && e.telegraph && <div className="mech-telegraph">{e.telegraph}</div>}
               <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
                 {e.untargetable ? 'unbound — untargetable'
                   : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`

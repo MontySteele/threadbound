@@ -564,3 +564,60 @@ describe('boss faces (S6.5)', () => {
     expect(mechanicFireTurns(1)).toEqual({ first: 5, period: 4 });
   });
 });
+
+describe('solo Witness channel (S6.8, ruling 8)', () => {
+  it('the human sees witness-voiced partner fragments in full; the bot view stays normal', () => {
+    const seed = 11;
+    const state = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }, 'p2'), { type: 'START_RUN', seed, tracks: true });
+    state.phase = 'event';
+    state.event = { eventId: 'nt_unrung_bell', chooser: 'p1', subject: 'p1', chosen: null };
+    const next = reduce(state, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'ring' });
+    const humanView = clientTruthView(next.truth!, 'p1', 'p2');
+    expect(humanView.board.length).toBe(2); // own + witness-voiced
+    const witnessPins = humanView.board.filter((f) => f.witness);
+    expect(witnessPins.length).toBe(1);
+    expect(witnessPins[0].text).toBe(next.truth!.boards.p2[0].text);
+    expect(humanView.partnerStubs).toEqual([]);
+    // co-op discipline is untouched when no botSeat is passed
+    const coopView = clientTruthView(next.truth!, 'p1');
+    expect(coopView.board.length).toBe(1);
+    expect(coopView.partnerStubs.length).toBe(1);
+  });
+});
+
+describe('slice telemetry (S6.8)', () => {
+  it('counts offered/taken clue events, fragments, board opens, sheet edits, and the verdict', () => {
+    const seed = 7;
+    let s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed, tracks: true });
+    expect(s.telemetry.truth).toBeTruthy();
+    s.phase = 'event';
+    s.event = { eventId: 'nt_unrung_bell', chooser: 'p1', subject: 'p1', chosen: null };
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'ring' });
+    s = reduce(s, { type: 'BOARD_OPENED', player: 'p1' });
+    s = reduce(s, { type: 'BOARD_OPENED', player: 'p2' });
+    expect(s.telemetry.truth!.clueEventsTaken).toBe(1);
+    expect(s.telemetry.truth!.fragmentsByPlayer).toEqual({ p1: 1, p2: 1 });
+    expect(s.telemetry.truth!.boardOpensByAct[1]).toBe(2);
+    // to the shrine: one edit, then silence-pass the rest
+    s.map = generateFinaleMap(true);
+    s.phase = 'map';
+    s = reduce(s, { type: 'NODE_PICK', player: 'p1', nodeId: 0 });
+    s = reduce(s, { type: 'NODE_PICK', player: 'p2', nodeId: 0 });
+    const tuple = s.truth!.tuple;
+    // q_who has no fragments here so it can't have auto-completed — this is
+    // a real edit (q_what may arrive pre-filled; re-setting it is a no-op)
+    s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_who', answerId: tuple.q_who });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    const tt = s.telemetry.truth!;
+    expect(tt.sheetEdits).toBe(1);
+    expect(tt.outcome!.q_who).toBe('true');
+    expect(tt.stake!.lost).toBe(false);
+    expect(tt.struckAtShrine).toBeGreaterThanOrEqual(0);
+  });
+
+  it('flag off: no truth telemetry key (file shape unchanged)', () => {
+    const s = reduce(initialState(3, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed: 3 });
+    expect('truth' in s.telemetry).toBe(false);
+  });
+});

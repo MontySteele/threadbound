@@ -653,6 +653,24 @@ export interface Telemetry {
   /** S4.3 (OQ#27): discounted Pulses fired by the Ring — is the relic dead
    *  at human Pulse rates? */
   ringDiscountsFired: number;
+  /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
+   *  is judged on this). Present only on flagged runs. */
+  truth?: {
+    clueEventsOffered: number;
+    clueEventsTaken: number;
+    fragmentsByPlayer: Record<PlayerId, number>;
+    /** T-key opens per act — is the board used? (client-reported) */
+    boardOpensByAct: Record<number, number>;
+    /** sheet-edit churn at the shrine (talk proxy) */
+    sheetEdits: number;
+    /** answers struck by pooled evidence at shrine entry */
+    struckAtShrine: number;
+    /** questions arriving pre-filled (all-but-one struck) */
+    autoCompleted: number;
+    /** per-question outcome, written at the verdict */
+    outcome: Record<string, 'blank' | 'true' | 'false'> | null;
+    stake: { relicId: string | null; rare: boolean; lost: boolean } | null;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -682,6 +700,9 @@ export type Action =
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }
   | { type: 'SHOP_BUY'; player: PlayerId; itemId: string } // M2-B4
   | { type: 'SHOP_REMOVE'; player: PlayerId; itemId: string; cardInstanceId: string }
+  /** nt-slice S6.8: client-reported Tapestry open (telemetry only, no rules
+   *  effect) — flagged runs only */
+  | { type: 'BOARD_OPENED'; player: PlayerId }
   /** nt-slice S6.4: edit the ONE shared sheet (ruling 3) — assert an answer
    *  or return the question to unspoken (null). Any edit resets both
    *  confirmations. */
