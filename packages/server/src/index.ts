@@ -7,6 +7,8 @@
 //                        first-timer session without a commit; logged in telemetry
 
 import path from 'node:path';
+import { CONTENT_VERSION } from '@threadbound/engine';
+import { buildSha } from './build';
 import { GameServer } from './lib';
 
 // `npm run server --human-session` doesn't reach argv — npm swallows unknown
@@ -26,6 +28,7 @@ const game = new GameServer({
 
 game.listen().then((port) => {
   console.log(`Threadbound server listening on http://localhost:${port}`);
+  console.log(`build ${buildSha()} · content ${CONTENT_VERSION}`); // S6.1
   if (humanSession) console.log('human-session telemetry enabled (M3-A1)');
 });
 

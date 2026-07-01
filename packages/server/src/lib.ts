@@ -8,10 +8,11 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
-  Action, BotView, CharacterId, GameState, IllegalAction, PlayerId,
+  Action, BotView, CharacterId, CONTENT_VERSION, GameState, IllegalAction, PlayerId,
   PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE,
   emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
+import { buildSha } from './build';
 import { BotSpeed, SoloBotDriver } from './solo';
 
 /** S4.5: a browser profile's claim, sent at room join. Claims, not authority
@@ -32,6 +33,9 @@ export interface Seat {
 
 export interface FeedbackEntry {
   ts: number;
+  // S6.1: feedback pooled across patches is unusable without its build
+  buildSha: string;
+  contentVersion: string;
   player: PlayerId;
   mood: 'good' | 'bad' | 'note';
   /** S1.3: solo stamps must never pollute pair-calibration baselines */
@@ -285,6 +289,9 @@ export class GameServer {
       const file = path.join(dir, `run-${room.code}-${this.now()}.json`);
       fs.writeFileSync(file, JSON.stringify({
         code: room.code,
+        // S6.1: build identity — human files are pooled across patches
+        buildSha: buildSha(),
+        contentVersion: CONTENT_VERSION,
         mode: room.bot ? 'solo' : 'pair', // S1.3: keep solo out of pair baselines
         // review pass: Part A data is uninterpretable without the difficulty
         // it was played at (the scales are env-overridable mid-session)
@@ -531,6 +538,8 @@ export class GameServer {
         const st = ctx.room.state;
         const entry: FeedbackEntry = {
           ts: this.now(),
+          buildSha: buildSha(),
+          contentVersion: CONTENT_VERSION,
           player: ctx.pid,
           mood,
           mode: ctx.room.bot ? 'solo' : 'pair',

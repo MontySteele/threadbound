@@ -1,3 +1,8 @@
+// S6.1 build identity: human telemetry is pooled across patches — every
+// telemetry file, feedback record, and client footer carries this manual
+// content tag alongside the injected buildSha. Bump when content changes.
+export const CONTENT_VERSION = 's5';
+
 export * from './types';
 export * from './rng';
 export * from './hash';

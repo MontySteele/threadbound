@@ -416,3 +416,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 @keyframes agreed-flash { 50% { filter: brightness(1.8); } }
 .pick-tags { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
 .pick-tag { color: var(--ink); font-size: 0.62em; font-weight: bold; padding: 0 6px; border-radius: 7px; letter-spacing: 0.04em; }
+
+/* S6.1 build identity — small, always visible, never in the way */
+.version-footer { position: fixed; bottom: 4px; right: 8px; z-index: 5; font-size: 0.68em;
+  color: var(--text-dim); opacity: 0.65; pointer-events: auto; }
+.version-footer a { color: var(--text-dim); text-decoration: underline dotted; }

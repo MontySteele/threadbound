@@ -9,6 +9,7 @@ import {
   computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
+import { VERSION_STAMP } from './build';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
@@ -176,6 +177,7 @@ export default function App(): JSX.Element {
   return (
     <>
       <div id="fx-overlay" />
+      <VersionFooter />
       <InspectPanel />
       {!joined || !state ? (
         <Home net={net} error={error} />
@@ -248,6 +250,12 @@ export default function App(): JSX.Element {
       )}
     </>
   );
+}
+
+/** S6.1: build identity, small and always visible — a bug report or
+ *  screenshot without its build is unusable once data pools across patches. */
+function VersionFooter(): JSX.Element {
+  return <div className="version-footer">{VERSION_STAMP}</div>;
 }
 
 function HintBar(): JSX.Element | null {
