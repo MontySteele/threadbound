@@ -263,14 +263,14 @@ export const VESS_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Apply 3 Hex.',
     base: [{ op: 'hex', amount: 3, primary: true }],
-    link: { condition: 'Hex', text: 'Double the target’s Hex.', effects: [{ op: 'doubleHex' }] },
+    link: { condition: 'Hex', text: 'Double the target’s Hex (max +6).', effects: [{ op: 'doubleHex' }] },
     mutation: {
       name: 'Braided Fury', text: 'Apply 2 Hex. Gain 2 Momentum. Draw 1.',
       base: [{ op: 'hex', amount: 2, primary: true }, { op: 'momentum', amount: 2 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 3 Hex. Link (Hex): double the target’s Hex, then apply 2 more.',
-      link: { condition: 'Hex', text: 'Double the target’s Hex, then apply 2 more.', effects: [{ op: 'doubleHex' }, { op: 'hex', amount: 2 }] },
+      text: 'Apply 3 Hex. Link (Hex): double the target’s Hex (max +6), then apply 2 more.',
+      link: { condition: 'Hex', text: 'Double the target’s Hex (max +6), then apply 2 more.', effects: [{ op: 'doubleHex' }, { op: 'hex', amount: 2 }] },
     },
   },
   {
@@ -455,12 +455,12 @@ export const VESS_M2_CARDS: CardDef[] = [
   {
     id: 'widows_arithmetic', name: 'Widow’s Arithmetic', character: 'vess', rarity: 'rare', cost: 1, tag: 'Hex',
     needsTarget: true,
-    text: 'Double the target’s Hex.',
+    text: 'Double the target’s Hex (max +6).',
     base: [{ op: 'doubleHex' }],
-    link: { condition: 'partner', text: 'Link (Partner’s card): double it again.', effects: [{ op: 'doubleHex' }] },
+    link: { condition: 'partner', text: 'Link (Partner’s card): double it again (max +6).', effects: [{ op: 'doubleHex' }] },
     upgrade: {
-      text: 'Double the target’s Hex. Link (any): double it again.',
-      link: { condition: 'any', text: 'Double it again.', effects: [{ op: 'doubleHex' }] },
+      text: 'Double the target’s Hex (max +6). Link (any): double it again (max +6).',
+      link: { condition: 'any', text: 'Double it again (max +6).', effects: [{ op: 'doubleHex' }] },
     },
   },
   {

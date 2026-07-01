@@ -103,7 +103,7 @@ def({
 def({
   id: 'saturate', name: 'Saturate', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Hex', // lever 3: cost 2 → 1
   needsTarget: true,
-  text: 'Double the target’s Hex.',
+  text: 'Double the target’s Hex (max +6).',
   base: [{ op: 'doubleHex' }],
   link: { condition: 'Surge', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
 });
