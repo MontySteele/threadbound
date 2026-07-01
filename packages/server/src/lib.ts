@@ -493,7 +493,13 @@ export class GameServer {
           }
         }
         // S4.5: pool = union of both players' unlocked sets (server-built)
-        this.applyAction(ctx.room, socket, { type: 'START_RUN', seed, unlockedCards: this.unlockUnion(ctx.room) });
+        // nt-slice: TB_TRACKS gates the narrative truth system; the pure
+        // engine never reads env, so the flag crosses here
+        this.applyAction(ctx.room, socket, {
+          type: 'START_RUN', seed,
+          unlockedCards: this.unlockUnion(ctx.room),
+          tracks: !!process.env.TB_TRACKS,
+        });
         return;
       }
 

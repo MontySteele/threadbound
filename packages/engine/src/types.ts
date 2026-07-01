@@ -269,6 +269,86 @@ export interface EventDef {
   options: EventOptionDef[];
 }
 
+// ---------------------------------------------------------------------------
+// Narrative truth system (nt-slice — docs/threadbound_narrative_track_slice.md).
+// Flag-gated behind TB_TRACKS: with the flag off, none of this state exists
+// and the rng stream is untouched. Lore text is PROVISIONAL until the lore
+// bible session; the STRUCTURE is the commitment.
+// ---------------------------------------------------------------------------
+
+export type QuestionKind = 'world' | 'self';
+
+export interface QuestionDef {
+  id: string;
+  text: string;
+  /** world questions key boss reveals; self questions key personal payoffs */
+  kind: QuestionKind;
+  /** payoff binding, interpreted at the shrine/boss layers.
+   *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
+   *  healEach (provisional heal 6 each). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach';
+}
+
+export interface AnswerDef {
+  questionId: string;
+  id: string;
+  /** answer chip text on the shared sheet */
+  text: string;
+  /** prose written to the codex when this answer is proven true */
+  codexTruthEntry: string;
+}
+
+export interface FragmentDef {
+  id: string;
+  eventId: string;
+  /** fragment A goes to the event's actor; B to the partner (Witness in solo) */
+  channel: 'actor' | 'partner';
+  text: string;
+  bearsOn: string; // questionId
+  /** answerIds struck by this fragment — SERVER-SECRET (§11 extension);
+   *  materializes only as pooled strike-outs at the Loom's Eye */
+  eliminates: string[];
+  /** ascension-fraying reserve (spec ruling 9) — carried from day one,
+   *  always 1 in the slice */
+  strength: number;
+}
+
+/** A fragment as pinned to ONE player's Tapestry — the client-visible shape.
+ *  Rendered text only; the elimination mapping never leaves the server. */
+export interface PinnedFragment {
+  fragmentId: string;
+  eventId: string;
+  act: number;
+  questionId: string;
+  text: string;
+}
+
+export interface ShrineState {
+  /** the coveted relic, revealed BEFORE commitment (spec ruling 1) */
+  stakeRelicId: string;
+  /** one shared sheet (spec ruling 3): questionId → asserted answerId,
+   *  or null = leave unspoken */
+  sheet: Record<string, string | null>;
+  /** pooled strike-outs per question, computed server-side from BOTH boards:
+   *  answerId → fragmentIds that struck it (source noted on the sheet) */
+  struck: Record<string, Record<string, string[]>>;
+  /** both must confirm the same filled state; any edit resets both */
+  confirmed: Record<PlayerId, boolean>;
+  /** per-question verdict, null until both confirm; stated completely
+   *  before the boss node unlocks */
+  verdict: Record<string, 'true' | 'false' | 'blank'> | null;
+  stakeLost: boolean;
+}
+
+export interface TruthState {
+  /** questionId → rolled answerId. SERVER-SECRET; stripped by redaction. */
+  tuple: Record<string, string>;
+  /** per-player pinned fragments. Each client receives its OWN board and
+   *  only countable stubs of the partner's (spec ruling 5). */
+  boards: Record<PlayerId, PinnedFragment[]>;
+  shrine: ShrineState | null;
+}
+
 export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure';
 
 export interface MapNode {
@@ -463,6 +543,12 @@ export interface GameState {
    *  run start. Only consulted for ids in LOCKED_CARDS (empty until a locked
    *  set is authored), so the default ships with everything unlocked. */
   unlockedCards: string[];
+  /** nt-slice: narrative truth run flag (server reads TB_TRACKS and passes it
+   *  through START_RUN). Absent — not false — when unflagged, so flag-off
+   *  serialized state is byte-identical to pre-slice state. */
+  tracks?: true;
+  /** nt-slice run state; present only when tracks is set */
+  truth?: TruthState;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -546,7 +632,8 @@ export interface Telemetry {
 export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[] }
+  /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean }
   /** S4.4: lobby ascension vote — both players must land on the same level */
   | { type: 'SET_ASCENSION'; player: PlayerId; level: number }
   | { type: 'NODE_PICK'; player: PlayerId; nodeId: number } // M2-B3

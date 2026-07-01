@@ -16,6 +16,7 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
+import { rollTruth } from './content/truth';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -162,6 +163,18 @@ function apply(state: GameState, action: Action): void {
       const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite);
       state.rng = gen.rng;
       state.map = gen.map;
+      // nt-slice: the truth roll happens LAST in START_RUN so the unflagged
+      // rng stream is untouched (S6.0 covenant — flag off ⇒ pre-slice states)
+      if (action.tracks) {
+        state.tracks = true;
+        const truthRoll = rollTruth(state.rng);
+        state.rng = truthRoll.state;
+        state.truth = {
+          tuple: truthRoll.value,
+          boards: { p1: [], p2: [] },
+          shrine: null,
+        };
+      }
       state.phase = 'map';
       if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
       return;
