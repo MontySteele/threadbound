@@ -8,11 +8,17 @@ import { ENEMIES } from './content/registry';
 import { POWERS } from './content/powers';
 import { RELICS_BY_ID } from './content/registry';
 import {
-  CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, HookEvent, HookOp,
+  ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, HookEvent, HookOp,
   PassiveId, PlayerId, PlayerState,
 } from './types';
 import { rngInt, rngShuffle } from './rng';
+import { ascensionMods, scaleIntent } from './ascension';
 import { maybeSaySolo, sayWitness } from './witness-draw';
+
+/** S4.1: ActStats grew gold columns — one initializer for every site. */
+export function emptyActStats(): ActStats {
+  return { cardsPlayed: 0, linksFired: 0, combats: 0, hpLost: 0, goldEarned: 0, goldSpent: 0 };
+}
 
 export function otherPlayer(p: PlayerId): PlayerId {
   return p === 'p1' ? 'p2' : 'p1';
@@ -61,14 +67,32 @@ export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
 
 export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): void {
   const p = state.players[holder];
-  const sources: Array<{ name: string; hooks?: { on: HookEvent; effects: HookOp[] }[] }> = [
+  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean }[] }> = [
     ...p.relics.map((r) => RELICS_BY_ID[r]).filter(Boolean),
     ...(p.fallen ? [] : p.powers.map((pw) => POWERS[pw]).filter(Boolean)),
   ];
   for (const src of sources) {
     for (const hook of src.hooks ?? []) {
       if (hook.on !== event) continue;
-      for (const eff of hook.effects) applyHookOp(state, p, eff);
+      // PT2/OQ#29 (Loom ruling): oncePerTurn hooks spend their charge here
+      if (hook.oncePerTurn && state.combat) {
+        const key = `${holder}:${src.id}:${hook.on}`;
+        const fired = (state.combat.hookOnceFired ??= []);
+        if (fired.includes(key)) continue;
+        fired.push(key);
+      }
+      for (const eff of hook.effects) {
+        // Playtest 2: relic-sourced Thread gains were invisible — the pool
+        // moved mid-resolution and the math "didn't match". Name the source.
+        if (eff.op === 'thread') {
+          const before = state.thread;
+          applyHookOp(state, p, eff);
+          const gained = state.thread - before;
+          if (gained > 0) state.log.push({ e: 'info', detail: `${src.name}: +${gained} Thread` });
+          continue;
+        }
+        applyHookOp(state, p, eff);
+      }
     }
   }
 }
@@ -182,6 +206,130 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
   return out;
 }
 
+/** Static planning preview (§11-sanctioned, like computePlannedBlock): the HP
+ *  loss each enemy would take from the chain as currently staged, keyed by
+ *  enemy id. Mirrors the resolution math (targeting, Momentum first-hit +
+ *  halving, Weak/Vulnerable, Block absorption, Hex apply/double, detonation,
+ *  Resonance scaling) over WORKING COPIES — the real state is never touched.
+ *  An ESTIMATE: relic/power hooks (e.g. Cracked Bell's on-detonate splash) and
+ *  the rare per-hit-Momentum rider are excluded, so it can read slightly low. */
+export function computePlannedDamage(state: GameState): Record<string, number> {
+  const dealt: Record<string, number> = {};
+  const combat = state.combat;
+  if (!combat) return dealt;
+  const chain = combat.chain;
+  const natural = computeLinksFired(state, chain);
+  const forced = computeForcedLinks(state, chain, natural);
+  const fired = natural.map((f, i) => f || forced[i]);
+  const resonance = computeResonanceSlots(chain, fired);
+
+  // working copies — forecasting must not mutate authoritative state
+  const enemies = combat.enemies.map((e) => ({
+    id: e.id, hp: e.hp, block: e.block, hex: e.hex, vulnerable: e.vulnerable, untargetable: e.untargetable,
+  }));
+  const mom: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
+  const weak: Record<PlayerId, number> = { p1: state.players.p1.statuses.weak, p2: state.players.p2.statuses.weak };
+  const living = () => enemies.filter((e) => e.hp > 0);
+  const targetable = () => living().filter((e) => !e.untargetable);
+  const retarget = (id?: string) => targetable().find((e) => e.id === id) ?? targetable()[0];
+  type E = (typeof enemies)[number];
+  const hit = (owner: PlayerId, tgt: E, raw: number): void => {
+    let amt = raw;
+    if (weak[owner] > 0) amt = Math.floor(amt * 0.75);
+    if (tgt.vulnerable > 0) amt = Math.floor(amt * 1.5);
+    if (amt < 0) amt = 0;
+    const blocked = Math.min(tgt.block, amt);
+    tgt.block -= blocked;
+    const hpLoss = Math.min(tgt.hp, amt - blocked);
+    tgt.hp -= hpLoss;
+    dealt[tgt.id] = (dealt[tgt.id] ?? 0) + hpLoss;
+  };
+  const burn = (tgt: E, stacks: number): void => {
+    if (stacks <= 0) return;
+    tgt.hex -= stacks;
+    const hpLoss = Math.min(tgt.hp, stacks * DETONATION_DAMAGE); // detonation ignores Block
+    tgt.hp -= hpLoss;
+    dealt[tgt.id] = (dealt[tgt.id] ?? 0) + hpLoss;
+  };
+
+  for (let i = 0; i < chain.length; i++) {
+    const slot = chain[i];
+    const owner = slot.owner;
+    const def = effectiveDef(mustFind(state, slot));
+    const res = resonance.has(i);
+    const sc = (amt: number, primary?: boolean): number => (primary && res ? Math.ceil(amt * 1.5) : amt);
+    const effects: EffectOp[] =
+      fired[i] && def.link ? (def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]) : def.base;
+    let momSpent = false;
+    let keepMomentum = false; // mirrors resolution: momentumStrikeBonus(keepMomentum) skips the halve
+    let detonated = 0;
+    for (const eff of effects) {
+      switch (eff.op) {
+        case 'damage': {
+          const first = retarget(slot.targetId);
+          if (!first) break;
+          for (let t = 0; t < (eff.times ?? 1); t++) {
+            const tgt = retarget(first.id);
+            if (!tgt) break;
+            let amt = sc(eff.amount, eff.primary);
+            if (def.tag === 'Strike' && t === 0 && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
+            hit(owner, tgt, amt);
+          }
+          break;
+        }
+        case 'damageAll': {
+          let used = false;
+          for (const tgt of targetable()) {
+            let amt = sc(eff.amount, eff.primary);
+            if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; used = true; }
+            hit(owner, tgt, amt);
+          }
+          if (used) momSpent = true;
+          break;
+        }
+        case 'damagePerHex': {
+          const tgt = retarget(slot.targetId);
+          if (!tgt) break;
+          let amt = sc(eff.base + eff.perHex * tgt.hex, eff.primary);
+          if (def.tag === 'Strike' && !momSpent && mom[owner] > 0) { amt += mom[owner]; momSpent = true; }
+          hit(owner, tgt, amt);
+          break;
+        }
+        case 'momentumStrikeBonus': {
+          const tgt = retarget(slot.targetId);
+          if (tgt) hit(owner, tgt, mom[owner] * eff.mult);
+          momSpent = true;
+          if (eff.keepMomentum) keepMomentum = true;
+          break;
+        }
+        case 'detonate': {
+          const tgt = retarget(slot.targetId);
+          if (tgt) { const s = Math.min(tgt.hex, eff.max ?? tgt.hex); detonated += s; burn(tgt, s); }
+          break;
+        }
+        case 'detonateAllEnemies':
+          for (const tgt of living()) { detonated += tgt.hex; burn(tgt, tgt.hex); }
+          break;
+        case 'damagePerDetonated': {
+          const tgt = retarget(slot.targetId);
+          if (tgt && detonated > 0) hit(owner, tgt, detonated * eff.per);
+          break;
+        }
+        case 'hex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += sc(eff.amount, eff.primary); break; }
+        case 'hexAll': for (const tgt of living()) tgt.hex += sc(eff.amount, eff.primary); break;
+        case 'doubleHex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex *= 2; break; }
+        case 'vulnerable': { const tgt = retarget(slot.targetId); if (tgt) tgt.vulnerable += eff.amount; break; }
+        case 'momentum': mom[owner] += sc(eff.amount, eff.primary); break;
+        default: break; // non-damaging ops don't affect the enemy-damage forecast
+      }
+    }
+    if (def.tag === 'Strike' && momSpent && !keepMomentum && !hasPassive(state.players[owner], 'momentumNoHalve')) {
+      mom[owner] = Math.floor(mom[owner] / 2);
+    }
+  }
+  return dealt;
+}
+
 export function longestSoloRun(chain: ChainSlot[]): number {
   let best = 0;
   let cur = 0;
@@ -270,8 +418,10 @@ function gainThread(state: GameState, amount: number): void {
 
 export function spendThread(state: GameState, cost: number): void {
   state.thread -= cost;
-  if (state.thread < 0) {
-    state.thread = 0;
+  // S4.4 A4 (provisional): the Fray line moves up one — spending the pool to
+  // exactly 0 already frays. A0–A3 keep the classic below-zero trigger.
+  if (state.thread < ascensionMods(state.ascension).frayThreshold) {
+    if (state.thread < 0) state.thread = 0;
     if (state.combat && state.combat.steadyShield > 0) {
       state.combat.steadyShield--;
       state.log.push({ e: 'info', detail: 'Steady absorbed the Fray.' });
@@ -527,17 +677,29 @@ export function resolveTurn(state: GameState): void {
   for (const ta of combat.threadActions) {
     const actor = state.players[ta.player];
     const partner = state.players[otherPlayer(ta.player)];
+    let cost = ta.kind === 'sever' ? 3 : ta.kind === 'steady' ? 1 : 2;
     switch (ta.kind) {
       case 'pulse': {
         // §14.12: the forcing itself happens in the link computation below;
-        // here we pay, and say which card so the spend is legible to both
-        spendThread(state, hasPassive(actor, 'pulseCostMinusOne') ? 1 : 2);
+        // here we pay, and say which card so the spend is legible to both.
+        // §14.13 (OQ#27) Pulsekeeper's Ring: the owner's run-persistent
+        // counter ticks on every Pulse they cast; each 3rd costs 1.
+        let discounted = false;
+        if (actor.relics.includes('pulsekeepers_ring')) {
+          actor.ringPulses = (actor.ringPulses ?? 0) + 1;
+          if (actor.ringPulses % 3 === 0) {
+            cost = 1;
+            discounted = true;
+            state.telemetry.ringDiscountsFired++;
+          }
+        }
+        spendThread(state, cost);
         const slot = combat.chain.find((s) => s.cardInstanceId === ta.targetId);
         if (slot) {
           const name = effectiveDef(mustFind(state, slot)).name;
           state.log.push({
             e: 'thread_action', player: ta.player, kind: 'pulse',
-            detail: `pulses ${name} — its Link fires no matter what precedes it`,
+            detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: 1 Thread)' : ''}`,
           });
         }
         break;
@@ -578,12 +740,8 @@ export function resolveTurn(state: GameState): void {
         }
         break;
     }
-    // S3.1 thread economy: spend mix by action type
-    const cost =
-      ta.kind === 'sever' ? 3
-      : ta.kind === 'steady' ? 1
-      : ta.kind === 'pulse' ? (hasPassive(actor, 'pulseCostMinusOne') ? 1 : 2)
-      : 2;
+    // S3.1 thread economy: spend mix by action type (cost reflects any
+    // Ring discount applied above)
     state.telemetry.threadSpent += cost;
     state.telemetry.threadSpendByKind[ta.kind]++;
     if (ta.kind !== 'pulse') state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
@@ -597,7 +755,7 @@ export function resolveTurn(state: GameState): void {
   const fired = natural.map((f, i) => f || forcedSlots[i]);
   const resonanceSlots = computeResonanceSlots(chain, fired);
   combat.lastSoloRun = longestSoloRun(chain);
-  const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = { cardsPlayed: 0, linksFired: 0, combats: 0, hpLost: 0 });
+  const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
 
   // 4. Resolve slots 1 → N
   for (let i = 0; i < chain.length; i++) {
@@ -764,7 +922,9 @@ export function resolveTurn(state: GameState): void {
     if (enemy.vulnerable > 0) enemy.vulnerable--;
     const def = ENEMIES[enemy.defId];
     enemy.scriptIndex = (enemy.scriptIndex + 1) % def.script.length;
-    enemy.intent = def.script[enemy.scriptIndex];
+    // S4.4 A2: intents are stored scaled, so every displayed number is the
+    // truth the hit will use (same contract as the §14.8 registry scales)
+    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale);
   }
 }
 
@@ -826,9 +986,11 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       break;
     case 'attack_fray':
       hitPlayer(state, enemy, bound, intent.amount);
-      state.players.p1.statuses.frayed++;
-      state.players.p2.statuses.frayed++;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} — the Thread FRAYS` });
+      // OQ#46: enemy-applied Fray takes hold at the start of the players' next
+      // turn (so it actually bites — was wiped before it could)
+      state.players.p1.pendingStatus.frayed++;
+      state.players.p2.pendingStatus.frayed++;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} — the Thread will FRAY next turn` });
       break;
     case 'block':
       enemy.block += intent.amount;
@@ -847,12 +1009,13 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `incites its kin (+${intent.amount} Strength to all)` });
       break;
     case 'debuff_weak':
-      bound.statuses.weak += intent.amount;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Weak to ${bound.id}` });
+      // OQ#46: enemy debuffs take hold next turn (see pendingStatus)
+      bound.pendingStatus.weak += intent.amount;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Weak to ${bound.id} (next turn)` });
       break;
     case 'debuff_vulnerable':
-      bound.statuses.vulnerable += intent.amount;
-      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Vulnerable to ${bound.id}` });
+      bound.pendingStatus.vulnerable += intent.amount;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Vulnerable to ${bound.id} (next turn)` });
       break;
     case 'sever': {
       // binding manipulation (M2-B3): the enemy moves its own tether
@@ -879,7 +1042,7 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
   if (hpLoss > 0) {
     state.log.push({ e: 'player_hit', player: player.id, hpLoss, blocked });
     const act = state.map.act;
-    const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = { cardsPlayed: 0, linksFired: 0, combats: 0, hpLost: 0 });
+    const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
     actStats.hpLost += hpLoss;
   }
   if (player.hp <= 0 && !player.fallen) fall(state, player);
@@ -931,6 +1094,7 @@ export function startTurn(state: GameState): void {
   combat.turn++;
   state.telemetry.turns++;
   combat.steadyShield = 0;
+  combat.hookOnceFired = []; // PT2/OQ#29: oncePerTurn hooks recharge
 
   // Unraveled sever countdown → reignition at full 10 (§6)
   if (combat.severedTurns > 0) {
@@ -966,6 +1130,14 @@ export function startTurn(state: GameState): void {
     p.statuses.frayed = 0;
     if (p.statuses.weak > 0) p.statuses.weak--;
     if (p.statuses.vulnerable > 0) p.statuses.vulnerable--;
+    // OQ#46: debuffs an enemy applied last turn activate NOW (after the
+    // clear/decrement), so they live through this turn — Fray for the turn,
+    // Weak/Vuln decrementing from here. Player-phase Fray (overdraft) already
+    // landed directly on statuses and isn't double-counted.
+    p.statuses.weak += p.pendingStatus.weak;
+    p.statuses.vulnerable += p.pendingStatus.vulnerable;
+    p.statuses.frayed += p.pendingStatus.frayed;
+    p.pendingStatus = { weak: 0, vulnerable: 0, frayed: 0 };
     runHooks(state, pid, 'turnStart');
     // Fixed FIVE fresh cards (playtest ruling, supersedes draw-to-5): cards
     // carried from resolution draws, Keep, and retain-1 are EXTRA — otherwise
@@ -981,6 +1153,10 @@ export function startTurn(state: GameState): void {
 
 export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const enemies: EnemyState[] = [];
+  // S4.4 A1/A2: ascension rungs stack multiplicatively on the §14.8 anchor.
+  // Identity at A0 by construction (scale 1 short-circuits) — same rng draws,
+  // same numbers, byte-equal combats.
+  const mods = ascensionMods(state.ascension);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;
   const chorusIds = enemyDefIds.filter((id) => ENEMIES[id]?.chorus);
@@ -989,7 +1165,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     const def = ENEMIES[defId];
     const roll = rngInt(state.rng, def.hp[1] - def.hp[0] + 1);
     state.rng = roll.state;
-    const hp = def.hp[0] + roll.value;
+    const hp = mods.hpScale === 1 ? def.hp[0] + roll.value : Math.round((def.hp[0] + roll.value) * mods.hpScale);
     const start = rngInt(state.rng, def.script.length);
     state.rng = start.state;
     // Choristers (§6): exactly one body starts unbound + untargetable
@@ -1002,7 +1178,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       boundTo: isChorusOdd ? null : (i + first.value) % 2 === 0 ? 'p1' : 'p2',
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
-      intent: def.script[start.value],
+      intent: scaleIntent(def.script[start.value], mods.dmgScale),
     });
   });
 
@@ -1024,12 +1200,13 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     severedTurns: 0,
     severTriggered: false,
     witnessLines: 0,
+    hookOnceFired: [],
   };
   state.thread = 6; // §5
   state.phase = 'combat';
 
   const act = state.map.act;
-  const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = { cardsPlayed: 0, linksFired: 0, combats: 0, hpLost: 0 });
+  const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
   actStats.combats++;
 
   for (const pid of ['p1', 'p2'] as PlayerId[]) {
@@ -1041,6 +1218,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     p.fallen = false;
     p.powers = [];
     p.statuses = { weak: 0, vulnerable: 0, frayed: 0 };
+    p.pendingStatus = { weak: 0, vulnerable: 0, frayed: 0 }; // OQ#46
     p.exhaust = [];
     p.discard = [];
     p.hand = [];

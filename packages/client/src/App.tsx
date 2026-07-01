@@ -5,10 +5,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computeResonanceSlots, effectiveDef,
+  ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net } from './net';
-import { GLYPH } from './keywords';
+import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile } from './profile';
+import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
@@ -37,6 +39,20 @@ function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | u
 function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   const i = inst(state, owner, id);
   return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
+}
+
+/** Display name for an enemy instance. When the same enemy NAME appears more
+ *  than once in the fight, append its 1-based ordinal ("Cinder Husk 2") so a
+ *  card's target is unambiguous. Ordinal is by spawn order (stable as enemies
+ *  die — the survivor keeps its number). */
+function enemyName(combat: ClientState['combat'], enemyId: string): string {
+  if (!combat) return enemyId;
+  const enemy = combat.enemies.find((e) => e.id === enemyId);
+  if (!enemy) return enemyId;
+  const name = ENEMIES[enemy.defId]?.name ?? enemy.defId;
+  const sameName = combat.enemies.filter((e) => (ENEMIES[e.defId]?.name ?? e.defId) === name);
+  if (sameName.length < 2) return name;
+  return `${name} ${sameName.findIndex((e) => e.id === enemyId) + 1}`;
 }
 
 // The game wants the whole screen. Browsers only grant fullscreen from a
@@ -132,6 +148,19 @@ export default function App(): JSX.Element {
     audio.setAmbient(state && state.phase !== 'lobby' ? state.map.act : 0);
   }, [state?.map.act, state?.phase]);
 
+  // S4.5: bank the clear into the browser profile — once per run (room+seed
+  // key), for the seat this browser holds. The partner's browser banks its
+  // own seat; that's how credit accrues to BOTH profiles (union rule).
+  useEffect(() => {
+    if (state?.phase === 'victory' && joined) {
+      const dedup = `tb_cleared_${joined.code}_${state.seed}`;
+      if (!localStorage.getItem(dedup)) {
+        localStorage.setItem(dedup, '1');
+        recordClear(state.players[state.you].character, state.ascension ?? 0);
+      }
+    }
+  }, [state?.phase, joined?.code]);
+
   // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
   useEffect(() => {
     const act = state && state.phase !== 'lobby' ? state.map.act : 0;
@@ -162,7 +191,8 @@ export default function App(): JSX.Element {
             <span className="header-right">
               {state.phase !== 'lobby' && (
                 <button className="chip" data-gp="META" data-gp-action="overview" onClick={() => setDeckOpen(!deckOpen)}>
-                  Deck (d)
+                  {/* PT2: deck SIZE in view at all times (removal decisions) */}
+                  Deck (d) · {state.players[state.you].deck.length}
                 </button>
               )}
               {!['lobby', 'game_over', 'victory'].includes(state.phase) && (
@@ -282,11 +312,16 @@ function RelicBar({ state }: { state: ClientState }): JSX.Element {
   if (relics.length === 0) return <></>;
   return (
     <div className="relicbar">
-      {relics.map(({ pid, relic }, i) => (
-        <span key={i} className="relic" data-gp="RELICS" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
-          {relic?.name ?? '?'}
-        </span>
-      ))}
+      {relics.map(({ pid, relic }, i) => {
+        // §14.13: the Ring wears 0–2 charge pips — the count made visible
+        const pips = relic?.id === 'pulsekeepers_ring' ? (state.players[pid].ringPulses ?? 0) % 3 : null;
+        return (
+          <span key={i} className="relic" data-gp="RELICS" style={{ borderColor: PCOLOR[pid] }} data-inspect={`relic:${relic?.id}`}>
+            {relic?.name ?? '?'}
+            {pips !== null && <span className="ring-pips"> {'●'.repeat(pips)}{'○'.repeat(2 - pips)}</span>}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -362,6 +397,83 @@ function Home({ net, error }: { net: Net; error: string }): JSX.Element {
         </label>
         <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
       </div>
+      <ProfilePanel />
+    </div>
+  );
+}
+
+/** S4.5: the browser profile's export/import — the save-state until a real
+ *  account layer exists (explicitly out of scope). Small, on the title screen. */
+function ProfilePanel(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [msg, setMsg] = useState('');
+  const [, tick] = useState(0);
+  const p = loadProfile();
+  const clears = p.clears.vess.count + p.clears.bram.count;
+  return (
+    <div className="panel" style={{ opacity: 0.85 }}>
+      <button className="chip" data-gp="META" onClick={() => setOpen(!open)}>
+        profile — {clears} clear{clears === 1 ? '' : 's'} · A{p.ascensionUnlocked.vess}/{p.ascensionUnlocked.bram} unlocked {open ? '▴' : '▾'}
+      </button>
+      {open && (
+        <div>
+          <p className="muted">Progress lives in this browser. Carry it with the string below.</p>
+          <textarea readOnly value={exportProfile(p)} rows={2} style={{ width: '100%' }}
+            onFocus={(e) => e.currentTarget.select()} />
+          <div>
+            <input placeholder="paste an export string to import" value={importText}
+              onChange={(e) => setImportText(e.target.value)} />
+            <button className="chip" data-gp="META" onClick={() => {
+              const imported = importProfile(importText);
+              if (!imported) { setMsg('that string is corrupt — rejected'); return; }
+              saveProfile(mergeProfiles(loadProfile(), imported)); // merge never downgrades
+              setImportText('');
+              setMsg('imported (merged — max/union)');
+              tick((n) => n + 1);
+            }}>import</button>
+          </div>
+          {msg && <p className="muted">{msg}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** S4.4: lobby ascension select — both players must land on the same level
+ *  (concede pattern; in solo the Witness follows the human's vote). Levels
+ *  above this browser's unlocked max are shown locked; the server clamps
+ *  regardless (profiles are claims, not authority). */
+function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; solo: boolean }): JSX.Element {
+  const you = state.you;
+  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+  const votes = state.ascensionVotes ?? { p1: 0, p2: 0 };
+  const myMax = loadProfile().ascensionUnlocked[state.players[you].character] ?? 0;
+  if (myMax === 0 && votes.p1 === 0 && votes.p2 === 0) {
+    return <></>; // nothing unlocked, nothing voted: keep the lobby quiet
+  }
+  return (
+    <div className="panel">
+      <h3>Ascension</h3>
+      <label>
+        Level{' '}
+        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) } as any)}>
+          {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
+            <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
+          ))}
+        </select>
+      </label>
+      {votes[you] > 0 && (
+        <p className="muted">
+          {Array.from({ length: votes[you] }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+        </p>
+      )}
+      {!solo && (
+        <p className="muted">
+          You: <b>A{votes[you]}</b> · Partner: <b>A{votes[partner]}</b>
+          {votes.p1 === votes.p2 ? ' — agreed' : ' — both must pick the same level'}
+        </p>
+      )}
     </div>
   );
 }
@@ -381,6 +493,10 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
           <TitleCord left={state.players.p1.character} right={solo ? 'witness' : partnerOn ? state.players.p2.character : null} />
           <p>{solo ? 'The Witness holds the other end. Reluctantly.' : partnerOn ? 'The thread is strung.' : 'Share the room code — the far frame waits.'}</p>
           <button className="chip" data-gp="META" onClick={() => net.leave()}>leave room (join a different one)</button>
+          {/* PT3: not gated on partnerOn — the host can set ascension before
+              the partner connects; the vote persists into their arrival.
+              (Self-hides when nothing is unlocked.) */}
+          <AscensionPicker state={state} net={net} solo={solo} />
           {(partnerOn || solo) && <p className="witness">THE WITNESS: “{greeting}”</p>}
           {(partnerOn || solo) && <button className="big" data-gp="META" onClick={() => { goFullscreen(); net.start(); }}>Begin the descent</button>}
         </div>
@@ -550,6 +666,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const [pendingSever, setPendingSever] = useState(false);
   const [pendingPulse, setPendingPulse] = useState(false);
   const [reclaimOpen, setReclaimOpen] = useState(false);
+  // PT3: per-enemy damage forecast — toggle-able, ON by default (localStorage
+  // so it survives reloads; easy to flip off if it ever needs reverting)
+  const [showDmg, setShowDmg] = useState(() => localStorage.getItem('tb_dmgPreview') !== '0');
+  const toggleDmg = () => setShowDmg((v) => { localStorage.setItem('tb_dmgPreview', v ? '0' : '1'); return !v; });
 
   // pad ergonomics: a pending target snaps focus to the enemies (or the
   // chain, for Pulse), and back to where the intent came from afterward
@@ -573,6 +693,43 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
+  // PT3: per-enemy HP-loss forecast from the staged chain (§11 static preview)
+  const plannedDamage = useMemo(() => {
+    try { return computePlannedDamage(state); } catch { return {} as Record<string, number>; }
+  }, [state]);
+  // PT2/PT3: make Momentum legible — per-slot preview of the first-hit bonus
+  // each staged Strike gets, halving after each spend (momentumNoHalve
+  // honored; keep/per-hit riders not modeled). An estimate, like planned
+  // Block; `next` is what a Strike staged NOW would receive.
+  // PT3 fix: walk effects IN ORDER so Momentum GAINED earlier in the chain
+  // (a card's `momentum` op) feeds the Strikes after it — the preview used to
+  // ignore mid-turn gains entirely and read stale.
+  const momentumPreview = useMemo(() => {
+    const m: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
+    const perSlot = combat.chain.map((slot, i) => {
+      const def = defFor(state, slot.owner, slot.cardInstanceId);
+      const owner = slot.owner;
+      const effects = firedAll[i] && def.link
+        ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+        : def.base;
+      let shown = 0;
+      let spent = false;
+      for (const e of effects) {
+        if (e.op === 'momentum') {
+          m[owner] += e.amount; // gained mid-turn — feeds the Strikes after it
+        } else if (
+          def.tag === 'Strike' && !spent && m[owner] > 0 &&
+          (e.op === 'damage' || e.op === 'damageAll' || e.op === 'damagePerHex' || e.op === 'momentumStrikeBonus')
+        ) {
+          shown = m[owner];
+          spent = true;
+          if (!hasPassive(state.players[owner], 'momentumNoHalve')) m[owner] = Math.floor(m[owner] / 2);
+        }
+      }
+      return shown;
+    });
+    return { perSlot, next: m };
+  }, [state, combat.chain, firedAll]);
   const severed = combat.severedTurns > 0;
   const anyFallen = state.players.p1.fallen || state.players.p2.fallen;
   // §14.12: Pulse targets = staged cards with a dead Link, not yet pulsed
@@ -619,6 +776,19 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           // visibly frays and parts while its sever phase holds
           const sigilSize = def.boss ? 104 : def.elite ? 82 : 64;
           const fraying = severed && !!def.unraveled;
+          // Playtest 2: the §14.8 self-retether (elites/bosses, every 3rd
+          // turn) happens during THIS turn's enemy phase — forecast the swap
+          // so the displayed target isn't a lie. Mirrors the engine condition
+          // exactly; deterministic, so the client may compute it (§11).
+          const retetherTo =
+            e.hp > 0 && (def.elite || def.boss) && combat.turn % 3 === 0 && e.boundTo &&
+            !state.players[e.boundTo === 'p1' ? 'p2' : 'p1'].fallen
+              ? (e.boundTo === 'p1' ? 'p2' : 'p1') as PlayerId
+              : null;
+          // PT3: predicted HP loss from the staged chain (estimate)
+          const dmg = showDmg && e.hp > 0 ? Math.min(e.hp, plannedDamage[e.id] ?? 0) : 0;
+          const curPct = (100 * e.hp) / e.maxHp;
+          const postPct = (100 * (e.hp - dmg)) / e.maxHp;
           return (
             <div
               key={e.id}
@@ -630,15 +800,25 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
               <Sigil id={e.defId} size={sigilSize} aura={def.elite || def.boss} className="enemy-sigil" />
-              <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
-              <div className="hpbar"><div className="hpfill" style={{ width: `${(100 * e.hp) / e.maxHp}%` }} /></div>
-              <div>{e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}</div>
+              <div className="ename">{enemyName(combat, e.id)}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
+              <div className="hpbar">
+                <div className="hpfill" style={{ width: `${curPct}%` }} />
+                {/* PT3: the chunk the staged chain will remove */}
+                {dmg > 0 && <div className="hppreview" style={{ left: `${postPct}%`, width: `${curPct - postPct}%` }} />}
+              </div>
+              <div>
+                {e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}
+                {dmg > 0 && (e.hp - dmg <= 0
+                  ? <b className="dmg-lethal" data-inspect="kw:block-planned"> ☠ lethal</b>
+                  : <span className="dmg-forecast" data-inspect="kw:block-planned"> −{dmg} → {e.hp - dmg}</span>)}
+              </div>
               {e.hex > 0 && (
                 <div className="hexmotes" data-inspect="kw:hex">
                   {Array.from({ length: Math.min(e.hex, 9) }, (_, m) => (
                     <span key={m} className="mote" style={{ animationDelay: `${m * 0.35}s` }} />
                   ))}
-                  {e.hex > 9 && <span className="motecount">{e.hex}</span>}
+                  {/* Playtest 2: the count is the tracking number — always show it */}
+                  <span className="motecount">{e.hex}</span>
                 </div>
               )}
               <div className="statuses">
@@ -647,9 +827,11 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.stun > 0 && <span data-inspect="kw:stun">{GLYPH.stun} Stun {e.stun}</span>}
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
-              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength)}</div>
-              <div className="bound" style={{ color: e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
-                {e.untargetable ? 'unbound — untargetable' : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
+              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
+              <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
+                {e.untargetable ? 'unbound — untargetable'
+                  : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`
+                  : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
               </div>
             </div>
           );
@@ -666,6 +848,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       )}
 
       <ChainTrack state={state} fired={fired} forced={forced} resonance={resonance} net={net}
+        momentumBonus={momentumPreview.perSlot}
         pendingPulse={pendingPulse}
         onPulseTarget={(cardInstanceId) => {
           net.act({ type: 'DECLARE_THREAD', kind: 'pulse', targetId: cardInstanceId } as any);
@@ -681,9 +864,11 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       </div>
 
       <div className="thread-bar">
+        {/* §14.13: when the Ring's next Pulse is the discounted third, the
+            row shows the real price — the affordance matters more than the math */}
         <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || pulseTargets.size === 0}
           onClick={() => setPendingPulse(!pendingPulse)}>
-          Pulse (2)…
+          Pulse ({me.relics.includes('pulsekeepers_ring') && ((me.ringPulses ?? 0) + 1) % 3 === 0 ? 1 : 2})…
         </button>
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
@@ -694,15 +879,26 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         <div className="panel">
           <b>Partner’s discard</b> <span className="muted">(Reclaims arrive mutated — inspect to preview)</span>{' '}
           {state.players[partner].discard.length === 0 && <i>empty</i>}
-          {state.players[partner].discard.map((id) => (
-            <button key={id} className="chip" data-gp="THREAD" data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
-              onClick={() => {
-                net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
-                setReclaimOpen(false);
-              }}>
-              {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}
-            </button>
-          ))}
+          {/* PT3: bounded scroll list — more than one row was unreachable on
+              the pad (focus-follow + right-stick now both scroll within it) */}
+          <div className="reclaim-list">
+            {state.players[partner].discard.map((id) => {
+              // PT2: Reclaim copies — the original stays listed, so a card
+              // already being reclaimed this turn must read as taken
+              const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
+              return (
+                <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
+                  data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+                  onClick={() => {
+                    if (claimed) return;
+                    net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
+                    setReclaimOpen(false);
+                  }}>
+                  {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -718,6 +914,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           return (
             <Card key={id} def={def} echo={!!inst(state, you, id)?.echo}
               upgraded={!!inst(state, you, id)?.upgraded} mutated={!!inst(state, you, id)?.mutated}
+              badge={def.tag === 'Strike' && momentumPreview.next[you] > 0 ? `➤+${momentumPreview.next[you]}` : undefined}
               gpZone="HAND"
               inspect={inspectKeyFor(state, you, id)}
               selected={pendingCard === id}
@@ -735,6 +932,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </button>
         <span className="muted">turn {combat.turn}</span>
         {state.players[partner].ready && !me.ready && <span className="nudge">your partner is ready</span>}
+        <button className="chip" data-gp="META" title="forecast each enemy's HP loss when the turn resolves (estimate)"
+          onClick={toggleDmg}>
+          dmg preview: {showDmg ? 'on' : 'off'}
+        </button>
         <span className="muted">
           draw {state.counts[you].draw} · discard {me.discard.length}
         </span>
@@ -797,13 +998,37 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
   );
 }
 
-function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPulseTarget }: {
+function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPulseTarget, momentumBonus }: {
   state: ClientState; fired: boolean[]; forced: boolean[]; resonance: Set<number>; net: Net;
   pendingPulse: boolean; onPulseTarget: (cardInstanceId: string) => void;
+  momentumBonus: number[];
 }): JSX.Element {
   const you = state.you;
   const combat = state.combat!;
   const chain = combat.chain;
+  // PT3: mouse drag-to-reorder your staged cards (parallels the ◀▶ buttons /
+  // pad L2-R2). dropAt is the insertion GAP (0..len) in the current order.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
+  const reorderable = (i: number): boolean => chain[i].owner === you && !pendingPulse;
+  const onCardDragOver = (e: React.DragEvent, i: number): void => {
+    if (!dragId) return;
+    e.preventDefault(); // allow the drop
+    const r = e.currentTarget.getBoundingClientRect();
+    setDropAt(e.clientX > r.left + r.width / 2 ? i + 1 : i);
+  };
+  const onCardDrop = (e: React.DragEvent): void => {
+    e.preventDefault();
+    const si = dragId ? chain.findIndex((s) => s.cardInstanceId === dragId) : -1;
+    if (si >= 0 && dropAt !== null) {
+      // reducer removes then splices at `slot`, so the final index is `slot`;
+      // a gap past the source shifts left by one once the source is pulled out
+      const f = Math.max(0, Math.min(chain.length - 1, dropAt > si ? dropAt - 1 : dropAt));
+      if (f !== si) net.act({ type: 'REORDER', cardInstanceId: dragId!, slot: f } as any);
+    }
+    setDragId(null);
+    setDropAt(null);
+  };
   // §14.12: which staged cards can still be Pulsed (dead link, not yet pulsed)
   const pulseable = (i: number): boolean => {
     const slot = chain[i];
@@ -830,6 +1055,13 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
         const lit = fired[i] || forced[i];
         const canPulse = pendingPulse && pulseable(i);
         const target = slot.targetId ? combat.enemies.find((e) => e.id === slot.targetId) : null;
+        // PT3: a resonating card with no `primary` effect scales nothing —
+        // say so, instead of a bare "RESONANCE" that reads as a buff (OQ#31).
+        // Resolved effects mirror the engine (a fired link may replace base).
+        const resolvedEffects = lit && def.link
+          ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+          : def.base;
+        const scales = resolvedEffects.some((e) => (e as { primary?: boolean }).primary);
         return (
           <React.Fragment key={slot.cardInstanceId}>
             {i > 0 && (
@@ -848,16 +1080,23 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                 </svg>
               </div>
             )}
-            <div className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''}`}
-              style={{ borderColor: PCOLOR[slot.owner] }}>
+            <div
+              className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''} ${reorderable(i) ? 'draggable' : ''} ${dragId === slot.cardInstanceId ? 'dragging' : ''} ${dropAt === i ? 'drop-left' : ''} ${dropAt === chain.length && i === chain.length - 1 ? 'drop-right' : ''}`}
+              style={{ borderColor: PCOLOR[slot.owner] }}
+              draggable={reorderable(i)}
+              onDragStart={(e) => { setDragId(slot.cardInstanceId); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', slot.cardInstanceId); }}
+              onDragOver={(e) => onCardDragOver(e, i)}
+              onDrop={onCardDrop}
+              onDragEnd={() => { setDragId(null); setDropAt(null); }}>
               <div className="slotnum">{i + 1}</div>
               <Card def={def} small echo={!!inst(state, slot.owner, slot.cardInstanceId)?.echo}
                 upgraded={!!inst(state, slot.owner, slot.cardInstanceId)?.upgraded}
                 mutated={!!inst(state, slot.owner, slot.cardInstanceId)?.mutated}
+                badge={momentumBonus[i] > 0 ? `➤+${momentumBonus[i]}` : undefined}
                 gpZone={mine && !pendingPulse ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
                 onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
-              {target && <div className="target">→ {ENEMIES[target.defId].name}</div>}
+              {target && <div className="target">→ {enemyName(combat, target.id)}</div>}
               {def.link && (
                 <div
                   className={`linkstate ${lit ? 'on' : 'off'} ${canPulse ? 'pulse-target' : ''}`}
@@ -868,7 +1107,11 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                   {forced[i] ? '⊕ forced' : lit ? '⚡ fires' : `link: ${def.link.condition}`}
                 </div>
               )}
-              {resonance.has(i) && <div className="resonance" data-inspect="kw:resonance">✦ RESONANCE</div>}
+              {resonance.has(i) && (
+                <div className="resonance" data-inspect="kw:resonance">
+                  ✦ RESONANCE {scales ? '+50%' : '· streak only'}
+                </div>
+              )}
               {mine && !pendingPulse && (
                 <div className="reorder">
                   <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
@@ -895,11 +1138,13 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
   );
 }
 
-export function Card({ def, onClick, small, selected, disabled, echo, upgraded, mutated, gpZone, inspect }: {
+export function Card({ def, onClick, small, selected, disabled, echo, upgraded, mutated, gpZone, inspect, badge }: {
   def: CardDef; onClick?: () => void; small?: boolean; selected?: boolean; disabled?: boolean; echo?: boolean;
   /** S2.2 frame treatments — presentation only, the def already carries the rules */
   upgraded?: boolean; mutated?: boolean;
   gpZone?: string; inspect?: string;
+  /** PT2: corner chip for live-effect previews (momentum) */
+  badge?: string;
 }): JSX.Element {
   return (
     <div
@@ -907,24 +1152,30 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       data-gp={!disabled && onClick ? gpZone : undefined}
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
+      {badge && <div className="card-badge" data-inspect="kw:momentum">{badge}</div>}
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
       <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       {/* upgrade texts restate the link clause inline; the ⚡ line below is
           the canonical display — trim the duplicate so links don't read twice */}
       <div className="ctext">{def.link && def.text.includes('Link (') ? def.text.slice(0, def.text.indexOf('Link (')).trim() : def.text}</div>
-      {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {def.link.text}</div>}
+      {def.link && <div className="clink"><b>{GLYPH.link} Link ({def.link.condition}):</b> {linkBody(def.link.text)}</div>}
     </div>
   );
 }
 
-function intentText(intent: any, strength: number): string {
-  const s = (n: number) => n + strength;
+function intentText(intent: any, strength: number, weak = 0): string {
+  // PT3: mirror the engine's hitPlayer math so the telegraphed number is the
+  // truth — Weak reduces the attacker's output 25% (after Strength), floored.
+  // (Target-side Vulnerable/Frayed aren't applied here: they belong to whoever
+  // it lands on, not the attacker's telegraph.)
+  const s = (n: number) => (weak > 0 ? Math.floor((n + strength) * 0.75) : n + strength);
+  const w = weak > 0 ? ' (Weak)' : '';
   switch (intent.kind) {
-    case 'attack': return `⚔ ${s(intent.amount)}${intent.times ? `×${intent.times}` : ''}`;
-    case 'attack_all': return `⚔ ${s(intent.amount)} BOTH`;
-    case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum`;
-    case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread`;
-    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS`;
+    case 'attack': return `⚔ ${s(intent.amount)}${intent.times ? `×${intent.times}` : ''}${w}`;
+    case 'attack_all': return `⚔ ${s(intent.amount)} BOTH${w}`;
+    case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum${w}`;
+    case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread${w}`;
+    case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS${w}`;
     case 'block': return `🛡 ${intent.amount}`;
     case 'block_all': return `🛡 ${intent.amount} ALL`;
     case 'buff_strength': return `${GLYPH.strength} Str ${intent.amount}`;
@@ -1050,10 +1301,23 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   return (
     <div className="center">
       <h2>Rest Site</h2>
+      {/* Playtest 2: the heal decision needs the current number in view */}
+      <p className="muted">
+        {(['p1', 'p2'] as PlayerId[]).map((pid, i) => (
+          <span key={pid}>
+            {i > 0 && ' · '}
+            <span style={{ color: PCOLOR[pid] }}>
+              {state.players[pid].character}: <b>{state.players[pid].hp}/{state.players[pid].maxHp} HP</b>
+            </span>
+          </span>
+        ))}
+      </p>
       <Log log={state.log} state={state} />
       {chosen === null ? (
         <>
-          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>Rest (heal 30%)</button>
+          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>
+            Rest (heal {Math.round(ascensionMods(state.ascension ?? 0).restHeal * 100)}%)
+          </button>
           <button className="big" data-gp="META" data-inspect="kw:upgrade" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' } as any)}>Upgrade a card</button>
           <button className="big" data-gp="META" data-inspect="kw:covet" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' } as any)}>Barter (+1 Covet charge)</button>
           <button className="big" data-gp="META" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' } as any)}>
@@ -1169,14 +1433,27 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
             <span className="muted"> {RELICS_BY_ID[item.refId!]?.text}</span>
           </div>
         ))}
-        {shop.items.filter((i) => i.kind === 'removal').map((item) => (
-          <div key={item.id}>
-            <button data-gp="META" disabled={item.sold || item.price > state.gold}
-              onClick={() => setRemoving(removing === item.id ? null : item.id)}>
-              Remove a card — {item.sold ? 'used' : `${item.price}g`}
-            </button>
-          </div>
-        ))}
+        {/* S4.2 (OQ#8): the removal service never sells out — your price
+            escalates with YOUR removals this run; the partner's next price
+            sits beside it because the negotiation is the point */}
+        {(() => {
+          const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+          const myRow = shop.items.find((i) => i.kind === 'removal' && (!i.forPlayer || i.forPlayer === you));
+          if (!myRow) return null;
+          const myPrice = removalPrice(state, you);
+          const theirPrice = removalPrice(state, partner);
+          return (
+            <div>
+              <button data-gp="META" disabled={myPrice > state.gold || state.players[you].deck.length <= 5}
+                onClick={() => setRemoving(removing === myRow.id ? null : myRow.id)}>
+                Remove a card from your deck — {myPrice}g
+              </button>
+              <span className="muted">
+                {' '}unlimited; your price climbs +25g per cut, all run · {state.players[partner].character}’s next: {theirPrice}g
+              </span>
+            </div>
+          );
+        })()}
         {removing && (
           <div className="hand">
             {me.deck.map((c) => (
@@ -1213,10 +1490,7 @@ function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Elem
 
 function renderEvent(e: GameEvent, state: ClientState): string {
   const pname = (p: PlayerId) => state.players[p].character;
-  const ename = (id: string) => {
-    const en = state.combat?.enemies.find((x) => x.id === id);
-    return en ? ENEMIES[en.defId].name : id;
-  };
+  const ename = (id: string) => enemyName(state.combat, id);
   switch (e.e) {
     case 'witness': return `THE WITNESS: “${e.line}”`;
     case 'card': return `[${e.slot + 1}] ${pname(e.player)} plays ${e.card}${e.linkFired ? ' ⚡' : ''}${e.resonance ? ' ✦' : ''}`;

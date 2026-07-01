@@ -27,6 +27,10 @@ const PAIR_CHARS = {
   p2: CHAR[(PAIR[1] === 'b' ? 'b' : 'v')],
 };
 
+// S4.4: ASCEND=N selects the ascension level for the battery (default A0 —
+// which must reproduce pre-S4 behavior exactly; no new gates this sprint)
+const ASCEND = Math.max(0, Math.min(5, Number(process.env.ASCEND ?? 0) || 0));
+
 function port(): number {
   const addr = server.address();
   if (typeof addr === 'object' && addr) return addr.port;
@@ -35,9 +39,9 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS });
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND });
   await new Promise((r) => setTimeout(r, 150));
-  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2 });
+  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND });
   const timeout = new Promise<RunResult>((_, rej) =>
     setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
   );
@@ -61,7 +65,8 @@ async function main(): Promise<void> {
   const url = `ws://localhost:${port()}`;
   console.log(`sim: bots connecting to ${url}, ${RUNS} runs, seed set ${BASE_SEED}+ (engine + policy seeded; socket timing still jitters slightly)`);
   // S3.1 run header: a batch is uninterpretable without the difficulty on record
-  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}`);
+  // S4.4: the rung joins the scales in the header — a batch is uninterpretable without both
+  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
 
   const results: RunResult[] = [];
   for (let run = 1; run <= RUNS; run++) {
@@ -169,6 +174,33 @@ async function main(): Promise<void> {
     `regen wasted at cap/combat ${combats ? (regenWasted / combats).toFixed(2) : 'n/a'}`,
   );
   console.log(`forced links (Pulse): ${forced} (${links ? ((100 * forced) / links).toFixed(1) : 0}% of fires) | Resonances needing one: ${resForced}/${resonances}`);
+
+  // ---- S4.1 gold economy ------------------------------------------------------
+  const n = Math.max(1, results.length);
+  const earnedBySource: Record<string, number> = {};
+  let spendTotal = 0;
+  let removalSpend = 0;
+  for (const r of results) {
+    for (const [src, g] of Object.entries(r.telemetry.goldEarnedBySource ?? {})) {
+      earnedBySource[src] = (earnedBySource[src] ?? 0) + g;
+    }
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      const cat = r.telemetry.goldSpentByCategory?.[pid];
+      if (!cat) continue;
+      spendTotal += cat.cards + cat.relics + cat.removals;
+      removalSpend += cat.removals;
+    }
+  }
+  const earnedTotal = Object.values(earnedBySource).reduce((a, b) => a + b, 0);
+  const residual = sum((r) => r.telemetry.goldResidual ?? 0);
+  const remP1 = sum((r) => r.telemetry.removalsByPlayer?.p1 ?? 0);
+  const remP2 = sum((r) => r.telemetry.removalsByPlayer?.p2 ?? 0);
+  console.log(
+    `gold: mean income/run ${(earnedTotal / n).toFixed(1)} (${JSON.stringify(earnedBySource)}) | mean residual ${(residual / n).toFixed(1)} | ` +
+    `removals/player/run p1 ${(remP1 / n).toFixed(2)} / p2 ${(remP2 / n).toFixed(2)} | removal spend ${spendTotal ? ((100 * removalSpend) / spendTotal).toFixed(1) : 0}% of total spend`,
+  );
+  const ringDiscounts = sum((r) => r.telemetry.ringDiscountsFired ?? 0);
+  if (ringDiscounts > 0) console.log(`Pulsekeeper's Ring discounts fired: ${ringDiscounts}`);
   console.log('---------------- GATES ----------------');
   let allPass = true;
   for (const g of gates) {

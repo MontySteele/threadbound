@@ -295,8 +295,10 @@ def({
   id: 'call_and_answer', name: 'Call and Answer', character: 'bram', rarity: 'rare', cost: 1, tag: 'Surge',
   text: 'Draw 2.',
   base: [{ op: 'draw', amount: 2 }],
-  // M2-A2: link energy is meaningful again as Kindled
-  link: { condition: 'partner', text: 'Link (Partner’s card): gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
+  // M2-A2: link energy is meaningful again as Kindled.
+  // PT3: link.text is just the effect — the Card UI already prints the
+  // "Link (partner):" prefix, so embedding it here rendered the clause twice.
+  link: { condition: 'partner', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
 });
 
 // ---------------------------------------------------------------------------

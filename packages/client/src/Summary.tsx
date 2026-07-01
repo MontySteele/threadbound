@@ -41,6 +41,30 @@ export function RunSummary({ state, won }: { state: ClientState; won: boolean })
   if ((t.wornKnife?.plays ?? 0) > 0) {
     rows.push(['Worn Knife', `${t.wornKnife.plays} plays · mean ${(t.wornKnife.damage / t.wornKnife.plays).toFixed(1)} damage`]);
   }
+
+  // S4.1 gold economy — the purse's story, end to end
+  const earnedEntries = Object.entries(t.goldEarnedBySource ?? {}).filter(([, g]) => g > 0);
+  const earned = earnedEntries.reduce((a, [, g]) => a + g, 0);
+  if (earned > 0) {
+    rows.push(['Gold earned', `${earned} (${earnedEntries.map(([k, g]) => `${k} ${g}`).join(' · ')})`]);
+  }
+  const spentBy = t.goldSpentByCategory ?? { p1: { cards: 0, relics: 0, removals: 0 }, p2: { cards: 0, relics: 0, removals: 0 } };
+  const spentTotal = (['p1', 'p2'] as PlayerId[]).reduce((a, p) => a + spentBy[p].cards + spentBy[p].relics + spentBy[p].removals, 0);
+  if (spentTotal > 0) {
+    const catTotals = (['cards', 'relics', 'removals'] as const)
+      .map((c) => [c, spentBy.p1[c] + spentBy.p2[c]] as const)
+      .filter(([, v]) => v > 0);
+    rows.push(['Gold spent', `${spentTotal} (${catTotals.map(([c, v]) => `${c} ${v}`).join(' · ')})`]);
+  }
+  const removals = (t.removalsByPlayer?.p1 ?? 0) + (t.removalsByPlayer?.p2 ?? 0);
+  if (removals > 0) {
+    rows.push(['Cards removed', `${removals} (${name('p1')} ${t.removalsByPlayer.p1} · ${name('p2')} ${t.removalsByPlayer.p2})`]);
+  }
+  rows.push(['Gold left in the purse', `${t.goldResidual ?? state.gold}`]);
+  if ((t.ringDiscountsFired ?? 0) > 0) {
+    rows.push(['Ring discounts', `${t.ringDiscountsFired} Pulses at 1 Thread`]);
+  }
+  if ((state.ascension ?? 0) > 0) rows.push(['Ascension', `A${state.ascension}`]);
   rows.push(['Seed', `${state.seed}`]);
 
   return (

@@ -75,8 +75,12 @@ export const NEUTRAL_CARDS: CardDef[] = [
       name: 'Held Breath', text: 'Draw 1. Gain 2 Block.',
       base: [{ op: 'draw', amount: 1 }, { op: 'block', amount: 2 }],
     },
+    // PT2 fix: the upgrade was a byte-identical copy of the base link — a
+    // no-op "+". Smallest real deepening; the card's overall power level is
+    // OQ#30's call, so the base stays untouched.
     upgrade: {
-      link: { condition: 'any', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
+      text: 'Draw 1. Link (any): Gain Kindled 2.',
+      link: { condition: 'any', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
     },
   },
   {
@@ -288,11 +292,13 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'pulsekeepers_ring', name: 'Pulsekeeper’s Ring',
-    // §14.12 forced touch: the +3 bonus no longer exists; the closest
-    // equivalent under force-a-dead-link Pulse is a cost break.
-    text: 'Pulse costs 1 Thread instead of 2.',
+    // §14.13 (OQ#27): the flat cost break literally doubled Pulses per
+    // Thread — ruled overpowered. Now a run-persistent charge counter on the
+    // owner (PlayerState.ringPulses, engine-special-cased in resolveTurn):
+    // every 3rd Pulse costs 1. If Playtest 2 reads it dead, the pre-agreed
+    // (b) escalation is "every third Pulse FREE".
+    text: 'Every third Pulse costs 1 Thread. The Ring keeps count.',
     coop: true,
-    passives: ['pulseCostMinusOne'],
   },
   {
     id: 'threadspool_reliquary', name: 'Threadspool Reliquary',
@@ -308,9 +314,12 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'loom_of_two_hands', name: 'Loom of Two Hands',
-    text: 'Whenever one of your links fires, gain 1 Thread.',
+    // PT2 ruling (OQ#29, 2026-06-12): per-link was +3-5 Thread/turn at live
+    // link rates — dissolved the §14.12 economy. Once per turn, rare weight.
+    text: 'The first time one of your links fires each turn, gain 1 Thread.',
     coop: true,
-    hooks: [{ on: 'linkFired', effects: [{ op: 'thread', amount: 1 }] }],
+    rare: true,
+    hooks: [{ on: 'linkFired', oncePerTurn: true, effects: [{ op: 'thread', amount: 1 }] }],
   },
   {
     id: 'steadfast_icon', name: 'Steadfast Icon',
@@ -360,7 +369,9 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'cracked_bell', name: 'Cracked Bell',
-    text: 'Whenever Hexes detonate, deal 2 damage to ALL enemies.',
+    // PT2 clarity: it rings once per BURST (detonation event), any size —
+    // not per stack, not once per combat
+    text: 'Whenever Hexes detonate (once per burst, any size), deal 2 damage to ALL enemies.',
     hooks: [{ on: 'detonate', effects: [{ op: 'damageAll', amount: 2 }] }],
   },
   {

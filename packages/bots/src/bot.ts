@@ -29,6 +29,8 @@ export class Bot {
   private resolve!: (r: RunResult) => void;
   done: Promise<RunResult>;
 
+  private partnerOn = false;
+
   constructor(url: string, private opts: {
     create?: boolean; joinCode?: string; onCode?: (code: string) => void;
     seed?: number; startSeed?: number;
@@ -38,18 +40,24 @@ export class Bot {
     characters?: Record<PlayerId, CharacterId>;
     /** off when partnering a non-lockstep peer (the solo bot stages eagerly) */
     lockstep?: boolean;
+    /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
+     *  matching profile (profiles are claims; the server clamps to them). */
+    ascension?: number;
   }) {
     this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep });
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {
       const chars = opts.characters ?? { p1: 'vess', p2: 'bram' };
+      const profile = opts.ascension
+        ? { unlockedCards: [], ascensionUnlocked: { vess: opts.ascension, bram: opts.ascension } }
+        : undefined;
       if (opts.createSolo) {
-        this.send({ type: 'create', character: chars.p1, solo: true, botCharacter: chars.p2, botSpeed: 'instant' });
+        this.send({ type: 'create', character: chars.p1, solo: true, botCharacter: chars.p2, botSpeed: 'instant', profile });
       } else if (opts.create) {
-        this.send({ type: 'create', character: chars.p1, p2Character: chars.p2 });
+        this.send({ type: 'create', character: chars.p1, p2Character: chars.p2, profile });
       } else {
-        this.send({ type: 'join', code: opts.joinCode });
+        this.send({ type: 'join', code: opts.joinCode, profile });
       }
     });
     this.ws.on('message', (raw) => this.onMessage(JSON.parse(raw.toString())));
@@ -68,7 +76,10 @@ export class Bot {
         if (this.opts.onCode) this.opts.onCode(msg.code);
         return;
       case 'presence':
-        if (msg.partnerConnected && (this.opts.create || this.opts.createSolo) && !this.startedRun) {
+        this.partnerOn = !!msg.partnerConnected;
+        // S4.4: with an ascension target the start moves to the lobby state
+        // handler — it must wait for both votes to land first
+        if (msg.partnerConnected && (this.opts.create || this.opts.createSolo) && !this.startedRun && !this.opts.ascension) {
           this.startedRun = true;
           this.send({ type: 'start', seed: this.opts.startSeed });
         }
@@ -93,6 +104,21 @@ export class Bot {
   }
 
   private decide(view: BotView): void {
+    // S4.4 lobby flow for ASCEND batteries: both seats vote, creator starts
+    // once the votes agree (the engine's both-confirm pattern)
+    if (view.phase === 'lobby' && this.opts.ascension) {
+      const lvl = this.opts.ascension;
+      const votes = view.ascensionVotes ?? { p1: 0, p2: 0 };
+      if (this.you && votes[this.you] !== lvl) {
+        this.send({ type: 'action', action: { type: 'SET_ASCENSION', level: lvl } });
+        return;
+      }
+      if ((this.opts.create || this.opts.createSolo) && !this.startedRun && this.partnerOn && votes.p1 === lvl && votes.p2 === lvl) {
+        this.startedRun = true;
+        this.send({ type: 'start', seed: this.opts.startSeed });
+      }
+      return;
+    }
     const action = this.policy.decide(view);
     if (view.phase === 'victory' || view.phase === 'game_over') {
       if (this.watchdog) clearInterval(this.watchdog);

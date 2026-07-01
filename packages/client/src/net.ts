@@ -2,6 +2,7 @@
 // computes game outcomes (§11). Session token in localStorage → reconnection.
 
 import { Action, GameState, PlayerId } from '@threadbound/engine';
+import { profileClaim } from './profile';
 
 export interface ClientState extends GameState {
   you: PlayerId;
@@ -43,7 +44,9 @@ export class Net {
     this.ws.onopen = () => {
       this.events.onConnection(true);
       const token = localStorage.getItem(TOKEN_KEY);
-      if (token) this.send({ type: 'hello', token });
+      // S4.5: the profile claim rides every join-shaped message — the server
+      // clamps ascension and builds the unlock union from it
+      if (token) this.send({ type: 'hello', token, profile: profileClaim() });
     };
     this.ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
@@ -74,14 +77,14 @@ export class Net {
   }
 
   create(character: 'vess' | 'bram'): void {
-    this.send({ type: 'create', character });
+    this.send({ type: 'create', character, profile: profileClaim() });
   }
 
   /** S1: solo room — the server seats its in-process bot at p2. The human
    *  picks both characters. ?botspeed=instant is the designer's testing gear. */
   createSolo(character: 'vess' | 'bram', botCharacter: 'vess' | 'bram'): void {
     const botSpeed = new URLSearchParams(location.search).get('botspeed') === 'instant' ? 'instant' : 'paced';
-    this.send({ type: 'create', character, solo: true, botCharacter, botSpeed });
+    this.send({ type: 'create', character, solo: true, botCharacter, botSpeed, profile: profileClaim() });
   }
 
   setBotSpeed(speed: 'paced' | 'instant'): void {
@@ -89,7 +92,7 @@ export class Net {
   }
 
   join(code: string): void {
-    this.send({ type: 'join', code });
+    this.send({ type: 'join', code, profile: profileClaim() });
   }
 
   start(): void {

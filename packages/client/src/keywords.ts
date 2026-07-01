@@ -21,13 +21,22 @@ export const GLYPH: Record<string, string> = {
   fallen: '⤓', sever: '✂', echo: '◌', mutated: '◈', upgraded: '✧',
 };
 
+/** The card/tooltip renderers print the `Link (condition):` prefix themselves
+ *  (from `def.link.condition`), so `link.text` is meant to be the effect only.
+ *  Some clauses still embed the prefix inline — defensively strip a leading
+ *  `Link (...):` so it never reads twice (PT-review: ~11 clauses + Call and
+ *  Answer's original bug). Idempotent; a clean effect-only string is untouched. */
+export function linkBody(text: string): string {
+  return text.replace(/^\s*Link \([^)]*\):\s*/, '');
+}
+
 export const KEYWORDS: Record<string, KeywordDef> = {};
 function kw(k: KeywordDef): void {
   KEYWORDS[k.id] = k;
 }
 
 kw({ id: 'link', name: 'Link', rule: 'Fires when the card in the previous Chain slot matches the named tag — yours or your partner’s. Pure bonus; the card always works without it.', flavor: 'The weave reads itself.' });
-kw({ id: 'resonance', name: 'Resonance', rule: '3+ consecutive fired links with both players in the streak: the final card gets +50%. Solo streaks never ignite.', flavor: 'The Thread only burns for both of you.' });
+kw({ id: 'resonance', name: 'Resonance', rule: '3+ consecutive fired links with both players in the streak: the final card’s PRIMARY number (its main damage/Block/Hex value) is ×1.5, rounded up. Cards without a primary number still extend the streak and trigger Resonance relics — they just have nothing to scale.', flavor: 'The Thread only burns for both of you.' });
 kw({ id: 'thread', name: 'Thread', rule: 'Shared pool (max 10, +2 each turn). Spend it on Pulse, Reclaim, Sever Binding, Steady. Overdrafting Frays you both.', flavor: 'One line between two lives.' });
 kw({ id: 'hex', name: 'Hex', rule: 'A charge placed on enemies. Inert until detonated: 4 damage per stack, ignoring Block.', flavor: 'A curse is patience with teeth.' });
 kw({ id: 'detonate', name: 'Detonate', rule: 'Consumes Hex stacks on the target: 4 damage per stack, ignoring Block.', flavor: 'Patience, repaid.' });

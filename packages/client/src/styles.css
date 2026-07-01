@@ -119,8 +119,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .enemy.tel-debuff { box-shadow: inset 0 -3px 0 var(--hex); }
 .enemy-sigil { display: block; margin: 0 auto 2px; }
 .ename { font-weight: bold; }
-.hpbar { height: 5px; background: var(--ink-2); border-radius: 3px; margin: 3px 0; overflow: hidden; }
+.hpbar { position: relative; height: 5px; background: var(--ink-2); border-radius: 3px; margin: 3px 0; overflow: hidden; }
 .hpfill { height: 100%; background: linear-gradient(90deg, var(--strike), #e8a07a); transition: width 0.4s; }
+/* PT3: predicted HP loss from the staged chain (sits over the doomed chunk) */
+.hppreview { position: absolute; top: 0; height: 100%; background: repeating-linear-gradient(45deg, #ff5a5a, #ff5a5a 3px, #b83030 3px, #b83030 6px); opacity: 0.85; }
+.dmg-forecast { color: #ff8a8a; font-weight: 600; }
+.dmg-lethal { color: #ff5a5a; }
 .chipblock { color: var(--guard); }
 .intent { color: #e0a060; margin-top: 4px; font-weight: 600; }
 .bound { font-size: 0.78em; margin-top: 4px; }
@@ -162,6 +166,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .chaincard { border: 2px solid; border-radius: var(--radius); padding: 4px; position: relative; flex-shrink: 0; }
 .chaincard.fires { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); }
 .chaincard.resonates { box-shadow: 0 0 18px color-mix(in srgb, var(--ignite) 70%, transparent); }
+/* PT3: mouse drag-to-reorder */
+.chaincard.draggable { cursor: grab; }
+.chaincard.draggable:active { cursor: grabbing; }
+.chaincard.dragging { opacity: 0.4; }
+.chaincard.drop-left { box-shadow: inset 4px 0 0 0 var(--focus); }
+.chaincard.drop-right { box-shadow: inset -4px 0 0 0 var(--focus); }
 .slotnum { position: absolute; top: -2px; right: 2px; color: var(--text-faint); font-size: 0.7em; }
 .arc { flex-shrink: 0; align-self: flex-start; margin-top: 34px; }
 .arc svg path { stroke: var(--text-faint); stroke-width: 1.5; stroke-dasharray: 4 3; transition: all 0.25s; }
@@ -235,6 +245,15 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   width: var(--card-w); background: linear-gradient(170deg, var(--panel-2), var(--panel)); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em;
   transition: transform 0.12s, box-shadow 0.12s;
+  position: relative;
+}
+/* PT3: reclaim list — bounded so >1 row scrolls (pad-reachable) */
+.reclaim-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 168px; overflow-y: auto; margin-top: 6px; }
+/* PT2: live-effect chip (momentum preview) pinned to the card's corner */
+.card-badge {
+  position: absolute; top: -7px; right: -5px; z-index: 3;
+  background: var(--ink-2, #222); border: 1px solid var(--line); border-radius: 9px;
+  padding: 0 6px; font-size: 0.78em; color: var(--focus, #ffd700); pointer-events: none;
 }
 .card:hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 4px 12px #0008; }
 .card.small { width: var(--card-w-sm); font-size: 0.75em; }

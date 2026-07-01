@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { CARDS, ENEMIES, RELICS_BY_ID, CardDef } from '@threadbound/engine';
-import { KEYWORDS, KeywordDef, keywordsIn } from './keywords';
+import { KEYWORDS, KeywordDef, keywordsIn, linkBody } from './keywords';
 
 const WITNESS_ASIDES = [
   'Yes, I wrote the glossary. No, I’m not proud of it.',
@@ -23,7 +23,7 @@ export interface InspectContent {
 
 function cardLines(def: CardDef): string[] {
   const lines = [`${def.cost} energy — ${def.tag}${def.keep ? ' — Keep' : ''}${def.exhaust ? ' — Exhaust' : ''}`, def.text];
-  if (def.link) lines.push(`Link (${def.link.condition}): ${def.link.text}`);
+  if (def.link) lines.push(`Link (${def.link.condition}): ${linkBody(def.link.text)}`);
   return lines;
 }
 
@@ -46,7 +46,7 @@ export function resolveInspect(key: string): InspectContent | null {
       }
       if (flag === 'mprev' && def.mutation) {
         body.push('— Reclaims as —', `${def.mutation.name}: ${def.mutation.text}`);
-        if (def.mutation.link) body.push(`Link (${def.mutation.link.condition}): ${def.mutation.link.text}`);
+        if (def.mutation.link) body.push(`Link (${def.mutation.link.condition}): ${linkBody(def.mutation.link.text)}`);
       }
       if (flag === 'upgraded' && def.upgrade) {
         body.length = 0;

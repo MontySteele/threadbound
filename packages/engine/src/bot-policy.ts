@@ -16,6 +16,7 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { computeResonanceSlots } from './combat';
+import { removalPrice } from './reducer';
 
 export interface BotView extends GameState {
   you: PlayerId;
@@ -532,26 +533,23 @@ export class BotPolicy {
     if (this.mode === 'solo' && !view.advanceReady[otherOf(you)]) return null;
     const shop = view.shop!;
 
-    const affordable = shop.items.filter((i) => !i.sold && i.price <= view.gold);
+    const affordable = shop.items.filter((i) => !i.sold && i.kind !== 'removal' && i.price <= view.gold);
     const myCard = affordable.find((i) => i.kind === 'card' && i.forPlayer === you);
     const relic = affordable.find((i) => i.kind === 'relic');
-    const removal0 = affordable.find((i) => i.kind === 'removal');
-    const me0 = view.players[you];
-    const starter0 = me0.deck.find((c) => CARDS[c.defId].starterOnly);
-    if (removal0 && starter0) {
-      return { type: 'SHOP_REMOVE', player: you, itemId: removal0.id, cardInstanceId: starter0.instanceId };
+    // S4.2: the removal service never sells out; the bot evaluates its OWN
+    // run-escalated price (policy parity, not policy ambition — no small-deck
+    // strategy this sprint: starter preference + deck-size > 8 guard kept)
+    const removal = shop.items.find((i) => i.kind === 'removal' && (!i.forPlayer || i.forPlayer === you));
+    const me = view.players[you];
+    const starter = me.deck.find((c) => CARDS[c.defId].starterOnly);
+    if (removal && starter && removalPrice(view, you) <= view.gold && me.deck.length > 8) {
+      return { type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId };
     }
     if (myCard && this.draftScore(view, myCard.refId!) >= 5) {
       return { type: 'SHOP_BUY', player: you, itemId: myCard.id };
     }
     if (relic && this.chance(view, 0.4, 'shop:relic')) {
       return { type: 'SHOP_BUY', player: you, itemId: relic.id };
-    }
-    const removal = affordable.find((i) => i.kind === 'removal');
-    const me = view.players[you];
-    const starter = me.deck.find((c) => CARDS[c.defId].starterOnly);
-    if (removal && starter && me.deck.length > 8 && this.chance(view, 0.4, 'shop:remove')) {
-      return { type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId };
     }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;

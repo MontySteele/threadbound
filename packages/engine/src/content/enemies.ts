@@ -23,7 +23,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     act: 1,
     hp: [16, 20],
     script: [
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack', amount: 5 },
       { kind: 'attack', amount: 5 },
     ],
@@ -76,7 +76,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     mournerMechanic: { strengthPerTrigger: 2 }, // §6: punishes 4+ same-player runs
     script: [
       { kind: 'attack', amount: 8 },
-      { kind: 'debuff_weak', amount: 1 },
+      { kind: 'debuff_weak', amount: 2 },
       { kind: 'attack', amount: 6, times: 2 },
       { kind: 'block', amount: 10 },
     ],

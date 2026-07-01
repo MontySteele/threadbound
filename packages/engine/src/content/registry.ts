@@ -27,6 +27,12 @@ for (const [id, overlay] of [...Object.entries(VESS_M1_OVERLAYS), ...Object.entr
 
 export { CARDS };
 
+// S4.5 card-pool pacing machinery: ids listed here require an unlock (union
+// of both players' profiles) to appear in rewards/shops/events. SHIPS EMPTY —
+// every card unlocked by default; authoring a locked set is the post-playtest
+// content pass (same pass as OQ#24), not S4 work.
+export const LOCKED_CARDS: Set<string> = new Set();
+
 // ---- enemies ----------------------------------------------------------------
 
 export const ENEMIES: Record<string, EnemyDef> = { ...M1_ENEMIES };
