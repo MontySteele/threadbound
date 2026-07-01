@@ -67,8 +67,10 @@ export const NEUTRAL_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'stolen_breath', name: 'Stolen Breath', character: 'neutral', rarity: 'common', cost: 0, tag: 'Surge',
-    text: 'Draw 1.',
+    // OQ#30 (S5.4): designer's ruling direction — the free self-replacing
+    // chain filler now Exhausts (once per combat).
+    id: 'stolen_breath', name: 'Stolen Breath', character: 'neutral', rarity: 'common', cost: 0, tag: 'Surge', exhaust: true,
+    text: 'Draw 1. Exhaust.',
     base: [{ op: 'draw', amount: 1 }],
     link: { condition: 'any', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
@@ -79,7 +81,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     // no-op "+". Smallest real deepening; the card's overall power level is
     // OQ#30's call, so the base stays untouched.
     upgrade: {
-      text: 'Draw 1. Link (any): Gain Kindled 2.',
+      text: 'Draw 1. Link (any): Gain Kindled 2. Exhaust.',
       link: { condition: 'any', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
     },
   },
