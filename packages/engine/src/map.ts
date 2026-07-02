@@ -4,9 +4,12 @@
 import { MapNode, MapState } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { ENCOUNTER_POOLS } from './content/encounters';
-import { eventsForAct } from './content/registry';
+import { MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
 
-const LAYERS = 6; // + boss layer
+// S7.5: acts 1–2 widened L6→L7, event share 22%→32% (combat absorbs the
+// delta; rest/treasure untouched). Env-overridable via TB_MAP_LAYERS /
+// TB_MAP_EVENT_PCT — see content/registry.ts for the ruling.
+const LAYERS = MAP_LAYERS; // + boss layer
 
 export function generateActMap(
   rngState: number, act: 1 | 2, extraElite = false, tracks = false,
@@ -99,7 +102,9 @@ export function generateActMap(
       } else {
         const roll = rngInt(rng, 100);
         rng = roll.state;
-        if (roll.value < 50) {
+        // shares: combat takes what the event share leaves below 72;
+        // rest (72–85) and treasure (86–99) are pacing, not routing — fixed
+        if (roll.value < 72 - MAP_EVENT_PCT) {
           node = { id, kind: 'combat', edges: [], layer, lane, encounterId: pick(layer <= 1 ? pools.easy : pools.normal) };
         } else if (roll.value < 72) {
           node = { id, kind: 'event', edges: [], layer, lane, eventId: nextEvent() };

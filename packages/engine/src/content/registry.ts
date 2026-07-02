@@ -82,6 +82,15 @@ const envScale = (name: string, fallback: number): number => {
 export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.45);
 export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
 
+// S7.5 (designer ruling 3, 2026-07-01): widened acts 1–2 — the two-track
+// event demand (clues + character events) needs a routing ceiling today's
+// L6/E22 maps can't offer (~1.24 events/act vs a demand of 5–8 across acts
+// 1–2). L7/E32 ≈ 2.3/act with combats/map nearly flat. L8/E32 is the
+// reserve config if S7.8's timing telemetry says demand is unmet. Same
+// env-knob pattern as the enemy scales; active values ride in telemetry.
+export const MAP_LAYERS = Math.round(envScale('TB_MAP_LAYERS', 7));
+export const MAP_EVENT_PCT = Math.round(envScale('TB_MAP_EVENT_PCT', 32));
+
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {
   def.hp = [Math.round(def.hp[0] * PT1_ENEMY_HP_SCALE), Math.round(def.hp[1] * PT1_ENEMY_HP_SCALE)];

@@ -1,146 +1,146 @@
 [
   {
     "seed": 1,
-    "actions": 239,
-    "finalHash": "093ec47c563218dd",
-    "finalRng": 2305213890
+    "actions": 321,
+    "finalHash": "7120d21a10a49dcb",
+    "finalRng": 4008897309
   },
   {
     "seed": 2,
-    "actions": 171,
-    "finalHash": "9ef163deb3674fee",
-    "finalRng": 3008567058
+    "actions": 248,
+    "finalHash": "afce5f0cec6d30fc",
+    "finalRng": 2312790191
   },
   {
     "seed": 3,
-    "actions": 226,
-    "finalHash": "68b476be9063e456",
-    "finalRng": 3824650020
+    "actions": 314,
+    "finalHash": "45bfd3dbc7126c6a",
+    "finalRng": 2489461183
   },
   {
     "seed": 4,
-    "actions": 212,
-    "finalHash": "ecf05451fdeb6c4e",
-    "finalRng": 233035892
+    "actions": 101,
+    "finalHash": "0fea004e44d9c0a5",
+    "finalRng": 2824319769
   },
   {
     "seed": 5,
-    "actions": 261,
-    "finalHash": "0e91f35176626661",
-    "finalRng": 1105483751
+    "actions": 120,
+    "finalHash": "5b363937f783352c",
+    "finalRng": 2824319770
   },
   {
     "seed": 6,
-    "actions": 273,
-    "finalHash": "70f3866efbe3a856",
-    "finalRng": 2880684668
+    "actions": 125,
+    "finalHash": "6a088f194f48bfb2",
+    "finalRng": 2696437377
   },
   {
     "seed": 7,
-    "actions": 140,
-    "finalHash": "888c49444b2227c6",
-    "finalRng": 233035895
+    "actions": 151,
+    "finalHash": "e1b48259cd3fe67c",
+    "finalRng": 2824319772
   },
   {
     "seed": 8,
-    "actions": 209,
-    "finalHash": "e870fca196d8c260",
-    "finalRng": 2816743473
+    "actions": 317,
+    "finalHash": "42ec314639ab8082",
+    "finalRng": 2681284779
   },
   {
     "seed": 9,
-    "actions": 342,
-    "finalHash": "7bab3f179b8be349",
-    "finalRng": 3881014923
+    "actions": 131,
+    "finalHash": "9455228cd169ab3b",
+    "finalRng": 1752472025
   },
   {
     "seed": 10,
-    "actions": 97,
-    "finalHash": "a2543cf58fad853a",
-    "finalRng": 1056695159
+    "actions": 248,
+    "finalHash": "50b356573d6b2ae2",
+    "finalRng": 2632496184
   },
   {
     "seed": 11,
-    "actions": 216,
-    "finalHash": "aee742fa85962ddb",
-    "finalRng": 1993084215
+    "actions": 312,
+    "finalHash": "8cac7f2577950fa7",
+    "finalRng": 665471678
   },
   {
     "seed": 12,
-    "actions": 119,
-    "finalHash": "3f5e36046d2ba718",
-    "finalRng": 1248518752
+    "actions": 265,
+    "finalHash": "2c861d41a0fc4451",
+    "finalRng": 729412876
   },
   {
     "seed": 13,
-    "actions": 200,
-    "finalHash": "a3911b876f22e6ab",
-    "finalRng": 2504613793
+    "actions": 253,
+    "finalHash": "f00eea6c1c53998c",
+    "finalRng": 849718971
   },
   {
     "seed": 14,
-    "actions": 129,
-    "finalHash": "0e1205910ac8807a",
-    "finalRng": 3144025764
+    "actions": 352,
+    "finalHash": "da67c83b57fe4d04",
+    "finalRng": 409706893
   },
   {
     "seed": 15,
-    "actions": 202,
-    "finalHash": "7a0ee5538794cd3e",
-    "finalRng": 3192814362
+    "actions": 266,
+    "finalHash": "795b04db858e091d",
+    "finalRng": 1865201825
   },
   {
     "seed": 16,
-    "actions": 292,
-    "finalHash": "305d2ea4713678eb",
-    "finalRng": 2560978693
+    "actions": 410,
+    "finalHash": "34acda44ed64fa55",
+    "finalRng": 2809167181
   },
   {
     "seed": 17,
-    "actions": 250,
-    "finalHash": "87a6114c8f532351",
-    "finalRng": 97577211
+    "actions": 316,
+    "finalHash": "efd1e72085e43b36",
+    "finalRng": 665471684
   },
   {
     "seed": 18,
-    "actions": 260,
-    "finalHash": "3c44eec0bd80786a",
-    "finalRng": 857295276
+    "actions": 280,
+    "finalHash": "e84d43fbfbcbf118",
+    "finalRng": 1865201828
   },
   {
     "seed": 19,
-    "actions": 115,
-    "finalHash": "6327665b2497088b",
-    "finalRng": 864871577
+    "actions": 114,
+    "finalHash": "e51e7ad8e8d34f71",
+    "finalRng": 1496707247
   },
   {
     "seed": 20,
-    "actions": 153,
-    "finalHash": "d718c726c499e0b2",
-    "finalRng": 2952202179
+    "actions": 239,
+    "finalHash": "5e78982a9695e6c2",
+    "finalRng": 985177672
   },
   {
     "seed": 21,
-    "actions": 97,
-    "finalHash": "200fbb5f9704289c",
-    "finalRng": 1184577564
+    "actions": 142,
+    "finalHash": "3654a50f51b8028a",
+    "finalRng": 1496707249
   },
   {
     "seed": 22,
-    "actions": 143,
-    "finalHash": "5e145dcff736d4bd",
-    "finalRng": 4151932324
+    "actions": 223,
+    "finalHash": "a95008d6ed6177a8",
+    "finalRng": 3192814369
   },
   {
     "seed": 23,
-    "actions": 187,
-    "finalHash": "5121659c64357d11",
-    "finalRng": 4080414828
+    "actions": 166,
+    "finalHash": "d93fbfed3634d89f",
+    "finalRng": 800930384
   },
   {
     "seed": 24,
-    "actions": 80,
-    "finalHash": "c3f69ce73f866c94",
-    "finalRng": 616683094
+    "actions": 376,
+    "finalHash": "2446362699096afb",
+    "finalRng": 1225789864
   }
 ]
