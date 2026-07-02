@@ -20,7 +20,9 @@ import { Bot, RunResult } from './bot';
 
 const RUNS = Number(process.argv[2] ?? 50);
 const BASE_SEED = Number(process.env.SEED ?? 1000); // fixed seed set → reproducible gates
-const RUN_TIMEOUT_MS = 300_000;
+// Comfort-pass checklist item 2: rites + L7 maps lengthen runs, and a timeout
+// mid-battery poisons the win-rate read — env-overridable for long batteries
+const RUN_TIMEOUT_MS = Math.max(10_000, Number(process.env.TB_RUN_TIMEOUT_MS ?? 300_000) || 300_000);
 
 // S3.5 character-balance battery: PAIR=vb (default) | vv | bb
 const PAIR = (process.env.PAIR ?? 'vb').toLowerCase();
