@@ -64,6 +64,9 @@ export function resolveInspect(key: string): InspectContent | null {
       const def = ENEMIES[id];
       if (!def) return null;
       const mech: string[] = [];
+      // S10a enemies state their mechanic on the frame — the inspect panel
+      // must never know less than the frame under it
+      if (def.mechanicLine) mech.push(def.mechanicLine);
       if (def.mournerMechanic) mech.push(`Swells (+${def.mournerMechanic.strengthPerTrigger} Strength) any turn your Chain holds 4+ cards in a row from one player.`);
       if (def.chainReader) mech.push(`Reads the chain: +${def.chainReader.blockPerUnfiredLink} Block per link that failed to fire.`);
       if (def.chorus) mech.push('A chorus: the bodies share one pool of life. One is always unbound and untargetable — sever a binding to rotate who stands forward.');
