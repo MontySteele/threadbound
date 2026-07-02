@@ -57,7 +57,7 @@ export const EXCLUDED_FAMILIES: ReadonlyArray<{
   },
   {
     pair: ['a_starved', 'a_mercy'],
-    why: 'a starving part consuming the rite is appetite wearing a office — mercy does not eat what it meant to spare (starved × unity stays: purge-by-consumption is §0’s deletion)',
+    why: 'a starving part consuming the rite is appetite wearing an office — mercy does not eat what it meant to spare (starved × unity stays: purge-by-consumption is §0’s deletion)',
   },
 ];
 
@@ -169,7 +169,7 @@ export const FRAGMENTS: FragmentDef[] = [
 
   // ---- The Emptied Stalls: A → q_why, B → q_who -----------------------------
   frag('nt_choir_stalls', 'actor', 'q_why', 'a_hunger',
-    'The room remembers a last supper laid out and left UNEATEN — twelve portions gone to dust in place. Nobody starving walks away from bread.'),
+    'The room remembers a final meal laid out and left UNEATEN — a full portion at every seat, gone to dust in place. Nobody starving walks away from bread.'),
   frag('nt_choir_stalls', 'actor', 'q_why', 'a_grief',
     'The room remembers singing — work-songs, tally-songs, nothing sorrowing. Right to the end they kept time like people with a job to finish, not a loss to carry.'),
   frag('nt_choir_stalls', 'actor', 'q_why', 'a_kept',

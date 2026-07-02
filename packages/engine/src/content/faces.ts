@@ -87,13 +87,17 @@ export const FACES: BossFaceDef[] = [
   },
   // ---- S8.5: the two new q_what answers' faces. The Sexton/Peal pattern
   // generalizes (bible §8): an arena's two truths are "the one who broke it
-  // to protect it" and "the thing it became" — the Vigil is the agent who set
-  // the office down; the Tithe is the office become appetite. Names from the
-  // §7 death column (vigil, tithe). Numbers PROVISIONAL, in line with the
-  // existing pools (the Unraveled body scales them); sign-off pending S8.8.
+  // to protect it" and "the thing it became" — the Vigil-Keeper is the agent
+  // who set the office down; the Tithe is the office become appetite. Names
+  // from the §7 word-drawer (compound funeral-craft nouns; death column:
+  // vigil, tithe). S8 audit rename: the face was "The Vigil", colliding with
+  // the Vigil rite card (rites.ts) — the compound names the AGENT of the
+  // vigil, which is what §8 asks of a face, and collides with nothing.
+  // Numbers PROVISIONAL, in line with the existing pools (the Unraveled body
+  // scales them); sign-off pending S8.8.
   {
     answerId: 'a_abandoned',
-    realName: 'The Vigil',
+    realName: 'The Vigil-Keeper',
     mechanicPool: [
       {
         id: 'm_vg_unkept_watch',

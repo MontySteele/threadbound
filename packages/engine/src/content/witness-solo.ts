@@ -78,7 +78,7 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     "I'm down. Insofar as I can be. The indignity is the larger wound.",
     'Fallen. Me. I want it on record that I have never once done this before. A debut.',
     "I'm out. You're the plan now. I have notes, but no advice. Mostly notes.",
-    'The thread goes slack on my end. Carry it a while. I never had the cardio for this. Or the heart. Literally.',
+    'The thread goes slack on my end. Carry it a while. I never had the lungs for this. Or the heart. Literally.',
     'Down. I am told this is what dying is like. I remain unqualified to confirm it.',
     "I'll just lie here. Win, and we will agree this never happened.",
   ],
