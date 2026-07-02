@@ -147,6 +147,32 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   console.log(`turns: ${sum(results, (r) => t(r).turns)}  |  cards played: ${cards}  |  overall link-fire: ${cards ? ((100 * links) / cards).toFixed(1) : 0}%`);
   console.log(`act 1: ${act1.combats} combats, link-fire ${act1LinkRate.toFixed(1)}%, HP lost/combat ${hpPerA1Combat.toFixed(1)}`);
   console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
+  // Comfort pass mirror (review sweep): per-encounter difficulty attribution,
+  // same table as sim.ts incl. the >2x-mean outlier flag (the S10a gate-4
+  // read). Printed only when files carry encounterStats — pre-comfort files
+  // keep their summary byte-identical.
+  {
+    const enc = {};
+    for (const r of results) {
+      for (const [id, s] of Object.entries(t(r).encounterStats ?? {})) {
+        const e = (enc[id] ??= { combats: 0, hpLost: 0 });
+        e.combats += s.combats; e.hpLost += s.hpLost;
+      }
+    }
+    const rows = Object.entries(enc)
+      .map(([id, s]) => ({ id, combats: s.combats, per: s.combats ? s.hpLost / s.combats : 0 }))
+      .sort((a, b) => b.per - a.per);
+    if (rows.length > 0) {
+      const sampled = rows.filter((r) => r.combats >= 5);
+      const mean = sampled.length ? sampled.reduce((a, r) => a + r.per, 0) / sampled.length : 0;
+      console.log('---------------- HP LOST BY ENCOUNTER (pair HP / combat) ----------------');
+      for (const r of rows) {
+        const outlier = r.combats >= 5 && mean > 0 && r.per > 2 * mean ? '  !! outlier' : '';
+        console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${outlier}`);
+      }
+      if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
+    }
+  }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
   console.log(`detonations: ${detonations}  |  avg stacks per detonation: ${detonations ? (detonatedStacks / detonations).toFixed(2) : 'n/a'}`);
@@ -203,6 +229,54 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   );
   const ringDiscounts = sum(results, (r) => t(r).ringDiscountsFired);
   if (ringDiscounts > 0) console.log(`Pulsekeeper's Ring discounts fired: ${ringDiscounts}`);
+
+  // ---- S7.8 rites readouts (review sweep: mirrored from sim.ts) -------------------
+  // The playtest deploy ships TB_RITES=1, so human files carry telemetry.rites
+  // — the death-pick shares (<10%/>60% S8.1 tuning flags), birth pick rate +
+  // timing (the gate-4 arbitration data), and reclaim attempts must be
+  // readable from human data. Unflagged files keep a byte-identical summary.
+  const riteRuns = results.filter((r) => t(r).rites);
+  if (riteRuns.length > 0) {
+    const deathCounts = {};
+    let deathPicks = 0;
+    const birthActs = [];
+    const birthLayers = [];
+    const birthPicked = { p1: 0, p2: 0 };
+    let charEvents = 0;
+    for (const r of riteRuns) {
+      const rt = t(r).rites;
+      for (const pid of ['p1', 'p2']) {
+        const death = rt.deathPick?.[pid];
+        if (death) { deathCounts[death] = (deathCounts[death] ?? 0) + 1; deathPicks++; }
+        if (rt.birthPick?.[pid]) birthPicked[pid]++;
+        const bt = rt.birthTiming?.[pid];
+        if (bt) { birthActs.push(bt.act); birthLayers.push(bt.layer); }
+        charEvents += rt.characterEvents?.[pid] ?? 0;
+      }
+    }
+    const medianOf = (xs) => {
+      if (xs.length === 0) return 'n/a';
+      const s = [...xs].sort((a, b) => a - b);
+      const mid = Math.floor(s.length / 2);
+      return String(s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2);
+    };
+    const riteDist = Object.entries(deathCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([id, count]) => {
+        const share = (100 * count) / deathPicks;
+        return `${id} ${count} (${share.toFixed(0)}%${share < 10 || share > 60 ? ' FLAG' : ''})`;
+      })
+      .join(', ');
+    console.log('---------------- S7.8 RITES READOUTS ----------------');
+    console.log(`death-rite picks: ${deathPicks} — ${riteDist || 'none'}  (shares of picks; FLAG = <10% or >60% tuning threshold)`);
+    console.log(
+      `birth picks: p1 ${birthPicked.p1}/${riteRuns.length} runs (${((100 * birthPicked.p1) / riteRuns.length).toFixed(0)}%), ` +
+      `p2 ${birthPicked.p2}/${riteRuns.length} (${((100 * birthPicked.p2) / riteRuns.length).toFixed(0)}%) | ` +
+      `median timing act ${medianOf(birthActs)}, layer ${medianOf(birthLayers)}`,
+    );
+    console.log(`character events taken/run: ${(charEvents / riteRuns.length).toFixed(2)}`);
+    console.log(`Reclaim attempts (threadSpendByKind.reclaim): ${spendMix.reclaim ?? 0}`);
+  }
 
   // ---- S6.4 human-only lines ------------------------------------------------------
   const installRuns = new Map();
