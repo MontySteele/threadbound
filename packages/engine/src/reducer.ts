@@ -25,6 +25,18 @@ import { maybeSayWitness, sayWitness } from './witness-draw';
 
 export const STARTING_HP: Record<CharacterId, number> = { vess: 68, bram: 78 };
 
+/** Comfort-pass sweep knob, hardened to the registry envScale contract: the
+ *  pure engine must survive envless hosts (browser), and a typo'd value must
+ *  not start every run at NaN gold (which silently bricks the whole economy —
+ *  SHOP_BUY's `gold >= price` is never true again). */
+const startGold = (): number => {
+  if (typeof process !== 'undefined' && process.env && process.env.TB_START_GOLD) {
+    const v = Number(process.env.TB_START_GOLD);
+    if (Number.isFinite(v) && v >= 0) return v;
+  }
+  return 100;
+};
+
 export function initialState(seed: number, characters: Record<PlayerId, CharacterId>, botSeat?: PlayerId): GameState {
   const mkPlayer = (id: PlayerId): PlayerState => {
     const character = characters[id];
@@ -53,7 +65,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     phase: 'lobby',
     ...(botSeat ? { botSeat } : {}),
     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
-    gold: Number(process.env.TB_START_GOLD ?? 100), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
+    gold: startGold(), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
     removalsByPlayer: { p1: 0, p2: 0 },
     ascension: 0,
     ascensionVotes: { p1: 0, p2: 0 },

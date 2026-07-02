@@ -117,3 +117,30 @@ describe('graceful restart persistence (M3-D)', () => {
     expect(restored.telemetry.biggestTurn).toEqual({ damage: 0, turn: 0, act: 0 });
   });
 });
+
+// Review sweep: the playtest deploy ships TB_RITES=1 and 'deploys must only
+// cost a refresh' (S6.2) — a restart during the Vestry must restore a
+// playable rites room, not a dead snapshot.
+describe('graceful restart persistence: mid-rites (review sweep)', () => {
+  it('a room parked in the Vestry round-trips with its offer, and the pick still applies', async () => {
+    const { reduce } = await import('@threadbound/engine');
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tb-')), 'rooms.json');
+    const a = mkServer({ persistPath: file });
+    const room = fakeRoom('VESTR', Date.now());
+    room.state = reduce(room.state, { type: 'START_RUN', seed: 1, rites: true });
+    room.actionLog.push({ type: 'START_RUN', seed: 1, rites: true });
+    expect(room.state.phase).toBe('rites');
+    a.rooms.set(room.code, room);
+    a.persist();
+
+    const b = mkServer({ persistPath: file });
+    const restored = b.rooms.get('VESTR')!;
+    expect(restored.state.phase).toBe('rites');
+    const offer = restored.state.ritesState!.offer!;
+    expect(offer.p1.length).toBe(2);
+    expect(offer.p2.length).toBe(2);
+    // the restored state is live, not an exhibit: a real pick reduces cleanly
+    const picked = reduce(restored.state, { type: 'RITE_PICK', player: 'p1', riteId: offer.p1[0] });
+    expect(picked.players.p1.rites).toEqual([offer.p1[0]]);
+  });
+});

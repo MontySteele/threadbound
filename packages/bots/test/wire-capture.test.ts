@@ -32,7 +32,7 @@ import { generateFinaleMap } from '../../engine/src/map';
 process.env.PORT = '0';
 process.env.PERSIST = '';
 
-const LIVE_PHASES = ['map', 'combat', 'reward', 'event', 'loom', 'rest', 'shop'];
+const LIVE_PHASES = ['rites', 'map', 'combat', 'reward', 'event', 'loom', 'rest', 'shop'];
 const ANSWER_IDS = [
   'a_kin', 'a_hired',
   'a_paid', 'a_compelled', 'a_volunteered', 'a_fleeing', // S8.2 q_came
@@ -141,9 +141,13 @@ class Client {
 describe('wire capture (S6.3 gate 2, §11 extension)', () => {
   beforeAll(() => {
     process.env.TB_TRACKS = '1';
+    // review sweep: the playtest deploy ships both flags — the covenant must
+    // hold over the rites phase (Vestry offers, picks, birth trio) too
+    process.env.TB_RITES = '1';
   });
   afterAll(() => {
     delete process.env.TB_TRACKS;
+    delete process.env.TB_RITES;
   });
 
   it('SCRIPTED pair run: fragment delivery, strike-out pooling and the verdict leak nothing', async () => {
@@ -160,6 +164,12 @@ describe('wire capture (S6.3 gate 2, §11 extension)', () => {
       c2.send({ type: 'join', code: joined.code });
       await c2.next('joined');
       c1.send({ type: 'start', seed: 20260701 });
+      // review sweep: with TB_RITES on the run opens in the Vestry — the
+      // picks cross the real protocol (and the covenant frames include them)
+      const vestry1 = await c1.next('state', (m) => m.state.phase === 'rites');
+      c1.act({ type: 'RITE_PICK', riteId: vestry1.state.ritesState.offer.p1[0] });
+      const vestry2 = await c2.next('state', (m) => m.state.phase === 'rites');
+      c2.act({ type: 'RITE_PICK', riteId: vestry2.state.ritesState.offer.p2[0] });
       await c1.next('state', (m) => m.state.phase === 'map');
       await c2.next('state', (m) => m.state.phase === 'map');
 

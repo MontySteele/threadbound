@@ -74,7 +74,7 @@ export function DeckOverlay({ state, onClose }: { state: ClientState; onClose: (
           <button className="chip" data-gp="META" data-gp-action="cancel" onClick={onClose}>close ✕</button>
         </div>
 
-        <h4 style={{ color: 'var(--p1)' === 'var(--p1)' ? undefined : undefined }}>
+        <h4>
           You — {me.deck.length} cards <span className="muted">({tagSummary(me.deck)})</span>
         </h4>
         {combat ? (

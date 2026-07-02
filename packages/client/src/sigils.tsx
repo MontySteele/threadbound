@@ -100,6 +100,6 @@ export function Sigil({ id, size = 72, hue, aura, className }: SigilProps): JSX.
 
 /** Character marks: fixed hues so Vess/Bram/the Witness always read the same. */
 export function CharacterSigil({ who, size = 64 }: { who: 'vess' | 'bram' | 'witness'; size?: number }): JSX.Element {
-  const hue = who === 'vess' ? 'var(--hex)' : who === 'bram' ? 'var(--p2)' : '#b9a8d4';
+  const hue = who === 'vess' ? 'var(--hex)' : who === 'bram' ? 'var(--p2)' : 'var(--witness)';
   return <Sigil id={`character_${who}`} size={size} hue={hue} />;
 }

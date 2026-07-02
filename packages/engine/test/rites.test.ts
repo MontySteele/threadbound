@@ -44,7 +44,10 @@ describe('rite registry covenant (S7.1/S8.1)', () => {
   });
 
   it('no rite effect grows Hex (OQ#28/OQ#43 caps are load-bearing)', () => {
-    const HEX_OPS = new Set(['hex', 'hexAll', 'hexPerLinkFired', 'doubleHex']);
+    // application AND scaling (S7.1: "no Hex application, Hex scaling, or Hex
+    // density") — damagePerHex is the S5 Worn-Knife cap class; detonate stays
+    // legal as cash-out only (Knell)
+    const HEX_OPS = new Set(['hex', 'hexAll', 'hexPerLinkFired', 'doubleHex', 'damagePerHex']);
     const scan = (ops: EffectOp[] | undefined, label: string): void => {
       for (const op of ops ?? []) {
         expect(HEX_OPS.has(op.op), `${label}: ${op.op} grows Hex`).toBe(false);
@@ -343,5 +346,40 @@ describe('comfort-pass checklist: rite-card removal at a shop (the removability 
     s = reduce(s, { type: 'SHOP_REMOVE', player: 'p1', itemId: 'item0', cardInstanceId: riteCard!.instanceId });
     expect(s.players.p1.deck.some((c) => c.instanceId === riteCard!.instanceId)).toBe(false);
     expect(s.removalsByPlayer.p1).toBe(1);
+  });
+});
+
+// Review-sweep coverage: the union read-path had unit tests (above) but no
+// end-to-end START_RUN coverage — the surface a real veteran+fresh claim hits.
+
+describe('S9a union read-path, end to end (review sweep)', () => {
+  it('the death offer draws only from a claimed 2-rite pool; a sub-2 claim falls back to the full set', () => {
+    const vessDeaths = ritesFor('vess', 'death').map((r) => r.id);
+    const bramDeaths = ritesFor('bram', 'death').map((r) => r.id);
+    const claimed = vessDeaths.slice(0, 2);
+    const riteUnlocks = {
+      vess: { death: claimed, birth: [] },
+      bram: { death: bramDeaths.slice(0, 1), birth: [] }, // sub-2 → full set
+    };
+    for (const seed of [3, 7, 11, 19, 23]) {
+      const s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }),
+        { type: 'START_RUN', seed, rites: true, riteUnlocks });
+      expect(new Set(s.ritesState!.offer!.p1)).toEqual(new Set(claimed));
+      expect(new Set(s.ritesState!.offer!.p2).size).toBe(2);
+      for (const id of s.ritesState!.offer!.p2) expect(bramDeaths).toContain(id);
+    }
+  });
+
+  it('the birth pick honors the stored unlocks record', () => {
+    const vessBirths = ritesFor('vess', 'birth').map((r) => r.id);
+    let s = start(21, { rites: true });
+    s = reduce(s, { type: 'RITE_PICK', player: 'p1', riteId: s.ritesState!.offer!.p1[0] });
+    s = reduce(s, { type: 'RITE_PICK', player: 'p2', riteId: s.ritesState!.offer!.p2[0] });
+    // surgery: owe p1 the pick, with a single-rite claim on record
+    s.ritesState!.unlocks = { vess: { death: [], birth: [vessBirths[0]] }, bram: { death: [], birth: [] } };
+    s.ritesState!.birthChoice = 'p1';
+    expect(() => reduce(s, { type: 'RITE_PICK', player: 'p1', riteId: vessBirths[1] })).toThrow(/not yet yours/);
+    const done = reduce(s, { type: 'RITE_PICK', player: 'p1', riteId: vessBirths[0] });
+    expect(done.players.p1.rites).toContain(vessBirths[0]);
   });
 });

@@ -267,7 +267,7 @@ export default function App(): JSX.Element {
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
           <Phase state={state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
-          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} onOffsets={setHpOffsets} />
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
           <HintBar />
@@ -400,7 +400,7 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
           {solo && (
             <label>
               bot speed
-              <select value={botSpeed} onChange={(e) => {
+              <select data-gp="META" value={botSpeed} onChange={(e) => {
                 const speed = e.target.value as 'paced' | 'instant';
                 setBotSpeed(speed);
                 net.setBotSpeed(speed);
@@ -578,7 +578,7 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
       </div>
       <div className="panel">
         <h3>Descend alone</h3>
-        <p className="muted">The Witness will assist. He is thrilled.</p>
+        <p className="muted">The Witness will assist. It is thrilled.</p>
         <div>
           <label>
             You{' '}
@@ -694,7 +694,7 @@ function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; s
       <h3>Ascension</h3>
       <label>
         Level{' '}
-        <select value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
+        <select data-gp="META" value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
           {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
             <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
           ))}
@@ -895,6 +895,9 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 const TELEGRAPH: Record<string, string> = {
   attack: 'tel-attack', attack_all: 'tel-attack', attack_momentum: 'tel-attack',
   attack_drain: 'tel-attack', attack_fray: 'tel-attack',
+  // S10a The Unstrung: the dilemma read is an attack-or-Fray fork — it wears
+  // the attack tint so the one intent that most wants attention has one
+  read_chain: 'tel-attack',
   block: 'tel-guard', block_all: 'tel-guard',
   buff_strength: 'tel-buff', buff_strength_all: 'tel-buff',
   debuff_weak: 'tel-debuff', debuff_vulnerable: 'tel-debuff', sever: 'tel-debuff',
@@ -1762,6 +1765,9 @@ export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): J
 function renderEvent(e: GameEvent, state: ClientState): string {
   const pname = (p: PlayerId) => state.players[p].character;
   const ename = (id: string) => enemyName(state.combat, id);
+  // freeform engine `detail` strings carry wire seat ids — render them with
+  // the same names the typed events use
+  const subj = (s: string) => s.replace(/\bp1\b/g, pname('p1')).replace(/\bp2\b/g, pname('p2'));
   switch (e.e) {
     case 'witness': return `THE WITNESS: “${e.line}”`;
     case 'card': return `[${e.slot + 1}] ${pname(e.player)} plays ${e.card}${e.linkFired ? ' ⚡' : ''}${e.resonance ? ' ✦' : ''}`;
@@ -1769,7 +1775,7 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'detonate': return `  ✸ ${ename(e.target)}: ${e.stacks} Hex detonate for ${e.damage}`;
     case 'hex': return `  ☠ ${ename(e.target)} +${e.amount} Hex`;
     case 'block': return `  🛡 ${e.target === 'p1' || e.target === 'p2' ? pname(e.target as PlayerId) : ename(e.target)} +${e.amount} Block`;
-    case 'enemy_action': return `${ename(e.enemy)} ${e.detail}`;
+    case 'enemy_action': return `${ename(e.enemy)} ${subj(e.detail)}`;
     case 'enemy_dead': return `${ename(e.enemy)} is destroyed.`;
     case 'player_hit': return `${pname(e.player)} loses ${e.hpLoss} HP${e.blocked ? ` (${e.blocked} blocked)` : ''}.`;
     case 'fallen': return `${pname(e.player)} has FALLEN. The Thread goes slack.`;
@@ -1780,7 +1786,7 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'fray': return 'The Thread FRAYS — you both pay for it.';
     case 'resonance_ignite': return `✦ RESONANCE — [${e.tags.join(' → ')}]`;
     case 'relic': return `${pname(e.player)} claims a relic: ${RELICS_BY_ID[e.relic]?.name ?? e.relic}.`;
-    case 'info': return e.detail;
+    case 'info': return subj(e.detail);
     default: return JSON.stringify(e);
   }
 }

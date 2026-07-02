@@ -428,10 +428,16 @@ function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _
   enemy.hp = Math.max(0, enemy.hp - hpLoss);
   if (ENEMIES[enemy.defId]?.chorus) {
     for (const other of state.combat!.enemies) {
-      if (other.id !== enemy.id && ENEMIES[other.defId]?.chorus) other.hp = enemy.hp;
+      if (other.id === enemy.id || !ENEMIES[other.defId]?.chorus) continue;
+      const otherWasAlive = other.hp > 0;
+      other.hp = enemy.hp;
+      // a synced member's death must be witnessed too — the theater keys its
+      // dissolve on enemy_dead per instance. (Death hooks deliberately fire
+      // only for the struck member; no chorus def carries one today.)
+      if (otherWasAlive && other.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: other.id });
     }
   }
-  if (enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
+  if (wasAlive && enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
   if (wasAlive && enemy.hp <= 0) onEnemyDeath(state, enemy);
 }
 
@@ -440,8 +446,12 @@ function onEnemyDeath(state: GameState, enemy: EnemyState): void {
   const def = ENEMIES[enemy.defId];
   // Tithe-Taker: a Thread-economy fight with a payoff
   if (def.threadOnDeath) {
+    // PT2/OQ#32 honest-gain convention: log what actually arrived — the cap
+    // can swallow the refund, and the log must not lie (M2-D2)
+    const before = state.thread;
     gainThread(state, def.threadOnDeath);
-    state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `the tithe returns — +${def.threadOnDeath} Thread` });
+    const gained = state.thread - before;
+    if (gained > 0) state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `the tithe returns — +${gained} Thread` });
   }
   // Half-Carried: the cargo comes apart — tests AoE vs chain sequencing.
   // Spawns inherit the parent's binding and arrive stunned for one turn
@@ -484,9 +494,11 @@ function hitEnemy(state: GameState, attacker: PlayerState, enemy: EnemyState, ra
   const blocked = Math.min(enemy.block, amt);
   enemy.block -= blocked;
   const hpLoss = Math.min(enemy.hp, amt - blocked);
-  applyEnemyHpLoss(state, enemy, hpLoss, 'attack');
-  // M2-D2: the log must not lie — post-block HP loss + blocked, separately
+  // M2-D2: the log must not lie — post-block HP loss + blocked, separately.
+  // The hit is logged BEFORE the hp loss applies so the killing blow's beat
+  // plays before enemy_dead (the theater dissolves on enemy_dead).
   state.log.push({ e: 'damage', target: enemy.id, hpLoss, blocked });
+  applyEnemyHpLoss(state, enemy, hpLoss, 'attack');
   return amt;
 }
 
@@ -496,13 +508,14 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
   if (stacks <= 0) return 0;
   enemy.hex -= stacks;
   const dmg = stacks * DETONATION_DAMAGE;
+  // the burst's beat plays before enemy_dead (see hitEnemy)
+  state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   applyEnemyHpLoss(state, enemy, dmg, 'detonate');
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.telemetry.detonatedStacks += stacks;
   state.telemetry.detonationEvents = (state.telemetry.detonationEvents ?? 0) + 1;
   if (by) state.telemetry.damageByPlayer[by] += dmg;
   turnDamage += dmg;
-  state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   runHooks(state, 'p1', 'detonate');
   runHooks(state, 'p2', 'detonate');
   return stacks;
@@ -1285,7 +1298,7 @@ function fall(state: GameState, player: PlayerState): void {
   if (rebound > 0) {
     // say it out loud (playtest 1): the silent rebind undid a player's Sever
     // and read as "the boss ignored my sever" — a bug-shaped surprise
-    state.log.push({ e: 'info', detail: `Every tether snaps to ${survivor} — the Fallen draw no aggro. Severed bindings are undone.` });
+    state.log.push({ e: 'info', detail: `Every tether snaps to ${survivor} — nothing hunts the Fallen. Severed bindings are undone.` });
   }
   sayWitness(state, state.botSeat
     ? (player.id === state.botSeat ? 'fallen_self' : 'fallen_human')

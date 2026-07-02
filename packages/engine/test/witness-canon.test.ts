@@ -16,6 +16,7 @@ import { WITNESS_POOLS } from '../src/witness-draw';
 import { EVENTS } from '../src/content/events';
 import { M2_EVENTS } from '../src/content/m2-world';
 import { CLUE_EVENTS } from '../src/content/clue-events';
+import { WRONG_WAY_EVENTS } from '../src/content/wrong-way';
 import { CHARACTER_EVENTS } from '../src/content/character-events';
 import { FRAGMENTS } from '../src/content/truth';
 
@@ -50,6 +51,9 @@ function allWitnessLines(): { where: string; line: string }[] {
     ['events.ts', Object.values(EVENTS)],
     ['m2-world.ts', M2_EVENTS],
     ['clue-events.ts', CLUE_EVENTS],
+    // review sweep: S8.4 shipped after the audit's corpus was drawn — the
+    // wrong-way event's Witness channels join the fence
+    ['wrong-way.ts', WRONG_WAY_EVENTS],
   ];
   for (const [file, defs] of eventSets) {
     for (const def of defs) {

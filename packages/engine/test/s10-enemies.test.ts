@@ -260,3 +260,47 @@ describe('The Unstrung: reads the Chain', () => {
     expect(done2.players.p1.statuses.frayed).toBeGreaterThan(0);
   });
 });
+
+// Review-sweep coverage: the two S10a parity/counter claims the status doc
+// makes that had no test standing behind them.
+
+describe('Descant Mote: forecast parity (review sweep)', () => {
+  it('computePlannedDamage mirrors the echoed Vulnerable — preview == reality', () => {
+    const s = combatState();
+    becomeEnemy(s, 'cinder_husk');
+    const def = ENEMIES['descant_mote'];
+    s.combat!.enemies.push({
+      id: 'e1_descant_mote', defId: 'descant_mote',
+      hp: 400, maxHp: 400, block: 0, hex: 0, weak: 0, vulnerable: 0, stun: 0, strength: 0,
+      boundTo: 'p2', untargetable: false, scriptIndex: 0, intent: def.script[0],
+    });
+    const [lace] = forceHand(s, 'p1', ['carrion_lace']); // single-target Vulnerable
+    const [pin] = forceHand(s, 'p2', ['hatpin']); // plain Deal 4
+    let staged = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: lace, slot: 0, targetId: 'e0_cinder_husk' });
+    staged = reduce(staged, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: pin, slot: 1, targetId: 'e1_descant_mote' });
+    const forecast = computePlannedDamage(staged)['e1_descant_mote'] ?? 0;
+    expect(forecast).toBe(6); // 4 into the echoed Vulnerable (×1.5)
+    const before = staged.combat!.enemies.find((e) => e.id === 'e1_descant_mote')!.hp;
+    const done = ready(staged);
+    const after = done.combat!.enemies.find((e) => e.id === 'e1_descant_mote')!.hp;
+    expect(before - after).toBe(forecast);
+  });
+});
+
+describe('Choir Silence: the advertised Pulse counter (review sweep)', () => {
+  it('a Pulse still forces the silenced link through, in real resolution', () => {
+    let s = combatState();
+    becomeEnemy(s, 'choir_silence');
+    const [needle] = forceHand(s, 'p1', ['needlework']);
+    const [rend] = forceHand(s, 'p2', ['rendcall']);
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p1', cardInstanceId: needle, slot: 0, targetId: 'e0_choir_silence' });
+    s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: rend, slot: 1, targetId: 'e0_choir_silence' });
+    // the Silence holds rendcall's natural fire — which is exactly what
+    // makes the slot Pulse-able (forcing happens downstream of suppression)
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'pulse', targetId: rend });
+    const done = ready(s);
+    const rendEvent = done.log.find((e) => e.e === 'card' && (e as { card?: string }).card === 'Rendcall');
+    expect(rendEvent && (rendEvent as { linkFired?: boolean }).linkFired).toBe(true);
+    expect(done.log.some((e) => e.e === 'detonate')).toBe(true);
+  });
+});
