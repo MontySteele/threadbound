@@ -440,8 +440,12 @@ function onEnemyDeath(state: GameState, enemy: EnemyState): void {
   const def = ENEMIES[enemy.defId];
   // Tithe-Taker: a Thread-economy fight with a payoff
   if (def.threadOnDeath) {
+    // PT2/OQ#32 honest-gain convention: log what actually arrived — the cap
+    // can swallow the refund, and the log must not lie (M2-D2)
+    const before = state.thread;
     gainThread(state, def.threadOnDeath);
-    state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `the tithe returns — +${def.threadOnDeath} Thread` });
+    const gained = state.thread - before;
+    if (gained > 0) state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `the tithe returns — +${gained} Thread` });
   }
   // Half-Carried: the cargo comes apart — tests AoE vs chain sequencing.
   // Spawns inherit the parent's binding and arrive stunned for one turn
