@@ -9,7 +9,7 @@ import React, { useEffect, useRef } from 'react';
 import { ANSWERS_BY_ID, EVENTS, QUESTIONS, RELICS_BY_ID, PlayerId, answersFor } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { recordCodex } from './profile';
-import { CHAR_NAME } from './App';
+import { CHAR_NAME } from './chars';
 
 const SEAT: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 

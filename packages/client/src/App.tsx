@@ -11,6 +11,7 @@ import {
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile, setTelemetryConsent } from './profile';
+import { CHAR_NAME } from './chars';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
@@ -27,7 +28,6 @@ import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
 type Character = 'vess' | 'bram';
-export const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {

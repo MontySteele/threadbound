@@ -10,7 +10,7 @@
 import React from 'react';
 import { EVENTS, QUESTIONS, PlayerId } from '@threadbound/engine';
 import { ClientState } from './net';
-import { CHAR_NAME } from './App';
+import { CHAR_NAME } from './chars';
 
 const SEAT: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 
