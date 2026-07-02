@@ -7,6 +7,7 @@ import { effectiveDef, findInstance } from '../src/combat';
 import { pickableNodes } from '../src/map';
 import { EVENTS } from '../src/content/registry';
 import { QUESTIONS, answersFor } from '../src/content/questions';
+import { ritesFor } from '../src/content/rites';
 import { nextRng, rngInt } from '../src/rng';
 
 export class Die {
@@ -30,6 +31,12 @@ export function randomAction(state: GameState, die: Die): Action | null {
   const pid: PlayerId = die.pick(['p1', 'p2']);
   const p = state.players[pid];
   switch (state.phase) {
+    case 'rites': {
+      // S7.2 (flagged fuzz): don a vestment from the offer
+      const offer = state.ritesState?.offer?.[pid];
+      if (!offer || offer.length === 0) return null;
+      return { type: 'RITE_PICK', player: pid, riteId: die.pick(offer) };
+    }
     case 'map': {
       const options = pickableNodes(state.map);
       if (options.length === 0) return null;
@@ -84,6 +91,12 @@ export function randomAction(state: GameState, die: Die): Action | null {
       return { type: 'ADVANCE', player: pid };
     }
     case 'event': {
+      // S7.4 (flagged fuzz): a birth pick owed here blocks ADVANCE — usually
+      // pick it, sometimes poke the guard with an ADVANCE (must throw)
+      if (state.ritesState?.birthChoice === pid && die.chance(0.8)) {
+        const pool = ritesFor(state.players[pid].character, 'birth').map((r) => r.id);
+        return { type: 'RITE_PICK', player: pid, riteId: die.pick(pool) };
+      }
       const ev = state.event!;
       if (ev.chosen === null) {
         const options = EVENTS[ev.eventId].options.map((o) => o.id);

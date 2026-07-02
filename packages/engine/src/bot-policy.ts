@@ -15,6 +15,7 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
+import { ritesFor } from './content/rites';
 import { computeResonanceSlots } from './combat';
 import { removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
@@ -133,6 +134,15 @@ export class BotPolicy {
         if (view.map.picks[you] === null) {
           const options = this.pickable(view);
           if (options.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+        }
+        return null;
+      }
+      case 'rites': {
+        // S7.2: don a vestment — seeded pick from the 2-card offer
+        const offer = view.ritesState?.offer?.[you];
+        const vested = (view.players[you].rites ?? []).length > 0;
+        if (offer && offer.length > 0 && !vested) {
+          return { type: 'RITE_PICK', player: you, riteId: offer[this.pickIdx(view, offer.length, 'rite:death')] };
         }
         return null;
       }
@@ -460,6 +470,11 @@ export class BotPolicy {
 
   private playEvent(view: BotView): Action | null {
     const you = view.you;
+    // S7.4: a birth-rite pick owed at this screen blocks ADVANCE — choose
+    if (view.ritesState?.birthChoice === you) {
+      const pool = ritesFor(view.players[you].character, 'birth').map((r) => r.id);
+      return { type: 'RITE_PICK', player: you, riteId: pool[this.pickIdx(view, pool.length, 'rite:birth')] };
+    }
     const ev = view.event!;
     if (ev.chosen === null) {
       if (ev.chooser !== you) return null;

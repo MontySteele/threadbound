@@ -13,27 +13,32 @@ const LAYERS = MAP_LAYERS; // + boss layer
 
 export function generateActMap(
   rngState: number, act: 1 | 2, extraElite = false, tracks = false,
-  /** clue events already visited (flagged runs) — never re-offered: a scene
-   *  must not replay with a different fragment (2026-07-01 ruling). Unflagged
-   *  runs pass nothing and eventsForAct carries no clue events anyway. */
-  seenClueEvents: readonly string[] = [],
+  /** gated events (clue/character) already visited — never re-offered: a
+   *  scene must not replay with a different fragment or double-credit
+   *  progress (2026-07-01 ruling). Unflagged runs pass nothing and
+   *  eventsForAct carries no gated events anyway. */
+  seenGatedEvents: readonly string[] = [],
+  /** S7.3: characters in the run, when the rites flag is set — admits their
+   *  character events to the pool at clue weight */
+  riteCharacters: readonly string[] = [],
 ): { map: MapState; rng: number } {
   let rng = rngState;
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
-  const eventDefs = eventsForAct(act, tracks).filter(
-    (e) => !e.clue || !seenClueEvents.includes(e.id),
+  const eventDefs = eventsForAct(act, tracks, riteCharacters).filter(
+    (e) => !(e.clue || e.character) || !seenGatedEvents.includes(e.id),
   );
   const events = eventDefs.map((e) => e.id);
   let eventQueue: string[] = [];
   const nextEvent = (): string => {
     if (eventQueue.length === 0) {
-      if (tracks) {
-        // nt-slice S6.2: weighted order — clue events carry 2× queue weight,
-        // so they surface earlier among the few event nodes a run visits.
+      if (tracks || riteCharacters.length > 0) {
+        // nt-slice S6.2 + S7.3: weighted order — clue AND character events
+        // carry 2× queue weight ("one economy, two payoffs"), surfacing
+        // earlier among the few event nodes a run visits.
         // Sample-without-replacement; unflagged runs keep the plain shuffle
         // (and its exact rng consumption) below.
-        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue ? 2 : 1 }));
+        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue || e.character ? 2 : 1 }));
         while (pool.length > 0) {
           const total = pool.reduce((sum, p) => sum + p.w, 0);
           const r = rngInt(rng, total);
