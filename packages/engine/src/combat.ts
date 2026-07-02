@@ -1285,7 +1285,7 @@ function fall(state: GameState, player: PlayerState): void {
   if (rebound > 0) {
     // say it out loud (playtest 1): the silent rebind undid a player's Sever
     // and read as "the boss ignored my sever" — a bug-shaped surprise
-    state.log.push({ e: 'info', detail: `Every tether snaps to ${survivor} — the Fallen draw no aggro. Severed bindings are undone.` });
+    state.log.push({ e: 'info', detail: `Every tether snaps to ${survivor} — nothing hunts the Fallen. Severed bindings are undone.` });
   }
   sayWitness(state, state.botSeat
     ? (player.id === state.botSeat ? 'fallen_self' : 'fallen_human')
