@@ -364,7 +364,9 @@ def({
   starterOnly: true,
   text: 'Gain 4 Block.',
   base: [{ op: 'block', amount: 4, primary: true }],
-  mutation: { name: 'Stitched Brace-Up', text: 'Gain 3 Block. Gain 1 Thread.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'thread', amount: 1 }] },
+  // S8.6 (PROVISIONAL): birth-column rename, Stitched Brace-Up → Cradled
+  // Brace-Up — Thread gain reads as renewal, not damage (§5b/§7)
+  mutation: { name: 'Cradled Brace-Up', text: 'Gain 3 Block. Gain 1 Thread.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'thread', amount: 1 }] },
   upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 

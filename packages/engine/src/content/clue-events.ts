@@ -1,5 +1,7 @@
-// nt-slice clue events (S6.2 — docs/threadbound_narrative_track_slice.md).
-// LORE PROVISIONAL. Six events, flag-gated into the pool at elevated weight.
+// nt-slice clue events (S6.2 — docs/threadbound_narrative_track_slice.md;
+// expanded S8.2: 6 → 10 so fragment coverage supports the grown answer
+// pools, and q_came is reachable from ≥3 events).
+// LORE PROVISIONAL. Ten events, flag-gated into the pool at elevated weight.
 // Each has a REAL non-clue choice with real value, and the clue choice has a
 // real cost — clue events must not be free lore dispensers or the
 // fights-vs-events routing tension dies.
@@ -25,8 +27,8 @@ export const CLUE_EVENTS: EventDef[] = [
     prose:
       'A bell lies half-buried in the nave floor — a bell too heavy to have ever been hung. ' +
       'No tower above it, no beam that could have held it. It is simply here, canted in the ' +
-      'broken stone, its mouth full of dust and its surface unscarred. Bells are made to be ' +
-      'heard. Someone went to enormous trouble so this one never would be.',
+      'broken stone, its mouth full of dust and its surface, at first look, unscarred. Bells are made to be ' +
+      'heard. As if someone had gone to enormous trouble so this one never would be.',
     options: [
       {
         id: 'ring',
@@ -99,7 +101,7 @@ export const CLUE_EVENTS: EventDef[] = [
         id: 'robes',
         label: 'Bundle up the robes',
         resultText: 'Good cloth, warm and close-woven. Whoever the twelfth was, they left nothing behind to take.',
-        witness: 'Grave-robbing, but make it textiles.',
+        witness: 'Grave-robbing, refined to the textile arts. The dead wore it better.',
         effects: [{ op: 'gold', amount: 20 }, { op: 'heal', amount: 4 }],
       },
     ],
@@ -129,7 +131,7 @@ export const CLUE_EVENTS: EventDef[] = [
         id: 'tools',
         label: 'Take the good iron and move on',
         resultText: 'Sound tools, honest weight. The wall keeps its counsel and you keep your questions.',
-        witness: 'Prudence! From you two! The Undercroft must be freezing over.',
+        witness: 'Prudence! From you two! Somewhere below, a pyre must be freezing over.',
         effects: [{ op: 'gainCard', pool: 'common' }],
       },
     ],
@@ -182,7 +184,7 @@ export const CLUE_EVENTS: EventDef[] = [
         id: 'trace',
         label: 'Trace the blank stone until it answers',
         resultText: 'Under your fingers the smoothness has a shape, and the shape is familiar in a way you dislike. ' + PINNED,
-        witness: 'Fondling the anonymous gravestone. This is why we cannot have nice expeditions.',
+        witness: 'Fondling the anonymous gravestone. And they wonder why the dead keep to themselves.',
         effects: [{ op: 'pendingFray', amount: 1 }, { op: 'fragments' }],
       },
       {
@@ -191,6 +193,130 @@ export const CLUE_EVENTS: EventDef[] = [
         resultText: 'The stone comes free with a sigh. Coin and a knotted cord, and a dark you decline to reach further into.',
         witness: 'Prying open the one unmarked grave. Your instincts are a museum of bad ideas.',
         effects: [{ op: 'gold', amount: 25 }, { op: 'covetCharge', amount: 1 }],
+      },
+    ],
+  },
+  // A → q_came, B → q_what (S8.2)
+  {
+    id: 'nt_toll_gate',
+    name: 'The Toll-Gate',
+    act: 0,
+    crossed: false,
+    clue: true,
+    prose:
+      'A gate bars the processional stair — wrought iron grown into the stone, a toll-box at ' +
+      'its post, a turnstile worn to a shine. It looks intact, and it looks like it still ' +
+      'counts. Passage was paid for here, once, in whatever a passerby could spare. The gate ' +
+      'stands open exactly the width of one bearer, and it would take the measure of whoever ' +
+      'steps through — taking measures is what toll-gates are FOR. The box, meanwhile, ' +
+      'answers to a crowbar.',
+    options: [
+      {
+        id: 'through',
+        label: 'Step through and let the gate take your measure',
+        resultText: 'The turnstile turns once for each of you, and something in the post scratches a mark. ' + PINNED,
+        witness: 'It still counts. Wonderful. I have always hated being counted.',
+        effects: [{ op: 'pendingFray', amount: 1 }, { op: 'fragments' }],
+      },
+      {
+        id: 'pry',
+        label: 'Crowbar the toll-box',
+        resultText: 'The box gives up a century of small tolls. The gate stands open anyway — it always did.',
+        witness: 'Robbing a toll-gate. The dead toll-payers of the parish thank you for your custom.',
+        effects: [{ op: 'gold', amount: 25 }],
+      },
+    ],
+  },
+  // A → q_why, B → q_came (S8.2)
+  {
+    id: 'nt_tallow_court',
+    name: 'The Tallow Court',
+    act: 0,
+    crossed: false,
+    clue: true,
+    prose:
+      'A side-chapel crowded with tallow figures — the rite’s own cast, waist-high, rendered ' +
+      'in grave-fat and wick: the carrier, the singer, the keeper of the door. They look ' +
+      'half-melted; whether from heat or from age you could not say. Their wicks are dark. ' +
+      'Figures like these were made to be burned and READ while burning — lit, they would ' +
+      'testify by the parish’s own fat, and testimony has a price. Or the wax alone is worth ' +
+      'good coin, and the figures do not look like they would mind.',
+    options: [
+      {
+        id: 'light',
+        label: 'Light the figures and read them as they burn',
+        resultText: 'The figures burn the way testimony reads — unevenly, and at your expense. ' + PINNED,
+        witness: 'Burning the congregation in effigy. For scholarship, of course.',
+        effects: [{ op: 'loseHp', amount: 5 }, { op: 'fragments' }],
+      },
+      {
+        id: 'cut',
+        label: 'Cut the good wax down and bag it',
+        resultText: 'Clean rendering, old and dense. The figures come apart like an argument you have decided not to have.',
+        witness: 'Wax-mongers. I have carried kings down this stair, you know.',
+        effects: [{ op: 'gold', amount: 20 }],
+      },
+    ],
+  },
+  // A → q_came, B → q_why (S8.2)
+  {
+    id: 'nt_bearers_steps',
+    name: 'The Bearers’ Steps',
+    act: 0,
+    crossed: false,
+    clue: true,
+    prose:
+      'The service stair descends in long, shallow flights — a bearers’ stair, cut for ' +
+      'carrying, with resting-ledges at each turn and a pair of bearing-poles racked at the ' +
+      'top as if the next shift were expected. The grooves in the stone look shoulder-worn, ' +
+      'generations deep. Stairs like this remember their carries, and taking up the poles ' +
+      'and walking a stage the way the bearers walked it would make you part of what is ' +
+      'remembered — briefly, and not for free. The poles’ end-caps look like silver.',
+    options: [
+      {
+        id: 'bear',
+        label: 'Take up the poles and walk a stage',
+        resultText: 'The weight the poles remember settles onto you for eleven steps, and it is not cargo. ' + PINNED,
+        witness: 'Playing pallbearer on a haunted staircase. You honor the office; the office is taking notes.',
+        effects: [{ op: 'loseHp', amount: 5 }, { op: 'fragments' }],
+      },
+      {
+        id: 'strip',
+        label: 'Strip the silver end-caps',
+        resultText: 'Good silver, temple-struck. The poles are lighter without it, and somehow worse.',
+        witness: 'Stripping the poles. Somewhere a bearer’s ghost has just put down its end.',
+        effects: [{ op: 'gold', amount: 25 }],
+      },
+    ],
+  },
+  // A → q_what, B → q_came (S8.2)
+  {
+    id: 'nt_winding_room',
+    name: 'The Winding-Room',
+    act: 0,
+    crossed: false,
+    clue: true,
+    prose:
+      'A shroud-weavers’ workroom, the frames still strung. One last piece waits on the near ' +
+      'frame — grave-cloth by the weave of it, wider than any door in the parish. It looks ' +
+      'unfinished, though it may only be unhemmed; cloth is hard to read rolled. Unrolling ' +
+      'it would show you the work the way its weaver saw it, and rooms like this charge for ' +
+      'that kind of seeing. The finished bolts on the shelf, meanwhile, are the finest cloth ' +
+      'you have seen below ground.',
+    options: [
+      {
+        id: 'unroll',
+        label: 'Unroll the last work on the frame',
+        resultText: 'The cloth unrolls longer than the room. Somewhere in its length you stop being the one doing the reading. ' + PINNED,
+        witness: 'Unrolling a stranger’s shroud. Etiquette below ground is its own discipline, and you have none.',
+        effects: [{ op: 'pendingFray', amount: 1 }, { op: 'fragments' }],
+      },
+      {
+        id: 'bolts',
+        label: 'Take the finished bolts',
+        resultText: 'The bolts are heavy with quality. The frame keeps its last piece, and its opinion.',
+        witness: 'Fine cloth for the discerning tomb-robber. You will look wonderful at the bottom.',
+        effects: [{ op: 'gold', amount: 15 }, { op: 'covetCharge', amount: 1 }],
       },
     ],
   },

@@ -163,6 +163,13 @@ function apply(state: GameState, action: Action): void {
       state.ascension = ascension;
       state.ascensionVotes = { p1: ascension, p2: ascension };
       state.unlockedCards = action.unlockedCards ?? [];
+      // S8.7 voice arc: codex fill % keys Witness register selection. Stored
+      // only when nonzero — absent = 0, so zero/absent runs serialize (and
+      // hash) byte-identically to pre-S8.7 states (golden covenant).
+      {
+        const codexPct = Math.max(0, Math.min(100, Math.floor(action.codexPct ?? 0)));
+        if (codexPct > 0) state.codexPct = codexPct;
+      }
       const gen = generateActMap(
         state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
         action.rites ? [state.players.p1.character, state.players.p2.character] : [],
@@ -440,7 +447,9 @@ function apply(state: GameState, action: Action): void {
         (p.rites ??= []).push(rite.id);
         addCardToDeck(state, action.player, rite.cardId!);
         if (state.telemetry.rites) state.telemetry.rites.deathPick[action.player] = rite.id;
-        state.log.push({ e: 'witness', line: `Don the vestment of ${rite.name}, then. It has been waiting.` });
+        // S8.7: pooled acknowledgment (rites-flagged runs only, so the extra
+        // rng draw never touches an unflagged stream)
+        sayWitness(state, 'rite_death_pick', { rite: rite.name });
         const bothVested = (['p1', 'p2'] as PlayerId[]).every((pid) =>
           (state.players[pid].rites ?? []).some((id) => RITES_BY_ID[id]?.kind === 'death'));
         if (bothVested) {
@@ -461,8 +470,8 @@ function apply(state: GameState, action: Action): void {
         const node = state.map.nodes.find((n) => n.id === state.map.position);
         state.telemetry.rites.birthTiming[action.player] = { act: state.map.act, layer: node?.layer ?? -1 };
       }
-      // held reveal: a line that only makes sense later (S8.7 owns the pool)
-      state.log.push({ e: 'witness', line: `${rite.name}. Hm. The other half of that arrives before you understand it.` });
+      // held reveal (§5b): a line that only makes sense later — S8.7 pool
+      sayWitness(state, 'rite_birth_arrival', { rite: rite.name });
       return;
     }
 
@@ -860,6 +869,18 @@ function resolveLoomVerdict(state: GameState): void {
         }
         state.log.push({ e: 'info', detail: 'The loom mends what it recognizes — both heal 6.' });
         break;
+      case 'covetEach':
+        // S8.2 PROVISIONAL — DESIGNER QUESTION: q_came named true → each
+        // player gains 1 Covet charge (motive-flavored: the loom answers the
+        // reason you came by sharpening what you may claim on the way down).
+        // Cap-respecting via covetMax. Alternatives for the S8.8 sign-off:
+        // flat gold, a stake-rarity nudge, or a motive-keyed relic pool.
+        for (const pid of ['p1', 'p2'] as PlayerId[]) {
+          const p = state.players[pid];
+          p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1);
+        }
+        state.log.push({ e: 'info', detail: 'The loom knows why you came — and leans the shrine’s hunger toward you. Each of you gains a Covet charge.' });
+        break;
     }
   }
 
@@ -873,7 +894,8 @@ function resolveLoomVerdict(state: GameState): void {
   }
   if (Object.values(verdict).every((v) => v === 'true')) {
     truth.reveals.openingIntent = true;
-    state.log.push({ e: 'info', detail: 'All three named true. The loom shows you the first moment of the last fight.' });
+    // S8.2: the completion boon requires ALL FOUR questions named true
+    state.log.push({ e: 'info', detail: 'All four named true. The loom shows you the first moment of the last fight.' });
   }
 }
 
@@ -1009,6 +1031,12 @@ function enterNode(state: GameState): void {
       if (def.character && state.ritesState && !state.ritesState.seenEvents.includes(def.id)) {
         state.ritesState.seenEvents.push(def.id);
       }
+      // S8.4: same dedup for rare events (the wrong-way event never repeats
+      // within a run). Rare events exist only in flagged pools, so this key
+      // never appears on unflagged runs (flag-off state stays byte-identical).
+      if (def.rare && !(state.seenRareEvents ??= []).includes(def.id)) {
+        state.seenRareEvents.push(def.id);
+      }
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       // character events are ABOUT that character: the subject roll is still
@@ -1128,7 +1156,7 @@ function advanceAct(state: GameState): void {
     healBetweenActs(state);
     const gen = generateActMap(
       state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
-      [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? [])],
+      [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? []), ...(state.seenRareEvents ?? [])],
       state.rites ? [state.players.p1.character, state.players.p2.character] : [],
     );
     state.rng = gen.rng;

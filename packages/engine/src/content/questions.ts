@@ -2,12 +2,23 @@
 // (spec ruling 7 — same questions every run; stable board columns; the
 // teachable layer). CLIENT-SAFE by design: this module must never grow a
 // secret — combos, fragments, and eliminations live in content/truth.ts.
-// LORE PROVISIONAL until the lore bible session.
+// codexTruthEntry text ships in the client bundle: write it spoiler-safe
+// (public ontology only — no drawer facts). ALL PROSE PROVISIONAL pending
+// the S8.8 sign-off tables.
+//
+// S8.2: the fourth question (q_came — the spec'd production question, never
+// shipped) and the §8 answer expansion — q_what 2→4, q_why 3→5, q_came 0→4.
+// q_who holds at 2: it is the question most likely to leave the deduction
+// set post-playtest (the death-rite pick answers it out loud) — do not
+// author against a question on the bubble. DESIGNER MAY OVERRIDE.
 
 import { AnswerDef, QuestionDef } from '../types';
 
 export const QUESTIONS: QuestionDef[] = [
   { id: 'q_who', text: 'Who are you?', kind: 'self', payoff: 'healEach' },
+  // S8.2: q_came's payoff is PROVISIONAL (designer question) — a true naming
+  // leans the shrine's hunger toward the pair: +1 Covet charge each.
+  { id: 'q_came', text: 'Why did you come?', kind: 'self', payoff: 'covetEach' },
   { id: 'q_what', text: 'What happened here?', kind: 'world', payoff: 'bossFace' },
   { id: 'q_why', text: 'Why did it happen?', kind: 'world', payoff: 'bossMechanic' },
 ];
@@ -24,8 +35,30 @@ export const ANSWERS: AnswerDef[] = [
     text: 'Hired hands — you came for the pay.',
     codexTruthEntry: 'The pair came as hired hands, and stayed anyway.',
   },
-  // What happened here — world, 2 answers: the boss faces (provisional
-  // Sexton / Peal, spec slice scope)
+  // Why did you come — self, 4 answers (§8: the pair's contract —
+  // paid / compelled / volunteered / fleeing)
+  {
+    questionId: 'q_came', id: 'a_paid',
+    text: 'Paid — a contract, weighed and signed.',
+    codexTruthEntry: 'The pair came under contract, the descent priced in advance.',
+  },
+  {
+    questionId: 'q_came', id: 'a_compelled',
+    text: 'Compelled — sent under another’s will.',
+    codexTruthEntry: 'The pair were sent down under another’s will, and went.',
+  },
+  {
+    questionId: 'q_came', id: 'a_volunteered',
+    text: 'Volunteered — you asked to descend.',
+    codexTruthEntry: 'The pair asked for the descent, knowing no more than anyone.',
+  },
+  {
+    questionId: 'q_came', id: 'a_fleeing',
+    text: 'Fleeing — the way down was the only door left.',
+    codexTruthEntry: 'The pair came down fleeing; the descent was the only door left open.',
+  },
+  // What happened here — world, 4 answers (§8: the local instance of the
+  // schism). Each keys a boss face (S8.5): Sexton / Peal / Vigil / Tithe.
   {
     questionId: 'q_what', id: 'a_sexton',
     text: 'The bell was silenced on purpose.',
@@ -36,7 +69,17 @@ export const ANSWERS: AnswerDef[] = [
     text: 'The bell rang once and never stopped.',
     codexTruthEntry: 'The Peal rang until the parish came apart around it.',
   },
-  // Why did it happen — world, 3 answers
+  {
+    questionId: 'q_what', id: 'a_abandoned',
+    text: 'The rite was abandoned midway.',
+    codexTruthEntry: 'The Vigil-Keeper set down its office mid-rite, and what it carried was left half-carried.',
+  },
+  {
+    questionId: 'q_what', id: 'a_starved',
+    text: 'A starving part consumed the rite.',
+    codexTruthEntry: 'The Tithe took its share and kept taking, until the rite itself was the share.',
+  },
+  // Why did it happen — world, 5 answers (§8: the schism's motives)
   {
     questionId: 'q_why', id: 'a_hunger',
     text: 'Hunger.',
@@ -51,6 +94,16 @@ export const ANSWERS: AnswerDef[] = [
     questionId: 'q_why', id: 'a_kept',
     text: 'A covenant, still being kept.',
     codexTruthEntry: 'It happened because a covenant was kept long past its keeper.',
+  },
+  {
+    questionId: 'q_why', id: 'a_mercy',
+    text: 'Mercy.',
+    codexTruthEntry: 'It happened for mercy — a kindness that would not wait to be kind.',
+  },
+  {
+    questionId: 'q_why', id: 'a_unity',
+    text: 'Unity.',
+    codexTruthEntry: 'It happened for unity — the whole made to agree, one deletion at a time.',
   },
 ];
 

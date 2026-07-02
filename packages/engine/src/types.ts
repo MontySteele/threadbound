@@ -317,6 +317,13 @@ export interface EventDef {
    *  the run AND rites are on; same 2x queue weight as clue events. The
    *  event's ACTOR earns 1 birth-rite progress. */
   character?: CharacterId;
+  /** S8.4 rare event (the wrong-way event): enters the pool only on flagged
+   *  runs (tracks OR rites — the clue-event gating pattern, so unflagged
+   *  runs keep the exact plain shuffle and its rng consumption), at HALF a
+   *  normal event's queue weight in map.ts's weighted branch — a run can
+   *  miss it entirely, which is the point. Never repeats within a run
+   *  (rides the seenGatedEvents exclusion). */
+  rare?: boolean;
   prose: string;
   options: EventOptionDef[];
 }
@@ -337,8 +344,9 @@ export interface QuestionDef {
   kind: QuestionKind;
   /** payoff binding, interpreted at the shrine/boss layers.
    *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
-   *  healEach (provisional heal 6 each). */
-  payoff: 'bossFace' | 'bossMechanic' | 'healEach';
+   *  healEach (provisional heal 6 each). S8.2 adds covetEach (q_came true →
+   *  +1 Covet charge each, cap-respecting — PROVISIONAL, designer question). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'covetEach';
 }
 
 export interface AnswerDef {
@@ -642,11 +650,22 @@ export interface GameState {
   tracks?: true;
   /** nt-slice run state; present only when tracks is set */
   truth?: TruthState;
+  /** S8.7 voice arc: profile codex fill % (0–100), the max over the two
+   *  seats' claims, passed through START_RUN. Keys the Witness's register
+   *  selection (witness-draw) — never rules. Absent — not 0 — when unset or
+   *  zero, so pre-S8.7 serialized states stay byte-identical. */
+  codexPct?: number;
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
+  /** S8.4 rare events (wrong-way) already visited — never re-offered, the
+   *  clue-dedup rule. Rare events are neither clue nor character, so they
+   *  get their own list; it is only ever created on flagged runs (rare
+   *  events exist in no unflagged pool), so flag-off serialized state is
+   *  untouched. */
+  seenRareEvents?: string[];
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -761,7 +780,7 @@ export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

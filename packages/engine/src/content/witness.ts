@@ -1,5 +1,11 @@
 // The Witness (§10, §13.3): line pools drawn with no-repeat-within-run.
-// Text authored in docs/m1-writing.md. He holds the sarcasm monopoly.
+// Text authored in docs/m1-writing.md. It holds the sarcasm monopoly.
+//
+// S8.7 never-lies audit (lore bible §4, RATIFIED): the Witness never states
+// falsehoods — it withholds, deprecates, misdirects by omission, and deflects
+// where it does not know. It never lived, never died, and had no masters; no
+// line may assert a mortal biography. Mere antiquity ("centuries") is fine.
+// No real-world scripture or calendar. And it is "it", never "he".
 
 export type WitnessContext =
   | 'combat_start'
@@ -36,7 +42,7 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'Splendid. Now drag yourselves onward before something notices.',
   ],
   player_death: [
-    "Down they go. I'd weep, but I left my tears in another century.",
+    "Down they go. I'd weep, but weeping was never in my design.",
     'One falls. The thread pulls taut. This is the part that hurts.',
     'Dead. Or resting ambitiously. The distinction matters less down here.',
     'I did mention the dying. Repeatedly.',
@@ -55,7 +61,7 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'Taking their leavings? How dignified.',
     "One person's trash, another's strategy. Allegedly.",
     "They didn't want it. You do. This says something about you.",
-    'Coveting already? The commandments saw you coming.',
+    'Coveting already? The rite has provisions for your kind. Filed under inevitable.',
     'Yes, take it. Scavenging from your dearest. Very touching.',
     'Their castoff, your treasure. Marriage is built on less.',
   ],
@@ -85,5 +91,83 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
   ],
   knuckle_crack_first: [
     'There it is: her curses, your knuckles. Perhaps this marriage will work after all.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// S8.7 new pools (S7 stubbed these as hardcoded lines in the reducer).
+// {rite} is substituted by sayWitness at draw time. ALL PROVISIONAL pending
+// the S8.8 gate-1 sign-off.
+//
+// RESERVED POOL KEY (do not author here): 'wrong_way' — the S8.4 wrong-way
+// event owns its Witness lines and lands with that event (parallel work).
+// ---------------------------------------------------------------------------
+
+export const S8_WITNESS: Record<string, string[]> = {
+  // the death-rite pick — the vestment donned at the door (§3)
+  rite_death_pick: [
+    'Don the vestment of {rite}, then. It has been waiting.',
+    'The vestment of {rite}. It will fit. It always fits; that is the unsettling part.',
+    '{rite}, worn again. The cloth remembers the office, whoever wears it.',
+    'So: {rite}. The rite does not care who you were. The vestment is who you are now.',
+  ],
+  // the birth-rite arrival — the mirror sacrament, unexplained (§5b held
+  // reveal: these lines only make sense much later)
+  rite_birth_arrival: [
+    '{rite}. Hm. The other half of that arrives before you understand it.',
+    '{rite}. That word is from the other column of the ledger. I did not expect to hear it down here.',
+    'Taken, not given — {rite} was never part of the descent. That is already more than I meant to say.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// S8.7 voice-arc registers (lore bible §4): codex-percentage-keyed variants —
+// the sardonic collector goes quieter and more deliberate as the profile's
+// codex fills. Authored SPARINGLY: only the most-heard pools (combat_start,
+// resonance) plus the fall-rebind line's sacrament version (§5b — the welcome
+// rite in miniature, itself a held reveal). Thresholds 0/30/70 provisional
+// per the sprint doc; only the 70% register is authored in S8.
+// ---------------------------------------------------------------------------
+
+export const WITNESS_REGISTERS: Record<string, { minPct: number; lines: string[] }[]> = {
+  combat_start: [
+    {
+      minPct: 70,
+      lines: [
+        'Begin. I am watching more closely than I used to. You have given me reasons.',
+        'They are what the breakage left. Go gently anyway. Then go through.',
+      ],
+    },
+  ],
+  resonance: [
+    {
+      minPct: 70,
+      lines: [
+        'Resonance. I used to mock this. I find I have stopped.',
+        'The thread holds one note between you. I know that note. I have always known it.',
+      ],
+    },
+  ],
+  // the fall-rebind (§5b): the thread pulls the fallen back; the partner
+  // receives them. At the 70% register the line finally quotes the right
+  // sacrament — the welcome rite in miniature. The base pool stays as-is.
+  revival: [
+    {
+      minPct: 70,
+      lines: [
+        '"What the thread carries, the hands receive. Be welcome, be warm, be borne." — the old words fit you better than they should.',
+      ],
+    },
+  ],
+  // the birth-rite arrival's directional hint (§5b held reveal): pulled from
+  // the ungated base pool (S8 audit — it landed on the FIRST pick) and held
+  // behind the 70% register, where the reveal is earned.
+  rite_birth_arrival: [
+    {
+      minPct: 70,
+      lines: [
+        '{rite}. The procession that used this word walked the other way. That is all I will say about the direction.',
+      ],
+    },
   ],
 };

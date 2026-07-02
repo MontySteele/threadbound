@@ -182,3 +182,21 @@ describe('S4.4 unlock condition', () => {
     expect(loadProfile().clears.vess.bestAscension).toBe(5);
   });
 });
+
+describe('S8.7 codex fill claim (codexPct)', () => {
+  it('an empty codex claims 0; fills climb against the PUBLIC ontology (ANSWERS length)', async () => {
+    const { ANSWERS } = await import('@threadbound/engine');
+    expect(profileClaim().codexPct).toBe(0);
+    recordCodex(['a_peal'], ['a_kept']);
+    expect(profileClaim().codexPct).toBe(Math.round((100 * 2) / ANSWERS.length));
+    // truths + eliminations dedup: recording the same ids again moves nothing
+    recordCodex(['a_peal'], ['a_kept']);
+    expect(profileClaim().codexPct).toBe(Math.round((100 * 2) / ANSWERS.length));
+  });
+
+  it('a full codex claims exactly 100 — never above (server re-clamps anyway)', async () => {
+    const { ANSWERS } = await import('@threadbound/engine');
+    recordCodex(ANSWERS.map((a: { id: string }) => a.id), []);
+    expect(profileClaim().codexPct).toBe(100);
+  });
+});

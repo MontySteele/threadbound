@@ -207,7 +207,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
     base: [{ op: 'kindled', amount: 1 }, { op: 'block', amount: 2, primary: true }],
     link: { condition: 'Strike', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
     mutation: {
-      name: 'Stitched Banked Coals', text: 'Gain 1 Thread. Gain 2 Block.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Banked Coals'
+      name: 'Hearth-Banked Coals', text: 'Gain 1 Thread. Gain 2 Block.',
       base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 2, primary: true }],
     },
     upgrade: {
@@ -330,7 +331,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
     base: [{ op: 'block', amount: 8, primary: true }, { op: 'partnerBlock', amount: 4 }],
     link: { condition: 'Surge', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
     mutation: {
-      name: 'Stitched Hold the Line', text: 'Gain 6 Block. Your partner gains 6 Block.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Hold the Line'
+      name: 'Cradled Hold the Line', text: 'Gain 6 Block. Your partner gains 6 Block.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'partnerBlock', amount: 6 }],
       link: { condition: 'Surge', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
     },
@@ -393,7 +395,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
     base: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }],
     link: { condition: 'Surge', text: 'Draw 2 instead and gain 1 Momentum.', effects: [{ op: 'draw', amount: 2 }, { op: 'kindled', amount: 1 }, { op: 'momentum', amount: 1 }], replace: true },
     mutation: {
-      name: 'Stitched Drumbeat', text: 'Draw 1. Gain 1 Thread.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Drumbeat'
+      name: 'Quickened Drumbeat', text: 'Draw 1. Gain 1 Thread.',
       base: [{ op: 'draw', amount: 1 }, { op: 'thread', amount: 1 }],
     },
     upgrade: {
@@ -407,7 +410,8 @@ export const BRAM_M2_CARDS: CardDef[] = [
     text: 'Power: at the start of your turn, gain Kindled 1. Exhaust.',
     base: [{ op: 'power', power: 'forgefire' }],
     mutation: {
-      name: 'Stitched Forgefire', text: 'Gain 2 Thread. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Forgefire'
+      name: 'Quickened Forgefire', text: 'Gain 2 Thread. Draw 1.',
       base: [{ op: 'thread', amount: 2 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -555,7 +559,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   second_wind: {
     mutation: {
-      name: 'Stitched Second Wind', text: 'Gain 1 Thread. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Second Wind'
+      name: 'First-Drawn Second Wind', text: 'Gain 1 Thread. Draw 1.',
       base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -586,7 +591,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   brace: {
     mutation: {
-      name: 'Stitched Brace', text: 'Gain 6 Block. Gain 1 Thread.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Brace'
+      name: 'Cradled Brace', text: 'Gain 6 Block. Gain 1 Thread.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'thread', amount: 1 }],
     },
     upgrade: {
@@ -628,7 +634,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   dig_in: {
     mutation: {
-      name: 'Stitched Dig In', text: 'Gain 6 Block. Your partner gains 4 Block.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Stitched Dig In'
+      name: 'Cradled Dig In', text: 'Gain 6 Block. Your partner gains 4 Block.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'partnerBlock', amount: 4 }],
     },
     upgrade: {
@@ -648,7 +655,8 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   backdraft: {
     mutation: {
-      name: 'Hexbound Backdraft', text: 'Draw 2.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Hexbound Backdraft'
+      name: 'First-Drawn Backdraft', text: 'Draw 2.',
       base: [{ op: 'draw', amount: 2 }],
       link: { condition: 'Strike', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
     },
