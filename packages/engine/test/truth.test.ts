@@ -625,6 +625,20 @@ describe('slice telemetry (S6.8)', () => {
     expect(tt.outcome!.q_who).toBe('true');
     expect(tt.stake!.lost).toBe(false);
     expect(tt.struckAtShrine).toBeGreaterThanOrEqual(0);
+    // spec 'codex writes': asserted-true answers land in truths
+    expect(tt.codexWrites!.truths).toContain(tuple.q_who);
+    expect(tt.codexWrites!.eliminations).toEqual([]);
+  });
+
+  it('codex writes: a false assertion lands in eliminations (review fix — spec S6.8)', () => {
+    const state = atLoom(9, []);
+    const tuple = state.truth!.tuple;
+    const wrongWhy = answersFor('q_why').map((a) => a.id).find((a) => a !== tuple.q_why)!;
+    let s = reduce(state, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_who', answerId: tuple.q_who });
+    s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p2', questionId: 'q_why', answerId: wrongWhy });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    expect(s.telemetry.truth!.codexWrites).toEqual({ truths: [tuple.q_who], eliminations: [wrongWhy] });
   });
 
   it('flag off: no truth telemetry key (file shape unchanged)', () => {

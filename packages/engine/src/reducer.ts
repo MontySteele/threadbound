@@ -193,6 +193,7 @@ function apply(state: GameState, action: Action): void {
           autoCompleted: 0,
           outcome: null,
           stake: null,
+          codexWrites: null,
         };
       }
       state.phase = 'map';
@@ -738,6 +739,15 @@ function resolveLoomVerdict(state: GameState): void {
       rare: !!(shrine.stakeRelicId && RELICS_BY_ID[shrine.stakeRelicId]?.rare),
       lost: shrine.stakeLost,
     };
+    // spec S6.8 'codex writes' — mirror the client codex rule so the
+    // behavioral pass can see meta-progress without reading browser storage
+    const codex = { truths: [] as string[], eliminations: [] as string[] };
+    for (const q of QUESTIONS) {
+      const asserted = shrine.sheet[q.id];
+      if (!asserted) continue;
+      (verdict[q.id] === 'true' ? codex.truths : codex.eliminations).push(asserted);
+    }
+    state.telemetry.truth.codexWrites = codex;
   }
 
   for (const q of QUESTIONS) {
