@@ -428,10 +428,16 @@ function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _
   enemy.hp = Math.max(0, enemy.hp - hpLoss);
   if (ENEMIES[enemy.defId]?.chorus) {
     for (const other of state.combat!.enemies) {
-      if (other.id !== enemy.id && ENEMIES[other.defId]?.chorus) other.hp = enemy.hp;
+      if (other.id === enemy.id || !ENEMIES[other.defId]?.chorus) continue;
+      const otherWasAlive = other.hp > 0;
+      other.hp = enemy.hp;
+      // a synced member's death must be witnessed too — the theater keys its
+      // dissolve on enemy_dead per instance. (Death hooks deliberately fire
+      // only for the struck member; no chorus def carries one today.)
+      if (otherWasAlive && other.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: other.id });
     }
   }
-  if (enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
+  if (wasAlive && enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
   if (wasAlive && enemy.hp <= 0) onEnemyDeath(state, enemy);
 }
 
