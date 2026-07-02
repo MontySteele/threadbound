@@ -112,7 +112,6 @@ export type PassiveId =
   | 'covetMaxPlusOne' // may hold 3 Covet charges
   | 'handRetainOne' // M2-A1: retain 1 card at end of turn
   | 'startCombatFrayImmune' // first Fray each combat is absorbed
-  | 'echoesDontExhaust' // Echoes persist for the whole combat... still combat-only
   | 'wedding_knife' // §7: enables the rest-site trade (special-cased)
   // S8.1 birth-rite passives (numbers provisional, sign-off pending):
   | 'reclaimUpgraded' // Quickening: cards you Reclaim arrive upgraded
