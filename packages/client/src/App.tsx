@@ -895,6 +895,9 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 const TELEGRAPH: Record<string, string> = {
   attack: 'tel-attack', attack_all: 'tel-attack', attack_momentum: 'tel-attack',
   attack_drain: 'tel-attack', attack_fray: 'tel-attack',
+  // S10a The Unstrung: the dilemma read is an attack-or-Fray fork — it wears
+  // the attack tint so the one intent that most wants attention has one
+  read_chain: 'tel-attack',
   block: 'tel-guard', block_all: 'tel-guard',
   buff_strength: 'tel-buff', buff_strength_all: 'tel-buff',
   debuff_weak: 'tel-debuff', debuff_vulnerable: 'tel-debuff', sever: 'tel-debuff',
