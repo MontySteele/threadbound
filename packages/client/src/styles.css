@@ -89,7 +89,6 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
-.mapnode.mypick { outline: 2px solid var(--focus); }
 
 /* ---- enemies (B5) ---- */
 .enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }
