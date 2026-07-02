@@ -11,10 +11,14 @@ import { BRAM_M2_CARDS, BRAM_M1_OVERLAYS } from './bram-m2';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
 import { CLUE_EVENTS } from './clue-events';
+import { RITE_CARDS } from './rites';
+import { CHARACTER_EVENTS } from './character-events';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
-for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...NEUTRAL_CARDS]) {
+// S8.1: rite vestment cards — registered for play/lookup, excluded from
+// every draft pool via the riteOnly flag (starter-only machinery)
+for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...NEUTRAL_CARDS, ...RITE_CARDS]) {
   if (CARDS[card.id]) throw new Error(`duplicate card id ${card.id}`);
   CARDS[card.id] = card;
 }
@@ -109,15 +113,21 @@ for (const def of Object.values(ENEMIES)) {
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };
-for (const ev of [...M2_EVENTS, ...CLUE_EVENTS]) {
+for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS]) {
   if (EVENTS[ev.id]) throw new Error(`duplicate event id ${ev.id}`);
   EVENTS[ev.id] = ev;
 }
 
-/** nt-slice: clue events enter the pool only on flagged (tracks) runs. */
-export function eventsForAct(act: 1 | 2, tracks = false): EventDef[] {
+/** nt-slice: clue events enter the pool only on flagged (tracks) runs.
+ *  S7.3: character events only on rites runs, and only for characters
+ *  actually in the run. */
+export function eventsForAct(
+  act: 1 | 2, tracks = false, riteCharacters: readonly string[] = [],
+): EventDef[] {
   return Object.values(EVENTS).filter(
-    (e) => (e.act === act || e.act === 0) && (tracks || !e.clue),
+    (e) => (e.act === act || e.act === 0)
+      && (tracks || !e.clue)
+      && (!e.character || riteCharacters.includes(e.character)),
   );
 }
 

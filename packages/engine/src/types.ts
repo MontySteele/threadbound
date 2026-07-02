@@ -12,6 +12,7 @@ export type LinkCondition = BroadTag | 'any' | 'partner';
 
 export type Phase =
   | 'lobby'
+  | 'rites' // S7.2: the death-rite offer, after character select, before act 1
   | 'map' // M2-B3: both players pick the same next node to advance
   | 'combat'
   | 'reward'
@@ -75,7 +76,8 @@ export type HookEvent =
   | 'resonance'
   | 'fray'
   | 'covet'
-  | 'linkFired'; // one of the holder's cards fired its link
+  | 'linkFired' // one of the holder's cards fired its link
+  | 'reclaim'; // S8.1 (Dowry-Bound): the holder Reclaimed a partner's card
 
 export type HookOp =
   | { op: 'block'; amount: number }
@@ -95,6 +97,10 @@ export interface Hook {
   /** PT2/OQ#29: fires at most once per turn (tracked per holder+event in
    *  CombatState.hookOnceFired, reset at turn start) */
   oncePerTurn?: boolean;
+  /** S7.1: fires at most once per COMBAT (tracked in
+   *  CombatState.hookCombatFired, never reset mid-combat) — the rite
+   *  tables' 'first X each combat' pattern */
+  oncePerCombat?: boolean;
 }
 
 /** Named passive behaviors special-cased by the engine. */
@@ -107,7 +113,12 @@ export type PassiveId =
   | 'handRetainOne' // M2-A1: retain 1 card at end of turn
   | 'startCombatFrayImmune' // first Fray each combat is absorbed
   | 'echoesDontExhaust' // Echoes persist for the whole combat... still combat-only
-  | 'wedding_knife'; // §7: enables the rest-site trade (special-cased)
+  | 'wedding_knife' // §7: enables the rest-site trade (special-cased)
+  // S8.1 birth-rite passives (numbers provisional, sign-off pending):
+  | 'reclaimUpgraded' // Quickening: cards you Reclaim arrive upgraded
+  | 'cradleWarden' // partner's links fired off your cards: +1 linked effect
+  | 'momentumCarry3' // Hearth-Keeper: momentum doesn't decay, carries up to 3
+  | 'namingDay'; // your mutated cards' effects +2
 
 export interface PowerDef {
   id: string;
@@ -130,6 +141,27 @@ export interface RelicDef {
   onPickup?: HookOp[];
 }
 
+/** S7.1 + S8.0 ruling 1 (docs/threadbound_sprint_S8.md, supersedes the S7
+ *  passive death-rite tables): a DEATH rite is a CARD — one unique copy
+ *  added to the starting deck at pick, removable at shops, a legal Reclaim
+ *  target with an authored mutation. A BIRTH rite is a passive you become
+ *  (hooks/passives, hidden-relic semantics). The asymmetry is deliberate
+ *  held-reveal signal. */
+export interface RiteDef {
+  id: string;
+  role: CharacterId;
+  kind: 'death' | 'birth';
+  name: string;
+  /** one line, held-reveal discipline: no tutorialization (S8 owns voice) */
+  flavor: string;
+  text: string;
+  /** death rites: the vestment card (riteOnly CardDef) */
+  cardId?: string;
+  /** birth rites: the mirror sacrament's mechanics */
+  hooks?: Hook[];
+  passives?: PassiveId[];
+}
+
 export interface CardDef {
   id: string;
   name: string;
@@ -142,6 +174,9 @@ export interface CardDef {
   keep?: boolean;
   /** M2-A5: starter-only cards never appear in rewards/shops/events */
   starterOnly?: boolean;
+  /** S8.1: rite vestment card — same pool exclusion as starterOnly; enters
+   *  play only via the death-rite pick */
+  riteOnly?: boolean;
   text: string;
   base: EffectOp[];
   link?: {
@@ -278,6 +313,10 @@ export interface EventDef {
   /** nt-slice clue event: only enters the pool when tracks is set, at
    *  elevated queue weight (map.ts) */
   clue?: boolean;
+  /** S7.3 character event: enters the pool only when this character is in
+   *  the run AND rites are on; same 2x queue weight as clue events. The
+   *  event's ACTOR earns 1 birth-rite progress. */
+  character?: CharacterId;
   prose: string;
   options: EventOptionDef[];
 }
@@ -383,6 +422,21 @@ export interface TruthState {
   seenClueEvents?: string[];
 }
 
+/** S7 run state for the Rites; present only when the rites flag is set. */
+export interface RitesState {
+  /** run-start death offer: 2 seeded of the role's 4, per player; null once
+   *  both have picked */
+  offer: Record<PlayerId, string[]> | null;
+  /** character-event resolutions credited to each ACTOR (threshold 2) */
+  progress: Record<PlayerId, number>;
+  /** character events already visited — never re-offered (clue-dedup rule) */
+  seenEvents: string[];
+  /** player owed a birth-rite pick right now, at the event screen (S7.4:
+   *  the mirror arrives as a reward, not a schedule) */
+  birthChoice: PlayerId | null;
+  birthPicked: Record<PlayerId, boolean>;
+}
+
 export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure' | 'loom';
 
 export interface MapNode {
@@ -434,6 +488,9 @@ export interface PlayerState {
   pendingStatus: PlayerStatuses;
   powers: string[]; // PowerDef ids (dormant while fallen)
   relics: string[]; // RelicDef ids
+  /** S7: picked rites (death, then birth). Hidden-relic semantics; absent on
+   *  pre-S7 snapshots and unflagged runs. */
+  rites?: string[];
   deck: CardInstance[];
   draw: string[];
   hand: string[];
@@ -484,6 +541,8 @@ export interface CombatState {
   /** PT2/OQ#29: `holder:event` keys of oncePerTurn hooks already fired this
    *  turn. Optional for persisted-room compatibility. */
   hookOnceFired?: string[];
+  /** S7.1: oncePerCombat hook charges — set at first fire, never reset */
+  hookCombatFired?: string[];
 }
 
 export interface RewardState {
@@ -583,6 +642,11 @@ export interface GameState {
   tracks?: true;
   /** nt-slice run state; present only when tracks is set */
   truth?: TruthState;
+  /** S7: rites run flag (server reads TB_RITES and passes it through
+   *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
+  rites?: true;
+  /** S7 rites run state; present only when rites is set */
+  ritesState?: RitesState;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -679,6 +743,14 @@ export interface Telemetry {
      *  asserted-false → eliminations. Written at the verdict. */
     codexWrites: { truths: string[]; eliminations: string[] } | null;
   };
+  /** S7.8: rites instrumentation. Present only on flagged runs. */
+  rites?: {
+    deathPick: Record<PlayerId, string | null>;
+    birthPick: Record<PlayerId, string | null>;
+    characterEvents: Record<PlayerId, number>;
+    /** where the birth pick landed — the data that arbitrates L7 vs L8 */
+    birthTiming: Record<PlayerId, { act: number; layer: number } | null>;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -689,7 +761,10 @@ export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean }
+  /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
+   *  the birth trio when this player's birthChoice is owed at an event */
+  | { type: 'RITE_PICK'; player: PlayerId; riteId: string }
   /** S4.4: lobby ascension vote — both players must land on the same level */
   | { type: 'SET_ASCENSION'; player: PlayerId; level: number }
   | { type: 'NODE_PICK'; player: PlayerId; nodeId: number } // M2-B3
