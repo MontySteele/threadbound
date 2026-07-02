@@ -42,11 +42,12 @@ export class Bot {
     lockstep?: boolean;
     /** S7.7 sim-only knob (TB_BOT_SEEK_EVENTS): prefer event nodes on the map */
     seekEvents?: boolean;
+    reclaimNudge?: boolean;
     /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
      *  matching profile (profiles are claims; the server clamps to them). */
     ascension?: number;
   }) {
-    this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents });
+    this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents, reclaimNudge: opts.reclaimNudge });
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {

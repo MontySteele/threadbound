@@ -42,6 +42,10 @@ export interface BotPolicyOptions {
    *  Default off; the server's solo driver must never set it — the solo
    *  bot follows the human's pick and this knob never applies there. */
   seekEvents?: boolean;
+  /** S7.8 gate-5 sim accommodation (S6.2 precedent, clearly marked): flagged
+   *  batteries only — occasionally Reclaim from the partner's piles so the
+   *  engagement gate is measurable. NEVER set in production/solo. */
+  reclaimNudge?: boolean;
 }
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
@@ -74,6 +78,8 @@ export class BotPolicy {
   readonly mode: 'sim' | 'solo';
   private lockstep: boolean;
   private seekEvents: boolean;
+  private reclaimNudge: boolean;
+  private reclaimedTurn = -1;
   private pulsedTurn = -1;
   private reorderedTurn = -1;
   private reorderCount = 0;
@@ -87,6 +93,7 @@ export class BotPolicy {
     this.mode = opts.mode ?? 'sim';
     this.lockstep = opts.lockstep ?? true;
     this.seekEvents = opts.seekEvents ?? false;
+    this.reclaimNudge = opts.reclaimNudge ?? false;
   }
 
   /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
@@ -260,6 +267,19 @@ export class BotPolicy {
         if (pulse) {
           this.pulsedTurn = combat.turn;
           return pulse;
+        }
+      }
+      // S7.8 gate-5 sim accommodation: with thread to spare, sometimes pull a
+      // partner card across (state-pure roll — deterministic per situation)
+      if (this.reclaimNudge && !anyFallen && !severed && this.reclaimedTurn !== combat.turn
+        && view.thread >= 5 && me.hand.length < 10) {
+        const partner = view.players[you === 'p1' ? 'p2' : 'p1'];
+        const pool = [...partner.discard, ...partner.exhaust].filter(
+          (id) => !combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id),
+        );
+        if (pool.length > 0 && this.roll(view, 'reclaim-nudge') < 0.3) {
+          this.reclaimedTurn = combat.turn;
+          return { type: 'DECLARE_THREAD', player: you, kind: 'reclaim', targetId: pool[0] };
         }
       }
       if (this.mode === 'solo' && !partnerIsReady) return null; // readies last (S1.2)

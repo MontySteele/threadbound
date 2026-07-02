@@ -38,6 +38,9 @@ const ASCEND = Math.max(0, Math.min(5, Number(process.env.ASCEND ?? 0) || 0));
 // lowest-id rule so the S7.8 battery can measure birth-rite timing.
 // SIM-ONLY, default off; no production surface reads this.
 const SEEK_EVENTS = process.env.TB_BOT_SEEK_EVENTS === '1';
+// S7.8 gate-5 sim accommodation: flagged batteries only — bots occasionally
+// Reclaim so engagement is measurable (S6.2 precedent; never in production)
+const RECLAIM_NUDGE = !!process.env.TB_RITES;
 
 function port(): number {
   const addr = server.address();
@@ -47,9 +50,9 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS });
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE });
   await new Promise((r) => setTimeout(r, 150));
-  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS });
+  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE });
   const timeout = new Promise<RunResult>((_, rej) =>
     setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
   );
