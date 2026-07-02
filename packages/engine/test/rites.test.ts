@@ -220,6 +220,22 @@ describe('character events and the birth threshold (S7.3/S7.4)', () => {
     expect(s.ritesState!.birthChoice).toBeNull();
   });
 
+  it('mirror pairs: the rolled subject stands, so BOTH seats can progress', () => {
+    // both seats vess — the actor must not always collapse to p1
+    let base = reduce(initialState(77, { p1: 'vess', p2: 'vess' }), { type: 'START_RUN', seed: 77, rites: true });
+    base = reduce(base, { type: 'RITE_PICK', player: 'p1', riteId: base.ritesState!.offer!.p1[0] });
+    base = reduce(base, { type: 'RITE_PICK', player: 'p2', riteId: base.ritesState!.offer!.p2[0] });
+    const seen = new Set<PlayerId>();
+    for (let seed = 0; seed < 12; seed++) {
+      let s = structuredClone(base);
+      s.rng = (77 + seed * 991) >>> 0; // vary the subject roll
+      s = atEvent(s, 'ce_vess_station');
+      seen.add(s.event!.subject);
+    }
+    expect(seen.has('p1')).toBe(true);
+    expect(seen.has('p2')).toBe(true);
+  });
+
   it('an unowed birth pick is refused', () => {
     const s = vestedRun(33);
     expect(() => reduce(s, { type: 'RITE_PICK', player: 'p1', riteId: 'br_first_breath' })).toThrow(IllegalAction);

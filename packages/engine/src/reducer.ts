@@ -1012,9 +1012,11 @@ function enterNode(state: GameState): void {
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       // character events are ABOUT that character: the subject roll is still
-      // consumed (rng parity), but the matching seat is the actor (S7.3)
+      // consumed (rng parity), but the matching seat is the actor (S7.3).
+      // MIRROR pairs (both seats the same character): keep the rolled
+      // subject, or one seat could never earn birth-rite progress.
       let subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
-      if (def.character) {
+      if (def.character && state.players.p1.character !== state.players.p2.character) {
         subject = state.players.p1.character === def.character ? 'p1' : 'p2';
       }
       state.event = {
