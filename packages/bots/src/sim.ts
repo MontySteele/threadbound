@@ -42,7 +42,7 @@ const ASCEND = Math.max(0, Math.min(5, Number(process.env.ASCEND ?? 0) || 0));
 const SEEK_EVENTS = process.env.TB_BOT_SEEK_EVENTS === '1';
 // S7.8 gate-5 sim accommodation: flagged batteries only — bots occasionally
 // Reclaim so engagement is measurable (S6.2 precedent; never in production)
-const RECLAIM_NUDGE = !!process.env.TB_RITES;
+const RECLAIM_NUDGE = process.env.TB_RITES === '1';
 
 function port(): number {
   const addr = server.address();

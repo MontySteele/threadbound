@@ -836,14 +836,14 @@ export class GameServer {
         this.applyAction(ctx.room, socket, {
           type: 'START_RUN', seed,
           unlockedCards: this.unlockUnion(ctx.room),
-          tracks: !!process.env.TB_TRACKS,
+          tracks: process.env.TB_TRACKS === '1',
           // S7: the rites flag crosses here too (pure engine never reads env)
-          rites: !!process.env.TB_RITES,
+          rites: process.env.TB_RITES === '1',
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
           // S9a: rite pool = union of the seats' claimed unlocks (absent =
           // everything; all rites ship unlocked tonight)
-          ...(process.env.TB_RITES ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
+          ...(process.env.TB_RITES === '1' ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
