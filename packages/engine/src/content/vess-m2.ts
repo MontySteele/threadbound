@@ -173,7 +173,8 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'block', amount: 6, primary: true }],
     link: { condition: 'Surge', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] }, // §4: widened from Rite
     mutation: {
-      name: 'Rough Comfort', text: 'Gain 6 Block. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Rough Comfort'
+      name: 'Swaddled Comfort', text: 'Gain 6 Block. Draw 1.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -216,7 +217,8 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     link: { condition: 'Hex', text: 'Apply 1 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 1 }] },
     mutation: {
-      name: 'Ember Rites', text: 'Gain 1 Thread. Gain 2 Momentum.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Ember Rites'
+      name: 'Hearth Rites', text: 'Gain 1 Thread. Gain 2 Momentum.',
       base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
@@ -370,7 +372,8 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'block', amount: 5, primary: true }, { op: 'taunt' }],
     link: { condition: 'Rite', text: 'Gain 4 more Block.', effects: [{ op: 'block', amount: 4 }] },
     mutation: {
-      name: 'Brawler’s Oath', text: 'Gain 6 Block. Bind the target enemy to you. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Brawler’s Oath'
+      name: 'Cradled Oath', text: 'Gain 6 Block. Bind the target enemy to you. Draw 1.',
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'taunt' }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -399,7 +402,8 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'draw', amount: 2 }],
     link: { condition: 'Guard', text: 'Gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
     mutation: {
-      name: 'Bellows-Breath', text: 'Draw 1. Gain 3 Momentum.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Bellows-Breath'
+      name: 'Quickened Bellows', text: 'Draw 1. Gain 3 Momentum.',
       base: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 3 }],
     },
     upgrade: {
@@ -427,7 +431,9 @@ export const VESS_M2_CARDS: CardDef[] = [
     base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 4, primary: true }],
     link: { condition: 'Surge', text: 'Gain 1 Thread more.', effects: [{ op: 'thread', amount: 1 }] },
     mutation: {
-      name: 'Votive Cinder', text: 'Gain 1 Thread. Gain 2 Momentum. Link (any): draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Votive Cinder' —
+      // votive (death column) hands off to dowry (birth column)
+      name: 'Dowry Cinder', text: 'Gain 1 Thread. Gain 2 Momentum. Link (any): draw 1.',
       base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2 }],
       link: { condition: 'any', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
     },
@@ -589,7 +595,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   loose_stitch: {
     mutation: {
-      name: 'Loose Spark', text: 'Draw 1. Gain 1 Momentum.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Loose Spark'
+      name: 'First-Drawn Spark', text: 'Draw 1. Gain 1 Momentum.',
       base: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
@@ -609,7 +616,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   mendthread: {
     mutation: {
-      name: 'Cinderthread', text: 'Gain 1 Thread. Gain 2 Momentum.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Cinderthread'
+      name: 'Hearth-Thread', text: 'Gain 1 Thread. Gain 2 Momentum.',
       base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
@@ -621,7 +629,9 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   // Uncommons
   inheritance: {
     mutation: {
-      name: 'Spent Inheritance', text: 'Gain 2 Thread. Gain 2 Momentum.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Spent Inheritance' —
+      // spent (death column, tithe paid) becomes dowered (birth column, paid forward)
+      name: 'Dowered Inheritance', text: 'Gain 2 Thread. Gain 2 Momentum.',
       base: [{ op: 'thread', amount: 2 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
