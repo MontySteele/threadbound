@@ -1049,7 +1049,9 @@ export class GameServer {
     const dist = this.opts.clientDist ?? path.resolve(__dirname, '../../client/dist');
     const urlPath = (req.url ?? '/').split('?')[0];
     let file = path.join(dist, urlPath === '/' ? 'index.html' : urlPath);
-    if (!file.startsWith(dist)) {
+    // containment needs the separator: bare startsWith(dist) admits sibling
+    // directories whose name merely begins with 'dist' (curl --path-as-is)
+    if (file !== dist && !file.startsWith(dist + path.sep)) {
       res.writeHead(403).end();
       return;
     }
