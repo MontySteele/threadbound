@@ -24,7 +24,7 @@ import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
-import { BirthRiteTrio, RiteOffer, seatName } from './Rites';
+import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -790,11 +790,11 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       </p>
       <p className="map-picks">
         <span style={{ color: PCOLOR[you] }}>
-          You: <b>{map.picks[you] !== null ? nodeLabel(map, map.picks[you]!) : 'choosing…'}</b>
+          You<RitePips state={state} pid={you} />: <b>{map.picks[you] !== null ? nodeLabel(map, map.picks[you]!) : 'choosing…'}</b>
         </span>
         {' · '}
         <span style={{ color: PCOLOR[partner] }}>
-          {state.players[partner].character}: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
+          {state.players[partner].character}<RitePips state={state} pid={partner} />: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
         </span>
       </p>
       <div className={`mapwrap act-${map.act}`} style={{ width: W, height: H }}>
@@ -1172,6 +1172,7 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
   return (
     <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
       <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
+      <RitePips state={state} pid={pid} />{/* S7.3: glanceable on flagged runs only */}
       {pid === state.botSeat && <span className="muted"> · the Witness</span>}
       {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
       <div>

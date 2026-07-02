@@ -83,6 +83,29 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
   );
 }
 
+/** S7.3 birth-rite progress pips — a glanceable mark near each player's
+ *  panel on flagged runs only (no ritesState → nothing at all; unflagged
+ *  runs unchanged). Filled pips for character-event progress, capped at the
+ *  threshold of 2; once the seat's birth rite is picked the pips become a
+ *  single distinct mark carrying the rite's name on hover. Subtle by design
+ *  and unexplained (held-reveal) — the routing decision is the game. */
+export function RitePips({ state, pid }: { state: ClientState; pid: PlayerId }): JSX.Element | null {
+  const rs = state.ritesState;
+  if (!rs) return null;
+  const born = (state.players[pid].rites ?? [])
+    .map((id) => RITES_BY_ID[id])
+    .find((r) => r?.kind === 'birth');
+  if (born) return <span className="rite-pips rite-born" title={born.name}>✳</span>;
+  const n = Math.min(rs.progress[pid] ?? 0, 2);
+  return (
+    <span className="rite-pips" title={`${n}/2`}>
+      {Array.from({ length: 2 }, (_, i) => (
+        <span key={i} className={`rite-pip ${i < n ? 'lit' : ''}`} />
+      ))}
+    </span>
+  );
+}
+
 /** S7.4 birth-rite trio, rendered at the event result panel when this seat
  *  is owed the pick (ritesState.birthChoice === you). Per the held-reveal
  *  ruling: NO explanation copy — the rites present themselves and that's it.

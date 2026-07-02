@@ -514,3 +514,9 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .rite-birth-option:hover, .rite-birth-option:focus-visible {
   border-color: var(--thread); box-shadow: 0 0 12px color-mix(in srgb, var(--thread) 45%, transparent); }
 .rite-text { margin: 4px 0 2px; }
+
+/* S7.3 birth-rite progress pips — subtle but glanceable; absent unflagged */
+.rite-pips { display: inline-flex; gap: 3px; align-items: center; margin-left: 6px; vertical-align: middle; }
+.rite-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); border: 1px solid var(--line); }
+.rite-pip.lit { background: var(--thread); border-color: var(--thread); box-shadow: 0 0 4px color-mix(in srgb, var(--thread) 60%, transparent); }
+.rite-born { color: var(--thread); font-size: 0.85em; cursor: help; }
