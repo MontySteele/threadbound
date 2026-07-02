@@ -37,6 +37,11 @@ export interface BotPolicyOptions {
    *  non-lockstep peer (e.g. the human seat in solo tests) or both sides
    *  stall waiting for each other's slot. */
   lockstep?: boolean;
+  /** S7.7 SIM-ONLY (TB_BOT_SEEK_EVENTS): prefer reachable EVENT nodes over
+   *  the lowest-id rule so the battery can measure birth-rite timing.
+   *  Default off; the server's solo driver must never set it — the solo
+   *  bot follows the human's pick and this knob never applies there. */
+  seekEvents?: boolean;
 }
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
@@ -68,6 +73,7 @@ export class BotPolicy {
   seed: number;
   readonly mode: 'sim' | 'solo';
   private lockstep: boolean;
+  private seekEvents: boolean;
   private pulsedTurn = -1;
   private reorderedTurn = -1;
   private reorderCount = 0;
@@ -80,6 +86,7 @@ export class BotPolicy {
     this.seed = opts.seed ?? 12345;
     this.mode = opts.mode ?? 'sim';
     this.lockstep = opts.lockstep ?? true;
+    this.seekEvents = opts.seekEvents ?? false;
   }
 
   /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
@@ -133,7 +140,16 @@ export class BotPolicy {
         // both sim bots take the lowest-id reachable node → instant agreement (M2-B3)
         if (view.map.picks[you] === null) {
           const options = this.pickable(view);
-          if (options.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+          if (options.length > 0) {
+            // S7.7 TB_BOT_SEEK_EVENTS (sim-only): reachable EVENT nodes win;
+            // among events, lowest id — both seats still agree instantly
+            if (this.seekEvents) {
+              const events = options.filter((id) =>
+                view.map.nodes.find((n) => n.id === id)?.kind === 'event');
+              if (events.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...events) };
+            }
+            return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+          }
         }
         return null;
       }

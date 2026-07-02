@@ -34,6 +34,11 @@ const PAIR_CHARS = {
 // which must reproduce pre-S4 behavior exactly; no new gates this sprint)
 const ASCEND = Math.max(0, Math.min(5, Number(process.env.ASCEND ?? 0) || 0));
 
+// S7.7: TB_BOT_SEEK_EVENTS=1 — bots prefer reachable event nodes over the
+// lowest-id rule so the S7.8 battery can measure birth-rite timing.
+// SIM-ONLY, default off; no production surface reads this.
+const SEEK_EVENTS = process.env.TB_BOT_SEEK_EVENTS === '1';
+
 function port(): number {
   const addr = server.address();
   if (typeof addr === 'object' && addr) return addr.port;
@@ -42,9 +47,9 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND });
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS });
   await new Promise((r) => setTimeout(r, 150));
-  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND });
+  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS });
   const timeout = new Promise<RunResult>((_, rej) =>
     setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
   );
@@ -209,6 +214,55 @@ async function main(): Promise<void> {
   );
   const ringDiscounts = sum((r) => r.telemetry.ringDiscountsFired ?? 0);
   if (ringDiscounts > 0) console.log(`Pulsekeeper's Ring discounts fired: ${ringDiscounts}`);
+
+  // ---- S7.8 rites readouts ---------------------------------------------------
+  // Printed ONLY when rites telemetry exists (TB_RITES batteries) — unflagged
+  // batteries keep a byte-identical summary (aggregate-human.mjs mirrors it).
+  const riteRuns = results.filter((r) => r.telemetry.rites);
+  if (riteRuns.length > 0) {
+    const deathCounts: Record<string, number> = {};
+    let deathPicks = 0;
+    const birthActs: number[] = [];
+    const birthLayers: number[] = [];
+    const birthPicked: Record<PlayerId, number> = { p1: 0, p2: 0 };
+    let charEvents = 0;
+    for (const r of riteRuns) {
+      const t = r.telemetry.rites!;
+      for (const pid of ['p1', 'p2'] as PlayerId[]) {
+        const death = t.deathPick[pid];
+        if (death) { deathCounts[death] = (deathCounts[death] ?? 0) + 1; deathPicks++; }
+        if (t.birthPick[pid]) birthPicked[pid]++;
+        const bt = t.birthTiming[pid];
+        if (bt) { birthActs.push(bt.act); birthLayers.push(bt.layer); }
+        charEvents += t.characterEvents[pid] ?? 0;
+      }
+    }
+    const median = (xs: number[]): string => {
+      if (xs.length === 0) return 'n/a';
+      const s = [...xs].sort((a, b) => a - b);
+      const mid = Math.floor(s.length / 2);
+      return String(s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2);
+    };
+    // Telemetry records PICKS, not offers; each rite reaches ~50% of a seat's
+    // offers (2 of the role's 4), so shares are of picks — the <10%/>60%
+    // tuning thresholds (S8.1) are applied to that share and labeled FLAG.
+    const dist = Object.entries(deathCounts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([id, count]) => {
+        const share = (100 * count) / deathPicks;
+        return `${id} ${count} (${share.toFixed(0)}%${share < 10 || share > 60 ? ' FLAG' : ''})`;
+      })
+      .join(', ');
+    console.log('---------------- S7.8 RITES READOUTS ----------------');
+    console.log(`death-rite picks: ${deathPicks} — ${dist || 'none'}  (shares of picks; FLAG = <10% or >60% tuning threshold)`);
+    console.log(
+      `birth picks: p1 ${birthPicked.p1}/${riteRuns.length} runs (${((100 * birthPicked.p1) / riteRuns.length).toFixed(0)}%), ` +
+      `p2 ${birthPicked.p2}/${riteRuns.length} (${((100 * birthPicked.p2) / riteRuns.length).toFixed(0)}%) | ` +
+      `median timing act ${median(birthActs)}, layer ${median(birthLayers)}`,
+    );
+    console.log(`character events taken/run: ${(charEvents / riteRuns.length).toFixed(2)}`);
+    console.log(`Reclaim attempts (threadSpendByKind.reclaim): ${spendMix.reclaim ?? 0}`);
+  }
   console.log('---------------- GATES ----------------');
   let allPass = true;
   for (const g of gates) {
