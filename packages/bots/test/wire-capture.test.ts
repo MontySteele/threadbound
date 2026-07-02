@@ -33,7 +33,12 @@ process.env.PORT = '0';
 process.env.PERSIST = '';
 
 const LIVE_PHASES = ['map', 'combat', 'reward', 'event', 'loom', 'rest', 'shop'];
-const ANSWER_IDS = ['a_kin', 'a_hired', 'a_sexton', 'a_peal', 'a_hunger', 'a_grief', 'a_kept'];
+const ANSWER_IDS = [
+  'a_kin', 'a_hired',
+  'a_paid', 'a_compelled', 'a_volunteered', 'a_fleeing', // S8.2 q_came
+  'a_sexton', 'a_peal', 'a_abandoned', 'a_starved', // S8.2 q_what expansion
+  'a_hunger', 'a_grief', 'a_kept', 'a_mercy', 'a_unity', // S8.2 q_why expansion
+];
 
 interface Capture {
   frames: string[]; // raw JSON per message

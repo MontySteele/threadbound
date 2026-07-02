@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  ANSWERS, ANSWERS_BY_ID, FRAGMENTS, QUESTIONS, QUESTIONS_BY_ID, VALID_COMBOS,
-  answersFor, rollTruth, serveFragments,
+  ANSWERS, ANSWERS_BY_ID, EXCLUDED_FAMILIES, FRAGMENTS, QUESTIONS, QUESTIONS_BY_ID,
+  VALID_COMBOS, answersFor, rollTruth, serveFragments,
 } from '../src/content/truth';
 import { CLUE_EVENTS } from '../src/content/clue-events';
 import { eventsForAct } from '../src/content/registry';
@@ -13,23 +13,26 @@ import { generateActMap } from '../src/map';
 import { initialState, reduce } from '../src/reducer';
 import { clientTruthView } from '../src/truth-view';
 
-describe('truth content covenant (slice scope)', () => {
-  it('slice shape: 3 questions (who/what/why), 7 answers (2/2/3)', () => {
-    expect(QUESTIONS.length).toBe(3);
+describe('truth content covenant (S8.2 scope)', () => {
+  it('S8.2 shape: 4 questions (who/came/what/why), 15 answers (2/4/4/5)', () => {
+    expect(QUESTIONS.length).toBe(4);
     expect(QUESTIONS_BY_ID.q_who.kind).toBe('self');
+    expect(QUESTIONS_BY_ID.q_came.kind).toBe('self');
     expect(QUESTIONS_BY_ID.q_what.kind).toBe('world');
     expect(QUESTIONS_BY_ID.q_why.kind).toBe('world');
-    expect(ANSWERS.length).toBe(7);
-    expect(answersFor('q_who').length).toBe(2);
-    expect(answersFor('q_what').length).toBe(2);
-    expect(answersFor('q_why').length).toBe(3);
+    expect(ANSWERS.length).toBe(15);
+    expect(answersFor('q_who').length).toBe(2); // held at 2 (the bubble question)
+    expect(answersFor('q_came').length).toBe(4);
+    expect(answersFor('q_what').length).toBe(4);
+    expect(answersFor('q_why').length).toBe(5);
   });
 
-  it('payoff bindings match the slice spec', () => {
-    // world questions key boss reveals; the self question keys the personal boon
+  it('payoff bindings match the spec (+ S8.2 q_came provisional payoff)', () => {
+    // world questions key boss reveals; self questions key personal boons
     expect(QUESTIONS_BY_ID.q_what.payoff).toBe('bossFace');
     expect(QUESTIONS_BY_ID.q_why.payoff).toBe('bossMechanic');
     expect(QUESTIONS_BY_ID.q_who.payoff).toBe('healEach');
+    expect(QUESTIONS_BY_ID.q_came.payoff).toBe('covetEach');
   });
 
   it('every answer carries sheet text and a codex entry', () => {
@@ -39,8 +42,8 @@ describe('truth content covenant (slice scope)', () => {
     }
   });
 
-  it('combo table: 12 rows, all distinct, referencing only defined answers on the right question', () => {
-    expect(VALID_COMBOS.length).toBe(12);
+  it('combo table: 80 rows (2×4×4×5 minus the excluded families), all distinct, well-formed', () => {
+    expect(VALID_COMBOS.length).toBe(80);
     const seen = new Set<string>();
     for (const combo of VALID_COMBOS) {
       const key = JSON.stringify(combo);
@@ -58,6 +61,29 @@ describe('truth content covenant (slice scope)', () => {
     const used = new Set(VALID_COMBOS.flatMap((c) => Object.values(c)));
     for (const a of ANSWERS) expect(used.has(a.id), a.id).toBe(true);
   });
+
+  it('every answer is FALSE in at least one combo (an unfalsifiable answer is dead content)', () => {
+    for (const a of ANSWERS) {
+      const falsifiable = VALID_COMBOS.some(
+        (c) => (c as Record<string, string>)[a.questionId] !== a.id,
+      );
+      expect(falsifiable, a.id).toBe(true);
+    }
+  });
+
+  it('no combo contains an excluded family pair; families reference real answers with rationale', () => {
+    for (const f of EXCLUDED_FAMILIES) {
+      expect(f.why.length, f.pair.join('×')).toBeGreaterThan(0);
+      for (const id of f.pair) expect(ANSWERS_BY_ID[id], id).toBeTruthy();
+      for (const combo of VALID_COMBOS) {
+        const ids = Object.values(combo);
+        expect(
+          ids.includes(f.pair[0]) && ids.includes(f.pair[1]),
+          `${JSON.stringify(combo)} contains excluded ${f.pair.join('×')}`,
+        ).toBe(false);
+      }
+    }
+  });
 });
 
 describe('truth roll', () => {
@@ -72,7 +98,7 @@ describe('truth roll', () => {
 
   it('reaches every combo across seeds (uniform draw, no dead rows)', () => {
     const seen = new Set<string>();
-    for (let s = 0; s < 500; s++) seen.add(JSON.stringify(rollTruth(s).value));
+    for (let s = 0; s < 5000; s++) seen.add(JSON.stringify(rollTruth(s).value));
     expect(seen.size).toBe(VALID_COMBOS.length);
   });
 });
@@ -96,7 +122,7 @@ describe('START_RUN flag threading (S6.0 covenant)', () => {
     const on = start(true);
     expect(on.tracks).toBe(true);
     expect(on.truth).toBeTruthy();
-    expect(Object.keys(on.truth!.tuple).sort()).toEqual(['q_what', 'q_who', 'q_why']);
+    expect(Object.keys(on.truth!.tuple).sort()).toEqual(['q_came', 'q_what', 'q_who', 'q_why']);
     expect(on.truth!.boards).toEqual({ p1: [], p2: [] });
     expect(on.truth!.shrine).toBeNull();
     expect(start(true).truth!.tuple).toEqual(on.truth!.tuple);
@@ -126,9 +152,9 @@ describe('START_RUN flag threading (S6.0 covenant)', () => {
 // S6.2: clue events + asymmetric fragments
 // ---------------------------------------------------------------------------
 
-describe('clue event covenant (S6.2, spec coverage audit)', () => {
-  it('six clue events: act 0, uncrossed, flagged clue', () => {
-    expect(CLUE_EVENTS.length).toBe(6);
+describe('clue event covenant (S6.2 + S8.2, spec coverage audit)', () => {
+  it('ten clue events: act 0, uncrossed, flagged clue', () => {
+    expect(CLUE_EVENTS.length).toBe(10);
     for (const e of CLUE_EVENTS) {
       expect(e.clue, e.id).toBe(true);
       expect(e.act, e.id).toBe(0);
@@ -192,7 +218,25 @@ describe('clue event covenant (S6.2, spec coverage audit)', () => {
     }
   });
 
-  it('serveFragments never serves a fragment that eliminates the true answer (all 12 truths × 6 events)', () => {
+  // S8.8 gate 2 — deducibility: an answer is not content until it is
+  // deducible. Every answer must have ≥2 fragments bearing on its question
+  // that can strike it, each SERVABLE (there exists a valid truth in which
+  // the fragment's eliminated answer is false, so serveFragments can pick it).
+  it('deducibility (S8.8 gate 2): every answer has ≥2 servable fragments that eliminate it', () => {
+    for (const a of ANSWERS) {
+      const bearing = FRAGMENTS.filter(
+        (f) => f.bearsOn === a.questionId && f.eliminates.includes(a.id),
+      );
+      const servable = bearing.filter((f) =>
+        VALID_COMBOS.some((c) => (c as Record<string, string>)[f.bearsOn] !== a.id),
+      );
+      expect(servable.length, `${a.id}: needs ≥2 servable striking fragments`).toBeGreaterThanOrEqual(2);
+      // and from ≥2 DIFFERENT events, so one skipped node cannot orphan it
+      expect(new Set(servable.map((f) => f.eventId)).size, `${a.id}: events`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('serveFragments never serves a fragment that eliminates the true answer (all 80 truths × 10 events)', () => {
     for (const combo of VALID_COMBOS) {
       const tuple = combo as unknown as Record<string, string>;
       for (const e of CLUE_EVENTS) {
@@ -210,7 +254,7 @@ describe('clue event covenant (S6.2, spec coverage audit)', () => {
   it('pool gating: clue events only enter eventsForAct when tracks is set', () => {
     for (const act of [1, 2] as const) {
       expect(eventsForAct(act).some((e) => e.clue)).toBe(false);
-      expect(eventsForAct(act, true).filter((e) => e.clue).length).toBe(6);
+      expect(eventsForAct(act, true).filter((e) => e.clue).length).toBe(10);
     }
     // and unflagged maps never place one
     for (let seed = 0; seed < 20; seed++) {
@@ -362,21 +406,24 @@ describe("the Loom's Eye (S6.4)", () => {
   });
 
   it('entering the loom reveals the stake and pools BOTH boards into strike-outs with sources', () => {
-    // pin one fragment per board, striking two different q_why answers
+    // pin fragments striking four of five q_why answers across both boards
+    // (S8.2: the pool grew — over-collection still earns auto-completion)
     const why = answersFor('q_why').map((a) => a.id);
     const state = atLoom(3, [
       { pid: 'p1', fragmentId: fragEliminating(why[0]) },
-      { pid: 'p2', fragmentId: fragEliminating(why[1]) },
+      { pid: 'p1', fragmentId: fragEliminating(why[1]) },
+      { pid: 'p2', fragmentId: fragEliminating(why[2]) },
+      { pid: 'p2', fragmentId: fragEliminating(why[3]) },
     ]);
     const shrine = state.truth!.shrine!;
     expect(state.phase).toBe('loom');
     expect(shrine.stakeRelicId).toBeTruthy();
     expect(RELICS_BY_ID[shrine.stakeRelicId!]).toBeTruthy();
-    expect(Object.keys(shrine.struck.q_why).sort()).toEqual([why[0], why[1]].sort());
+    expect(Object.keys(shrine.struck.q_why).sort()).toEqual([why[0], why[1], why[2], why[3]].sort());
     expect(shrine.struck.q_why[why[0]][0].holder).toBe('p1');
-    expect(shrine.struck.q_why[why[1]][0].holder).toBe('p2');
-    // q_why had 3 answers, 2 struck → auto-completion pre-fills the third
-    expect(shrine.sheet.q_why).toBe(why[2]);
+    expect(shrine.struck.q_why[why[2]][0].holder).toBe('p2');
+    // q_why has 5 answers, 4 struck → auto-completion pre-fills the fifth
+    expect(shrine.sheet.q_why).toBe(why[4]);
     expect(shrine.sheet.q_who).toBeNull();
   });
 
@@ -397,7 +444,7 @@ describe("the Loom's Eye (S6.4)", () => {
     expect(s.truth!.shrine!.verdict).toBeNull(); // one voice is not the pair
     s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
     const shrine = s.truth!.shrine!;
-    expect(shrine.verdict).toEqual({ q_who: 'blank', q_what: 'blank', q_why: 'blank' });
+    expect(shrine.verdict).toEqual({ q_who: 'blank', q_came: 'blank', q_what: 'blank', q_why: 'blank' });
     expect(shrine.stakeLost).toBe(false);
     const relics = [...s.players.p1.relics, ...s.players.p2.relics];
     expect(relics).toContain(shrine.stakeRelicId!);
@@ -409,19 +456,38 @@ describe("the Loom's Eye (S6.4)", () => {
     const tuple = state.truth!.tuple;
     state.players.p1.hp = 30;
     state.players.p2.hp = 30;
+    const covetBefore = { p1: state.players.p1.covetCharges, p2: state.players.p2.covetCharges };
+    let s = state;
+    for (const q of ['q_who', 'q_came', 'q_what', 'q_why']) {
+      s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: q, answerId: tuple[q] });
+    }
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    const shrine = s.truth!.shrine!;
+    expect(shrine.verdict).toEqual({ q_who: 'true', q_came: 'true', q_what: 'true', q_why: 'true' });
+    expect(shrine.stakeLost).toBe(false);
+    expect(s.truth!.reveals).toEqual({ bossFace: true, bossMechanic: true, openingIntent: true });
+    expect(s.players.p1.hp).toBe(36); // healEach payoff
+    expect(s.players.p2.hp).toBe(36);
+    // S8.2 provisional covetEach payoff: +1 Covet charge each, cap-respecting
+    expect(s.players.p1.covetCharges).toBe(Math.min(2, covetBefore.p1 + 1));
+    expect(s.players.p2.covetCharges).toBe(Math.min(2, covetBefore.p2 + 1));
+    expect([...s.players.p1.relics, ...s.players.p2.relics]).toContain(shrine.stakeRelicId!);
+  });
+
+  it('the all-true boon requires all FOUR questions (three true + one blank ≠ completion)', () => {
+    const state = atLoom(9, []);
+    const tuple = state.truth!.tuple;
     let s = state;
     for (const q of ['q_who', 'q_what', 'q_why']) {
       s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: q, answerId: tuple[q] });
     }
     s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
     s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
-    const shrine = s.truth!.shrine!;
-    expect(shrine.verdict).toEqual({ q_who: 'true', q_what: 'true', q_why: 'true' });
-    expect(shrine.stakeLost).toBe(false);
-    expect(s.truth!.reveals).toEqual({ bossFace: true, bossMechanic: true, openingIntent: true });
-    expect(s.players.p1.hp).toBe(36); // healEach payoff
-    expect(s.players.p2.hp).toBe(36);
-    expect([...s.players.p1.relics, ...s.players.p2.relics]).toContain(shrine.stakeRelicId!);
+    expect(s.truth!.shrine!.verdict!.q_came).toBe('blank');
+    expect(s.truth!.reveals.bossFace).toBe(true);
+    expect(s.truth!.reveals.bossMechanic).toBe(true);
+    expect(s.truth!.reveals.openingIntent).toBe(false); // no boon on a blank
   });
 
   it('ANY false assertion unravels the stake; true answers still pay; blanks stay free', () => {
@@ -433,7 +499,7 @@ describe("the Loom's Eye (S6.4)", () => {
     s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
     s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
     const shrine = s.truth!.shrine!;
-    expect(shrine.verdict).toEqual({ q_who: 'false', q_what: 'true', q_why: 'blank' });
+    expect(shrine.verdict).toEqual({ q_who: 'false', q_came: 'blank', q_what: 'true', q_why: 'blank' });
     expect(shrine.stakeLost).toBe(true);
     expect([...s.players.p1.relics, ...s.players.p2.relics]).not.toContain(shrine.stakeRelicId!);
     expect(s.truth!.reveals.bossFace).toBe(true); // the true naming still pays

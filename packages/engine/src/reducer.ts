@@ -860,6 +860,18 @@ function resolveLoomVerdict(state: GameState): void {
         }
         state.log.push({ e: 'info', detail: 'The loom mends what it recognizes — both heal 6.' });
         break;
+      case 'covetEach':
+        // S8.2 PROVISIONAL — DESIGNER QUESTION: q_came named true → each
+        // player gains 1 Covet charge (motive-flavored: the loom answers the
+        // reason you came by sharpening what you may claim on the way down).
+        // Cap-respecting via covetMax. Alternatives for the S8.8 sign-off:
+        // flat gold, a stake-rarity nudge, or a motive-keyed relic pool.
+        for (const pid of ['p1', 'p2'] as PlayerId[]) {
+          const p = state.players[pid];
+          p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1);
+        }
+        state.log.push({ e: 'info', detail: 'The loom knows why you came — and leans the shrine’s hunger toward you. Each of you gains a Covet charge.' });
+        break;
     }
   }
 
@@ -873,7 +885,8 @@ function resolveLoomVerdict(state: GameState): void {
   }
   if (Object.values(verdict).every((v) => v === 'true')) {
     truth.reveals.openingIntent = true;
-    state.log.push({ e: 'info', detail: 'All three named true. The loom shows you the first moment of the last fight.' });
+    // S8.2: the completion boon requires ALL FOUR questions named true
+    state.log.push({ e: 'info', detail: 'All four named true. The loom shows you the first moment of the last fight.' });
   }
 }
 

@@ -337,8 +337,9 @@ export interface QuestionDef {
   kind: QuestionKind;
   /** payoff binding, interpreted at the shrine/boss layers.
    *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
-   *  healEach (provisional heal 6 each). */
-  payoff: 'bossFace' | 'bossMechanic' | 'healEach';
+   *  healEach (provisional heal 6 each). S8.2 adds covetEach (q_came true →
+   *  +1 Covet charge each, cap-respecting — PROVISIONAL, designer question). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'covetEach';
 }
 
 export interface AnswerDef {
