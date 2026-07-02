@@ -71,7 +71,9 @@ export function randomAction(state: GameState, die: Die): Action | null {
         const partner = state.players[pid === 'p1' ? 'p2' : 'p1'];
         const targetId =
           kind === 'sever' && living.length ? die.pick(living).id
-          : kind === 'reclaim' && partner.discard.length ? die.pick(partner.discard)
+          // S7.6: exhaust joins the discard as a Reclaim source
+          : kind === 'reclaim' && (partner.discard.length || partner.exhaust.length)
+            ? die.pick([...partner.discard, ...partner.exhaust])
           // §14.12: Pulse targets a staged card (often illegal — that's the point)
           : kind === 'pulse' && combat.chain.length ? die.pick(combat.chain).cardInstanceId
           : undefined;

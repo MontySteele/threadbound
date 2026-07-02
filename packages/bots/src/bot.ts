@@ -40,11 +40,13 @@ export class Bot {
     characters?: Record<PlayerId, CharacterId>;
     /** off when partnering a non-lockstep peer (the solo bot stages eagerly) */
     lockstep?: boolean;
+    /** S7.7 sim-only knob (TB_BOT_SEEK_EVENTS): prefer event nodes on the map */
+    seekEvents?: boolean;
     /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
      *  matching profile (profiles are claims; the server clamps to them). */
     ascension?: number;
   }) {
-    this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep });
+    this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents });
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {
@@ -104,16 +106,19 @@ export class Bot {
   }
 
   private decide(view: BotView): void {
-    // S4.4 lobby flow for ASCEND batteries: both seats vote, creator starts
-    // once the votes agree (the engine's both-confirm pattern)
+    // S4.4 lobby flow for ASCEND batteries — S7.7 (OQ#44): the rung is
+    // host-only now; the host votes and the server mirrors it to the other
+    // seat, so the joiner just waits for the mirrored vote to land
     if (view.phase === 'lobby' && this.opts.ascension) {
+      const isHost = this.opts.create || this.opts.createSolo;
+      if (!isHost) return;
       const lvl = this.opts.ascension;
       const votes = view.ascensionVotes ?? { p1: 0, p2: 0 };
       if (this.you && votes[this.you] !== lvl) {
         this.send({ type: 'action', action: { type: 'SET_ASCENSION', level: lvl } });
         return;
       }
-      if ((this.opts.create || this.opts.createSolo) && !this.startedRun && this.partnerOn && votes.p1 === lvl && votes.p2 === lvl) {
+      if (!this.startedRun && this.partnerOn && votes.p1 === lvl && votes.p2 === lvl) {
         this.startedRun = true;
         this.send({ type: 'start', seed: this.opts.startSeed });
       }

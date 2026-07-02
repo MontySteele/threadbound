@@ -512,7 +512,7 @@ export type ThreadActionKind = 'pulse' | 'reclaim' | 'sever' | 'steady';
 export interface DeclaredThreadAction {
   player: PlayerId;
   kind: ThreadActionKind;
-  /** sever: enemy id · reclaim: card in partner's discard · pulse (§14.12):
+  /** sever: enemy id · reclaim: card in partner's discard or exhaust (S7.6) · pulse (§14.12):
    *  a staged card whose Link won't currently fire — forced at resolution */
   targetId?: string;
 }

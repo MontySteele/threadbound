@@ -725,7 +725,10 @@ export function resolveTurn(state: GameState): void {
       case 'reclaim': {
         spendThread(state, 2);
         const src = findInstance(partner, ta.targetId!);
-        if (!src || !partner.discard.includes(ta.targetId!)) break;
+        // S7.6 (OQ#38, ruled): partner's exhaust is a legal source alongside
+        // the discard — everything downstream (echo, mutation, hooks) is
+        // source-blind on purpose.
+        if (!src || !(partner.discard.includes(ta.targetId!) || partner.exhaust.includes(ta.targetId!))) break;
         const def = CARDS[src.defId];
         const echo: CardInstance = {
           instanceId: `echo_${src.instanceId}_t${combat.turn}_${actor.combatCards.length}`,
