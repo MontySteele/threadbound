@@ -140,9 +140,13 @@ birth-rite progress rather than loot, so magnitudes will shift.
 
 ## S7.6 Reclaim engagement (OQ#38)
 
-- Reclaim's candidate set becomes: own discard + partner's discard +
-  **partner's exhaust** (ruled). The existing once-per-run-per-card chip
-  rule extends across the new source unchanged.
+- Reclaim's candidate set becomes: partner's discard + **partner's
+  exhaust** (ruled). ~~own discard~~ — CLARIFIED (designer, 2026-07-01):
+  Reclaim is partner-only; reclaiming your own cards was never intended.
+  The existing once-per-run-per-card chip rule extends across the new
+  source unchanged. (Implementation note: no per-RUN reclaim rule exists
+  in code — only the PT2 once-per-TURN-per-card guard; doc/code mismatch
+  flagged for the designer ledger.)
 - Separate commit; battery isolation before/after (this is the one part
   most likely to move balance on its own — Dowry-Bound and Quickening
   both amplify it).
