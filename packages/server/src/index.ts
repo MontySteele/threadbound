@@ -6,7 +6,13 @@
 //                        point at /data/... on a hosted persistent disk)
 //   TB_MAX_ROOMS=n       S6.2: concurrent-room cap (default 200)
 //   TB_ROOM_RATE=n       S6.2: room creations per client IP per minute (default 10)
+//   TB_TRUSTED_PROXY=... which forwarding header the rate limiter may trust:
+//                        cloudflare (CF-Connecting-IP — cloudflared tunnels),
+//                        proxy (rightmost X-Forwarded-For hop — behind exactly
+//                        one trusted proxy, e.g. Render), unset = raw socket
 //   TB_DRAIN=1           S6.2: drain — no new rooms, existing rooms play on
+//   TB_MAX_FEEDBACK=n    review fix: per-room cap on stored feedback records
+//                        (default 200) — beyond it nothing is stored/written
 //   BUILD_SHA=sha        S6.1: build identity (source checkouts derive dev+<git hash>)
 //   TB_ENEMY_HP_SCALE / TB_ENEMY_DMG_SCALE
 //                        live difficulty override (defaults 1.45 / 1.30) — soften a
@@ -15,7 +21,7 @@
 import path from 'node:path';
 import { CONTENT_VERSION } from '@threadbound/engine';
 import { buildSha } from './build';
-import { GameServer } from './lib';
+import { GameServer, proxyTrustFromEnv } from './lib';
 
 // `npm run server --human-session` doesn't reach argv — npm swallows unknown
 // flags into npm_config_* env. Accept all three spellings.
@@ -36,7 +42,9 @@ const game = new GameServer({
   persistPath: process.env.PERSIST ?? path.resolve(process.cwd(), '.threadbound-rooms.json'),
   maxRooms: Number(process.env.TB_MAX_ROOMS ?? 200) || 200,
   roomCreatesPerMin: Number(process.env.TB_ROOM_RATE ?? 10) || 10,
+  trustedProxy: proxyTrustFromEnv(),
   drain: process.env.TB_DRAIN === '1',
+  maxFeedback: Number(process.env.TB_MAX_FEEDBACK ?? 200) || 200,
 });
 
 game.listen().then((port) => {

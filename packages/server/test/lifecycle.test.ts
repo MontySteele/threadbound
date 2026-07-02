@@ -69,6 +69,11 @@ describe('graceful restart persistence (M3-D)', () => {
     const a = mkServer({ persistPath: file });
     const room = fakeRoom('SNAPS', Date.now());
     room.actionLog.push({ type: 'START_RUN', seed: 1 });
+    // review fix: shrine wall-clock stamps + the start-stamp flag must
+    // survive a restart (secondsAtShrine telemetry / retraction bookkeeping)
+    room.loomEnteredAt = 1_111;
+    room.loomResolvedAt = 2_222;
+    room.startStamped = true;
     a.rooms.set(room.code, room);
     a.tokenIndex.set(room.seats.p1!.token, { room, pid: 'p1' });
     a.persist();
@@ -83,6 +88,9 @@ describe('graceful restart persistence (M3-D)', () => {
     const entry = b.tokenIndex.get(room.seats.p1!.token);
     expect(entry?.pid).toBe('p1');
     expect(b.rooms.get('SNAPS')!.state.phase).toBe('lobby');
+    expect(restored!.loomEnteredAt).toBe(1_111);
+    expect(restored!.loomResolvedAt).toBe(2_222);
+    expect(restored!.startStamped).toBe(true);
   });
 
   it('migrates snapshots from older builds: missing concede/telemetry fields get defaults', () => {

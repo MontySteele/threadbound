@@ -287,7 +287,12 @@ describe('clientTruthView (S6.3)', () => {
     for (const viewer of ['p1', 'p2'] as const) {
       const partner = viewer === 'p1' ? 'p2' : 'p1';
       const view = clientTruthView(state.truth!, viewer);
-      expect(view.board).toEqual(state.truth!.boards[viewer]);
+      // review fix: pins shed their fragmentId — variant ids encode the
+      // eliminated answer, which the screen never shows before the shrine
+      expect(view.board).toEqual(
+        state.truth!.boards[viewer].map(({ fragmentId: _s, ...rest }) => rest),
+      );
+      for (const pin of view.board) expect('fragmentId' in pin).toBe(false);
       expect(view.partnerStubs.length).toBe(state.truth!.boards[partner].length);
       for (const stub of view.partnerStubs) {
         expect(Object.keys(stub).sort()).toEqual(['act', 'eventId']);
@@ -304,7 +309,13 @@ describe('clientTruthView (S6.3)', () => {
       expect(wire.includes('eliminates')).toBe(false);
       for (const pin of state.truth!.boards[partner]) {
         expect(wire.includes(pin.text), `${viewer} must not see ${pin.fragmentId}`).toBe(false);
-        expect(wire.includes(pin.fragmentId)).toBe(false);
+      }
+      // NO fragment id crosses to anyone — not even your own pins' (review
+      // fix: variant ids encode which answer the fragment eliminates)
+      for (const holder of ['p1', 'p2'] as const) {
+        for (const pin of state.truth!.boards[holder]) {
+          expect(wire.includes(pin.fragmentId)).toBe(false);
+        }
       }
       // the true answers never appear anywhere in a mid-run view
       for (const answerId of Object.values(state.truth!.tuple)) {
@@ -614,10 +625,79 @@ describe('slice telemetry (S6.8)', () => {
     expect(tt.outcome!.q_who).toBe('true');
     expect(tt.stake!.lost).toBe(false);
     expect(tt.struckAtShrine).toBeGreaterThanOrEqual(0);
+    // spec 'codex writes': asserted-true answers land in truths
+    expect(tt.codexWrites!.truths).toContain(tuple.q_who);
+    expect(tt.codexWrites!.eliminations).toEqual([]);
+  });
+
+  it('codex writes: a false assertion lands in eliminations (review fix — spec S6.8)', () => {
+    const state = atLoom(9, []);
+    const tuple = state.truth!.tuple;
+    const wrongWhy = answersFor('q_why').map((a) => a.id).find((a) => a !== tuple.q_why)!;
+    let s = reduce(state, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: 'q_who', answerId: tuple.q_who });
+    s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p2', questionId: 'q_why', answerId: wrongWhy });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p1', confirm: true });
+    s = reduce(s, { type: 'LOOM_CONFIRM', player: 'p2', confirm: true });
+    expect(s.telemetry.truth!.codexWrites).toEqual({ truths: [tuple.q_who], eliminations: [wrongWhy] });
   });
 
   it('flag off: no truth telemetry key (file shape unchanged)', () => {
     const s = reduce(initialState(3, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed: 3 });
     expect('truth' in s.telemetry).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Clue-event dedup (2026-07-01 review ruling): a visited clue event never
+// re-enters a later act's pool — a scene must not replay with a different
+// fragment.
+// ---------------------------------------------------------------------------
+
+describe('clue-event dedup', () => {
+  const clueIds = CLUE_EVENTS.map((e) => e.id);
+
+  it('generateActMap never re-offers excluded clue events (flagged)', () => {
+    const seen = clueIds.slice(1);
+    let totalOffered = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const { map } = generateActMap(seed, 2, false, true, seen);
+      const offered = map.nodes.filter((n) => n.kind === 'event').map((n) => n.eventId!);
+      for (const id of seen) {
+        expect(offered.includes(id), `seed=${seed}: excluded ${id} re-offered`).toBe(false);
+      }
+      totalOffered += offered.length;
+    }
+    // the pool still functions with five of six clue events excluded
+    // (not every act-2 layout rolls an event node — assert in aggregate)
+    expect(totalOffered).toBeGreaterThan(0);
+  });
+
+  it('unflagged generation ignores the exclusion list entirely (covenant)', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const bare = generateActMap(seed, 1, false, false);
+      const excluded = generateActMap(seed, 1, false, false, clueIds);
+      expect(JSON.stringify(excluded)).toBe(JSON.stringify(bare));
+    }
+  });
+
+  it('entering a clue event records it as seen; mainline events are not recorded', () => {
+    const start = (eventId: string): GameState => {
+      const state = reduce(initialState(11, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed: 11, tracks: true });
+      state.phase = 'map';
+      state.map = {
+        act: 1, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0,
+        nodes: [{ id: 0, kind: 'event', eventId, edges: [], layer: 0, lane: 0 }],
+      };
+      let next = reduce(state, { type: 'NODE_PICK', player: 'p1', nodeId: 0 });
+      return reduce(next, { type: 'NODE_PICK', player: 'p2', nodeId: 0 });
+    };
+    const atClue = start('nt_unrung_bell');
+    expect(atClue.phase).toBe('event');
+    expect(atClue.truth!.seenClueEvents).toEqual(['nt_unrung_bell']);
+
+    const mainline = eventsForAct(1, false).find((e) => !e.clue)!;
+    const atPlain = start(mainline.id);
+    expect(atPlain.phase).toBe('event');
+    expect(atPlain.truth!.seenClueEvents).toEqual([]);
   });
 });

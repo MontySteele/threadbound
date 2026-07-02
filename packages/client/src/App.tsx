@@ -11,6 +11,7 @@ import {
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
 import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile, setTelemetryConsent } from './profile';
+import { CHAR_NAME } from './chars';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
@@ -27,7 +28,6 @@ import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
 type Character = 'vess' | 'bram';
-export const CHAR_NAME: Record<string, string> = { vess: 'Vess, the Hexweaver', bram: 'Bram, the Cinderfist' };
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
@@ -282,7 +282,7 @@ export default function App(): JSX.Element {
                   <> · Partner: <b>{state.concede[state.you === 'p1' ? 'p2' : 'p1'] ? 'ready to walk away' : 'undecided'}</b></>
                 )}
               </p>
-              <button data-gp="META" onClick={() => net.act({ type: 'CONCEDE', confirm: !state.concede[state.you] } as any)}>
+              <button data-gp="META" onClick={() => net.act({ type: 'CONCEDE', confirm: !state.concede[state.you] })}>
                 {state.concede[state.you] ? 'no — keep fighting' : 'yes, set the thread down'}
               </button>
               <button data-gp="META" onClick={() => setConcedeOpen(false)}>close</button>
@@ -452,6 +452,9 @@ function TitleCord({ left, right }: {
 // TODO(designer): replace with the real invite once the Discord server exists
 // (ruled: small, 3–4 channels incl. #looking-for-thread).
 const DISCORD_URL = 'https://discord.gg/REPLACE-ME-threadbound';
+// review fix: until the real invite lands, don't show players a dead link —
+// the footer link and the blurb's Discord sentence hide themselves
+const DISCORD_READY = !DISCORD_URL.includes('REPLACE-ME');
 
 /** S6.5 one-tap bug report: the server attaches seed, turn, act, build,
  *  pair, and ascension — the text is optional garnish. */
@@ -512,8 +515,8 @@ function FirstVisitBlurb(): JSX.Element | null {
         the other, who joins with it. Refreshing is always safe — your seat waits for you.
       </p>
       <p className="muted">
-        <b>No partner handy?</b> Descend alone — the Witness (a grudging spirit) plays the other
-        seat. Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.
+        <b>No partner handy?</b> Descend alone — the Witness (a grudging voice) plays the other
+        seat.{DISCORD_READY && <> Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.</>}
       </p>
       <p className="muted">
         <b>Something felt great, bad, or broken?</b> Press <b>]</b> / <b>[</b> / <b>\</b> during a
@@ -591,8 +594,10 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
           except the community link, which is external by nature) */}
       <p className="muted footer-links">
         <a href="data-note" target="_blank" rel="noreferrer">what data this server collects</a>
-        {' · '}
-        <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
+        {DISCORD_READY && <>
+          {' · '}
+          <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
+        </>}
       </p>
     </div>
   );
@@ -653,7 +658,7 @@ function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; s
       <h3>Ascension</h3>
       <label>
         Level{' '}
-        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) } as any)}>
+        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
           {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
             <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
           ))}
@@ -828,7 +833,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
                 ...(theirPick ? { boxShadow: `0 0 14px ${PCOLOR[partner]}`, borderColor: PCOLOR[partner] } : {}),
               }}
               disabled={!can}
-              onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id } as any); }}
+              onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id }); }}
             >
               {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
               {(myPick || theirPick) && (
@@ -944,7 +949,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
   const stage = (cardId: string, targetId?: string) => {
     audio.play('card_place');
-    net.act({ type: 'STAGE_CARD', cardInstanceId: cardId, slot: combat.chain.length, targetId } as any);
+    net.act({ type: 'STAGE_CARD', cardInstanceId: cardId, slot: combat.chain.length, targetId });
     setPendingCard(null);
   };
 
@@ -956,7 +961,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
   const onEnemyClick = (enemyId: string) => {
     if (pendingSever) {
-      net.act({ type: 'DECLARE_THREAD', kind: 'sever', targetId: enemyId } as any);
+      net.act({ type: 'DECLARE_THREAD', kind: 'sever', targetId: enemyId });
       setPendingSever(false);
     } else if (pendingCard) {
       stage(pendingCard, enemyId);
@@ -1059,7 +1064,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         momentumBonus={momentumPreview.perSlot}
         pendingPulse={pendingPulse}
         onPulseTarget={(cardInstanceId) => {
-          net.act({ type: 'DECLARE_THREAD', kind: 'pulse', targetId: cardInstanceId } as any);
+          net.act({ type: 'DECLARE_THREAD', kind: 'pulse', targetId: cardInstanceId });
           setPendingPulse(false);
         }} />
 
@@ -1080,7 +1085,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </button>
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>
-        <button data-gp="THREAD" data-inspect="kw:steady" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' } as any)}>Steady (1)</button>
+        <button data-gp="THREAD" data-inspect="kw:steady" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => net.act({ type: 'DECLARE_THREAD', kind: 'steady' })}>Steady (1)</button>
       </div>
 
       {reclaimOpen && (
@@ -1099,7 +1104,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                   data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
                   onClick={() => {
                     if (claimed) return;
-                    net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id } as any);
+                    net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id });
                     setReclaimOpen(false);
                   }}>
                   {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
@@ -1135,7 +1140,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
       <div className="actions">
         <button className="big" data-gp="META" data-gp-action="ready" disabled={me.fallen}
-          onClick={() => { audio.play(you === 'p1' ? 'ready_p1' : 'ready_p2'); net.act({ type: 'SET_READY', ready: !me.ready } as any); }}>
+          onClick={() => { audio.play(you === 'p1' ? 'ready_p1' : 'ready_p2'); net.act({ type: 'SET_READY', ready: !me.ready }); }}>
           {me.ready ? 'Unready' : 'Ready'}
         </button>
         <span className="muted">turn {combat.turn}</span>
@@ -1232,7 +1237,7 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
       // reducer removes then splices at `slot`, so the final index is `slot`;
       // a gap past the source shifts left by one once the source is pulled out
       const f = Math.max(0, Math.min(chain.length - 1, dropAt > si ? dropAt - 1 : dropAt));
-      if (f !== si) net.act({ type: 'REORDER', cardInstanceId: dragId!, slot: f } as any);
+      if (f !== si) net.act({ type: 'REORDER', cardInstanceId: dragId!, slot: f });
     }
     setDragId(null);
     setDropAt(null);
@@ -1303,7 +1308,7 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                 badge={momentumBonus[i] > 0 ? `➤+${momentumBonus[i]}` : undefined}
                 gpZone={mine && !pendingPulse ? 'CHAIN' : undefined}
                 inspect={inspectKeyFor(state, slot.owner, slot.cardInstanceId)}
-                onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId } as any)} />
+                onClick={() => mine && !pendingPulse && net.act({ type: 'UNSTAGE_CARD', cardInstanceId: slot.cardInstanceId })} />
               {target && <div className="target">→ {enemyName(combat, target.id)}</div>}
               {def.link && (
                 <div
@@ -1322,8 +1327,8 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
               )}
               {mine && !pendingPulse && (
                 <div className="reorder">
-                  <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) } as any)}>◀</button>
-                  <button data-gp-reorder="right" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.min(chain.length - 1, i + 1) } as any)}>▶</button>
+                  <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) })}>◀</button>
+                  <button data-gp-reorder="right" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.min(chain.length - 1, i + 1) })}>▶</button>
                 </div>
               )}
             </div>
@@ -1336,7 +1341,7 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
         <div className="chain-margin">
           {combat.threadActions.map((t, i) => (
             <button key={i} className="chip" data-gp="THREAD" style={{ color: PCOLOR[t.player] }}
-              onClick={() => t.player === you && net.act({ type: 'UNDECLARE_THREAD', kind: t.kind } as any)}>
+              onClick={() => t.player === you && net.act({ type: 'UNDECLARE_THREAD', kind: t.kind })}>
               {threadName(t)}{t.player === you ? ' ✕' : ''}
             </button>
           ))}
@@ -1428,8 +1433,8 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                       <div key={defId} className={taken ? 'taken' : ''}>
                         <Card def={CARDS[defId]} gpZone={canPick || canCovet ? 'META' : undefined}
                           onClick={() => {
-                            if (canPick) { audio.play('purchase'); net.act({ type: 'REWARD_PICK', pick: defId } as any); }
-                            else if (canCovet) { audio.play('covet'); net.act({ type: 'COVET_PICK', pick: defId } as any); }
+                            if (canPick) { audio.play('purchase'); net.act({ type: 'REWARD_PICK', pick: defId }); }
+                            else if (canCovet) { audio.play('covet'); net.act({ type: 'COVET_PICK', pick: defId }); }
                           }} />
                         {taken && <div className="muted">taken</div>}
                       </div>
@@ -1437,7 +1442,7 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                   })}
                 </div>
                 {pid === you && r.picked[you] === null && (
-                  <button data-gp="META" onClick={() => net.act({ type: 'REWARD_PICK', pick: 'skip' } as any)}>Skip</button>
+                  <button data-gp="META" onClick={() => net.act({ type: 'REWARD_PICK', pick: 'skip' })}>Skip</button>
                 )}
               </div>
             ))}
@@ -1447,7 +1452,7 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       <div>
         {/* OQ#42: no separate "Pass on Coveting" — ADVANCE auto-passes an undecided Covet */}
         <button className="big" data-gp="META" disabled={(!treasureOnly && (r.picked.p1 === null || r.picked.p2 === null)) || state.advanceReady[you]}
-          onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+          onClick={() => net.act({ type: 'ADVANCE' })}>
           {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
         </button>
       </div>
@@ -1476,7 +1481,7 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         youChoose ? (
           def.options.map((o) => (
             <button key={o.id} className="big" data-gp="META" data-inspect={`scan:${o.label}`}
-              onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id } as any)}>
+              onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id })}>
               {o.label}
             </button>
           ))
@@ -1487,7 +1492,7 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         <>
           <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
           <Log log={state.log} state={state} />
-          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
           </button>
         </>
@@ -1521,12 +1526,12 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       <Log log={state.log} state={state} />
       {chosen === null ? (
         <>
-          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' } as any)}>
+          <button className="big" data-gp="META" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rest' })}>
             Rest (heal {Math.round(ascensionMods(state.ascension ?? 0).restHeal * 100)}%)
           </button>
-          <button className="big" data-gp="META" data-inspect="kw:upgrade" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' } as any)}>Upgrade a card</button>
-          <button className="big" data-gp="META" data-inspect="kw:covet" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' } as any)}>Barter (+1 Covet charge)</button>
-          <button className="big" data-gp="META" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' } as any)}>
+          <button className="big" data-gp="META" data-inspect="kw:upgrade" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'upgrade' })}>Upgrade a card</button>
+          <button className="big" data-gp="META" data-inspect="kw:covet" onClick={() => net.act({ type: 'REST_CHOOSE', option: 'barter' })}>Barter (+1 Covet charge)</button>
+          <button className="big" data-gp="META" disabled={state.rebraidUsed} onClick={() => net.act({ type: 'REST_CHOOSE', option: 'rebraid' })}>
             Re-braid (+1 max Thread, once per run)
           </button>
         </>
@@ -1541,7 +1546,7 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
               return (
                 <div key={c.instanceId} className={`upgrade-pair ${cheaper ? 'cost-improved' : ''}`} data-gp="META"
                   data-inspect={`card:${c.defId}:uprev`}
-                  onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId } as any)}>
+                  onClick={() => net.act({ type: 'UPGRADE_PICK', cardInstanceId: c.instanceId })}>
                   <Card def={CARDS[c.defId]} small />
                   <div className="upgrade-arrow">→</div>
                   <Card def={up} small upgraded />
@@ -1553,7 +1558,7 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
       ) : (
         <>
           <p>You chose: <b>{chosen}</b>. Partner: <b>{rest.chosen[partner] ?? '…deciding'}</b></p>
-          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
           </button>
         </>
@@ -1584,11 +1589,11 @@ function Wedding({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           <div className="hand">
             {me.deck.filter((c) => !CARDS[c.defId].starterOnly).map((c) => (
               <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META" selected={w?.offers[you] === c.instanceId}
-                onClick={() => net.act({ type: 'WEDDING_PICK', cardInstanceId: c.instanceId } as any)} />
+                onClick={() => net.act({ type: 'WEDDING_PICK', cardInstanceId: c.instanceId })} />
             ))}
           </div>
           {w?.offers.p1 && w?.offers.p2 && (
-            <button className="big" data-gp="META" disabled={w.confirmed[you]} onClick={() => net.act({ type: 'WEDDING_CONFIRM' } as any)}>
+            <button className="big" data-gp="META" disabled={w.confirmed[you]} onClick={() => net.act({ type: 'WEDDING_CONFIRM' })}>
               {w.confirmed[you] ? 'waiting for partner to confirm…' : 'Confirm the trade (permanent)'}
             </button>
           )}
@@ -1619,7 +1624,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                     gpZone={!item.sold && pid === you && item.price <= state.gold ? 'META' : undefined}
                     disabled={item.sold || item.price > state.gold || pid !== you}
                     onClick={() => {
-                      if (!item.sold && pid === you) { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id } as any); }
+                      if (!item.sold && pid === you) { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id }); }
                     }} />
                   <div className={item.price > state.gold ? 'muted' : ''}>{item.sold ? 'sold' : `${item.price}g`}</div>
                 </div>
@@ -1633,7 +1638,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         {shop.items.filter((i) => i.kind === 'relic').map((item) => (
           <div key={item.id} className={item.sold ? 'taken' : ''}>
             <button data-gp="META" data-inspect={`relic:${item.refId}`} disabled={item.sold || item.price > state.gold}
-              onClick={() => { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id } as any); }}>
+              onClick={() => { audio.play('purchase'); net.act({ type: 'SHOP_BUY', itemId: item.id }); }}>
               {RELICS_BY_ID[item.refId!]?.name} — {item.sold ? 'sold' : `${item.price}g`}
             </button>
             <span className="muted"> {RELICS_BY_ID[item.refId!]?.text}</span>
@@ -1665,14 +1670,14 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
             {me.deck.map((c) => (
               <Card key={c.instanceId} def={CARDS[c.defId]} small gpZone="META"
                 onClick={() => {
-                  net.act({ type: 'SHOP_REMOVE', itemId: removing, cardInstanceId: c.instanceId } as any);
+                  net.act({ type: 'SHOP_REMOVE', itemId: removing, cardInstanceId: c.instanceId });
                   setRemoving(null);
                 }} />
             ))}
           </div>
         )}
       </div>
-      <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+      <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
         {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
       </button>
     </div>

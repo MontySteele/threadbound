@@ -73,6 +73,10 @@ export interface Room {
   lastActivity: number;
   /** S6.4: wall-clock run start — telemetry needs run minutes + completion rate */
   startedAt?: number;
+  /** review fix: a start stamp actually landed on disk for this run — a
+   *  mid-run consent opt-out must retract it (S6.3: no residual record,
+   *  and the completion-rate denominator stays honest) */
+  startStamped?: boolean;
   telemetryWritten?: boolean;
   feedback: FeedbackEntry[];
   /** nt-slice S6.8: wall-clock time at the Loom's Eye (talk proxy). Clock
@@ -99,22 +103,46 @@ export interface GameServerOptions {
   roomCreatesPerMin?: number;
   /** S6.2 drain flag (TB_DRAIN=1): no new rooms; existing rooms play on */
   drain?: boolean;
+  /** review fix: per-room cap on stored feedback records (env TB_MAX_FEEDBACK,
+   *  default 200) — a looping client was unbounded memory + disk (the same
+   *  disk that holds the deploy snapshot on Render) */
+  maxFeedback?: number;
+  /** review fix (S6.2): which forwarding header, if any, to trust for the
+   *  client IP (env TB_TRUSTED_PROXY). Default: raw socket only. */
+  trustedProxy?: ProxyTrust;
   now?: () => number;
 }
 
 const HOUR = 3_600_000;
 const RATE_WINDOW_MS = 60_000;
 
+/** review fix: forwarding headers are client-supplied unless a trusted proxy
+ *  set them — trusting them unconditionally let anyone mint fresh rate-limit
+ *  buckets per request. `cloudflare` = behind Cloudflare (cloudflared tunnel:
+ *  CF-Connecting-IP is set by the edge); `proxy` = behind exactly one trusted
+ *  reverse proxy (Render): the RIGHTMOST X-Forwarded-For hop is the one OUR
+ *  proxy appended — earlier hops are whatever the client claimed. */
+export type ProxyTrust = 'cloudflare' | 'proxy' | 'none';
+
+export function proxyTrustFromEnv(v: string | undefined = process.env.TB_TRUSTED_PROXY): ProxyTrust {
+  return v === 'cloudflare' || v === 'proxy' ? v : 'none';
+}
+
 /** S6.2 proxy-aware client IP: behind Render's proxy or a cloudflared tunnel
  *  every socket arrives from platform edge IPs — rate limiting on the raw
- *  address would throttle everyone as one client. Cloudflare's header wins
- *  (the tunnel case), then the standard proxy header, then the raw socket. */
-export function clientIp(req: http.IncomingMessage): string {
-  const cf = req.headers['cf-connecting-ip'];
-  if (typeof cf === 'string' && cf) return cf.trim();
-  const xff = req.headers['x-forwarded-for'];
-  const first = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
-  if (first) return first;
+ *  address would throttle everyone as one client. Which header to believe is
+ *  env-driven (TB_TRUSTED_PROXY): unset means local dev, raw socket only. */
+export function clientIp(req: http.IncomingMessage, trust: ProxyTrust = 'none'): string {
+  if (trust === 'cloudflare') {
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf) return cf.trim();
+  }
+  if (trust === 'proxy') {
+    const xff = req.headers['x-forwarded-for'];
+    const hops = (Array.isArray(xff) ? xff.join(',') : xff)?.split(',').map((h) => h.trim()).filter(Boolean) ?? [];
+    // rightmost hop: appended by the one proxy we trust, not the client
+    if (hops.length > 0) return hops[hops.length - 1];
+  }
   return req.socket?.remoteAddress ?? 'unknown';
 }
 
@@ -137,7 +165,7 @@ export class GameServer {
     this.wss.on('connection', (socket, req) => {
       (socket as any).isAlive = true;
       socket.on('pong', () => ((socket as any).isAlive = true));
-      const ctx: { room: Room | null; pid: PlayerId | null; ip: string } = { room: null, pid: null, ip: clientIp(req) };
+      const ctx: { room: Room | null; pid: PlayerId | null; ip: string } = { room: null, pid: null, ip: clientIp(req, this.opts.trustedProxy ?? 'none') };
       // S6.2/S6.3 lifecycle status: the client needs to know about a drain
       // window (title-screen message) and whether telemetry collection is
       // active (the consent card only appears when it is).
@@ -178,6 +206,12 @@ export class GameServer {
     const evict = setInterval(() => this.evictRooms(), HOUR);
     evict.unref?.();
     this.timers.push(evict);
+
+    // review fix: createTimes entries were only pruned on a NEW create from
+    // the same IP — one-off addresses accumulated forever. Sweep the window.
+    const prune = setInterval(() => this.pruneCreateTimes(), RATE_WINDOW_MS);
+    prune.unref?.();
+    this.timers.push(prune);
 
     this.restore();
   }
@@ -253,6 +287,11 @@ export class GameServer {
       actionLog: room.actionLog,
       lastActivity: room.lastActivity,
       startedAt: room.startedAt,
+      startStamped: room.startStamped,
+      // review fix: shrine wall-clock stamps were memory-only — a mid-shrine
+      // restart silently dropped the secondsAtShrine telemetry (nt-slice S6.8)
+      loomEnteredAt: room.loomEnteredAt,
+      loomResolvedAt: room.loomResolvedAt,
       seats: Object.fromEntries(
         Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot, claim: seat!.claim }]),
       ),
@@ -316,6 +355,9 @@ export class GameServer {
           actionLog: r.actionLog ?? [],
           lastActivity: r.lastActivity ?? this.now(),
           startedAt: r.startedAt,
+          startStamped: r.startStamped,
+          loomEnteredAt: r.loomEnteredAt,
+          loomResolvedAt: r.loomResolvedAt,
           seats: {},
           feedback: r.feedback ?? [],
           bot: r.bot,
@@ -365,8 +407,33 @@ export class GameServer {
         characters: { p1: room.state.players.p1.character, p2: room.state.players.p2.character },
         installIds: { p1: room.seats.p1?.claim?.installId, p2: room.seats.p2?.claim?.installId },
       }) + '\n');
+      room.startStamped = true;
     } catch (err) {
       console.error('start stamp write failed', err);
+    }
+  }
+
+  /** review fix: a mid-run opt-out suppresses the end-of-run file but the
+   *  start line was already on disk — a residual record of a run that no
+   *  longer consents, and a phantom in the completion-rate denominator.
+   *  Append a retraction the aggregator honors (same date-rotated file). */
+  private maybeRetractStartStamp(room: Room): void {
+    const dir = this.opts.humanTelemetryDir;
+    if (!dir || !room.startStamped || this.bothConsent(room)) return;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const day = new Date(this.now()).toISOString().slice(0, 10);
+      fs.appendFileSync(path.join(dir, `starts-${day}.jsonl`), JSON.stringify({
+        kind: 'retract',
+        ts: this.now(),
+        code: room.code,
+        seed: room.state.seed,
+        buildSha: buildSha(),
+        contentVersion: CONTENT_VERSION,
+      }) + '\n');
+      room.startStamped = false; // one retraction per stamp
+    } catch (err) {
+      console.error('start stamp retraction failed', err);
     }
   }
 
@@ -454,6 +521,15 @@ export class GameServer {
     }
   }
 
+  /** review fix: a joined client could loop feedback/bug/survey messages —
+   *  each grew room.feedback (memory + the persistence snapshot) and appended
+   *  a JSONL line. Past the cap, nothing is stored or written. */
+  private feedbackFull(room: Room, socket: WebSocket): boolean {
+    if (room.feedback.length < (this.opts.maxFeedback ?? 200)) return false;
+    this.send(socket, { type: 'error', message: 'the ledger is full — the Witness will hold no more notes for this run.' });
+    return true;
+  }
+
   // ---- protocol ------------------------------------------------------------
 
   /** S4.5: sanitize a client-sent profile claim. */
@@ -472,9 +548,14 @@ export class GameServer {
       }
     }
     const claim: ProfileClaim = { unlockedCards, ascensionUnlocked };
-    // S6.3: anonymous id + consent ride the claim
-    if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
-    if (r.telemetryConsent === true) claim.telemetryConsent = true;
+    // S6.3: anonymous id + consent ride the claim. review fix (defense in
+    // depth — the client already withholds it): keep installId only on a
+    // consenting claim, so a non-consenting player's id never reaches the
+    // seat, the persistence snapshot, or a start stamp.
+    if (r.telemetryConsent === true) {
+      claim.telemetryConsent = true;
+      if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
+    }
     return claim;
   }
 
@@ -524,6 +605,15 @@ export class GameServer {
     };
     clone.players.p1.draw = [];
     clone.players.p2.draw = [];
+    // review-fix (§11 / §11 extension): the seed+rng pair IS the run's hidden
+    // future — draw-pile order, and on flagged runs the truth tuple and live
+    // mechanics are pure functions of it. Masked while the run is live; the
+    // seed returns on the end screens (Summary shows it for sharing/repro),
+    // and the lobby's placeholder seed predates the real roll at START_RUN.
+    if (clone.phase !== 'lobby' && clone.phase !== 'victory' && clone.phase !== 'game_over') {
+      clone.seed = 0;
+      clone.rng = 0;
+    }
     const truth = clone.truth ? clientTruthView(clone.truth, viewer, clone.botSeat) : undefined;
     return { ...clone, ...(truth ? { truth } : {}), counts, you: viewer };
   }
@@ -533,10 +623,15 @@ export class GameServer {
   }
 
   private broadcastState(room: Room): void {
-    const hash = hashState(room.state);
+    // review-fix (§11): the wire hash digests the per-viewer REDACTED view,
+    // not the full state — a digest of hidden state is a guessing oracle.
+    // Consumers only ever compare a viewer's hash to that same viewer's
+    // later hash (reconnect integrity), so per-viewer hashes suffice.
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
       const seat = room.seats[pid];
-      if (seat) this.send(seat.socket, { type: 'state', state: this.redactFor(room.state, pid), hash });
+      if (!seat) continue;
+      const view = this.redactFor(room.state, pid);
+      this.send(seat.socket, { type: 'state', state: view, hash: hashState(view as GameState) });
     }
     // the bot seat gets the same redacted view, in-process (S1.1)
     if (room.bot) this.botDrivers.get(room.code)?.onState(this.redactFor(room.state, room.bot.seat) as BotView);
@@ -550,6 +645,16 @@ export class GameServer {
       if (seat && !seat.bot) {
         this.send(seat.socket, { type: 'presence', partnerConnected: !!partner && (!!partner.bot || !!partner.socket) });
       }
+    }
+  }
+
+  /** review fix: drop rate-limit entries older than the window (and empty
+   *  buckets), so the per-IP map can't grow without bound. */
+  pruneCreateTimes(now = this.now()): void {
+    for (const [ip, times] of this.createTimes) {
+      const live = times.filter((t) => now - t < RATE_WINDOW_MS);
+      if (live.length === 0) this.createTimes.delete(ip);
+      else if (live.length !== times.length) this.createTimes.set(ip, live);
     }
   }
 
@@ -645,7 +750,11 @@ export class GameServer {
           try { seat.socket.close(); } catch { /* stale socket */ }
         }
         seat.socket = socket;
-        if (msg.profile) seat.claim = this.sanitizeClaim(msg.profile);
+        if (msg.profile) {
+          seat.claim = this.sanitizeClaim(msg.profile);
+          // review fix: a reconnect can carry a consent flip too
+          this.maybeRetractStartStamp(entry.room);
+        }
         ctx.room = entry.room;
         ctx.pid = entry.pid;
         this.send(socket, { type: 'joined', token: seat.token, code: entry.room.code, playerId: entry.pid, character: seat.character });
@@ -715,6 +824,7 @@ export class GameServer {
       case 'feedback': {
         // M3 review: in-the-moment stamps beat post-session recall
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const mood = ['good', 'bad', 'note'].includes(msg.mood) ? msg.mood : 'note';
         const entry: FeedbackEntry = {
           ...this.feedbackBase(ctx.room, ctx.pid, 'stamp'),
@@ -731,6 +841,7 @@ export class GameServer {
         // S6.5 one-tap bug report: seed, turn, act, build, pair, ascension —
         // every "needs a seed + turn to repro" OQ becomes an artifact
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const entry: FeedbackEntry = {
           ...this.feedbackBase(ctx.room, ctx.pid, 'bug'),
           note: typeof msg.note === 'string' ? msg.note.slice(0, 2000) : undefined,
@@ -749,6 +860,7 @@ export class GameServer {
       case 'survey': {
         // S6.5 end-of-run micro-survey: 1–5 + optional text, never blocking
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const rating = Math.floor(Number(msg.rating) || 0);
         if (rating < 1 || rating > 5) return;
         const entry: FeedbackEntry = {
@@ -768,6 +880,8 @@ export class GameServer {
         if (!ctx.room || !ctx.pid) return;
         const seat = ctx.room.seats[ctx.pid];
         if (seat && !seat.bot) seat.claim = this.sanitizeClaim(msg.profile);
+        // review fix: an opt-out mid-run retracts the run's start stamp
+        this.maybeRetractStartStamp(ctx.room);
         return;
       }
 

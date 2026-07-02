@@ -377,6 +377,10 @@ export interface TruthState {
    *  mechanic 2 · openingIntent = the all-true boon (full opening turn
    *  shown at the pre-boss rest) */
   reveals: { bossFace: boolean; bossMechanic: boolean; openingIntent: boolean };
+  /** clue events already visited this run — excluded from later act maps so
+   *  a scene never replays with a different fragment (designer ruling,
+   *  2026-07-01 review). Optional: absent on pre-fix snapshots. */
+  seenClueEvents?: string[];
 }
 
 export type NodeKind = 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure' | 'loom';
@@ -670,6 +674,10 @@ export interface Telemetry {
     /** per-question outcome, written at the verdict */
     outcome: Record<string, 'blank' | 'true' | 'false'> | null;
     stake: { relicId: string | null; rare: boolean; lost: boolean } | null;
+    /** what the verdict wrote to the profile codex (spec S6.8 'codex
+     *  writes') — mirrors the client rule: asserted-true → truths,
+     *  asserted-false → eliminations. Written at the verdict. */
+    codexWrites: { truths: string[]; eliminations: string[] } | null;
   };
 }
 

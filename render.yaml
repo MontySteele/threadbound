@@ -25,5 +25,10 @@ services:
         value: "200"
       - key: TB_ROOM_RATE
         value: "10"
+      # review fix: Render fronts the service with exactly one trusted proxy —
+      # the rate limiter reads the RIGHTMOST X-Forwarded-For hop (the one
+      # Render appended); client-forged hops can't mint fresh buckets
+      - key: TB_TRUSTED_PROXY
+        value: proxy
       # maintenance window: set TB_DRAIN=1 in the dashboard, save, and the
       # title screen shows "the loom is being restrung"; unset to reopen
