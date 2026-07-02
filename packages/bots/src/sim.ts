@@ -80,20 +80,31 @@ async function main(): Promise<void> {
   console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
 
   const results: RunResult[] = [];
-  for (let run = 1; run <= RUNS; run++) {
-    try {
-      const r = await playRun(url, BASE_SEED + run);
-      results.push(r);
-      console.log(
-        `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
-        `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`,
-      );
-    } catch (err) {
-      console.error(`run ${run}: FAILED — ${err}`);
-      process.exitCode = 1;
-      break;
+  // Comfort pass: bounded-concurrency pool (TB_SIM_CONC, default 8). Each run
+  // is its own room + seeds, so runs are independent; aggregation is
+  // order-independent. Sequential behavior: TB_SIM_CONC=1.
+  const CONC = Math.max(1, Number(process.env.TB_SIM_CONC ?? 8) || 8);
+  let nextRun = 1;
+  let failed = false;
+  async function worker(): Promise<void> {
+    while (!failed) {
+      const run = nextRun++;
+      if (run > RUNS) return;
+      try {
+        const r = await playRun(url, BASE_SEED + run);
+        results.push(r);
+        console.log(
+          `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
+          `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`,
+        );
+      } catch (err) {
+        console.error(`run ${run}: FAILED — ${err}`);
+        process.exitCode = 1;
+        failed = true;
+      }
     }
   }
+  await Promise.all(Array.from({ length: Math.min(CONC, RUNS) }, () => worker()));
 
   const sum = (f: (r: RunResult) => number) => results.reduce((acc, r) => acc + f(r), 0);
   const victories = results.filter((r) => r.outcome === 'victory').length;
@@ -154,6 +165,29 @@ async function main(): Promise<void> {
   console.log(`turns: ${sum((r) => r.telemetry.turns)}  |  cards played: ${cards}  |  overall link-fire: ${cards ? ((100 * links) / cards).toFixed(1) : 0}%`);
   console.log(`act 1: ${act1.combats} combats, link-fire ${act1LinkRate.toFixed(1)}%, HP lost/combat ${hpPerA1Combat.toFixed(1)}`);
   console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
+  // Comfort pass: per-encounter difficulty attribution. Sorted by pair HP
+  // lost per combat; !! flags entries > 2x the mean of encounters with >= 5
+  // samples (the S10a battery gate-4 read).
+  {
+    const enc: Record<string, { combats: number; hpLost: number }> = {};
+    for (const r of results) {
+      for (const [id, s] of Object.entries(r.telemetry.encounterStats ?? {})) {
+        const e = (enc[id] ??= { combats: 0, hpLost: 0 });
+        e.combats += s.combats; e.hpLost += s.hpLost;
+      }
+    }
+    const rows = Object.entries(enc)
+      .map(([id, s]) => ({ id, combats: s.combats, per: s.combats ? s.hpLost / s.combats : 0 }))
+      .sort((a, b) => b.per - a.per);
+    const sampled = rows.filter((r) => r.combats >= 5);
+    const mean = sampled.length ? sampled.reduce((a, r) => a + r.per, 0) / sampled.length : 0;
+    console.log('---------------- HP LOST BY ENCOUNTER (pair HP / combat) ----------------');
+    for (const r of rows) {
+      const flag = r.combats >= 5 && mean > 0 && r.per > 2 * mean ? '  !! outlier' : '';
+      console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${flag}`);
+    }
+    if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
+  }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
   // review-pass texture stat (NOT a gate): is Hex still bank-and-burst, or a

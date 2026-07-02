@@ -53,7 +53,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     phase: 'lobby',
     ...(botSeat ? { botSeat } : {}),
     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
-    gold: 100, // PT3 designer ruling: 40 too low for first-shop agency (was 40)
+    gold: Number(process.env.TB_START_GOLD ?? 100), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
     removalsByPlayer: { p1: 0, p2: 0 },
     ascension: 0,
     ascensionVotes: { p1: 0, p2: 0 },
@@ -1008,6 +1008,9 @@ function enterNode(state: GameState): void {
     case 'elite':
     case 'boss': {
       const enc = ENCOUNTERS[node.encounterId!];
+      const encStats = (state.telemetry.encounterStats ??= {});
+      const encEntry = (encStats[node.encounterId!] ??= { combats: 0, hpLost: 0 });
+      encEntry.combats++;
       startCombat(state, enc.enemies);
       if (state.pendingThread > 0) {
         state.thread = Math.min(state.threadMax, state.thread + state.pendingThread);

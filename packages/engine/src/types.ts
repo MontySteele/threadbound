@@ -701,6 +701,9 @@ export interface Telemetry {
   cardsPlayed: number;
   linksFired: number;
   resonances: number;
+  /** per-encounter difficulty attribution: pair HP lost + combat count,
+   *  keyed by encounterId (comfort pass, pre-S10a battery gate 4) */
+  encounterStats?: Record<string, { combats: number; hpLost: number }>;
   resonanceTagCounts: Record<string, number>;
   /** damage attribution; 'HexScaling' bucket for hex-scaling Strike damage (M2-B1) */
   damageByTag: Record<string, number>;

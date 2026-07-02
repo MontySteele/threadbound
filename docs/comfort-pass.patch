@@ -1,0 +1,248 @@
+diff --git a/packages/bots/src/sim.ts b/packages/bots/src/sim.ts
+index 864b98d..a9e40b1 100644
+--- a/packages/bots/src/sim.ts
++++ b/packages/bots/src/sim.ts
+@@ -72,20 +72,31 @@ async function main(): Promise<void> {
+   console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
+ 
+   const results: RunResult[] = [];
+-  for (let run = 1; run <= RUNS; run++) {
+-    try {
+-      const r = await playRun(url, BASE_SEED + run);
+-      results.push(r);
+-      console.log(
+-        `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
+-        `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`,
+-      );
+-    } catch (err) {
+-      console.error(`run ${run}: FAILED — ${err}`);
+-      process.exitCode = 1;
+-      break;
++  // Comfort pass: bounded-concurrency pool (TB_SIM_CONC, default 8). Each run
++  // is its own room + seeds, so runs are independent; aggregation is
++  // order-independent. Sequential behavior: TB_SIM_CONC=1.
++  const CONC = Math.max(1, Number(process.env.TB_SIM_CONC ?? 8) || 8);
++  let nextRun = 1;
++  let failed = false;
++  async function worker(): Promise<void> {
++    while (!failed) {
++      const run = nextRun++;
++      if (run > RUNS) return;
++      try {
++        const r = await playRun(url, BASE_SEED + run);
++        results.push(r);
++        console.log(
++          `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
++          `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`,
++        );
++      } catch (err) {
++        console.error(`run ${run}: FAILED — ${err}`);
++        process.exitCode = 1;
++        failed = true;
++      }
+     }
+   }
++  await Promise.all(Array.from({ length: Math.min(CONC, RUNS) }, () => worker()));
+ 
+   const sum = (f: (r: RunResult) => number) => results.reduce((acc, r) => acc + f(r), 0);
+   const victories = results.filter((r) => r.outcome === 'victory').length;
+@@ -146,6 +157,29 @@ async function main(): Promise<void> {
+   console.log(`turns: ${sum((r) => r.telemetry.turns)}  |  cards played: ${cards}  |  overall link-fire: ${cards ? ((100 * links) / cards).toFixed(1) : 0}%`);
+   console.log(`act 1: ${act1.combats} combats, link-fire ${act1LinkRate.toFixed(1)}%, HP lost/combat ${hpPerA1Combat.toFixed(1)}`);
+   console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
++  // Comfort pass: per-encounter difficulty attribution. Sorted by pair HP
++  // lost per combat; !! flags entries > 2x the mean of encounters with >= 5
++  // samples (the S10a battery gate-4 read).
++  {
++    const enc: Record<string, { combats: number; hpLost: number }> = {};
++    for (const r of results) {
++      for (const [id, s] of Object.entries(r.telemetry.encounterStats ?? {})) {
++        const e = (enc[id] ??= { combats: 0, hpLost: 0 });
++        e.combats += s.combats; e.hpLost += s.hpLost;
++      }
++    }
++    const rows = Object.entries(enc)
++      .map(([id, s]) => ({ id, combats: s.combats, per: s.combats ? s.hpLost / s.combats : 0 }))
++      .sort((a, b) => b.per - a.per);
++    const sampled = rows.filter((r) => r.combats >= 5);
++    const mean = sampled.length ? sampled.reduce((a, r) => a + r.per, 0) / sampled.length : 0;
++    console.log('---------------- HP LOST BY ENCOUNTER (pair HP / combat) ----------------');
++    for (const r of rows) {
++      const flag = r.combats >= 5 && mean > 0 && r.per > 2 * mean ? '  !! outlier' : '';
++      console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${flag}`);
++    }
++    if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
++  }
+   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
+   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
+   // review-pass texture stat (NOT a gate): is Hex still bank-and-burst, or a
+diff --git a/packages/engine/src/combat.ts b/packages/engine/src/combat.ts
+index 0ad08c1..0d30db0 100644
+--- a/packages/engine/src/combat.ts
++++ b/packages/engine/src/combat.ts
+@@ -1072,6 +1072,11 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
+     const act = state.map.act;
+     const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
+     actStats.hpLost += hpLoss;
++    const encId = state.map.nodes.find((n) => n.id === state.map.position)?.encounterId;
++    if (encId) {
++      const encStats = (state.telemetry.encounterStats ??= {});
++      (encStats[encId] ??= { combats: 0, hpLost: 0 }).hpLost += hpLoss;
++    }
+   }
+   if (player.hp <= 0 && !player.fallen) fall(state, player);
+ }
+diff --git a/packages/engine/src/map.ts b/packages/engine/src/map.ts
+index 642285c..d24c1be 100644
+--- a/packages/engine/src/map.ts
++++ b/packages/engine/src/map.ts
+@@ -6,7 +6,7 @@ import { rngInt, rngShuffle } from './rng';
+ import { ENCOUNTER_POOLS } from './content/encounters';
+ import { eventsForAct } from './content/registry';
+ 
+-const LAYERS = 6; // + boss layer
++const LAYERS = Number(process.env.TB_MAP_LAYERS ?? 6); // + boss layer (env override: experiment only)
+ 
+ export function generateActMap(rngState: number, act: 1 | 2, extraElite = false, tracks = false): { map: MapState; rng: number } {
+   let rng = rngState;
+@@ -91,7 +91,8 @@ export function generateActMap(rngState: number, act: 1 | 2, extraElite = false,
+       } else {
+         const roll = rngInt(rng, 100);
+         rng = roll.state;
+-        if (roll.value < 50) {
++        const EVT = Number(process.env.TB_MAP_EVENT_PCT ?? 22); // experiment only
++        if (roll.value < 72 - EVT) {
+           node = { id, kind: 'combat', edges: [], layer, lane, encounterId: pick(layer <= 1 ? pools.easy : pools.normal) };
+         } else if (roll.value < 72) {
+           node = { id, kind: 'event', edges: [], layer, lane, eventId: nextEvent() };
+diff --git a/packages/engine/src/reducer.ts b/packages/engine/src/reducer.ts
+index 77107bb..f3513dd 100644
+--- a/packages/engine/src/reducer.ts
++++ b/packages/engine/src/reducer.ts
+@@ -52,7 +52,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
+     phase: 'lobby',
+     ...(botSeat ? { botSeat } : {}),
+     map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
+-    gold: 100, // PT3 designer ruling: 40 too low for first-shop agency (was 40)
++    gold: Number(process.env.TB_START_GOLD ?? 100), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
+     removalsByPlayer: { p1: 0, p2: 0 },
+     ascension: 0,
+     ascensionVotes: { p1: 0, p2: 0 },
+@@ -883,6 +883,9 @@ function enterNode(state: GameState): void {
+     case 'elite':
+     case 'boss': {
+       const enc = ENCOUNTERS[node.encounterId!];
++      const encStats = (state.telemetry.encounterStats ??= {});
++      const encEntry = (encStats[node.encounterId!] ??= { combats: 0, hpLost: 0 });
++      encEntry.combats++;
+       startCombat(state, enc.enemies);
+       if (state.pendingThread > 0) {
+         state.thread = Math.min(state.threadMax, state.thread + state.pendingThread);
+diff --git a/packages/engine/src/types.ts b/packages/engine/src/types.ts
+index b78362d..9fe880b 100644
+--- a/packages/engine/src/types.ts
++++ b/packages/engine/src/types.ts
+@@ -614,6 +614,9 @@ export interface Telemetry {
+   cardsPlayed: number;
+   linksFired: number;
+   resonances: number;
++  /** per-encounter difficulty attribution: pair HP lost + combat count,
++   *  keyed by encounterId (comfort pass, pre-S10a battery gate 4) */
++  encounterStats?: Record<string, { combats: number; hpLost: number }>;
+   resonanceTagCounts: Record<string, number>;
+   /** damage attribution; 'HexScaling' bucket for hex-scaling Strike damage (M2-B1) */
+   damageByTag: Record<string, number>;
+diff --git a/scripts/map-composition.js b/scripts/map-composition.js
+new file mode 100644
+index 0000000..ca45226
+--- /dev/null
++++ b/scripts/map-composition.js
+@@ -0,0 +1,51 @@
++// Experiment: map composition vs LAYERS. Run with TB_MAP_LAYERS=N.
++// Reports per act: mean event nodes on map, mean max-events-on-one-path
++// (routing ceiling), mean nodes per path, and rest/treasure supply.
++const { generateActMap } = require('../packages/engine/dist/map.js');
++
++const N = 1000;
++const layers = process.env.TB_MAP_LAYERS ?? '6';
++
++function maxKindOnPath(map, kind) {
++  // DP over edges: best count of `kind` reachable ending at each node
++  const best = new Map();
++  const nodes = map.nodes;
++  const byLayer = [...nodes].sort((a, b) => a.layer - b.layer);
++  for (const n of byLayer) {
++    const self = n.kind === kind ? 1 : 0;
++    if (n.layer === 0) best.set(n.id, self);
++  }
++  for (const n of byLayer) {
++    const b = best.get(n.id);
++    if (b === undefined) continue;
++    for (const e of n.edges) {
++      const t = nodes.find((x) => x.id === e);
++      const val = b + (t.kind === kind ? 1 : 0);
++      if ((best.get(e) ?? -1) < val) best.set(e, val);
++    }
++  }
++  let max = 0;
++  for (const n of nodes) if (n.edges.length === 0) max = Math.max(max, best.get(n.id) ?? 0);
++  return max;
++}
++
++for (const act of [1, 2]) {
++  let ev = 0, evPath = 0, rests = 0, treas = 0, combats = 0, elites = 0, total = 0;
++  let rng = 42;
++  for (let i = 0; i < N; i++) {
++    const r = generateActMap(rng + i * 7919, act, false, false);
++    const m = r.map;
++    ev += m.nodes.filter((n) => n.kind === 'event').length;
++    rests += m.nodes.filter((n) => n.kind === 'rest').length;
++    treas += m.nodes.filter((n) => n.kind === 'treasure').length;
++    combats += m.nodes.filter((n) => n.kind === 'combat').length;
++    elites += m.nodes.filter((n) => n.kind === 'elite').length;
++    total += m.nodes.length;
++    evPath += maxKindOnPath(m, 'event');
++  }
++  console.log(
++    `LAYERS=${layers} act ${act}: nodes/map ${(total / N).toFixed(1)} | events/map ${(ev / N).toFixed(2)} | ` +
++    `max events on one path ${(evPath / N).toFixed(2)} | rests/map ${(rests / N).toFixed(2)} | ` +
++    `treasure/map ${(treas / N).toFixed(2)} | combats/map ${(combats / N).toFixed(2)} | elites ${(elites / N).toFixed(1)}`
++  );
++}
+diff --git a/scripts/sim-shard.sh b/scripts/sim-shard.sh
+new file mode 100755
+index 0000000..29c410a
+--- /dev/null
++++ b/scripts/sim-shard.sh
+@@ -0,0 +1,31 @@
++#!/usr/bin/env bash
++# Comfort pass: multi-core battery sharding. The sim server runs in-process,
++# so one battery is bound to one core; this launches SHARDS processes with
++# disjoint seed ranges and pools the win rate. Per-encounter tables print
++# per shard (grep 'HP LOST' across the logs).
++# Usage: PAIR=vb SHARDS=6 RUNS=300 scripts/sim-shard.sh
++set -euo pipefail
++SHARDS="${SHARDS:-4}"
++RUNS="${RUNS:-200}"
++PER=$(( RUNS / SHARDS ))
++PAIR="${PAIR:-vb}"
++BASE="${SEED:-1000}"
++mkdir -p /tmp/tb-shards
++pids=()
++for i in $(seq 0 $((SHARDS-1))); do
++  SEED=$(( BASE + i * PER )) PAIR="$PAIR" TB_SIM_CONC="${TB_SIM_CONC:-8}" \
++    node packages/bots/dist/sim.js "$PER" > "/tmp/tb-shards/shard-$i.log" 2>&1 &
++  pids+=($!)
++done
++fail=0
++for p in "${pids[@]}"; do wait "$p" || fail=1; done
++total=0; wins=0
++for i in $(seq 0 $((SHARDS-1))); do
++  line=$(grep -m1 "^runs:" "/tmp/tb-shards/shard-$i.log" || true)
++  r=$(echo "$line" | sed -E 's/runs: ([0-9]+).*/\1/')
++  v=$(echo "$line" | sed -E 's/.*victories: ([0-9]+).*/\1/')
++  echo "shard $i: $line"
++  total=$(( total + ${r:-0} )); wins=$(( wins + ${v:-0} ))
++done
++echo "POOLED: $total runs, $wins victories ($(( total > 0 ? 100 * wins / total : 0 ))%)"
++exit $fail

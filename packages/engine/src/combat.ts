@@ -1116,6 +1116,11 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
     const act = state.map.act;
     const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
     actStats.hpLost += hpLoss;
+    const encId = state.map.nodes.find((n) => n.id === state.map.position)?.encounterId;
+    if (encId) {
+      const encStats = (state.telemetry.encounterStats ??= {});
+      (encStats[encId] ??= { combats: 0, hpLost: 0 }).hpLost += hpLoss;
+    }
   }
   if (player.hp <= 0 && !player.fallen) fall(state, player);
 }
