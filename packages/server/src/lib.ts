@@ -99,22 +99,42 @@ export interface GameServerOptions {
   roomCreatesPerMin?: number;
   /** S6.2 drain flag (TB_DRAIN=1): no new rooms; existing rooms play on */
   drain?: boolean;
+  /** review fix (S6.2): which forwarding header, if any, to trust for the
+   *  client IP (env TB_TRUSTED_PROXY). Default: raw socket only. */
+  trustedProxy?: ProxyTrust;
   now?: () => number;
 }
 
 const HOUR = 3_600_000;
 const RATE_WINDOW_MS = 60_000;
 
+/** review fix: forwarding headers are client-supplied unless a trusted proxy
+ *  set them — trusting them unconditionally let anyone mint fresh rate-limit
+ *  buckets per request. `cloudflare` = behind Cloudflare (cloudflared tunnel:
+ *  CF-Connecting-IP is set by the edge); `proxy` = behind exactly one trusted
+ *  reverse proxy (Render): the RIGHTMOST X-Forwarded-For hop is the one OUR
+ *  proxy appended — earlier hops are whatever the client claimed. */
+export type ProxyTrust = 'cloudflare' | 'proxy' | 'none';
+
+export function proxyTrustFromEnv(v: string | undefined = process.env.TB_TRUSTED_PROXY): ProxyTrust {
+  return v === 'cloudflare' || v === 'proxy' ? v : 'none';
+}
+
 /** S6.2 proxy-aware client IP: behind Render's proxy or a cloudflared tunnel
  *  every socket arrives from platform edge IPs — rate limiting on the raw
- *  address would throttle everyone as one client. Cloudflare's header wins
- *  (the tunnel case), then the standard proxy header, then the raw socket. */
-export function clientIp(req: http.IncomingMessage): string {
-  const cf = req.headers['cf-connecting-ip'];
-  if (typeof cf === 'string' && cf) return cf.trim();
-  const xff = req.headers['x-forwarded-for'];
-  const first = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
-  if (first) return first;
+ *  address would throttle everyone as one client. Which header to believe is
+ *  env-driven (TB_TRUSTED_PROXY): unset means local dev, raw socket only. */
+export function clientIp(req: http.IncomingMessage, trust: ProxyTrust = 'none'): string {
+  if (trust === 'cloudflare') {
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf) return cf.trim();
+  }
+  if (trust === 'proxy') {
+    const xff = req.headers['x-forwarded-for'];
+    const hops = (Array.isArray(xff) ? xff.join(',') : xff)?.split(',').map((h) => h.trim()).filter(Boolean) ?? [];
+    // rightmost hop: appended by the one proxy we trust, not the client
+    if (hops.length > 0) return hops[hops.length - 1];
+  }
   return req.socket?.remoteAddress ?? 'unknown';
 }
 
@@ -137,7 +157,7 @@ export class GameServer {
     this.wss.on('connection', (socket, req) => {
       (socket as any).isAlive = true;
       socket.on('pong', () => ((socket as any).isAlive = true));
-      const ctx: { room: Room | null; pid: PlayerId | null; ip: string } = { room: null, pid: null, ip: clientIp(req) };
+      const ctx: { room: Room | null; pid: PlayerId | null; ip: string } = { room: null, pid: null, ip: clientIp(req, this.opts.trustedProxy ?? 'none') };
       // S6.2/S6.3 lifecycle status: the client needs to know about a drain
       // window (title-screen message) and whether telemetry collection is
       // active (the consent card only appears when it is).
@@ -178,6 +198,12 @@ export class GameServer {
     const evict = setInterval(() => this.evictRooms(), HOUR);
     evict.unref?.();
     this.timers.push(evict);
+
+    // review fix: createTimes entries were only pruned on a NEW create from
+    // the same IP — one-off addresses accumulated forever. Sweep the window.
+    const prune = setInterval(() => this.pruneCreateTimes(), RATE_WINDOW_MS);
+    prune.unref?.();
+    this.timers.push(prune);
 
     this.restore();
   }
@@ -550,6 +576,16 @@ export class GameServer {
       if (seat && !seat.bot) {
         this.send(seat.socket, { type: 'presence', partnerConnected: !!partner && (!!partner.bot || !!partner.socket) });
       }
+    }
+  }
+
+  /** review fix: drop rate-limit entries older than the window (and empty
+   *  buckets), so the per-IP map can't grow without bound. */
+  pruneCreateTimes(now = this.now()): void {
+    for (const [ip, times] of this.createTimes) {
+      const live = times.filter((t) => now - t < RATE_WINDOW_MS);
+      if (live.length === 0) this.createTimes.delete(ip);
+      else if (live.length !== times.length) this.createTimes.set(ip, live);
     }
   }
 

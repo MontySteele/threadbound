@@ -10,7 +10,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { initialState } from '@threadbound/engine';
-import { GameServer, GameServerOptions, Room, clientIp } from '../src/lib';
+import { GameServer, GameServerOptions, Room, clientIp, proxyTrustFromEnv } from '../src/lib';
 
 const servers: GameServer[] = [];
 const clients: Client[] = [];
@@ -161,21 +161,39 @@ describe('feedback funnel records (S6.5)', () => {
   });
 });
 
-describe('proxy-aware client IP (S6.2)', () => {
+describe('proxy-aware client IP (S6.2, trust model per review fix)', () => {
   const req = (headers: http.IncomingHttpHeaders, remote?: string): http.IncomingMessage =>
     ({ headers, socket: { remoteAddress: remote } } as unknown as http.IncomingMessage);
 
-  it('prefers CF-Connecting-IP, then first X-Forwarded-For hop, then the raw socket', () => {
-    expect(clientIp(req({ 'cf-connecting-ip': '1.2.3.4', 'x-forwarded-for': '5.6.7.8' }, '9.9.9.9'))).toBe('1.2.3.4');
-    expect(clientIp(req({ 'x-forwarded-for': '5.6.7.8, 10.0.0.1' }, '9.9.9.9'))).toBe('5.6.7.8');
+  it('default (no trusted proxy): raw socket only — forwarding headers are client noise', () => {
+    expect(clientIp(req({ 'cf-connecting-ip': '1.2.3.4', 'x-forwarded-for': '5.6.7.8' }, '9.9.9.9'))).toBe('9.9.9.9');
     expect(clientIp(req({}, '9.9.9.9'))).toBe('9.9.9.9');
     expect(clientIp(req({}))).toBe('unknown');
+  });
+
+  it('cloudflare mode: CF-Connecting-IP (edge-set) wins, XFF is still ignored', () => {
+    expect(clientIp(req({ 'cf-connecting-ip': '1.2.3.4', 'x-forwarded-for': '5.6.7.8' }, '9.9.9.9'), 'cloudflare')).toBe('1.2.3.4');
+    expect(clientIp(req({ 'x-forwarded-for': '5.6.7.8' }, '9.9.9.9'), 'cloudflare')).toBe('9.9.9.9');
+  });
+
+  it('proxy mode: the RIGHTMOST X-Forwarded-For hop — the one our proxy appended', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '5.6.7.8, 10.0.0.1' }, '9.9.9.9'), 'proxy')).toBe('10.0.0.1');
+    expect(clientIp(req({ 'x-forwarded-for': '10.0.0.1' }, '9.9.9.9'), 'proxy')).toBe('10.0.0.1');
+    expect(clientIp(req({ 'cf-connecting-ip': '1.2.3.4' }, '9.9.9.9'), 'proxy')).toBe('9.9.9.9');
+    expect(clientIp(req({}, '9.9.9.9'), 'proxy')).toBe('9.9.9.9'); // no header: raw socket
+  });
+
+  it('TB_TRUSTED_PROXY parses to a trust mode, anything else = none', () => {
+    expect(proxyTrustFromEnv('cloudflare')).toBe('cloudflare');
+    expect(proxyTrustFromEnv('proxy')).toBe('proxy');
+    expect(proxyTrustFromEnv(undefined)).toBe('none');
+    expect(proxyTrustFromEnv('yes')).toBe('none');
   });
 });
 
 describe('room-creation rate limit (S6.2)', () => {
-  it('limits creates per client IP and keeps distinct IPs independent', async () => {
-    const { port } = await mkServer({ roomCreatesPerMin: 2 });
+  it('cloudflare mode: limits per edge-reported IP and keeps distinct IPs independent', async () => {
+    const { port } = await mkServer({ roomCreatesPerMin: 2, trustedProxy: 'cloudflare' });
     const a = new Client(port, { 'cf-connecting-ip': '1.2.3.4' });
     await a.open();
     a.send({ type: 'create', character: 'vess' });
@@ -190,6 +208,50 @@ describe('room-creation rate limit (S6.2)', () => {
     await b.open();
     b.send({ type: 'create', character: 'bram' });
     expect((await b.nextOf('joined')).playerId).toBe('p1');
+  });
+
+  it('default mode: forged CF/XFF headers do NOT mint fresh buckets (review fix)', async () => {
+    const { port } = await mkServer({ roomCreatesPerMin: 2 });
+    const a = new Client(port, { 'cf-connecting-ip': '1.2.3.4', 'x-forwarded-for': '5.6.7.8' });
+    await a.open();
+    a.send({ type: 'create', character: 'vess' });
+    await a.nextOf('joined');
+    a.send({ type: 'create', character: 'vess' });
+    await a.nextOf('joined');
+    // fresh forged addresses, same socket source — still the same bucket
+    const b = new Client(port, { 'cf-connecting-ip': '6.6.6.6', 'x-forwarded-for': '7.7.7.7' });
+    await b.open();
+    b.send({ type: 'create', character: 'vess' });
+    expect((await b.nextOf('error')).message).toMatch(/too many rooms/);
+  });
+
+  it('proxy mode: forged left XFF hops do NOT bypass — the rightmost hop buckets (review fix)', async () => {
+    const { port } = await mkServer({ roomCreatesPerMin: 2, trustedProxy: 'proxy' });
+    // in production the trusted proxy appends the true client address as the
+    // last hop; anything the client sent rides in front of it
+    const a = new Client(port, { 'x-forwarded-for': '1.1.1.1, 9.9.9.9' });
+    await a.open();
+    a.send({ type: 'create', character: 'vess' });
+    await a.nextOf('joined');
+    a.send({ type: 'create', character: 'vess' });
+    await a.nextOf('joined');
+    const b = new Client(port, { 'x-forwarded-for': '2.2.2.2, 9.9.9.9' }); // new forged hop, same real client
+    await b.open();
+    b.send({ type: 'create', character: 'vess' });
+    expect((await b.nextOf('error')).message).toMatch(/too many rooms/);
+  });
+
+  it('prunes stale rate-limit buckets so the per-IP map cannot grow forever (review fix)', async () => {
+    let t = 1_000_000_000_000;
+    const { gs } = await mkServer({ now: () => t });
+    (gs as any).allowCreate('1.2.3.4');
+    (gs as any).allowCreate('5.6.7.8');
+    expect((gs as any).createTimes.size).toBe(2);
+    gs.pruneCreateTimes(); // inside the window — nothing to drop
+    expect((gs as any).createTimes.size).toBe(2);
+    t += 61_000; // past the sliding window
+    gs.pruneCreateTimes();
+    expect((gs as any).createTimes.size).toBe(0);
   });
 });
 
