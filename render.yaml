@@ -30,5 +30,13 @@ services:
       # Render appended); client-forged hops can't mint fresh buckets
       - key: TB_TRUSTED_PROXY
         value: proxy
+      # playtest config (S7/S8): rites + narrative tracks ON for the friend
+      # sessions — a solo tester on the hosted build reported "no death-rite
+      # screen" because these were unset (rites default off; the engine skips
+      # the phase entirely). Remove both to return to the flag-off baseline.
+      - key: TB_RITES
+        value: "1"
+      - key: TB_TRACKS
+        value: "1"
       # maintenance window: set TB_DRAIN=1 in the dashboard, save, and the
       # title screen shows "the loom is being restrung"; unset to reopen
