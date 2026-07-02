@@ -357,7 +357,11 @@ function apply(state: GameState, action: Action): void {
       }
       if (action.kind === 'reclaim') {
         const partner = state.players[otherPlayer(action.player)];
-        assert(action.targetId && partner.discard.includes(action.targetId), "reclaim needs a card in your partner's discard");
+        // S7.6 (OQ#38, ruled): the partner's exhaust joins their discard as a source
+        assert(
+          action.targetId && (partner.discard.includes(action.targetId) || partner.exhaust.includes(action.targetId)),
+          "reclaim needs a card in your partner's discard or exhaust",
+        );
         // PT2: Reclaim copies (the original stays in the discard), so without
         // this guard the same card could be declared twice in one turn
         assert(
