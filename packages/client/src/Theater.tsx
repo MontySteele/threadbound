@@ -4,7 +4,7 @@
 // cord effects. Reconnection replays the same log instead of snapping (M3-D).
 
 import React, { useEffect, useRef, useState } from 'react';
-import { GameEvent, PlayerId } from '@threadbound/engine';
+import { ENEMIES, GameEvent, PlayerId } from '@threadbound/engine';
 import { audio } from './sfx';
 import { controller, GLYPHS } from './gamepad';
 import { emitCordFx } from './ThreadCord';
@@ -79,7 +79,24 @@ export function displayHp(offsets: Record<string, number> | null, id: string, hp
   return Math.max(0, Math.min(maxHp, hp + offsets[id]));
 }
 
-function eventBeat(e: GameEvent, pname: (p: PlayerId) => string): Beat | null {
+/** Freeform `detail` strings from the engine carry wire seat ids — swap them
+ *  for the same names every typed event already renders through pname. */
+function subj(s: string, pname: (p: PlayerId) => string): string {
+  return s.replace(/\bp1\b/g, pname('p1')).replace(/\bp2\b/g, pname('p2'));
+}
+
+/** Enemy display name for a beat. Prefers the App's roster-aware resolver
+ *  (ordinals, face renames); falls back to the def name so playback after the
+ *  combat state is gone never shows an instance id. */
+function enemyLabel(id: string, ename?: (id: string) => string): string {
+  if (ename) {
+    const n = ename(id);
+    if (n !== id) return n;
+  }
+  return ENEMIES[id.replace(/^e\d+_/, '')]?.name ?? id.replace(/^e\d+_/, '').replace(/_/g, ' ');
+}
+
+function eventBeat(e: GameEvent, pname: (p: PlayerId) => string, ename?: (id: string) => string): Beat | null {
   switch (e.e) {
     case 'thread_action':
       return { text: `${pname(e.player)} — ${e.kind}`, cls: 'b-thread', run: () => { audio.play('card_place'); emitCordFx({ kind: 'spend' }); } };
@@ -118,7 +135,7 @@ function eventBeat(e: GameEvent, pname: (p: PlayerId) => string): Beat | null {
     case 'block':
       return { text: '', run: () => { audio.play('block'); spawnNumber(e.target, `+${e.amount}`, 'n-block'); } };
     case 'enemy_action':
-      return { text: `${e.enemy.replace(/^e\d+_/, '').replace(/_/g, ' ')} ${e.detail}`, cls: 'b-enemy' };
+      return { text: `${enemyLabel(e.enemy, ename)} ${subj(e.detail, pname)}`, cls: 'b-enemy' };
     case 'enemy_dead':
       return { text: '', run: () => document.querySelector(`[data-fxid="${e.enemy}"]`)?.classList.add('fx-dissolve') };
     case 'player_hit':
@@ -146,14 +163,16 @@ function eventBeat(e: GameEvent, pname: (p: PlayerId) => string): Beat | null {
     case 'relic':
       return { text: `relic claimed`, cls: 'b-thread', run: () => audio.play('covet') };
     case 'info':
-      return { text: e.detail, cls: 'b-info' };
+      return { text: subj(e.detail, pname), cls: 'b-info' };
     default:
       return null;
   }
 }
 
-export function ResolutionTheater({ log, pname, onOffsets }: {
+export function ResolutionTheater({ log, pname, ename, onOffsets }: {
   log: GameEvent[]; pname: (p: PlayerId) => string;
+  /** roster-aware enemy display names (ordinals, face renames) */
+  ename?: (id: string) => string;
   /** playback HP offsets for the bars (see hpDelta); null = playback over */
   onOffsets?: (o: Record<string, number> | null) => void;
 }): JSX.Element | null {
@@ -189,7 +208,7 @@ export function ResolutionTheater({ log, pname, onOffsets }: {
           // skip: run remaining side effects instantly (numbers suppressed)
           continue;
         }
-        const beat = eventBeat(e, pname);
+        const beat = eventBeat(e, pname, ename);
         beat?.run?.();
         const d = hpDelta(e);
         if (d) {

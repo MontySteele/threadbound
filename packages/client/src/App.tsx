@@ -267,7 +267,7 @@ export default function App(): JSX.Element {
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
           <Phase state={state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
-          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} onOffsets={setHpOffsets} />
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
           <HintBar />
@@ -1762,6 +1762,9 @@ export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): J
 function renderEvent(e: GameEvent, state: ClientState): string {
   const pname = (p: PlayerId) => state.players[p].character;
   const ename = (id: string) => enemyName(state.combat, id);
+  // freeform engine `detail` strings carry wire seat ids — render them with
+  // the same names the typed events use
+  const subj = (s: string) => s.replace(/\bp1\b/g, pname('p1')).replace(/\bp2\b/g, pname('p2'));
   switch (e.e) {
     case 'witness': return `THE WITNESS: “${e.line}”`;
     case 'card': return `[${e.slot + 1}] ${pname(e.player)} plays ${e.card}${e.linkFired ? ' ⚡' : ''}${e.resonance ? ' ✦' : ''}`;
@@ -1769,7 +1772,7 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'detonate': return `  ✸ ${ename(e.target)}: ${e.stacks} Hex detonate for ${e.damage}`;
     case 'hex': return `  ☠ ${ename(e.target)} +${e.amount} Hex`;
     case 'block': return `  🛡 ${e.target === 'p1' || e.target === 'p2' ? pname(e.target as PlayerId) : ename(e.target)} +${e.amount} Block`;
-    case 'enemy_action': return `${ename(e.enemy)} ${e.detail}`;
+    case 'enemy_action': return `${ename(e.enemy)} ${subj(e.detail)}`;
     case 'enemy_dead': return `${ename(e.enemy)} is destroyed.`;
     case 'player_hit': return `${pname(e.player)} loses ${e.hpLoss} HP${e.blocked ? ` (${e.blocked} blocked)` : ''}.`;
     case 'fallen': return `${pname(e.player)} has FALLEN. The Thread goes slack.`;
@@ -1780,7 +1783,7 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'fray': return 'The Thread FRAYS — you both pay for it.';
     case 'resonance_ignite': return `✦ RESONANCE — [${e.tags.join(' → ')}]`;
     case 'relic': return `${pname(e.player)} claims a relic: ${RELICS_BY_ID[e.relic]?.name ?? e.relic}.`;
-    case 'info': return e.detail;
+    case 'info': return subj(e.detail);
     default: return JSON.stringify(e);
   }
 }
