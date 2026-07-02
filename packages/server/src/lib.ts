@@ -524,6 +524,15 @@ export class GameServer {
     };
     clone.players.p1.draw = [];
     clone.players.p2.draw = [];
+    // review-fix (§11 / §11 extension): the seed+rng pair IS the run's hidden
+    // future — draw-pile order, and on flagged runs the truth tuple and live
+    // mechanics are pure functions of it. Masked while the run is live; the
+    // seed returns on the end screens (Summary shows it for sharing/repro),
+    // and the lobby's placeholder seed predates the real roll at START_RUN.
+    if (clone.phase !== 'lobby' && clone.phase !== 'victory' && clone.phase !== 'game_over') {
+      clone.seed = 0;
+      clone.rng = 0;
+    }
     const truth = clone.truth ? clientTruthView(clone.truth, viewer, clone.botSeat) : undefined;
     return { ...clone, ...(truth ? { truth } : {}), counts, you: viewer };
   }
@@ -533,10 +542,15 @@ export class GameServer {
   }
 
   private broadcastState(room: Room): void {
-    const hash = hashState(room.state);
+    // review-fix (§11): the wire hash digests the per-viewer REDACTED view,
+    // not the full state — a digest of hidden state is a guessing oracle.
+    // Consumers only ever compare a viewer's hash to that same viewer's
+    // later hash (reconnect integrity), so per-viewer hashes suffice.
     for (const pid of ['p1', 'p2'] as PlayerId[]) {
       const seat = room.seats[pid];
-      if (seat) this.send(seat.socket, { type: 'state', state: this.redactFor(room.state, pid), hash });
+      if (!seat) continue;
+      const view = this.redactFor(room.state, pid);
+      this.send(seat.socket, { type: 'state', state: view, hash: hashState(view as GameState) });
     }
     // the bot seat gets the same redacted view, in-process (S1.1)
     if (room.bot) this.botDrivers.get(room.code)?.onState(this.redactFor(room.state, room.bot.seat) as BotView);
