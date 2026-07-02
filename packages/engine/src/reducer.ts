@@ -181,6 +181,7 @@ function apply(state: GameState, action: Action): void {
           shrine: null,
           boss: { faceAnswerId: truthRoll.value.q_what, liveMechanics: mechs.value },
           reveals: { bossFace: false, bossMechanic: false, openingIntent: false },
+          seenClueEvents: [],
         };
         state.telemetry.truth = {
           clueEventsOffered: 0,
@@ -897,6 +898,11 @@ function enterNode(state: GameState): void {
     case 'event': {
       const def = EVENTS[node.eventId!];
       if (def.clue && state.telemetry.truth) state.telemetry.truth.clueEventsOffered++;
+      // a visited clue event never re-enters a later act's pool — a scene
+      // must not replay with a different fragment (2026-07-01 ruling)
+      if (def.clue && state.truth && !(state.truth.seenClueEvents ??= []).includes(def.id)) {
+        state.truth.seenClueEvents.push(def.id);
+      }
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       const subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
@@ -1007,7 +1013,10 @@ function healBetweenActs(state: GameState): void {
 function advanceAct(state: GameState): void {
   if (state.map.act === 1) {
     healBetweenActs(state);
-    const gen = generateActMap(state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks);
+    const gen = generateActMap(
+      state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
+      state.truth?.seenClueEvents ?? [],
+    );
     state.rng = gen.rng;
     state.map = gen.map;
     state.phase = 'map';

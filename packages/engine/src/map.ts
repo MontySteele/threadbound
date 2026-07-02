@@ -8,11 +8,19 @@ import { eventsForAct } from './content/registry';
 
 const LAYERS = 6; // + boss layer
 
-export function generateActMap(rngState: number, act: 1 | 2, extraElite = false, tracks = false): { map: MapState; rng: number } {
+export function generateActMap(
+  rngState: number, act: 1 | 2, extraElite = false, tracks = false,
+  /** clue events already visited (flagged runs) — never re-offered: a scene
+   *  must not replay with a different fragment (2026-07-01 ruling). Unflagged
+   *  runs pass nothing and eventsForAct carries no clue events anyway. */
+  seenClueEvents: readonly string[] = [],
+): { map: MapState; rng: number } {
   let rng = rngState;
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
-  const eventDefs = eventsForAct(act, tracks);
+  const eventDefs = eventsForAct(act, tracks).filter(
+    (e) => !e.clue || !seenClueEvents.includes(e.id),
+  );
   const events = eventDefs.map((e) => e.id);
   let eventQueue: string[] = [];
   const nextEvent = (): string => {

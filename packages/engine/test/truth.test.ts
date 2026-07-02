@@ -632,3 +632,58 @@ describe('slice telemetry (S6.8)', () => {
     expect('truth' in s.telemetry).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Clue-event dedup (2026-07-01 review ruling): a visited clue event never
+// re-enters a later act's pool — a scene must not replay with a different
+// fragment.
+// ---------------------------------------------------------------------------
+
+describe('clue-event dedup', () => {
+  const clueIds = CLUE_EVENTS.map((e) => e.id);
+
+  it('generateActMap never re-offers excluded clue events (flagged)', () => {
+    const seen = clueIds.slice(1);
+    let totalOffered = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const { map } = generateActMap(seed, 2, false, true, seen);
+      const offered = map.nodes.filter((n) => n.kind === 'event').map((n) => n.eventId!);
+      for (const id of seen) {
+        expect(offered.includes(id), `seed=${seed}: excluded ${id} re-offered`).toBe(false);
+      }
+      totalOffered += offered.length;
+    }
+    // the pool still functions with five of six clue events excluded
+    // (not every act-2 layout rolls an event node — assert in aggregate)
+    expect(totalOffered).toBeGreaterThan(0);
+  });
+
+  it('unflagged generation ignores the exclusion list entirely (covenant)', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const bare = generateActMap(seed, 1, false, false);
+      const excluded = generateActMap(seed, 1, false, false, clueIds);
+      expect(JSON.stringify(excluded)).toBe(JSON.stringify(bare));
+    }
+  });
+
+  it('entering a clue event records it as seen; mainline events are not recorded', () => {
+    const start = (eventId: string): GameState => {
+      const state = reduce(initialState(11, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed: 11, tracks: true });
+      state.phase = 'map';
+      state.map = {
+        act: 1, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0,
+        nodes: [{ id: 0, kind: 'event', eventId, edges: [], layer: 0, lane: 0 }],
+      };
+      let next = reduce(state, { type: 'NODE_PICK', player: 'p1', nodeId: 0 });
+      return reduce(next, { type: 'NODE_PICK', player: 'p2', nodeId: 0 });
+    };
+    const atClue = start('nt_unrung_bell');
+    expect(atClue.phase).toBe('event');
+    expect(atClue.truth!.seenClueEvents).toEqual(['nt_unrung_bell']);
+
+    const mainline = eventsForAct(1, false).find((e) => !e.clue)!;
+    const atPlain = start(mainline.id);
+    expect(atPlain.phase).toBe('event');
+    expect(atPlain.truth!.seenClueEvents).toEqual([]);
+  });
+});
