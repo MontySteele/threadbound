@@ -512,7 +512,7 @@ function FirstVisitBlurb(): JSX.Element | null {
         the other, who joins with it. Refreshing is always safe — your seat waits for you.
       </p>
       <p className="muted">
-        <b>No partner handy?</b> Descend alone — the Witness (a grudging spirit) plays the other
+        <b>No partner handy?</b> Descend alone — the Witness (a grudging voice) plays the other
         seat. Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.
       </p>
       <p className="muted">
