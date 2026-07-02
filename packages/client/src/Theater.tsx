@@ -56,6 +56,29 @@ interface Beat {
   run?: () => void;
 }
 
+/** HP the bars still owe when this event plays (positive = loss). The state
+ *  broadcast already carries FINAL hp; displayed hp = final + unplayed
+ *  offsets, so bars start at pre-resolution values and fall beat-by-beat.
+ *  `revived` counts as a -1 loss: the rise from 0 to 1 HP plays as its beat.
+ *  Known estimates, clamped display-side: detonate/player_hit can overshoot
+ *  at a kill, and chorus-synced HP has no per-member events. */
+function hpDelta(e: GameEvent): { target: string; loss: number } | null {
+  switch (e.e) {
+    case 'damage': return e.hpLoss > 0 ? { target: e.target, loss: e.hpLoss } : null;
+    case 'detonate': return e.damage > 0 ? { target: e.target, loss: e.damage } : null;
+    case 'player_hit': return e.hpLoss > 0 ? { target: e.player, loss: e.hpLoss } : null;
+    case 'revived': return { target: e.player, loss: -1 };
+    default: return null;
+  }
+}
+
+/** Displayed HP under playback: live hp plus whatever the theater hasn't
+ *  narrated yet. Offsets null = no playback = live values. */
+export function displayHp(offsets: Record<string, number> | null, id: string, hp: number, maxHp: number): number {
+  if (!offsets || !(id in offsets)) return hp;
+  return Math.max(0, Math.min(maxHp, hp + offsets[id]));
+}
+
 function eventBeat(e: GameEvent, pname: (p: PlayerId) => string): Beat | null {
   switch (e.e) {
     case 'thread_action':
@@ -129,7 +152,11 @@ function eventBeat(e: GameEvent, pname: (p: PlayerId) => string): Beat | null {
   }
 }
 
-export function ResolutionTheater({ log, pname }: { log: GameEvent[]; pname: (p: PlayerId) => string }): JSX.Element | null {
+export function ResolutionTheater({ log, pname, onOffsets }: {
+  log: GameEvent[]; pname: (p: PlayerId) => string;
+  /** playback HP offsets for the bars (see hpDelta); null = playback over */
+  onOffsets?: (o: Record<string, number> | null) => void;
+}): JSX.Element | null {
   const [lines, setLines] = useState<Beat[] | null>(null);
   const playedRef = useRef<string>('');
   const cancelRef = useRef<(() => void) | null>(null);
@@ -142,18 +169,34 @@ export function ResolutionTheater({ log, pname }: { log: GameEvent[]; pname: (p:
 
     cancelRef.current?.();
     let cancelled = false;
-    cancelRef.current = () => (cancelled = true);
-    const beats = log.map((e) => eventBeat(e, pname)).filter((b): b is Beat => !!b);
+    // skip snaps the bars to live values along with tearing down the panel
+    cancelRef.current = () => { cancelled = true; onOffsets?.(null); };
+
+    // seed the bars at pre-resolution HP: every delta in the log is "owed",
+    // and each one is paid down at the moment its beat plays
+    const offsets: Record<string, number> = {};
+    for (const e of log) {
+      const d = hpDelta(e);
+      if (d) offsets[d.target] = (offsets[d.target] ?? 0) + d.loss;
+    }
+    if (Object.keys(offsets).length > 0) onOffsets?.({ ...offsets });
 
     const shown: Beat[] = [];
     setLines([]);
     (async () => {
-      for (const beat of beats) {
+      for (const e of log) {
         if (cancelled) {
           // skip: run remaining side effects instantly (numbers suppressed)
           continue;
         }
-        beat.run?.();
+        const beat = eventBeat(e, pname);
+        beat?.run?.();
+        const d = hpDelta(e);
+        if (d) {
+          offsets[d.target] = (offsets[d.target] ?? 0) - d.loss;
+          onOffsets?.({ ...offsets });
+        }
+        if (!beat) continue;
         if (beat.text) {
           shown.push(beat);
           setLines([...shown.slice(-6)]);
@@ -162,7 +205,10 @@ export function ResolutionTheater({ log, pname }: { log: GameEvent[]; pname: (p:
           await new Promise((r) => setTimeout(r, 120 + (beat.extraMs ?? 0)));
         }
       }
-      if (!cancelled) setTimeout(() => setLines(null), 1200);
+      if (!cancelled) {
+        onOffsets?.(null);
+        setTimeout(() => setLines(null), 1200);
+      }
     })();
     // Deliberately NO cleanup on log churn: every broadcast (the partner or
     // bot staging a card) replaces the log prop, and cancelling here cut the

@@ -18,7 +18,7 @@ import { audio } from './sfx';
 import { Sigil, CharacterSigil } from './sigils';
 import { InspectPanel, inspectElement, previewInspect } from './Tooltip';
 import { ThreadCord } from './ThreadCord';
-import { ResolutionTheater, isResolution } from './Theater';
+import { ResolutionTheater, isResolution, displayHp } from './Theater';
 import { StyleScreen } from './StyleScreen';
 import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
@@ -89,6 +89,9 @@ export default function App(): JSX.Element {
   // the bot's (or partner's) next staging states arrive instantly after a
   // resolution — keyed off state.log alone, the theater could miss it entirely
   const [resolutionLog, setResolutionLog] = useState<GameEvent[]>([]);
+  // playback HP: while the theater narrates, the bars show live hp + these
+  // offsets so damage lands per-beat instead of snapping to the final state
+  const [hpOffsets, setHpOffsets] = useState<Record<string, number> | null>(null);
   const [joined, setJoined] = useState<{ code: string; playerId: PlayerId; character: string } | null>(null);
   const [error, setError] = useState('');
   const [partnerOn, setPartnerOn] = useState(false);
@@ -262,8 +265,8 @@ export default function App(): JSX.Element {
           </header>
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
-          <Phase state={state} net={net} partnerOn={partnerOn} />
-          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} />
+          <Phase state={state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
           <HintBar />
@@ -558,7 +561,7 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
         <h3>Create a room</h3>
         <label>
           Play as{' '}
-          <select value={character} onChange={(e) => setCharacter(e.target.value as Character)}>
+          <select data-gp="META" value={character} onChange={(e) => setCharacter(e.target.value as Character)}>
             <option value="vess">Vess, the Hexweaver</option>
             <option value="bram">Bram, the Cinderfist</option>
           </select>
@@ -573,21 +576,28 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
       <div className="panel">
         <h3>Descend alone</h3>
         <p className="muted">The Witness will assist. He is thrilled.</p>
-        <label>
-          You{' '}
-          <select value={soloCharacter} onChange={(e) => setSoloCharacter(e.target.value as Character)}>
-            <option value="vess">Vess, the Hexweaver</option>
-            <option value="bram">Bram, the Cinderfist</option>
-          </select>
-        </label>{' '}
-        <label>
-          The Witness plays{' '}
-          <select value={botCharacter} onChange={(e) => setBotCharacter(e.target.value as Character)}>
-            <option value="bram">Bram, the Cinderfist</option>
-            <option value="vess">Vess, the Hexweaver</option>
-          </select>
-        </label>
-        <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
+        <div>
+          <label>
+            You{' '}
+            <select data-gp="META" value={soloCharacter} onChange={(e) => setSoloCharacter(e.target.value as Character)}>
+              <option value="vess">Vess, the Hexweaver</option>
+              <option value="bram">Bram, the Cinderfist</option>
+            </select>
+          </label>{' '}
+          <label>
+            The Witness plays{' '}
+            <select data-gp="META" value={botCharacter} onChange={(e) => setBotCharacter(e.target.value as Character)}>
+              <option value="bram">Bram, the Cinderfist</option>
+              <option value="vess">Vess, the Hexweaver</option>
+            </select>
+          </label>
+        </div>
+        {/* own line: the two inline selects were shoving this button off the
+            pad's vertical column — move()'s cross-axis penalty made it a
+            navigation dead spot (controller bug report) */}
+        <div>
+          <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
+        </div>
       </div>
       <ProfilePanel />
       {/* S6.5 title footer: version stamp lives in the fixed corner footer;
@@ -693,7 +703,10 @@ function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; s
   );
 }
 
-function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partnerOn: boolean }): JSX.Element {
+function Phase({ state, net, partnerOn, hpOffsets }: {
+  state: ClientState; net: Net; partnerOn: boolean;
+  hpOffsets: Record<string, number> | null;
+}): JSX.Element {
   switch (state.phase) {
     case 'lobby': {
       const solo = !!state.botSeat;
@@ -723,7 +736,7 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
     case 'map':
       return <MapView state={state} net={net} />;
     case 'combat':
-      return <Combat state={state} net={net} />;
+      return <Combat state={state} net={net} hpOffsets={hpOffsets} />;
     case 'reward':
       return <Reward state={state} net={net} />;
     case 'event':
@@ -880,7 +893,7 @@ const TELEGRAPH: Record<string, string> = {
   debuff_weak: 'tel-debuff', debuff_vulnerable: 'tel-debuff', sever: 'tel-debuff',
 };
 
-function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
+function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOffsets: Record<string, number> | null }): JSX.Element {
   const you = state.you;
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
   const me = state.players[you];
@@ -1009,17 +1022,20 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
             !state.players[e.boundTo === 'p1' ? 'p2' : 'p1'].fallen
               ? (e.boundTo === 'p1' ? 'p2' : 'p1') as PlayerId
               : null;
+          // playback: while the theater narrates, show HP as of the last
+          // played beat instead of the broadcast's final value
+          const ehp = displayHp(hpOffsets, e.id, e.hp, e.maxHp);
           // PT3: predicted HP loss from the staged chain (estimate)
-          const dmg = showDmg && e.hp > 0 ? Math.min(e.hp, plannedDamage[e.id] ?? 0) : 0;
-          const curPct = (100 * e.hp) / e.maxHp;
-          const postPct = (100 * (e.hp - dmg)) / e.maxHp;
+          const dmg = showDmg && ehp > 0 ? Math.min(ehp, plannedDamage[e.id] ?? 0) : 0;
+          const curPct = (100 * ehp) / e.maxHp;
+          const postPct = (100 * (ehp - dmg)) / e.maxHp;
           return (
             <div
               key={e.id}
               data-fxid={e.id}
               data-gp={e.hp > 0 && !e.untargetable ? 'ENEMIES' : undefined}
               data-inspect={`enemy:${e.defId}`}
-              className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${fraying ? 'sigil-fraying' : ''} ${e.hp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
+              className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${fraying ? 'sigil-fraying' : ''} ${ehp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
               style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : 'var(--line)', animationDelay: `${(i * 0.7) % 2}s` }}
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
@@ -1031,10 +1047,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {dmg > 0 && <div className="hppreview" style={{ left: `${postPct}%`, width: `${curPct - postPct}%` }} />}
               </div>
               <div>
-                {e.hp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}
-                {dmg > 0 && (e.hp - dmg <= 0
+                {ehp}/{e.maxHp}{e.block > 0 && <span className="chipblock"> 🛡{e.block}</span>}
+                {dmg > 0 && (ehp - dmg <= 0
                   ? <b className="dmg-lethal" data-inspect="kw:block-planned"> ☠ lethal</b>
-                  : <span className="dmg-forecast" data-inspect="kw:block-planned"> −{dmg} → {e.hp - dmg}</span>)}
+                  : <span className="dmg-forecast" data-inspect="kw:block-planned"> −{dmg} → {ehp - dmg}</span>)}
               </div>
               {e.hex > 0 && (
                 <div className="hexmotes" data-inspect="kw:hex">
@@ -1051,7 +1067,7 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
                 {e.stun > 0 && <span data-inspect="kw:stun">{GLYPH.stun} Stun {e.stun}</span>}
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
-              <div className="intent">{e.hp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
+              <div className="intent">{ehp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
               {/* nt-slice S6.5: shrine-earned mechanic reveals + the pre-fire
                   whisper of a hidden mechanic — rendered strings only */}
               {e.hp > 0 && e.revealedMechanics?.map((line, m) => (
@@ -1087,10 +1103,10 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
       {/* one row: player panels are the cord's endpoints (screen-height budget) */}
       <div className="combat-table">
-        <PStat state={state} pid={you} plannedBlock={plannedBlock[you]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+        <PStat state={state} pid={you} plannedBlock={plannedBlock[you]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} hpOffsets={hpOffsets} />
         <ThreadCord value={state.thread} max={state.threadMax} mode={cordMode} compact
           left={state.players.p1.character} right={state.players.p2.character} />
-        <PStat state={state} pid={partner} plannedBlock={plannedBlock[partner]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} />
+        <PStat state={state} pid={partner} plannedBlock={plannedBlock[partner]} partnerHandOpen={partnerHandOpen} setPartnerHandOpen={setPartnerHandOpen} hpOffsets={hpOffsets} />
       </div>
 
       <div className="thread-bar">
@@ -1176,13 +1192,15 @@ function Combat({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   );
 }
 
-function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }: {
+function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen, hpOffsets }: {
   state: ClientState; pid: PlayerId; plannedBlock?: number;
   partnerHandOpen: boolean; setPartnerHandOpen: (o: boolean) => void;
+  hpOffsets?: Record<string, number> | null;
 }): JSX.Element {
   const you = state.you;
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
   const p = state.players[pid];
+  const hp = displayHp(hpOffsets ?? null, pid, p.hp, p.maxHp);
   return (
     <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
       <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
@@ -1190,7 +1208,7 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
       {pid === state.botSeat && <span className="muted"> · the Witness</span>}
       {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
       <div>
-        HP {p.hp}/{p.maxHp}
+        HP {hp}/{p.maxHp}
         {/* live Block is structurally 0 while planning — show the staged plan */}
         <span data-inspect="kw:block-planned"> · {GLYPH.block} {(plannedBlock ?? 0) > 0
           ? <b className="planned-block">{plannedBlock} planned</b>

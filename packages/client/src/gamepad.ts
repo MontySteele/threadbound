@@ -255,11 +255,25 @@ export class Controller {
     this.setFocus(inZone[0] ?? this.firstItem());
   }
 
+  /** A focused <select> is driven in place: a native dropdown never opens
+   *  from a synthetic click, so left/right (and confirm) step its options. */
+  private cycleSelect(el: HTMLSelectElement, delta: number): void {
+    const n = el.options.length;
+    if (n === 0) return;
+    el.selectedIndex = (el.selectedIndex + delta + n) % n;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    this.onChange?.();
+  }
+
   private move(dir: 'up' | 'down' | 'left' | 'right'): void {
     const items = this.items();
     if (items.length === 0) return;
     if (!this.focused || !document.contains(this.focused)) {
       this.setFocus(this.firstItem());
+      return;
+    }
+    if ((dir === 'left' || dir === 'right') && this.focused instanceof HTMLSelectElement) {
+      this.cycleSelect(this.focused, dir === 'right' ? 1 : -1);
       return;
     }
     const zone = this.focused.dataset.gp!;
@@ -331,6 +345,10 @@ export class Controller {
 
   private confirm(): void {
     this.ensureFocus();
+    if (this.focused instanceof HTMLSelectElement) {
+      this.cycleSelect(this.focused, 1);
+      return;
+    }
     this.focused?.click();
     queueMicrotask(() => this.ensureFocus());
   }
