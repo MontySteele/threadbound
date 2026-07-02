@@ -24,6 +24,7 @@ import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
+import { RiteOffer } from './Rites';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -703,6 +704,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
         </div>
       );
     }
+    case 'rites':
+      return <RiteOffer state={state} net={net} />;
     case 'map':
       return <MapView state={state} net={net} />;
     case 'combat':
@@ -1686,7 +1689,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
 // ---------------------------------------------------------------------------
 
-function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
+export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
   if (!log || log.length === 0) return <></>;
   return (
     <div className="log">

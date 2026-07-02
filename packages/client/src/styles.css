@@ -499,3 +499,11 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); }
 .mech-telegraph { margin-top: 3px; font-size: 0.82em; font-style: italic; color: var(--text-dim); animation: telegraph-pulse 1.6s ease-in-out infinite; }
 @keyframes telegraph-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+/* S7.2 the Vestry — death-rite offer (panel look per LoomEye) */
+.rites .rite-row { display: flex; gap: 16px; justify-content: center; align-items: stretch; flex-wrap: wrap; }
+.rite-option { max-width: 280px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rite-option h3 { margin: 2px 0; letter-spacing: 0.08em; }
+.rite-flavor { font-style: italic; }
+.rite-card { display: flex; justify-content: center; }
+.rite-worn { margin: 8px auto; }
