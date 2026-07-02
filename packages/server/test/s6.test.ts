@@ -108,6 +108,22 @@ describe('both-consent telemetry rule (S6.3, ratified 2026-07-01)', () => {
     expect(JSON.stringify(file)).not.toContain('t_BOTHC_1');
   });
 
+  it('sanitizeClaim drops installId from a non-consenting claim (review fix, defense in depth)', async () => {
+    const { gs, port } = await mkServer();
+    const a = new Client(port);
+    await a.open();
+    // a buggy/hostile client sends the id without consent — the server refuses it
+    a.send({ type: 'create', character: 'vess', profile: { unlockedCards: [], ascensionUnlocked: {}, installId: 'install-noconsent-1' } });
+    const joined = await a.nextOf('joined');
+    const room = gs.rooms.get(joined.code)!;
+    expect(room.seats.p1!.claim?.installId).toBeUndefined();
+    expect(room.seats.p1!.claim?.telemetryConsent).toBeUndefined();
+    // with consent the id is kept — telemetry has it exactly when needed
+    a.send({ type: 'profile', profile: { unlockedCards: [], ascensionUnlocked: {}, installId: 'install-consent-1', telemetryConsent: true } });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(room.seats.p1!.claim?.installId).toBe('install-consent-1');
+  });
+
   it('a mid-session consent change updates the seat claim via the profile message', async () => {
     const { gs, port } = await mkServer();
     const a = new Client(port);

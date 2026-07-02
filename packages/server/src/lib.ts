@@ -511,9 +511,14 @@ export class GameServer {
       }
     }
     const claim: ProfileClaim = { unlockedCards, ascensionUnlocked };
-    // S6.3: anonymous id + consent ride the claim
-    if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
-    if (r.telemetryConsent === true) claim.telemetryConsent = true;
+    // S6.3: anonymous id + consent ride the claim. review fix (defense in
+    // depth — the client already withholds it): keep installId only on a
+    // consenting claim, so a non-consenting player's id never reaches the
+    // seat, the persistence snapshot, or a start stamp.
+    if (r.telemetryConsent === true) {
+      claim.telemetryConsent = true;
+      if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
+    }
     return claim;
   }
 
