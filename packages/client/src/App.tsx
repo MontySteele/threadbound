@@ -642,40 +642,53 @@ function ProfilePanel(): JSX.Element {
   );
 }
 
-/** S4.4: lobby ascension select — both players must land on the same level
- *  (concede pattern; in solo the Witness follows the human's vote). Levels
- *  above this browser's unlocked max are shown locked; the server clamps
- *  regardless (profiles are claims, not authority). */
+/** S4.4 lobby ascension select · S7.7 (OQ#44, ruled): the picker is
+ *  HOST-ONLY — p1, the room creator, holds the dial; the non-host seat sees
+ *  the selected rung read-only, mirrored from state. Wire protocol
+ *  unchanged (still SET_ASCENSION votes; server-side enforcement is a
+ *  separate commit). Levels above this browser's unlocked max are shown
+ *  locked; the server clamps regardless (profiles are claims, not
+ *  authority). */
 function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; solo: boolean }): JSX.Element {
   const you = state.you;
-  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
   const votes = state.ascensionVotes ?? { p1: 0, p2: 0 };
+  const host = you === 'p1';
+  const level = votes.p1; // the host's selection is THE rung
+  if (!host) {
+    if (level === 0) return <></>; // nothing set: keep the lobby quiet
+    return (
+      <div className="panel">
+        <h3>Ascension</h3>
+        <p>
+          <b>A{level}</b> <span className="muted">— set by the host</span>
+        </p>
+        <p className="muted">
+          {Array.from({ length: level }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+        </p>
+      </div>
+    );
+  }
   const myMax = loadProfile().ascensionUnlocked[state.players[you].character] ?? 0;
-  if (myMax === 0 && votes.p1 === 0 && votes.p2 === 0) {
-    return <></>; // nothing unlocked, nothing voted: keep the lobby quiet
+  if (myMax === 0 && level === 0) {
+    return <></>; // nothing unlocked, nothing set: keep the lobby quiet
   }
   return (
     <div className="panel">
       <h3>Ascension</h3>
       <label>
         Level{' '}
-        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
+        <select value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
           {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
             <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
           ))}
         </select>
       </label>
-      {votes[you] > 0 && (
+      {level > 0 && (
         <p className="muted">
-          {Array.from({ length: votes[you] }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+          {Array.from({ length: level }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
         </p>
       )}
-      {!solo && (
-        <p className="muted">
-          You: <b>A{votes[you]}</b> · Partner: <b>A{votes[partner]}</b>
-          {votes.p1 === votes.p2 ? ' — agreed' : ' — both must pick the same level'}
-        </p>
-      )}
+      {!solo && <p className="muted">You hold the dial — the rung binds both seats.</p>}
     </div>
   );
 }
