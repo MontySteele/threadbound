@@ -24,6 +24,11 @@ enc({ id: 'a1_leech_pair', enemies: ['thread_leech', 'thread_leech', 'tallow_wis
 enc({ id: 'a1_elite_mourner', enemies: ['mourner'], tier: 'elite' });
 enc({ id: 'a1_elite_warden', enemies: ['warden_of_the_crossing'], tier: 'elite' });
 enc({ id: 'a1_boss', enemies: ['interred_saint'], tier: 'boss' });
+// S10a: variety compounds combinatorially — new enemies mixed with existing
+enc({ id: 'a1_tithe_carried', enemies: ['tithe_taker', 'twice_carried'], tier: 'easy' });
+enc({ id: 'a1_snuffer_throng', enemies: ['votive_snuffer', 'votive_throng', 'tallow_wisp'], tier: 'normal' });
+enc({ id: 'a1_warden_leech', enemies: ['pall_warden', 'thread_leech', 'cinder_husk'], tier: 'normal' });
+enc({ id: 'a1_elite_sexton', enemies: ['mislaid_sexton'], tier: 'elite' });
 
 // ---- Act 2: The Hollow Choir -------------------------------------------------
 enc({ id: 'a2_psalm_pair', enemies: ['psalm_eater', 'psalm_eater'], tier: 'easy' });
@@ -34,21 +39,31 @@ enc({ id: 'a2_wretch_eater', enemies: ['lectern_wretch', 'psalm_eater', 'bell_hu
 enc({ id: 'a2_elite_cantor', enemies: ['the_cantor'], tier: 'elite' });
 enc({ id: 'a2_elite_bellkeeper', enemies: ['bellkeeper', 'votive_throng'], tier: 'elite' });
 enc({ id: 'a2_boss', enemies: ['choirmaster'], tier: 'boss' });
+// S10a
+enc({ id: 'a2_cracked_eater', enemies: ['bell_wretch_cracked', 'psalm_eater'], tier: 'easy' });
+enc({ id: 'a2_mote_pair', enemies: ['descant_mote', 'descant_mote'], tier: 'easy' });
+enc({ id: 'a2_silence_wretch', enemies: ['choir_silence', 'lectern_wretch', 'psalm_eater'], tier: 'normal' });
+enc({ id: 'a2_cracked_mote_husk', enemies: ['bell_wretch_cracked', 'descant_mote', 'bell_husk'], tier: 'normal' });
+enc({ id: 'a2_elite_unstrung', enemies: ['the_unstrung'], tier: 'elite' });
 
 // ---- Finale: The Last Braid ----------------------------------------------------
 enc({ id: 'finale_boss', enemies: ['the_unraveled'], tier: 'boss' });
 
+// S10a pool growth: act-2 easy 2→4; both normal pools +2; +1 elite per act.
+// Act-1 easy also +1 (the table put Tithe-Taker/Half-Carried in that pool —
+// they need a gentle debut even though the summary line elided the growth).
+// At the L7 maps (~7 combats/act) the old pools repeated within one run.
 export const ENCOUNTER_POOLS: Record<1 | 2, { easy: string[]; normal: string[]; elite: string[]; boss: string }> = {
   1: {
-    easy: ['a1_husks', 'a1_wisp_leech', 'a1_throng'],
-    normal: ['a1_gravewax', 'a1_sexton_mite', 'a1_pallbearer', 'a1_leech_pair'],
-    elite: ['a1_elite_mourner', 'a1_elite_warden'],
+    easy: ['a1_husks', 'a1_wisp_leech', 'a1_throng', 'a1_tithe_carried'],
+    normal: ['a1_gravewax', 'a1_sexton_mite', 'a1_pallbearer', 'a1_leech_pair', 'a1_snuffer_throng', 'a1_warden_leech'],
+    elite: ['a1_elite_mourner', 'a1_elite_warden', 'a1_elite_sexton'],
     boss: 'a1_boss',
   },
   2: {
-    easy: ['a2_psalm_pair', 'a2_bell_wretch'],
-    normal: ['a2_choristers', 'a2_bell_pair', 'a2_wretch_eater'],
-    elite: ['a2_elite_cantor', 'a2_elite_bellkeeper'],
+    easy: ['a2_psalm_pair', 'a2_bell_wretch', 'a2_cracked_eater', 'a2_mote_pair'],
+    normal: ['a2_choristers', 'a2_bell_pair', 'a2_wretch_eater', 'a2_silence_wretch', 'a2_cracked_mote_husk'],
+    elite: ['a2_elite_cantor', 'a2_elite_bellkeeper', 'a2_elite_unstrung'],
     boss: 'a2_boss',
   },
 };

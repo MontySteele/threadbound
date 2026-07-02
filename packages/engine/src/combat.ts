@@ -137,7 +137,7 @@ export function applyHookOp(state: GameState, p: PlayerState, eff: HookOp): void
 
 export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
   const severed = (state.combat?.severedTurns ?? 0) > 0; // Unraveled (§6)
-  return chain.map((slot, i) => {
+  const fired = chain.map((slot, i) => {
     if (i === 0) return false;
     const def = effectiveDef(mustFind(state, slot));
     if (!def.link) return false;
@@ -149,6 +149,14 @@ export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean
     const prevDef = effectiveDef(mustFind(state, prev));
     return prevDef.tag === def.link.condition;
   });
+  // S10a Choir Silence: while it stands, the FIRST link each turn doesn't
+  // fire (a held pause). Computed here so the planning UI shows the truth;
+  // a Pulse still punches through (forcing happens downstream of this).
+  if (state.combat?.enemies.some((e) => e.hp > 0 && ENEMIES[e.defId]?.silencesFirstLink)) {
+    const first = fired.findIndex(Boolean);
+    if (first >= 0) fired[first] = false;
+  }
+  return fired;
 }
 
 export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set<number> {
@@ -239,7 +247,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
 
   // working copies — forecasting must not mutate authoritative state
   const enemies = combat.enemies.map((e) => ({
-    id: e.id, hp: e.hp, block: e.block, hex: e.hex, vulnerable: e.vulnerable, untargetable: e.untargetable,
+    id: e.id, defId: e.defId, hp: e.hp, block: e.block, hex: e.hex, vulnerable: e.vulnerable, untargetable: e.untargetable,
   }));
   const mom: Record<PlayerId, number> = { p1: state.players.p1.momentum, p2: state.players.p2.momentum };
   const weak: Record<PlayerId, number> = { p1: state.players.p1.statuses.weak, p2: state.players.p2.statuses.weak };
@@ -251,6 +259,9 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
     let amt = raw;
     if (weak[owner] > 0) amt = Math.floor(amt * 0.75);
     if (tgt.vulnerable > 0) amt = Math.floor(amt * 1.5);
+    // S10a Bell Wretch, Cracked — parity with hitEnemy (preview == reality)
+    const cracked = ENEMIES[tgt.defId]?.crackedByResonance;
+    if (cracked && combat.resonatedLastTurn && amt > 0) amt += cracked;
     if (amt < 0) amt = 0;
     const blocked = Math.min(tgt.block, amt);
     tgt.block -= blocked;
@@ -332,9 +343,26 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
         case 'hex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += sc(eff.amount, eff.primary); break; }
         case 'hexAll': for (const tgt of living()) tgt.hex += sc(eff.amount, eff.primary); break;
         case 'doubleHex': { const tgt = retarget(slot.targetId); if (tgt) tgt.hex += Math.min(tgt.hex, DOUBLE_HEX_CAP); break; }
-        case 'vulnerable': { const tgt = retarget(slot.targetId); if (tgt) tgt.vulnerable += eff.amount; break; }
+        case 'vulnerable': {
+          const tgt = retarget(slot.targetId);
+          if (!tgt) break;
+          tgt.vulnerable += eff.amount;
+          // S10a Descant Mote echo — parity with applyEnemyDebuff
+          for (const mote of living()) {
+            if (mote.id !== tgt.id && ENEMIES[mote.defId]?.echoesDebuffs) mote.vulnerable += eff.amount;
+          }
+          break;
+        }
         case 'momentum': mom[owner] += sc(eff.amount, eff.primary); break;
         default: break; // non-damaging ops don't affect the enemy-damage forecast
+      }
+    }
+    // S10a Votive Snuffer — parity with the resolution's per-fired-link Block
+    // (granted after the firing card's own effects, absorbing LATER hits)
+    if (fired[i]) {
+      for (const en of living()) {
+        const b = ENEMIES[en.defId]?.blockOnLinkFire;
+        if (b) en.block += b;
       }
     }
     if (def.tag === 'Strike' && momSpent && !keepMomentum && !hasPassive(state.players[owner], 'momentumNoHalve')) {
@@ -382,8 +410,21 @@ function retarget(state: GameState, targetId: string | undefined): EnemyState | 
   return living.find((e) => e.id === targetId) ?? living[0];
 }
 
+/** S10a Descant Mote: single-target Weak/Vulnerable lands on the target AND
+ *  echoes onto every OTHER living mote (a follower's echo — rewards debuff
+ *  spread). Echoes never re-echo: the copy is applied directly. */
+function applyEnemyDebuff(state: GameState, enemy: EnemyState, kind: 'weak' | 'vulnerable', amount: number): void {
+  enemy[kind] += amount;
+  for (const mote of livingEnemies(state)) {
+    if (mote.id === enemy.id || !ENEMIES[mote.defId]?.echoesDebuffs) continue;
+    mote[kind] += amount;
+    state.log.push({ e: 'enemy_action', enemy: mote.id, detail: `echoes the ${kind === 'weak' ? 'Weak' : 'Vulnerable'} laid on ${ENEMIES[enemy.defId].name}` });
+  }
+}
+
 /** Choristers (§6): members share one HP pool — HP loss syncs the group. */
 function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _why: string): void {
+  const wasAlive = enemy.hp > 0;
   enemy.hp = Math.max(0, enemy.hp - hpLoss);
   if (ENEMIES[enemy.defId]?.chorus) {
     for (const other of state.combat!.enemies) {
@@ -391,6 +432,42 @@ function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _
     }
   }
   if (enemy.hp <= 0) state.log.push({ e: 'enemy_dead', enemy: enemy.id });
+  if (wasAlive && enemy.hp <= 0) onEnemyDeath(state, enemy);
+}
+
+/** S10a death hooks — fire exactly once, on the hit that crosses to 0. */
+function onEnemyDeath(state: GameState, enemy: EnemyState): void {
+  const def = ENEMIES[enemy.defId];
+  // Tithe-Taker: a Thread-economy fight with a payoff
+  if (def.threadOnDeath) {
+    gainThread(state, def.threadOnDeath);
+    state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `the tithe returns — +${def.threadOnDeath} Thread` });
+  }
+  // Half-Carried: the cargo comes apart — tests AoE vs chain sequencing.
+  // Spawns inherit the parent's binding and arrive stunned for one turn
+  // (they right themselves before acting — no same-phase surprise).
+  if (def.splitsOnDeath) {
+    const sdef = ENEMIES[def.splitsOnDeath.defId];
+    const mods = ascensionMods(state.ascension);
+    for (let k = 0; k < def.splitsOnDeath.count; k++) {
+      const roll = rngInt(state.rng, sdef.hp[1] - sdef.hp[0] + 1);
+      state.rng = roll.state;
+      const hp = mods.hpScale === 1 ? sdef.hp[0] + roll.value : Math.round((sdef.hp[0] + roll.value) * mods.hpScale);
+      const start = rngInt(state.rng, sdef.script.length);
+      state.rng = start.state;
+      state.combat!.enemies.push({
+        id: `e${state.combat!.enemies.length}_${sdef.id}`,
+        defId: sdef.id,
+        hp, maxHp: hp,
+        block: 0, hex: 0, weak: 0, vulnerable: 0, stun: 1, strength: 0,
+        boundTo: enemy.boundTo ?? (k % 2 === 0 ? 'p1' : 'p2'),
+        untargetable: false,
+        scriptIndex: start.value,
+        intent: scaleIntent(sdef.script[start.value], mods.dmgScale),
+      });
+    }
+    state.log.push({ e: 'info', detail: `The ${def.name} comes apart — what it carried was never one thing.` });
+  }
 }
 
 /** Player-sourced hit. Returns total damage dealt (for telemetry). */
@@ -398,6 +475,11 @@ function hitEnemy(state: GameState, attacker: PlayerState, enemy: EnemyState, ra
   let amt = raw;
   if (attacker.statuses.weak > 0) amt = Math.floor(amt * 0.75);
   if (enemy.vulnerable > 0) amt = Math.floor(amt * 1.5);
+  // S10a Bell Wretch, Cracked: the harmony hurts it — flat bonus on every
+  // hit the turn after a Resonance ignition (flag holds LAST turn's value
+  // during this card loop; it flips after the loop)
+  const cracked = ENEMIES[enemy.defId]?.crackedByResonance;
+  if (cracked && state.combat?.resonatedLastTurn && amt > 0) amt += cracked;
   if (amt < 0) amt = 0;
   const blocked = Math.min(enemy.block, amt);
   enemy.block -= blocked;
@@ -625,15 +707,16 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
     }
     case 'weak': {
       const enemy = retarget(state, ctx.targetId);
-      if (enemy) enemy.weak += eff.amount;
+      if (enemy) applyEnemyDebuff(state, enemy, 'weak', eff.amount);
       break;
     }
     case 'weakAll':
+      // all-target: every mote already receives it directly — no echo on top
       for (const enemy of livingEnemies(state)) enemy.weak += eff.amount;
       break;
     case 'vulnerable': {
       const enemy = retarget(state, ctx.targetId);
-      if (enemy) enemy.vulnerable += eff.amount;
+      if (enemy) applyEnemyDebuff(state, enemy, 'vulnerable', eff.amount);
       break;
     }
     case 'stun': {
@@ -881,8 +964,24 @@ export function resolveTurn(state: GameState): void {
       if (forcedSlots[i]) state.telemetry.forcedLinkFires++; // §14.12
       actStats.linksFired++;
       runHooks(state, slot.owner, 'linkFired');
+      // S10a Votive Snuffer: answers every fired link with Block — from this
+      // moment on, so damage already dealt this chain stays dealt
+      for (const en of livingEnemies(state)) {
+        const bd = ENEMIES[en.defId];
+        if (bd.blockOnLinkFire) {
+          en.block += bd.blockOnLinkFire;
+          state.log.push({ e: 'enemy_action', enemy: en.id, detail: `snuffs the answering spark (+${bd.blockOnLinkFire} Block)` });
+        }
+      }
     }
   }
+
+  // S10a bookkeeping on the RESOLVED chain, set before the enemy phase:
+  // The Unstrung reads this turn's harmony on its turn; Bell Wretch, Cracked
+  // read it during the NEXT card loop (the turn after ignition).
+  combat.resonatedLastTurn = resonanceSlots.size > 0;
+  // Pall Warden: the last hand in the Chain
+  if (chain.length > 0) combat.lastChainOwner = chain[chain.length - 1].owner;
 
   combat.chain = [];
   combat.threadActions = [];
@@ -956,6 +1055,26 @@ export function resolveTurn(state: GameState): void {
       if (!state.players[other].fallen) {
         enemy.boundTo = other;
         state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `re-tethers of its own will — now bound to ${other}` });
+      }
+    }
+    // S10a Pall Warden: follows the freshest grief — rebinds to whoever
+    // played the LAST card in the resolved Chain (steerable churn)
+    if (selfDef.rebindsToLastPlayed && enemy.boundTo !== null && combat.lastChainOwner
+      && !state.players[combat.lastChainOwner].fallen && enemy.boundTo !== combat.lastChainOwner) {
+      enemy.boundTo = combat.lastChainOwner;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `follows the last hand in the Chain — now bound to ${combat.lastChainOwner}` });
+    }
+    // S10a Mislaid Sexton: deterministic cadence, same contract as the §14.8
+    // re-tether — every Nth turn the bound one's top discard is exhausted
+    // (which opens it to the partner's Reclaim: the unburied change hands)
+    if (selfDef.exhaustsDiscardEvery && combat.turn % selfDef.exhaustsDiscardEvery === 0) {
+      const victim = boundPlayer(state, enemy);
+      const top = victim.discard.pop();
+      if (top) {
+        victim.exhaust.push(top);
+        const inst = findInstance(victim, top);
+        const name = inst ? effectiveDef(inst).name : 'a card';
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `feeds on the unburied — ${victim.id}'s ${name} is exhausted` });
       }
     }
     if (enemy.stun > 0) {
@@ -1063,6 +1182,17 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       state.players.p1.pendingStatus.frayed++;
       state.players.p2.pendingStatus.frayed++;
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} — the Thread will FRAY next turn` });
+      break;
+    case 'read_chain':
+      // S10a The Unstrung: a genuine dilemma reading the Chain just resolved
+      if (state.combat!.resonatedLastTurn) {
+        state.players.p1.pendingStatus.frayed += intent.fray;
+        state.players.p2.pendingStatus.frayed += intent.fray;
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `heard the harmony — the Thread will FRAY next turn` });
+      } else {
+        for (let t = 0; t < 2; t++) hitPlayer(state, enemy, bound, intent.amount);
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `found no harmony to read — attacks ${bound.id} for ${intent.amount}×2` });
+      }
       break;
     case 'block':
       enemy.block += intent.amount;

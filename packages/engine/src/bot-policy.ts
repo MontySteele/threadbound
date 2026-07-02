@@ -351,7 +351,10 @@ export class BotPolicy {
     if (kind === 'pulse') return false;
     const me = view.players[view.you];
     const incoming = view.combat!.enemies
-      .filter((e) => e.hp > 0 && e.boundTo === view.you && e.intent.kind.startsWith('attack'))
+      // S10a read_chain counts as a threat (its no-resonance branch is ×2 —
+      // read conservatively as one hit here, same as `times` elsewhere)
+      .filter((e) => e.hp > 0 && e.boundTo === view.you
+        && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))
       .reduce((a, e) => {
         const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
         return a + raw + e.strength;

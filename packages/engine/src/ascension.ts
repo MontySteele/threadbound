@@ -55,6 +55,7 @@ export function scaleIntent(intent: EnemyIntent, scale: number): EnemyIntent {
     case 'attack_drain': return { ...intent, amount: s(intent.amount) };
     case 'attack_fray': return { ...intent, amount: s(intent.amount) };
     case 'attack_momentum': return { ...intent, base: s(intent.base) };
+    case 'read_chain': return { ...intent, amount: s(intent.amount) }; // S10a
     default: return intent;
   }
 }

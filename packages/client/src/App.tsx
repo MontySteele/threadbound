@@ -1075,6 +1075,8 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
                 {e.strength > 0 && <span>{GLYPH.strength} Str +{e.strength}</span>}
               </div>
               <div className="intent">{ehp > 0 && intentText(e.intent, e.strength, e.weak)}</div>
+              {/* S10a legibility rule: the co-op hook is stated, not autopsied */}
+              {ehp > 0 && def.mechanicLine && <div className="mech-reveal">{def.mechanicLine}</div>}
               {/* nt-slice S6.5: shrine-earned mechanic reveals + the pre-fire
                   whisper of a hidden mechanic — rendered strings only */}
               {e.hp > 0 && e.revealedMechanics?.map((line, m) => (
@@ -1439,6 +1441,8 @@ function intentText(intent: any, strength: number, weak = 0): string {
     case 'debuff_weak': return `${GLYPH.weak} Weak ${intent.amount}`;
     case 'debuff_vulnerable': return `${GLYPH.vulnerable} Vuln ${intent.amount}`;
     case 'sever': return `${GLYPH.sever} moves its tether`;
+    // S10a The Unstrung: the dilemma is the intent — both branches shown
+    case 'read_chain': return `reads the Chain — Resonate: FRAY ${intent.fray} · hold back: ⚔ ${s(intent.amount)}×2${w}`;
     default: return '?';
   }
 }

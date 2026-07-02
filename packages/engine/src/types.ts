@@ -230,7 +230,11 @@ export type EnemyIntent =
   | { kind: 'buff_strength_all'; amount: number }
   | { kind: 'debuff_weak'; amount: number }
   | { kind: 'debuff_vulnerable'; amount: number }
-  | { kind: 'sever'; }; // moves its own binding to the other player (binding manipulation)
+  | { kind: 'sever'; } // moves its own binding to the other player (binding manipulation)
+  /** S10a The Unstrung: a genuine dilemma reading the Chain — if the pair
+   *  Resonates this turn it Frays both (pending); if they hold the harmony
+   *  back it attacks its bound player amount×2. Fully telegraphed. */
+  | { kind: 'read_chain'; amount: number; fray: number };
 
 export interface EnemyDef {
   id: string;
@@ -248,6 +252,32 @@ export interface EnemyDef {
   chorus?: boolean;
   /** The Unraveled (§6): at 50% HP severs the Thread for N turns, then reignites at 10 */
   unraveled?: { severTurns: number };
+  // ---- S10a co-op hooks (composition rule: every enemy touches the co-op
+  // layer; numbers provisional, mechanics telegraphed via mechanicLine) ----
+  /** Tithe-Taker: the pool refunds this much Thread when it dies */
+  threadOnDeath?: number;
+  /** Half-Carried: on death it comes apart into `count` copies of `defId` */
+  splitsOnDeath?: { defId: string; count: number };
+  /** Votive Snuffer: gains this much Block every time a link fires */
+  blockOnLinkFire?: number;
+  /** Pall Warden: each enemy turn, rebinds to whoever played the LAST card
+   *  in the resolved Chain — binding churn the pair can steer */
+  rebindsToLastPlayed?: boolean;
+  /** The Mislaid Sexton: every Nth turn, exhausts the top card of its bound
+   *  player's discard (feeds on the unburied — stresses the Reclaim window) */
+  exhaustsDiscardEvery?: number;
+  /** Bell Wretch, Cracked: takes +N damage from hits the turn AFTER a
+   *  Resonance ignition (the harmony hurts it) */
+  crackedByResonance?: number;
+  /** Descant Mote: Weak/Vulnerable applied to any OTHER enemy is copied
+   *  onto it (a follower's echo — rewards debuff spread) */
+  echoesDebuffs?: boolean;
+  /** Choir Silence: while it lives, the FIRST link each turn does not fire
+   *  (a held pause; a Pulse still punches through) */
+  silencesFirstLink?: boolean;
+  /** S10a legibility rule: the co-op hook stated in the intent UI, always
+   *  visible — mechanics are read, not discovered by autopsy */
+  mechanicLine?: string;
   flavor: string;
 }
 
@@ -560,6 +590,13 @@ export interface CombatState {
   hookOnceFired?: string[];
   /** S7.1: oncePerCombat hook charges — set at first fire, never reset */
   hookCombatFired?: string[];
+  /** S10a: did the pair ignite a Resonance in the most recently RESOLVED
+   *  chain? Set after each card loop (so during a resolution it still reads
+   *  the previous turn). Keys Bell Wretch, Cracked and The Unstrung.
+   *  Optional for persisted-room compatibility. */
+  resonatedLastTurn?: boolean;
+  /** S10a Pall Warden: owner of the last card in the last resolved chain */
+  lastChainOwner?: PlayerId;
 }
 
 export interface RewardState {

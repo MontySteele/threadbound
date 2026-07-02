@@ -810,6 +810,7 @@ function describeIntent(it: EnemyIntent): string {
     case 'debuff_weak': return `${it.amount} Weak`;
     case 'debuff_vulnerable': return `${it.amount} Vulnerable`;
     case 'sever': return 'a severing of its binding';
+    case 'read_chain': return `a reading of your Chain — Fray if you Resonate, ${it.amount}×2 damage if you hold back`; // S10a
   }
 }
 

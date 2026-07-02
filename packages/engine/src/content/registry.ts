@@ -10,6 +10,7 @@ import { VESS_M2_CARDS, VESS_M1_OVERLAYS } from './vess-m2';
 import { BRAM_M2_CARDS, BRAM_M1_OVERLAYS } from './bram-m2';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
+import { S10_ENEMIES } from './s10-enemies';
 import { CLUE_EVENTS } from './clue-events';
 import { RITE_CARDS } from './rites';
 import { CHARACTER_EVENTS } from './character-events';
@@ -42,7 +43,7 @@ export const LOCKED_CARDS: Set<string> = new Set();
 // ---- enemies ----------------------------------------------------------------
 
 export const ENEMIES: Record<string, EnemyDef> = { ...M1_ENEMIES };
-for (const e of M2_ENEMIES) {
+for (const e of [...M2_ENEMIES, ...S10_ENEMIES]) {
   if (ENEMIES[e.id]) throw new Error(`duplicate enemy id ${e.id}`);
   ENEMIES[e.id] = e;
 }
@@ -106,6 +107,7 @@ for (const def of Object.values(ENEMIES)) {
       case 'attack_momentum': return { ...it, base: dmg(it.base) };
       case 'attack_drain': return { ...it, amount: dmg(it.amount) };
       case 'attack_fray': return { ...it, amount: dmg(it.amount) };
+      case 'read_chain': return { ...it, amount: dmg(it.amount) }; // S10a
       default: return it;
     }
   });
