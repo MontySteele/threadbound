@@ -11,6 +11,8 @@
 //                        proxy (rightmost X-Forwarded-For hop — behind exactly
 //                        one trusted proxy, e.g. Render), unset = raw socket
 //   TB_DRAIN=1           S6.2: drain — no new rooms, existing rooms play on
+//   TB_MAX_FEEDBACK=n    review fix: per-room cap on stored feedback records
+//                        (default 200) — beyond it nothing is stored/written
 //   BUILD_SHA=sha        S6.1: build identity (source checkouts derive dev+<git hash>)
 //   TB_ENEMY_HP_SCALE / TB_ENEMY_DMG_SCALE
 //                        live difficulty override (defaults 1.45 / 1.30) — soften a
@@ -42,6 +44,7 @@ const game = new GameServer({
   roomCreatesPerMin: Number(process.env.TB_ROOM_RATE ?? 10) || 10,
   trustedProxy: proxyTrustFromEnv(),
   drain: process.env.TB_DRAIN === '1',
+  maxFeedback: Number(process.env.TB_MAX_FEEDBACK ?? 200) || 200,
 });
 
 game.listen().then((port) => {

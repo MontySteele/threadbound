@@ -99,6 +99,10 @@ export interface GameServerOptions {
   roomCreatesPerMin?: number;
   /** S6.2 drain flag (TB_DRAIN=1): no new rooms; existing rooms play on */
   drain?: boolean;
+  /** review fix: per-room cap on stored feedback records (env TB_MAX_FEEDBACK,
+   *  default 200) — a looping client was unbounded memory + disk (the same
+   *  disk that holds the deploy snapshot on Render) */
+  maxFeedback?: number;
   /** review fix (S6.2): which forwarding header, if any, to trust for the
    *  client IP (env TB_TRUSTED_PROXY). Default: raw socket only. */
   trustedProxy?: ProxyTrust;
@@ -480,6 +484,15 @@ export class GameServer {
     }
   }
 
+  /** review fix: a joined client could loop feedback/bug/survey messages —
+   *  each grew room.feedback (memory + the persistence snapshot) and appended
+   *  a JSONL line. Past the cap, nothing is stored or written. */
+  private feedbackFull(room: Room, socket: WebSocket): boolean {
+    if (room.feedback.length < (this.opts.maxFeedback ?? 200)) return false;
+    this.send(socket, { type: 'error', message: 'the ledger is full — the Witness will hold no more notes for this run.' });
+    return true;
+  }
+
   // ---- protocol ------------------------------------------------------------
 
   /** S4.5: sanitize a client-sent profile claim. */
@@ -751,6 +764,7 @@ export class GameServer {
       case 'feedback': {
         // M3 review: in-the-moment stamps beat post-session recall
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const mood = ['good', 'bad', 'note'].includes(msg.mood) ? msg.mood : 'note';
         const entry: FeedbackEntry = {
           ...this.feedbackBase(ctx.room, ctx.pid, 'stamp'),
@@ -767,6 +781,7 @@ export class GameServer {
         // S6.5 one-tap bug report: seed, turn, act, build, pair, ascension —
         // every "needs a seed + turn to repro" OQ becomes an artifact
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const entry: FeedbackEntry = {
           ...this.feedbackBase(ctx.room, ctx.pid, 'bug'),
           note: typeof msg.note === 'string' ? msg.note.slice(0, 2000) : undefined,
@@ -785,6 +800,7 @@ export class GameServer {
       case 'survey': {
         // S6.5 end-of-run micro-survey: 1–5 + optional text, never blocking
         if (!ctx.room || !ctx.pid) return;
+        if (this.feedbackFull(ctx.room, socket)) return;
         const rating = Math.floor(Number(msg.rating) || 0);
         if (rating < 1 || rating > 5) return;
         const entry: FeedbackEntry = {

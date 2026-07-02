@@ -159,6 +159,36 @@ describe('feedback funnel records (S6.5)', () => {
     expect(bug.act).toBeGreaterThanOrEqual(1);
     expect(lines[2].rating).toBe(4);
   });
+
+  it('caps stored feedback per room and clamps free-text notes (review fix)', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tb-fbcap-'));
+    const { gs, port } = await mkServer({ feedbackDir: dir, maxFeedback: 2 });
+    const a = new Client(port);
+    await a.open();
+    a.send({ type: 'create', character: 'vess', solo: true });
+    const joined = await a.nextOf('joined');
+    a.send({ type: 'start', seed: 42 });
+    await a.nextOf('state');
+
+    a.send({ type: 'bug', note: 'x'.repeat(5000) }); // clamp: 2000 chars max
+    await a.nextOf('bug_ack');
+    a.send({ type: 'feedback', mood: 'good' });
+    await a.nextOf('feedback_ack');
+    // past the cap: friendly in-fiction error, nothing stored, nothing written
+    a.send({ type: 'feedback', mood: 'bad' });
+    expect((await a.nextOf('error')).message).toMatch(/ledger is full/);
+    a.send({ type: 'bug', note: 'still broken' });
+    expect((await a.nextOf('error')).message).toMatch(/ledger is full/);
+    a.send({ type: 'survey', rating: 3 });
+    expect((await a.nextOf('error')).message).toMatch(/ledger is full/);
+
+    const room = gs.rooms.get(joined.code)!;
+    expect(room.feedback.length).toBe(2);
+    expect(room.feedback[0].note).toHaveLength(2000);
+    const file = fs.readdirSync(dir).find((f) => f.startsWith('feedback-'))!;
+    const lines = fs.readFileSync(path.join(dir, file), 'utf8').trim().split('\n');
+    expect(lines.length).toBe(2); // capped records never reach disk
+  });
 });
 
 describe('proxy-aware client IP (S6.2, trust model per review fix)', () => {
