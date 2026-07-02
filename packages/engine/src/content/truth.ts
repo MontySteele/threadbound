@@ -132,9 +132,9 @@ export const FRAGMENTS: FragmentDef[] = [
   // the old a_sexton text concluded "this bell rang, recently" — positives
   // that name a specific other answer and can be false under the grown pool)
   frag('nt_unrung_bell', 'actor', 'q_what', 'a_peal',
-    'The clapper is bound in grave-cloth, knot over knot, and not one binding has ever been torn by a swing. Whatever else this bell has done, it has not been ringing on and on — nothing rings through knots like these.'),
+    'The dust lay years deep in the bell’s mouth before your stroke scattered it — fine, level, undisturbed, the slow work of a long stillness. A bell that had been sounding on and on holds no such dust; every stroke sweeps its own house. Whatever harrowed this parish, it was not this metal ringing without end.'),
   frag('nt_unrung_bell', 'actor', 'q_what', 'a_sexton',
-    'The clapper is worn to a sliver and the sound-bow is bright with wear — and nowhere on either is there a muffle, a binding, or the mark where one sat. If something stilled this bell, it was not a deliberate hand. Deliberate hands leave bindings.'),
+    'You go over the clapper, the crown, the sound-bow, looking for what a deliberate silencing leaves behind — grave-cloth bindings, wax seals, the lashing-mark where a muffle sat and was cut away. The silencing rite signs its work; the signing is half the rite. There is no such signature anywhere on this bell.'),
   frag('nt_unrung_bell', 'actor', 'q_what', 'a_abandoned',
     'Every rope, wedge, and fitting is stowed in its bracket; the ringing-gear is squared away to the last strap. Whoever tended this bell closed their work out like people who meant to. Nothing in this chamber was dropped mid-gesture.'),
   frag('nt_unrung_bell', 'actor', 'q_what', 'a_starved',
@@ -144,7 +144,7 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_grief',
     'There is no mourning in this metal. The chamber is squared away, swept, almost proud — and grief does not sweep.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_kept',
-    'The pause after this bell was dropped, not kept — snapped off mid-breath. Whatever was being kept here, its keeper stopped keeping it.'),
+    'Keeping has its forms in this rite — observance marks renewed, the keeper’s small offices done and done over, season on season; I know them all. I have circled this bell twice looking for any of it. There is not one trace of tending anywhere near it. Whatever this silence is, nobody is keeping it.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_mercy',
     'I know mercy’s forms in this rite — the small kindnesses it leaves like coins wherever it has passed. I have looked twice, for your friend’s sake. There is not one kindness in this chamber. Whatever was done here was not done gently.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_unity',
@@ -179,7 +179,7 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_choir_stalls', 'actor', 'q_why', 'a_unity',
     'The room remembers twelve voices that never once sang the same line — parts, always parts, braided and stubborn, and nobody ever tried to sand them into one note. Sameness was not what this music was for.'),
   frag('nt_choir_stalls', 'partner', 'q_who', 'a_kin',
-    'Eleven robes for twelve seats, and the twelfth seat is sized for nobody in your friend’s bloodline — I have seen your friend sit, and that stall was not carved for such shoulders. Strangers’ shoulders, maybe.'),
+    'Eleven robes for twelve seats — and look at the twelfth stall’s joinery: it carries the stranger’s join and the guest-blessing mark, the forms a parish cuts for one not of its own. I know both cuttings, kin and guest, stroke for stroke. Whoever that seat was made to hold, the parish did not cut it as kin.'),
   frag('nt_choir_stalls', 'partner', 'q_who', 'a_hired',
     'The twelfth robe is missing because it was sent away — the stall bears a departure blessing, the kind sung over kin leaving to return. Parishes do not bless the exits of the help.'),
 
@@ -216,7 +216,7 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_flooded_crypt', 'partner', 'q_what', 'a_sexton',
     'The deepest offerings are tiny bells, hundreds, every one with its clapper filed BRIGHT — eager to sound. These people were not asking for quiet. They were asking the ringing to keep on.'),
   frag('nt_flooded_crypt', 'partner', 'q_what', 'a_abandoned',
-    'Below the waterline the rows run on and on, years deep, laid patient as masonry — a devotion kept up long past comfort. However it ended above, this parish never lost interest in its own rite, and rites dropped in the middle are dropped by people who stopped coming. These people never stopped coming.'),
+    'The crypt’s tenders kept a station below the waterline — every offering-rite does; I know the office and its gear. Abandonment writes itself at the tender’s own post: regalia dropped where the keeper stood, the skimming-pole left mid-office, the station quit in the middle of its work. I have read this water twice. That grammar is nowhere in it.'),
   frag('nt_flooded_crypt', 'partner', 'q_what', 'a_starved',
     'Bread gone to stone, wax by the bowlful, tallow votives past counting — an open larder underwater, and not one thing in it so much as nibbled. If something starving had taken this parish, it would have started here, where the food was already gathered. Nothing ever started here.'),
 
@@ -230,7 +230,7 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_stranger_stone', 'partner', 'q_why', 'a_grief',
     'Grief visits a stone and then, year by year, forgets the way. This stone was touched on a SCHEDULE — same height, same stroke, to the end. That is not sorrow. That is observance.'),
   frag('nt_stranger_stone', 'partner', 'q_why', 'a_kept',
-    'The touching STOPPED — cleanly, all at once, dust settling undisturbed in the last season. A kept covenant does not stop being kept. Whatever this was, someone was released from it.'),
+    'The touching STOPPED — cleanly, all at once, dust settling undisturbed in the last season. A kept covenant does not stop being kept. Whatever this observance was, it ended, and it ended all at once — the dust will swear to that much and no more.'),
   frag('nt_stranger_stone', 'partner', 'q_why', 'a_mercy',
     'No flowers ever rotted at this stone’s foot; no tokens of comfort, no small mercies left for whoever it stands for — none of kindness’s litter, and kindness always litters. Whatever kept hands coming back to this stone, it was not a tenderness.'),
   frag('nt_stranger_stone', 'partner', 'q_why', 'a_unity',
@@ -238,7 +238,7 @@ export const FRAGMENTS: FragmentDef[] = [
 
   // ---- The Toll-Gate (S8.2): A → q_came, B → q_what -------------------------
   frag('nt_toll_gate', 'actor', 'q_came', 'a_paid',
-    'The box weighs what a passerby carries and takes its due — that is the whole office of a toll-gate. It weighs you and takes nothing. Finds nothing to take. Whatever brought you down here, it did not come with a purse attached.'),
+    'A PURCHASED descent files itself at a gate like this — earnest coin lodged in the box, a surety mark chalked at the post, the toll-forms stamped for the contract; that is the whole office of a toll-gate. It takes your measure and finds no such filing to set against you. Whatever brought you down here, nobody priced the bringing.'),
   frag('nt_toll_gate', 'actor', 'q_came', 'a_compelled',
     'The gate has a mark for those sent under another’s seal — it stamps them through unweighed, the way you wave through driven cattle. It weighs you like anyone free. No seal, no sender, no goad at your back.'),
   frag('nt_toll_gate', 'actor', 'q_came', 'a_volunteered',
@@ -266,17 +266,17 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_tallow_court', 'actor', 'q_why', 'a_unity',
     'No two figures match — different hands, different fats, different feast-days, left different on purpose. Whoever kept this court let it disagree with itself to the end. Whatever undid this parish, it was not a scouring-for-sameness.'),
   frag('nt_tallow_court', 'partner', 'q_came', 'a_paid',
-    'I have escorted the paid before — they count the descent in instalments, and their eyes do sums at every landing. I have watched your friend’s eyes since the door. Nothing in them is counting.'),
+    'A purchased descent comes down showing its price — the earnest token carried where an escort can sight it, the surety knot at the belt, toll-receipts for each stage; the forms are strict, and I know every one of them. I was at the door when you two came through, and I have looked at each landing since. Not one of the purchase’s forms came down with you.'),
   frag('nt_tallow_court', 'partner', 'q_came', 'a_compelled',
     'The compelled walk like the door behind them is the dangerous one — I have carried enough of them to know the gait. I was at the door when you two came through it. Neither of you looked back at it once.'),
   frag('nt_tallow_court', 'partner', 'q_came', 'a_volunteered',
-    'Those who ask for this place arrive rehearsed — they know its titles, they have studied; volunteering is mostly homework. Your friend called the Undercroft "the cellar" on the first stair. Nobody volunteers for a descent and learns nothing about it first.'),
+    'Those who ask for this place arrive schooled — the asking has its forms, petitions and titles studied out beforehand, and I know every form of it. Your friend called the Undercroft "the cellar" on the first stair. Whatever carried you two down, it did not come by way of the petitions.'),
   frag('nt_tallow_court', 'partner', 'q_came', 'a_fleeing',
     'I know the pace of the pursued — I have carried enough of them too. They spend the first act of any descent listening behind themselves. You two listen ahead. Whatever you left above, it is not chasing you.'),
 
   // ---- The Bearers’ Steps (S8.2): A → q_came, B → q_why ----------------------
   frag('nt_bearers_steps', 'actor', 'q_came', 'a_paid',
-    'The poles know a hireling’s grip — paid shoulders carry at arm’s length, sparing themselves for the next job; the wood is worn to that grip in two places. It settles into your hands and cannot find that grip on you anywhere.'),
+    'A priced carry is marked before the first step — an earnest token tied at the pole-head, the hirer’s tally scored into the wood; that is the trade’s form, older than the stair. The poles settle into your hands carrying no token, no tally, no score. Whatever this descent is, nobody bought it.'),
   frag('nt_bearers_steps', 'actor', 'q_came', 'a_compelled',
     'Driven bearers set their heels — the third flight still carries drag-marks, generations old, where the pressed and the sentenced went down. Your feet leave nothing like them. Nothing about your footing argues a goad behind you.'),
   frag('nt_bearers_steps', 'actor', 'q_came', 'a_volunteered',
@@ -300,17 +300,17 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_winding_room', 'actor', 'q_what', 'a_peal',
     'The weft is even, line on line to the last thrown pick — a weaver’s hands put the room’s troubles into the cloth, and there is no tremor anywhere in this cloth. Whatever happened to this parish did not spend years deafening the people it happened to.'),
   frag('nt_winding_room', 'actor', 'q_what', 'a_abandoned',
-    'The room was left in ORDER — warps chained off, tools racked, the day’s work folded on the bench. However its weavers left, they left the way people leave a room they honor. This was not a downing of tools in the middle of anything.'),
+    'Read the floor, bench to door: nothing dropped between the frames, no load set down half-carried, no tools shed where somebody’s nerve went. A room walked out on mid-work keeps the walking-out — the leavings fall where the leaving started. Nothing here fell anywhere. However the weavers went, they did not bolt from their benches in the middle of it.'),
   frag('nt_winding_room', 'actor', 'q_what', 'a_starved',
     'Wool, flax, tallow for dressing the thread — a larder of the eatable and the burnable, shelf on shelf, untouched. Starving parts strip a room like this to bare stone; it is the first place they go. The shelves are full.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_paid',
-    'Shroud-cloth is priced by the ell, and buyers finger it — I have watched a hundred paid hands weigh cloth against wages without knowing they did it. Your friend touched that shroud like it might be somebody’s. The paid do not touch things that way.'),
+    'A purchased descent is a papered thing — toll-forms filed at the gate, an earnest shown at every station, a surety worn where the rite can read it; I know each form by heart. I have had the whole descent to look for them on you both, and nothing of the purchase’s kit came down with you. However you two came to this stair, no one filed it as a purchase.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_compelled',
     'The compelled do the task in front of them and not one thing more — it is how you tell them, in any age, on any stair. Nobody made your friend unroll anything. I watched the choosing. It was a choosing.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_volunteered',
     'Those who volunteer for a descent dress for it — I know the kit lists; I helped write the forms they are copied from. You two came down in what you stood up in. Nobody plans a pilgrimage in those boots.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_fleeing',
-    'I checked the door behind you for a long while after you came through it — an old habit; call it professional interest. Nothing followed. Nothing is coming. Nobody flees at the unhurried pace you two keep.'),
+    'I checked the door behind you for a long while after you came through it — an old habit; call it professional interest. Nothing followed. Nobody flees at the unhurried pace you two keep.'),
 ];
 
 export const FRAGMENTS_BY_ID: Record<string, FragmentDef> = {};

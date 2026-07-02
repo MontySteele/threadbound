@@ -27,8 +27,8 @@ export const CLUE_EVENTS: EventDef[] = [
     prose:
       'A bell lies half-buried in the nave floor — a bell too heavy to have ever been hung. ' +
       'No tower above it, no beam that could have held it. It is simply here, canted in the ' +
-      'broken stone, its mouth full of dust and its surface unscarred. Bells are made to be ' +
-      'heard. Someone went to enormous trouble so this one never would be.',
+      'broken stone, its mouth full of dust and its surface, at first look, unscarred. Bells are made to be ' +
+      'heard. As if someone had gone to enormous trouble so this one never would be.',
     options: [
       {
         id: 'ring',
