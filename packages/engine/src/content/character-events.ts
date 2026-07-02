@@ -1,7 +1,8 @@
 // S7.3 character events — the birth-rite routing economy. Three per role,
 // act 0, gated into the pool only when that character is in the run AND the
-// rites flag is set (map.ts, clue-event pattern), at the same 2x queue
-// weight ("one economy, two payoffs"). The event's ACTOR (forced to the
+// rites flag is set (map.ts, clue-event pattern), at 4× queue weight — 2×
+// clue events' (B6 ruling, 2026-07-02; was clue-equal 2× through S10a and
+// starved birth picks to 0–10% of seats). The event's ACTOR (forced to the
 // matching character's seat) earns 1 birth-rite progress on resolution.
 //
 // S8.3 voice pass: prose, labels, resultText, and Witness partner-channel

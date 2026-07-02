@@ -343,8 +343,8 @@ export interface EventDef {
    *  elevated queue weight (map.ts) */
   clue?: boolean;
   /** S7.3 character event: enters the pool only when this character is in
-   *  the run AND rites are on; same 2x queue weight as clue events. The
-   *  event's ACTOR earns 1 birth-rite progress. */
+   *  the run AND rites are on; 4× queue weight (2× clue events' — B6
+   *  ruling, 2026-07-02). The event's ACTOR earns 1 birth-rite progress. */
   character?: CharacterId;
   /** S8.4 rare event (the wrong-way event): enters the pool only on flagged
    *  runs (tracks OR rites — the clue-event gating pattern, so unflagged

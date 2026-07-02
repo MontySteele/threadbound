@@ -33,17 +33,23 @@ export function generateActMap(
   const nextEvent = (): string => {
     if (eventQueue.length === 0) {
       if (tracks || riteCharacters.length > 0) {
-        // nt-slice S6.2 + S7.3: weighted order — clue AND character events
-        // carry 2× queue weight ("one economy, two payoffs"), surfacing
-        // earlier among the few event nodes a run visits.
+        // nt-slice S6.2 + S7.3: weighted order — clue and character events
+        // carry elevated queue weight ("one economy, two payoffs"),
+        // surfacing earlier among the few event nodes a run visits.
         // S8.4: rare events (the wrong-way event) carry HALF a normal
-        // event's weight. Integer weights, so the existing 4:2 ≡ 2:1
-        // clue:normal ratio is preserved and the half-weight slot fits at
-        // 1 — the RELATIVE weights are what matter to the sampler.
+        // event's weight. Integer weights against normal=2, so the
+        // half-weight slot fits at 1 — the RELATIVE weights are what
+        // matter to the sampler.
+        // 2026-07-02 ruling (review-sweep B6): character events 2×→4×.
+        // 10 clue events at equal weight took ~62% of gated slots and
+        // birth picks reached 0–10% of seats; 4× puts the two tracks at
+        // rough parity (20 vs 24 weight units). This pre-spends the first
+        // rung of decision-tree D6-B; if arrival is still late, the
+        // ladder resumes at L8/E32.
         // Sample-without-replacement; unflagged runs keep the plain shuffle
         // (and its exact rng consumption) below — rare events never reach
         // that branch (eventsForAct gates them out unflagged).
-        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue || e.character ? 4 : e.rare ? 1 : 2 }));
+        const pool = eventDefs.map((e) => ({ id: e.id, w: e.character ? 8 : e.clue ? 4 : e.rare ? 1 : 2 }));
         while (pool.length > 0) {
           const total = pool.reduce((sum, p) => sum + p.w, 0);
           const r = rngInt(rng, total);
