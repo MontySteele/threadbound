@@ -138,6 +138,40 @@ describe('both-consent telemetry rule (S6.3, ratified 2026-07-01)', () => {
   });
 });
 
+describe('start-stamp retraction on mid-run opt-out (review fix)', () => {
+  it('appends a retract line once when consent flips to false after a stamped start', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tb-starts-'));
+    const { gs, port } = await mkServer({ humanTelemetryDir: dir });
+    const a = new Client(port);
+    await a.open();
+    a.send({ type: 'create', character: 'vess', solo: true, profile: { unlockedCards: [], ascensionUnlocked: {}, installId: 'install-retract', telemetryConsent: true } });
+    const joined = await a.nextOf('joined');
+    a.send({ type: 'start', seed: 77 });
+    let st = await a.nextOf('state'); // the create-time lobby broadcast may land first
+    while (st.state.phase === 'lobby') st = await a.nextOf('state');
+    const startsFile = () => {
+      const f = fs.readdirSync(dir).find((x) => x.startsWith('starts-'))!;
+      return fs.readFileSync(path.join(dir, f), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    };
+    expect(startsFile()).toHaveLength(1);
+    expect(gs.rooms.get(joined.code)!.startStamped).toBe(true);
+
+    // mid-run opt-out via the settings toggle (profile message)
+    a.send({ type: 'profile', profile: { unlockedCards: [], ascensionUnlocked: {} } });
+    await new Promise((r) => setTimeout(r, 50));
+    let lines = startsFile();
+    expect(lines).toHaveLength(2);
+    expect(lines[1].kind).toBe('retract');
+    expect(lines[1].code).toBe(joined.code);
+    expect(lines[1].seed).toBe(77);
+
+    // re-sending the opt-out never double-retracts
+    a.send({ type: 'profile', profile: { unlockedCards: [], ascensionUnlocked: {} } });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(startsFile()).toHaveLength(2);
+  });
+});
+
 describe('feedback funnel records (S6.5)', () => {
   it('stamps, bug reports, and surveys land date-rotated with build + room + seed attached', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tb-fb-'));

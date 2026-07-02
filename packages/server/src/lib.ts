@@ -73,6 +73,10 @@ export interface Room {
   lastActivity: number;
   /** S6.4: wall-clock run start — telemetry needs run minutes + completion rate */
   startedAt?: number;
+  /** review fix: a start stamp actually landed on disk for this run — a
+   *  mid-run consent opt-out must retract it (S6.3: no residual record,
+   *  and the completion-rate denominator stays honest) */
+  startStamped?: boolean;
   telemetryWritten?: boolean;
   feedback: FeedbackEntry[];
   /** nt-slice S6.8: wall-clock time at the Loom's Eye (talk proxy). Clock
@@ -283,6 +287,7 @@ export class GameServer {
       actionLog: room.actionLog,
       lastActivity: room.lastActivity,
       startedAt: room.startedAt,
+      startStamped: room.startStamped,
       seats: Object.fromEntries(
         Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot, claim: seat!.claim }]),
       ),
@@ -346,6 +351,7 @@ export class GameServer {
           actionLog: r.actionLog ?? [],
           lastActivity: r.lastActivity ?? this.now(),
           startedAt: r.startedAt,
+          startStamped: r.startStamped,
           seats: {},
           feedback: r.feedback ?? [],
           bot: r.bot,
@@ -395,8 +401,33 @@ export class GameServer {
         characters: { p1: room.state.players.p1.character, p2: room.state.players.p2.character },
         installIds: { p1: room.seats.p1?.claim?.installId, p2: room.seats.p2?.claim?.installId },
       }) + '\n');
+      room.startStamped = true;
     } catch (err) {
       console.error('start stamp write failed', err);
+    }
+  }
+
+  /** review fix: a mid-run opt-out suppresses the end-of-run file but the
+   *  start line was already on disk — a residual record of a run that no
+   *  longer consents, and a phantom in the completion-rate denominator.
+   *  Append a retraction the aggregator honors (same date-rotated file). */
+  private maybeRetractStartStamp(room: Room): void {
+    const dir = this.opts.humanTelemetryDir;
+    if (!dir || !room.startStamped || this.bothConsent(room)) return;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const day = new Date(this.now()).toISOString().slice(0, 10);
+      fs.appendFileSync(path.join(dir, `starts-${day}.jsonl`), JSON.stringify({
+        kind: 'retract',
+        ts: this.now(),
+        code: room.code,
+        seed: room.state.seed,
+        buildSha: buildSha(),
+        contentVersion: CONTENT_VERSION,
+      }) + '\n');
+      room.startStamped = false; // one retraction per stamp
+    } catch (err) {
+      console.error('start stamp retraction failed', err);
     }
   }
 
@@ -699,7 +730,11 @@ export class GameServer {
           try { seat.socket.close(); } catch { /* stale socket */ }
         }
         seat.socket = socket;
-        if (msg.profile) seat.claim = this.sanitizeClaim(msg.profile);
+        if (msg.profile) {
+          seat.claim = this.sanitizeClaim(msg.profile);
+          // review fix: a reconnect can carry a consent flip too
+          this.maybeRetractStartStamp(entry.room);
+        }
         ctx.room = entry.room;
         ctx.pid = entry.pid;
         this.send(socket, { type: 'joined', token: seat.token, code: entry.room.code, playerId: entry.pid, character: seat.character });
@@ -825,6 +860,8 @@ export class GameServer {
         if (!ctx.room || !ctx.pid) return;
         const seat = ctx.room.seats[ctx.pid];
         if (seat && !seat.bot) seat.claim = this.sanitizeClaim(msg.profile);
+        // review fix: an opt-out mid-run retracts the run's start stamp
+        this.maybeRetractStartStamp(ctx.room);
         return;
       }
 

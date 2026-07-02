@@ -44,14 +44,19 @@ for (const f of fs.readdirSync(dir)) {
     console.error(`skipping unreadable ${f}`);
   }
 }
-const starts = [];
+const startLines = [];
 for (const f of fs.readdirSync(dir)) {
   if (!f.startsWith('starts-') || !f.endsWith('.jsonl')) continue;
   for (const line of fs.readFileSync(path.join(dir, f), 'utf8').split('\n')) {
     if (!line.trim()) continue;
-    try { starts.push(JSON.parse(line)); } catch { /* torn line */ }
+    try { startLines.push(JSON.parse(line)); } catch { /* torn line */ }
   }
 }
+// review fix: a mid-run consent opt-out appends { kind: 'retract' } — the
+// retracted start must leave the completion-rate denominator (S6.3: the
+// residual record no longer counts as a consented run)
+const retracted = new Set(startLines.filter((l) => l.kind === 'retract').map((l) => `${l.code}:${l.seed}`));
+const starts = startLines.filter((l) => l.kind !== 'retract' && !retracted.has(`${l.code}:${l.seed}`));
 
 const keep = (r) =>
   (MODE === 'all' || (r.mode ?? 'pair') === MODE) &&
