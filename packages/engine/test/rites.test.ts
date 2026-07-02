@@ -319,3 +319,29 @@ describe('S9a unlockedRites read-path', () => {
     expect(unlockedRites('bram', 'birth', un([], ['bogus']))).toEqual(births); // unknown-only → full
   });
 });
+
+describe('comfort-pass checklist: rite-card removal at a shop (the removability ruling)', () => {
+  it('a vested rite card can be cut at the shop like any non-starter', () => {
+    let s = initialState(21, { p1: 'vess', p2: 'bram' });
+    s = reduce(s, { type: 'START_RUN', seed: 21, rites: true });
+    expect(s.phase).toBe('rites');
+    for (const pid of ['p1', 'p2'] as const) {
+      s = reduce(s, { type: 'RITE_PICK', player: pid, riteId: s.ritesState!.offer![pid][0] });
+    }
+    expect(s.phase).toBe('map');
+    const riteCard = s.players.p1.deck.find((c) => CARDS[c.defId]?.riteOnly);
+    expect(riteCard).toBeTruthy();
+    // surgery: stand at a shop with money in the purse
+    s.phase = 'shop';
+    s.gold = 500;
+    s.shop = {
+      items: [
+        { id: 'item0', kind: 'removal', forPlayer: 'p1', price: 0, sold: false },
+        { id: 'item1', kind: 'removal', forPlayer: 'p2', price: 0, sold: false },
+      ],
+    };
+    s = reduce(s, { type: 'SHOP_REMOVE', player: 'p1', itemId: 'item0', cardInstanceId: riteCard!.instanceId });
+    expect(s.players.p1.deck.some((c) => c.instanceId === riteCard!.instanceId)).toBe(false);
+    expect(s.removalsByPlayer.p1).toBe(1);
+  });
+});
