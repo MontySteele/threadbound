@@ -317,6 +317,13 @@ export interface EventDef {
    *  the run AND rites are on; same 2x queue weight as clue events. The
    *  event's ACTOR earns 1 birth-rite progress. */
   character?: CharacterId;
+  /** S8.4 rare event (the wrong-way event): enters the pool only on flagged
+   *  runs (tracks OR rites — the clue-event gating pattern, so unflagged
+   *  runs keep the exact plain shuffle and its rng consumption), at HALF a
+   *  normal event's queue weight in map.ts's weighted branch — a run can
+   *  miss it entirely, which is the point. Never repeats within a run
+   *  (rides the seenGatedEvents exclusion). */
+  rare?: boolean;
   prose: string;
   options: EventOptionDef[];
 }
@@ -647,6 +654,12 @@ export interface GameState {
   rites?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
+  /** S8.4 rare events (wrong-way) already visited — never re-offered, the
+   *  clue-dedup rule. Rare events are neither clue nor character, so they
+   *  get their own list; it is only ever created on flagged runs (rare
+   *  events exist in no unflagged pool), so flag-off serialized state is
+   *  untouched. */
+  seenRareEvents?: string[];
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;

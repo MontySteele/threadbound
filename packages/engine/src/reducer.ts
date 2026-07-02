@@ -1009,6 +1009,12 @@ function enterNode(state: GameState): void {
       if (def.character && state.ritesState && !state.ritesState.seenEvents.includes(def.id)) {
         state.ritesState.seenEvents.push(def.id);
       }
+      // S8.4: same dedup for rare events (the wrong-way event never repeats
+      // within a run). Rare events exist only in flagged pools, so this key
+      // never appears on unflagged runs (flag-off state stays byte-identical).
+      if (def.rare && !(state.seenRareEvents ??= []).includes(def.id)) {
+        state.seenRareEvents.push(def.id);
+      }
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
       // character events are ABOUT that character: the subject roll is still
@@ -1128,7 +1134,7 @@ function advanceAct(state: GameState): void {
     healBetweenActs(state);
     const gen = generateActMap(
       state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
-      [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? [])],
+      [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? []), ...(state.seenRareEvents ?? [])],
       state.rites ? [state.players.p1.character, state.players.p2.character] : [],
     );
     state.rng = gen.rng;

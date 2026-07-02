@@ -13,6 +13,7 @@ import { M2_ENEMIES, M2_EVENTS } from './m2-world';
 import { CLUE_EVENTS } from './clue-events';
 import { RITE_CARDS } from './rites';
 import { CHARACTER_EVENTS } from './character-events';
+import { WRONG_WAY_EVENTS } from './wrong-way';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
@@ -113,21 +114,24 @@ for (const def of Object.values(ENEMIES)) {
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };
-for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS]) {
+for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS, ...WRONG_WAY_EVENTS]) {
   if (EVENTS[ev.id]) throw new Error(`duplicate event id ${ev.id}`);
   EVENTS[ev.id] = ev;
 }
 
 /** nt-slice: clue events enter the pool only on flagged (tracks) runs.
  *  S7.3: character events only on rites runs, and only for characters
- *  actually in the run. */
+ *  actually in the run. S8.4: rare events only on flagged runs of either
+ *  kind (tracks OR rites) — unflagged pools never carry them, so the
+ *  unflagged plain shuffle and its rng consumption are untouched. */
 export function eventsForAct(
   act: 1 | 2, tracks = false, riteCharacters: readonly string[] = [],
 ): EventDef[] {
   return Object.values(EVENTS).filter(
     (e) => (e.act === act || e.act === 0)
       && (tracks || !e.clue)
-      && (!e.character || riteCharacters.includes(e.character)),
+      && (!e.character || riteCharacters.includes(e.character))
+      && (!e.rare || tracks || riteCharacters.length > 0),
   );
 }
 

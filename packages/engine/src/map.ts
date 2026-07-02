@@ -26,7 +26,7 @@ export function generateActMap(
   const nodes: MapNode[] = [];
   const pools = ENCOUNTER_POOLS[act];
   const eventDefs = eventsForAct(act, tracks, riteCharacters).filter(
-    (e) => !(e.clue || e.character) || !seenGatedEvents.includes(e.id),
+    (e) => !(e.clue || e.character || e.rare) || !seenGatedEvents.includes(e.id),
   );
   const events = eventDefs.map((e) => e.id);
   let eventQueue: string[] = [];
@@ -36,9 +36,14 @@ export function generateActMap(
         // nt-slice S6.2 + S7.3: weighted order — clue AND character events
         // carry 2× queue weight ("one economy, two payoffs"), surfacing
         // earlier among the few event nodes a run visits.
+        // S8.4: rare events (the wrong-way event) carry HALF a normal
+        // event's weight. Integer weights, so the existing 4:2 ≡ 2:1
+        // clue:normal ratio is preserved and the half-weight slot fits at
+        // 1 — the RELATIVE weights are what matter to the sampler.
         // Sample-without-replacement; unflagged runs keep the plain shuffle
-        // (and its exact rng consumption) below.
-        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue || e.character ? 2 : 1 }));
+        // (and its exact rng consumption) below — rare events never reach
+        // that branch (eventsForAct gates them out unflagged).
+        const pool = eventDefs.map((e) => ({ id: e.id, w: e.clue || e.character ? 4 : e.rare ? 1 : 2 }));
         while (pool.length > 0) {
           const total = pool.reduce((sum, p) => sum + p.w, 0);
           const r = rngInt(rng, total);
