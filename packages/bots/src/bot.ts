@@ -106,16 +106,19 @@ export class Bot {
   }
 
   private decide(view: BotView): void {
-    // S4.4 lobby flow for ASCEND batteries: both seats vote, creator starts
-    // once the votes agree (the engine's both-confirm pattern)
+    // S4.4 lobby flow for ASCEND batteries — S7.7 (OQ#44): the rung is
+    // host-only now; the host votes and the server mirrors it to the other
+    // seat, so the joiner just waits for the mirrored vote to land
     if (view.phase === 'lobby' && this.opts.ascension) {
+      const isHost = this.opts.create || this.opts.createSolo;
+      if (!isHost) return;
       const lvl = this.opts.ascension;
       const votes = view.ascensionVotes ?? { p1: 0, p2: 0 };
       if (this.you && votes[this.you] !== lvl) {
         this.send({ type: 'action', action: { type: 'SET_ASCENSION', level: lvl } });
         return;
       }
-      if ((this.opts.create || this.opts.createSolo) && !this.startedRun && this.partnerOn && votes.p1 === lvl && votes.p2 === lvl) {
+      if (!this.startedRun && this.partnerOn && votes.p1 === lvl && votes.p2 === lvl) {
         this.startedRun = true;
         this.send({ type: 'start', seed: this.opts.startSeed });
       }
