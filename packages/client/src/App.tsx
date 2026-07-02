@@ -578,7 +578,7 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
       </div>
       <div className="panel">
         <h3>Descend alone</h3>
-        <p className="muted">The Witness will assist. He is thrilled.</p>
+        <p className="muted">The Witness will assist. It is thrilled.</p>
         <div>
           <label>
             You{' '}
