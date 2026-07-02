@@ -567,4 +567,8 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     protects the held reveal, contradicts the union rule), or per-seat
     registers (the Witness speaks differently to each listener — Babel-true
     (§4) but needs per-viewer line projection, out of S8 scope).
-    **Needs a designer ruling; max-of-seats is the provisional call.**
+    **RULED (2026-07-02, review-sweep B11): max-of-seats, ratified** —
+    union-rule-consistent. Session consequence for the playtest: the host
+    plays from a fresh profile, else the host codex pulls the quiet/high
+    registers (possibly the sacrament quote) into a first-timer's first
+    run.

@@ -148,6 +148,8 @@ Severity-ordered. No balance, no content, no canon, no tuning.
 ## B. Designer decisions (one-line rulable questions, with recommendations)
 
 Severity-ordered. Evidence is file:line or this sweep's battery data.
+Items 1, 2, 3, 6, and 11 were ruled the same day (2026-07-02) — each
+ruling is recorded inline on the item.
 
 1. **The two S10a elites cannot appear below Ascension 3.** Map generation
    assigns elite encounters *positionally* from the pool
@@ -160,6 +162,9 @@ Severity-ordered. Evidence is file:line or this sweep's battery data.
    A0 battery re-run?* **Rec: accept for tomorrow; sample-the-pool as the
    first post-playtest engine change — the S10a variety thesis is
    otherwise untestable by humans.**
+   **RULED (2026-07-02): accept for today** — the variety read covers 7
+   of 9 new enemies; sample-the-pool is the first post-playtest engine
+   change (needs golden regen + A0 re-battery).
 2. **The shipped config was never the batteried config.** The S9a/S10a
    battery matrix (and its "re-centering stays unspent" reading) ran
    `TB_RITES` only; render.yaml ships TRACKS+RITES, and under that config
@@ -169,6 +174,10 @@ Severity-ordered. Evidence is file:line or this sweep's battery data.
    fun outranks calibration (§OQ#25 precedent) and bot rates aren't human
    rates — but treat 48% as the number the next re-centering conversation
    starts from, not 29%.**
+   **RULED (2026-07-02): the no-re-centering ruling STANDS for the
+   deploy config** — first-session fun outranks calibration; bot rates
+   aren't human rates. Ledger correction, recorded: the next
+   re-centering conversation starts from 48% (TRACKS+RITES vb), not 29%.
 3. **Quickening is inert on ~84% of the pool.** Mutation precedence
    (OQ ruling #6: Echoes of upgraded cards mutate from the BASE form,
    `combat.ts:822`-area) means "cards you Reclaim arrive upgraded" does
@@ -178,6 +187,10 @@ Severity-ordered. Evidence is file:line or this sweep's battery data.
    arrive upgraded"), swap the effect, or let mutation×upgrade compose?*
    **Rec: rule before the sessions; retext is the only same-day-safe
    option (content string — not taken unilaterally).**
+   **RULED (2026-07-02): retext to what visibly happens; string signed
+   off and landed (e555bf0):** "Cards you Reclaim that keep their name
+   arrive upgraded." Effect untouched; nothing player-facing explains
+   the precedence.
 4. **q_came's payoff is unspendable where it lands.** The Covet charge
    granted at the Loom's Eye verdict (`reducer.ts:880`-area, marked
    PROVISIONAL in-source) has zero remaining spend windows — the shrine
@@ -211,6 +224,13 @@ Severity-ordered. Evidence is file:line or this sweep's battery data.
    **Rec: if tomorrow is meant to read the birth-rite at all, raise the
    character-event weight (one knob, flag-gated pool only); otherwise
    accept knowingly and brief the debrief script.**
+   **RULED (2026-07-02): character-event queue weight 2×→4×, flagged
+   pool only; landed (7dfb90c).** Consequence, recorded: this PRE-SPENDS
+   the first rung of decision-tree D6-B; if arrival is still late after
+   today, the ladder resumes at L8/E32. Post-change battery (vb 50,
+   shipped config): character events 1.48/run (was 0.56–1.18), birth
+   picks p1 10% / p2 20% of seats (was 0–10%), median timing act 2
+   layer 5 — improved, still under the N=2 comfort line for bots.
 7. **Enemy sigils may wear the p1 player hue.** The procedural sigil
    PALETTE contains `#7fd4ff` (`sigils.tsx:40`); 10 of 31 enemies hash to
    it, including two cyan "Votive" enemies side by side in one new
@@ -245,6 +265,11 @@ Severity-ordered. Evidence is file:line or this sweep's battery data.
     quote) into a brand-new player's first run. *Q: max, min, or
     per-seat?* **Rec: ratify max-of-seats for now (union-rule-consistent)
     and note it in the session script.**
+    **RULED (2026-07-02): max-of-seats, ratified** (union-consistent;
+    OPEN-QUESTIONS #48 closed). Session consequence: the host plays
+    today from a FRESH PROFILE — otherwise the host codex pulls the
+    quiet/high registers (possibly the sacrament quote) into a
+    first-timer's first run and poisons the D10 held-reveal read.
 12. **Pall Warden's displayed binding is stale at commit time.** It
     rebinds to the last chain owner *before* attacking
     (`combat.ts:1062`-area) with no client forecast — "the game lied about
