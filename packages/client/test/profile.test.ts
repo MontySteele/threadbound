@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   Profile,
   codexEntries, emptyProfile, exportProfile, importProfile, loadProfile,
-  mergeProfiles, recordClear, recordCodex, saveProfile, setTelemetryConsent,
+  mergeProfiles, profileClaim, recordClear, recordCodex, saveProfile, setTelemetryConsent,
 } from '../src/profile';
 
 /** installId is random per emptyProfile() — compare progress fields only. */
@@ -93,6 +93,22 @@ describe('S6.3 installId + telemetry consent (profile v2)', () => {
     const merged = mergeProfiles(loadProfile(), imported);
     expect(merged.installId).toBe(p.installId);
     expect(merged.telemetryConsent).toBe(true);
+  });
+
+  it('profileClaim carries installId ONLY with explicit consent (review fix)', () => {
+    // never asked (null): no id crosses the wire
+    expect(loadProfile().telemetryConsent).toBeNull();
+    expect('installId' in profileClaim()).toBe(false);
+    // declined: still no id
+    setTelemetryConsent(false);
+    expect('installId' in profileClaim()).toBe(false);
+    // consented: the id rides the claim — telemetry has it exactly when needed
+    setTelemetryConsent(true);
+    expect(profileClaim().installId).toBe(loadProfile().installId);
+    expect(profileClaim().telemetryConsent).toBe(true);
+    // opting back out withdraws it again
+    setTelemetryConsent(false);
+    expect('installId' in profileClaim()).toBe(false);
   });
 
   it('consent round-trips through the settings toggle', () => {

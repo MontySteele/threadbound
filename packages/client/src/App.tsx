@@ -452,6 +452,9 @@ function TitleCord({ left, right }: {
 // TODO(designer): replace with the real invite once the Discord server exists
 // (ruled: small, 3–4 channels incl. #looking-for-thread).
 const DISCORD_URL = 'https://discord.gg/REPLACE-ME-threadbound';
+// review fix: until the real invite lands, don't show players a dead link —
+// the footer link and the blurb's Discord sentence hide themselves
+const DISCORD_READY = !DISCORD_URL.includes('REPLACE-ME');
 
 /** S6.5 one-tap bug report: the server attaches seed, turn, act, build,
  *  pair, and ascension — the text is optional garnish. */
@@ -513,7 +516,7 @@ function FirstVisitBlurb(): JSX.Element | null {
       </p>
       <p className="muted">
         <b>No partner handy?</b> Descend alone — the Witness (a grudging voice) plays the other
-        seat. Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.
+        seat.{DISCORD_READY && <> Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.</>}
       </p>
       <p className="muted">
         <b>Something felt great, bad, or broken?</b> Press <b>]</b> / <b>[</b> / <b>\</b> during a
@@ -591,8 +594,10 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
           except the community link, which is external by nature) */}
       <p className="muted footer-links">
         <a href="data-note" target="_blank" rel="noreferrer">what data this server collects</a>
-        {' · '}
-        <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
+        {DISCORD_READY && <>
+          {' · '}
+          <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
+        </>}
       </p>
     </div>
   );

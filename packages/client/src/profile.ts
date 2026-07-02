@@ -225,18 +225,22 @@ export function codexEntries(): { truths: AnswerDef[]; eliminations: AnswerDef[]
 /** The claim sent at room join (create/join/hello). S6.3: carries the
  *  anonymous installId and this seat's telemetry consent — the server's
  *  both-consent rule reads these claims. Codex deliberately excluded:
- *  pure client-side narrative bookkeeping — the server has no use for it. */
+ *  pure client-side narrative bookkeeping — the server has no use for it.
+ *  review fix: installId rides the claim ONLY with explicit consent — a
+ *  non-consenting player's id must never reach the server (it was landing
+ *  in the rooms persistence snapshot). Telemetry needs the id exactly when
+ *  consent is true, so nothing consented loses it. */
 export function profileClaim(): {
   unlockedCards: string[];
   ascensionUnlocked: Record<CharacterId, number>;
-  installId: string;
+  installId?: string;
   telemetryConsent: boolean | null;
 } {
   const p = loadProfile();
   return {
     unlockedCards: p.unlockedCards,
     ascensionUnlocked: p.ascensionUnlocked,
-    installId: p.installId,
+    ...(p.telemetryConsent === true ? { installId: p.installId } : {}),
     telemetryConsent: p.telemetryConsent,
   };
 }

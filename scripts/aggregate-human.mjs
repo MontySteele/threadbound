@@ -44,14 +44,19 @@ for (const f of fs.readdirSync(dir)) {
     console.error(`skipping unreadable ${f}`);
   }
 }
-const starts = [];
+const startLines = [];
 for (const f of fs.readdirSync(dir)) {
   if (!f.startsWith('starts-') || !f.endsWith('.jsonl')) continue;
   for (const line of fs.readFileSync(path.join(dir, f), 'utf8').split('\n')) {
     if (!line.trim()) continue;
-    try { starts.push(JSON.parse(line)); } catch { /* torn line */ }
+    try { startLines.push(JSON.parse(line)); } catch { /* torn line */ }
   }
 }
+// review fix: a mid-run consent opt-out appends { kind: 'retract' } — the
+// retracted start must leave the completion-rate denominator (S6.3: the
+// residual record no longer counts as a consented run)
+const retracted = new Set(startLines.filter((l) => l.kind === 'retract').map((l) => `${l.code}:${l.seed}`));
+const starts = startLines.filter((l) => l.kind !== 'retract' && !retracted.has(`${l.code}:${l.seed}`));
 
 const keep = (r) =>
   (MODE === 'all' || (r.mode ?? 'pair') === MODE) &&
@@ -115,8 +120,10 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   const totalResTags = Object.values(resonanceTags).reduce((a, b) => a + b, 0);
   const maxResTagShare = totalResTags ? Math.max(...Object.values(resonanceTags)) / totalResTags : 0;
 
-  // the sim's gates, verbatim (S5 gate-4 amendment: the Hex band gates vb only)
-  const gatePair = wantPair === null ? 'bv' /* mixed default reads as vb */ : wantPair;
+  // the sim's gates, verbatim. review fix: the Hex band gates ONLY data
+  // filtered to --pair vb (S5 gate-4 amendment, sim.ts) — unfiltered human
+  // data mixes pairs, so its Hex share reads as telemetry, not a gate.
+  const hexGated = wantPair === 'bv';
   const gates = [
     { name: 'full-run bot win rate ≤ 40%', value: `${winRate.toFixed(0)}%`, pass: winRate <= 40 },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
@@ -127,9 +134,9 @@ for (const [sha, results] of [...groups.entries()].sort()) {
       pass: act2.cards > 0 && act2LinkRate >= 40 && act2LinkRate <= 60,
     },
     { name: 'no tag > 50% of resonance streaks', value: `${(100 * maxResTagShare).toFixed(0)}%`, pass: maxResTagShare <= 0.5 },
-    gatePair === 'bv'
+    hexGated
       ? { name: 'Hex damage share 25–45% (vb gate, §14.10 + S5)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 }
-      : { name: `Hex damage share (telemetry only for ${PAIR}, S5 gate-4 amendment)`, value: `${hexShare.toFixed(1)}%`, pass: true },
+      : { name: `Hex damage share (telemetry only for ${PAIR ?? 'mixed pairs'}, S5 gate-4 amendment)`, value: `${hexShare.toFixed(1)}%`, pass: true },
   ];
 
   console.log(`\n======== HUMAN TELEMETRY — build ${sha} (content ${contentVersions}) ========`);
@@ -215,7 +222,13 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   const med = median(minutes);
   console.log('---------------- HUMAN-ONLY (S6.4) ----------------');
   console.log(`installs: ${installRuns.size}  |  runs per install: ${distStr || 'n/a (unstamped files)'}`);
-  console.log(`completion: ${results.length} finished / ${Math.max(startCount, results.length)} started (${(100 * results.length / Math.max(startCount, results.length)).toFixed(0)}%)${startCount < results.length ? ' — start stamps missing for some runs' : ''}`);
+  // review fix: Math.max(startCount, results.length) silently floored the
+  // rate at 100% when start stamps were missing — say "unknown" instead
+  if (startCount < results.length) {
+    console.log(`completion: ${results.length} finished / ${startCount} started — WARNING: start stamps missing for some runs, completion rate unknown`);
+  } else {
+    console.log(`completion: ${results.length} finished / ${startCount} started (${(100 * results.length / startCount).toFixed(0)}%)`);
+  }
   console.log(`median run minutes: ${med === null ? 'n/a (no wall-clock stamps)' : med.toFixed(1)}  (${minutes.length}/${results.length} runs stamped)`);
 
   console.log('---------------- GATES ----------------');
