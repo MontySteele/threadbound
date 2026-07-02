@@ -26,7 +26,9 @@ if [ -z "$HOST" ]; then
 fi
 
 mkdir -p "$DEST/telemetry" "$DEST/feedback"
-rsync -avz -e ssh "$HOST:$REMOTE/telemetry/" "$DEST/telemetry/"
+# review fix: a fresh service has neither dir yet — under `set -e` an
+# unguarded rsync failed the whole script, so both pulls are best-effort
+rsync -avz -e ssh "$HOST:$REMOTE/telemetry/" "$DEST/telemetry/" || echo "(no telemetry dir yet)"
 rsync -avz -e ssh "$HOST:$REMOTE/feedback/" "$DEST/feedback/" || echo "(no feedback dir yet)"
 
 echo "pulled → $DEST  (aggregate: node scripts/aggregate-human.mjs $DEST/telemetry)"

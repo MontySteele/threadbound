@@ -288,6 +288,10 @@ export class GameServer {
       lastActivity: room.lastActivity,
       startedAt: room.startedAt,
       startStamped: room.startStamped,
+      // review fix: shrine wall-clock stamps were memory-only — a mid-shrine
+      // restart silently dropped the secondsAtShrine telemetry (nt-slice S6.8)
+      loomEnteredAt: room.loomEnteredAt,
+      loomResolvedAt: room.loomResolvedAt,
       seats: Object.fromEntries(
         Object.entries(room.seats).map(([pid, seat]) => [pid, { token: seat!.token, character: seat!.character, bot: seat!.bot, claim: seat!.claim }]),
       ),
@@ -352,6 +356,8 @@ export class GameServer {
           lastActivity: r.lastActivity ?? this.now(),
           startedAt: r.startedAt,
           startStamped: r.startStamped,
+          loomEnteredAt: r.loomEnteredAt,
+          loomResolvedAt: r.loomResolvedAt,
           seats: {},
           feedback: r.feedback ?? [],
           bot: r.bot,
