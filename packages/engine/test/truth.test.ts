@@ -566,13 +566,22 @@ function bossFight(seed: number, reveals?: Partial<{ bossFace: boolean; bossMech
   return state;
 }
 
-describe('boss faces (S6.5)', () => {
-  it('face content: two faces on the q_what answers, 3 mechanics each, all lines authored', () => {
-    expect(FACES.length).toBe(2);
+describe('boss faces (S6.5 + S8.5)', () => {
+  // S8.5 covenant: every q_what answer wears a face; every face has a full
+  // 3-mechanic pool with a real name and both lines authored.
+  it('face content: four faces covering ALL q_what answers, 3 mechanics each, all lines authored', () => {
+    expect(FACES.length).toBe(4);
     expect(Object.keys(FACE_BY_ANSWER).sort()).toEqual(answersFor('q_what').map((a) => a.id).sort());
+    for (const a of answersFor('q_what')) {
+      expect(FACE_BY_ANSWER[a.id], `answer ${a.id} has no face`).toBeTruthy();
+    }
+    const mechIds = new Set<string>();
     for (const f of FACES) {
+      expect(f.realName.length, f.answerId).toBeGreaterThan(0);
       expect(f.mechanicPool.length, f.answerId).toBe(3);
       for (const m of f.mechanicPool) {
+        expect(mechIds.has(m.id), `duplicate mechanic id ${m.id}`).toBe(false);
+        mechIds.add(m.id);
         expect(m.telegraphLine.length, m.id).toBeGreaterThan(0);
         expect(m.revealLine.length, m.id).toBeGreaterThan(0);
       }

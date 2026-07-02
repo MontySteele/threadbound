@@ -1,5 +1,6 @@
-// nt-slice S6.5: the finale boss's two faces (slice economy — ONE body, the
-// Unraveled's stats and script, wearing a truth). Face keyed off the rolled
+// nt-slice S6.5 (expanded S8.5): the finale boss's faces (slice economy —
+// ONE body, the Unraveled's stats and script, wearing a truth; four faces as
+// of S8.5, one per q_what answer). Face keyed off the rolled
 // *what happened* answer; per-face mechanic pool; two live mechanics rolled
 // seed-deterministically at run start, slot 0 bound to q_what (revealed with
 // the real name), slot 1 to q_why.
@@ -81,6 +82,66 @@ export const FACES: BossFaceDef[] = [
         intent: { kind: 'attack_fray', amount: 10 },
         telegraphLine: 'The note bends toward breaking, and it is not the note that will break.',
         revealLine: 'Shatter-Note — it will strike at the braid itself and fray you both.',
+      },
+    ],
+  },
+  // ---- S8.5: the two new q_what answers' faces. The Sexton/Peal pattern
+  // generalizes (bible §8): an arena's two truths are "the one who broke it
+  // to protect it" and "the thing it became" — the Vigil is the agent who set
+  // the office down; the Tithe is the office become appetite. Names from the
+  // §7 death column (vigil, tithe). Numbers PROVISIONAL, in line with the
+  // existing pools (the Unraveled body scales them); sign-off pending S8.8.
+  {
+    answerId: 'a_abandoned',
+    realName: 'The Vigil',
+    mechanicPool: [
+      {
+        id: 'm_vg_unkept_watch',
+        name: 'Unkept Watch',
+        intent: { kind: 'block_all', amount: 18 },
+        telegraphLine: 'It settles into stillness — the stillness of a watcher who has decided not to move again.',
+        revealLine: 'Unkept Watch — it will wall itself inside the stillness it once kept.',
+      },
+      {
+        id: 'm_vg_half_carried',
+        name: 'Half-Carried',
+        intent: { kind: 'attack_all', amount: 8 },
+        telegraphLine: 'The air sags, like a weight passed to hands that are no longer there.',
+        revealLine: 'Half-Carried — what was set down mid-rite falls on both of you at once.',
+      },
+      {
+        id: 'm_vg_last_office',
+        name: 'The Last Office',
+        intent: { kind: 'debuff_vulnerable', amount: 2 },
+        telegraphLine: 'It begins a gesture you almost recognize, and does not finish it.',
+        revealLine: 'The Last Office — the unfinished blessing leaves you open where it should have closed.',
+      },
+    ],
+  },
+  {
+    answerId: 'a_starved',
+    realName: 'The Tithe',
+    mechanicPool: [
+      {
+        id: 'm_tt_collectors_share',
+        name: 'The Collector’s Share',
+        intent: { kind: 'attack_drain', amount: 11, threadDrain: 3 },
+        telegraphLine: 'Something counts you, softly, the way a hand counts coin in the dark.',
+        revealLine: 'The Collector’s Share — it will strike and take its portion of the Thread between you.',
+      },
+      {
+        id: 'm_tt_swallow_whole',
+        name: 'Swallow Whole',
+        intent: { kind: 'attack', amount: 14 },
+        telegraphLine: 'A hollowness opens at the center of the room, patient and wide.',
+        revealLine: 'Swallow Whole — it will take one of you like a coin into a purse.',
+      },
+      {
+        id: 'm_tt_fatten',
+        name: 'Fatten',
+        intent: { kind: 'buff_strength', amount: 3 },
+        telegraphLine: 'It is larger than it was a moment ago. You are sure of it.',
+        revealLine: 'Fatten — everything it takes, it keeps, and every stroke after lands harder.',
       },
     ],
   },
