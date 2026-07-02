@@ -135,6 +135,17 @@ export function proxyTrustFromEnv(v: string | undefined = process.env.TB_TRUSTED
   return v === 'cloudflare' || v === 'proxy' ? v : 'none';
 }
 
+/** Boolean env flag with an explicit off switch. The legacy `!!process.env.X`
+ *  check read '0'/'false' as ON (any non-empty string is truthy) — harmless
+ *  while these defaulted off, a footgun once they default on (S10a: index.ts
+ *  turns rites/tracks on for interactive play). Unset → `def`; '', '0',
+ *  'false', 'off', 'no' (case-insensitive) → false; anything else → true. */
+export function envFlag(name: string, def = false): boolean {
+  const v = process.env[name];
+  if (v === undefined) return def;
+  return !['', '0', 'false', 'off', 'no'].includes(v.trim().toLowerCase());
+}
+
 /** S6.2 proxy-aware client IP: behind Render's proxy or a cloudflared tunnel
  *  every socket arrives from platform edge IPs — rate limiting on the raw
  *  address would throttle everyone as one client. Which header to believe is
@@ -836,14 +847,14 @@ export class GameServer {
         this.applyAction(ctx.room, socket, {
           type: 'START_RUN', seed,
           unlockedCards: this.unlockUnion(ctx.room),
-          tracks: process.env.TB_TRACKS === '1',
+          tracks: envFlag('TB_TRACKS'),
           // S7: the rites flag crosses here too (pure engine never reads env)
-          rites: process.env.TB_RITES === '1',
+          rites: envFlag('TB_RITES'),
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
           // S9a: rite pool = union of the seats' claimed unlocks (absent =
           // everything; all rites ship unlocked tonight)
-          ...(process.env.TB_RITES === '1' ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
+          ...(envFlag('TB_RITES') ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
