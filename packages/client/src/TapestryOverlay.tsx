@@ -10,7 +10,7 @@
 import React from 'react';
 import { EVENTS, QUESTIONS, PlayerId } from '@threadbound/engine';
 import { ClientState } from './net';
-import { CHAR_NAME } from './App';
+import { CHAR_NAME } from './chars';
 
 const SEAT: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 
@@ -65,8 +65,16 @@ export function TapestryOverlay({ state, onClose }: { state: ClientState; onClos
             <h4>{partnerName}</h4>
             <div className="tapestry-stub-row">
               {truth.partnerStubs.length === 0 && <i className="muted">No thread yet.</i>}
-              {byAct(truth.partnerStubs).map((s, i) => (
-                <div key={i} className="tapestry-card tapestry-stub" style={{ borderLeftColor: stubColor }}>
+              {(() => {
+                const seen: Record<string, number> = {};
+                return byAct(truth.partnerStubs).map((s) => {
+                  // stable key: eventId + occurrence index among stubs from the
+                  // same event (an event can pin more than one fragment)
+                  const n = (seen[s.eventId] = (seen[s.eventId] ?? 0) + 1);
+                  return { s, key: `${s.eventId}#${n}` };
+                });
+              })().map(({ s, key }) => (
+                <div key={key} className="tapestry-card tapestry-stub" style={{ borderLeftColor: stubColor }}>
                   <div className="tapestry-tag">{eventTag(s.eventId, s.act)}</div>
                   <div className="tapestry-stub-line">{stubLine}</div>
                 </div>

@@ -7,6 +7,15 @@ import { profileClaim } from './profile';
 // nt-slice (§11 extension): the client's `truth` is the per-viewer
 // projection, never the engine's TruthState — the server swaps it in
 // redactFor before anything crosses the wire.
+/** Distribute Omit over a union so each Action variant keeps its own shape —
+ *  plain Omit<Action, 'player'> collapses the discriminated union to the
+ *  common keys, which is why act() calls needed `as any`. */
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+/** Client-sent intent: any engine Action minus `player` — the server stamps
+ *  the seat's player id before reducing. */
+export type ClientAction = DistributiveOmit<Action, 'player'>;
+
 export interface ClientState extends Omit<GameState, 'truth'> {
   you: PlayerId;
   counts: Record<PlayerId, { hand: number; draw: number }>;
@@ -121,7 +130,7 @@ export class Net {
     this.send({ type: 'start' });
   }
 
-  act(action: Omit<Action, 'player'>): void {
+  act(action: ClientAction): void {
     this.send({ type: 'action', action });
   }
 

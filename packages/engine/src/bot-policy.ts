@@ -17,10 +17,15 @@ import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { computeResonanceSlots } from './combat';
 import { removalPrice } from './reducer';
+import { ClientTruthView } from './truth-view';
 
-export interface BotView extends GameState {
+/** What a bot actually sees: the REDACTED per-seat view. In particular
+ *  `truth` is the ClientTruthView projection (truth-view.ts), never the
+ *  engine's TruthState — bots must not be able to read the hidden tuple. */
+export interface BotView extends Omit<GameState, 'truth'> {
   you: PlayerId;
   counts: Record<PlayerId, { hand: number; draw: number }>;
+  truth?: ClientTruthView;
 }
 
 export interface BotPolicyOptions {

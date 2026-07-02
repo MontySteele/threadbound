@@ -9,7 +9,7 @@ import React, { useEffect, useRef } from 'react';
 import { ANSWERS_BY_ID, EVENTS, QUESTIONS, RELICS_BY_ID, PlayerId, answersFor } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { recordCodex } from './profile';
-import { CHAR_NAME } from './App';
+import { CHAR_NAME } from './chars';
 
 const SEAT: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 
@@ -95,7 +95,7 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
             })}
           </div>
           <button className="big" data-gp="META" disabled={state.advanceReady[you]}
-            onClick={() => net.act({ type: 'ADVANCE' } as any)}>
+            onClick={() => net.act({ type: 'ADVANCE' })}>
             {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
           </button>
         </>
@@ -131,7 +131,7 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
                         className={`loom-chip ${asserted ? 'loom-asserted' : ''}`}
                         disabled={!editable}
                         onClick={() => editable && !asserted &&
-                          net.act({ type: 'LOOM_SHEET_SET', questionId: q.id, answerId: a.id } as any)}>
+                          net.act({ type: 'LOOM_SHEET_SET', questionId: q.id, answerId: a.id })}>
                         {a.text}
                       </button>
                     );
@@ -140,7 +140,7 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
                     className={`loom-chip loom-unspoken ${shrine.sheet[q.id] === null ? 'loom-asserted' : ''}`}
                     disabled={!editable}
                     onClick={() => editable && shrine.sheet[q.id] !== null &&
-                      net.act({ type: 'LOOM_SHEET_SET', questionId: q.id, answerId: null } as any)}>
+                      net.act({ type: 'LOOM_SHEET_SET', questionId: q.id, answerId: null })}>
                     Leave unspoken
                   </button>
                 </div>
@@ -161,13 +161,13 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
             <>
               <p className="muted">You have confirmed this sheet — Reconsider to edit it again.</p>
               <button className="big" data-gp="META"
-                onClick={() => net.act({ type: 'LOOM_CONFIRM', confirm: false } as any)}>
+                onClick={() => net.act({ type: 'LOOM_CONFIRM', confirm: false })}>
                 Reconsider
               </button>
             </>
           ) : (
             <button className="big" data-gp="META"
-              onClick={() => net.act({ type: 'LOOM_CONFIRM', confirm: true } as any)}>
+              onClick={() => net.act({ type: 'LOOM_CONFIRM', confirm: true })}>
               {anyAsserted ? 'Speak the name' : 'Pass in silence'}
             </button>
           )}

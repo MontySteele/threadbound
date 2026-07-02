@@ -64,9 +64,9 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_unrung_bell', 'actor', 'q_what', 'a_sexton',
     'The clapper is worn to a sliver and the sound-bow is bright with wear. Whatever else is true, this bell rang — long, and often, and recently.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_hunger',
-    'Your friend hears a bell. I hear the pause after one. A kept pause, fed and tended. Hunger keeps nothing — hunger only takes.'),
+    'Your friend hears a bell. I hear the pause after one — and whatever holds that pause, it is not appetite. Hunger keeps nothing — hunger only takes.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_grief',
-    'There is no mourning in this metal. The pause after the bell is held like a duty — squared away, swept, almost proud. Grief does not sweep.'),
+    'There is no mourning in this metal. The chamber is squared away, swept, almost proud — and grief does not sweep.'),
   frag('nt_unrung_bell', 'partner', 'q_why', 'a_kept',
     'The pause after this bell was dropped, not kept — snapped off mid-breath. Whatever was being kept here, its keeper stopped keeping it.'),
 
@@ -104,7 +104,7 @@ export const FRAGMENTS: FragmentDef[] = [
 
   // ---- The Flooded Crypt: A → q_why, B → q_what -----------------------------
   frag('nt_flooded_crypt', 'actor', 'q_why', 'a_hunger',
-    'The offerings are all FOOD, untouched, laid row on row into the dark — loaves gone to stone with no tooth-mark on them. People asking about hunger eat the bread. These people were giving it away.'),
+    'The offerings on the upper steps are FOOD, untouched, laid row on row into the dark — loaves gone to stone with no tooth-mark on them. People asking about hunger eat the bread. These people were giving it away.'),
   frag('nt_flooded_crypt', 'actor', 'q_why', 'a_grief',
     'Not one offering is a mourning-gift — no cut hair, no rings paired on cord, none of grief’s grammar. Whatever they went down asking for, they were not asking it of the dead.'),
   frag('nt_flooded_crypt', 'actor', 'q_why', 'a_kept',
