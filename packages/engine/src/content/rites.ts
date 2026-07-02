@@ -163,7 +163,7 @@ export const RITES: RiteDef[] = [
   // Vess, birth (the mirror sacrament — S8.1 final directions)
   { id: 'br_quickening', role: 'vess', kind: 'birth', name: 'Quickening',
     flavor: 'What returns through you comes back more alive.',
-    text: 'Cards you Reclaim arrive upgraded.',
+    text: 'Cards you Reclaim that keep their name arrive upgraded.',
     passives: ['reclaimUpgraded'] },
   { id: 'br_first_breath', role: 'vess', kind: 'birth', name: 'First-Breath',
     flavor: 'The first note of the round is drawn from both lungs.',

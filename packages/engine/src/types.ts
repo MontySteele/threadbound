@@ -114,7 +114,7 @@ export type PassiveId =
   | 'startCombatFrayImmune' // first Fray each combat is absorbed
   | 'wedding_knife' // §7: enables the rest-site trade (special-cased)
   // S8.1 birth-rite passives (numbers provisional, sign-off pending):
-  | 'reclaimUpgraded' // Quickening: cards you Reclaim arrive upgraded
+  | 'reclaimUpgraded' // Quickening: Reclaims that keep their name arrive upgraded (mutation precedence in effectiveDef hides the overlay on mutation-bearing cards)
   | 'cradleWarden' // partner's links fired off your cards: +1 linked effect
   | 'momentumCarry3' // Hearth-Keeper: momentum doesn't decay, carries up to 3
   | 'namingDay'; // your mutated cards' effects +2
