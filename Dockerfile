@@ -19,11 +19,16 @@ COPY . .
 # S6.1 build identity: no .git in the image — inject the commit at build
 # time. Render passes RENDER_GIT_COMMIT to Docker builds automatically;
 # other hosts can pass --build-arg BUILD_SHA=$(git rev-parse --short HEAD).
+# review fix: nested ENV defaulting (${A:-${B:-c}}) breaks under legacy
+# builders — resolve the default in a RUN-time shell instead. The resolved
+# sha is baked into the client bundle here and persisted to .build-sha for
+# the runtime server (build.ts reads it when BUILD_SHA env is unset).
 ARG RENDER_GIT_COMMIT=
 ARG BUILD_SHA=
-ENV BUILD_SHA=${BUILD_SHA:-${RENDER_GIT_COMMIT:-dev}}
-
-RUN npm run build && npm prune --omit=dev
+RUN sha="${BUILD_SHA:-${RENDER_GIT_COMMIT:-dev}}" \
+ && printf '%s' "$sha" > .build-sha \
+ && BUILD_SHA="$sha" npm run build \
+ && npm prune --omit=dev
 
 ENV PORT=8080
 EXPOSE 8080
