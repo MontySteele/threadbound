@@ -382,10 +382,10 @@ export const STARTER_DECKS: Record<CharacterId, string[]> = {
 
 /** The draftable pool: starter-only cards are excluded (M2-A5). */
 export function cardsForCharacter(character: CharacterId): CardDef[] {
-  return Object.values(CARDS).filter((c) => c.character === character && !c.starterOnly);
+  return Object.values(CARDS).filter((c) => c.character === character && !c.starterOnly && !c.riteOnly);
 }
 
 /** Neutral pool (M2-B1) — draftable by either character. */
 export function neutralCards(): CardDef[] {
-  return Object.values(CARDS).filter((c) => c.character === 'neutral');
+  return Object.values(CARDS).filter((c) => c.character === 'neutral' && !c.riteOnly);
 }

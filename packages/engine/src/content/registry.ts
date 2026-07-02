@@ -11,10 +11,14 @@ import { BRAM_M2_CARDS, BRAM_M1_OVERLAYS } from './bram-m2';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
 import { CLUE_EVENTS } from './clue-events';
+import { RITE_CARDS } from './rites';
+import { CHARACTER_EVENTS } from './character-events';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
-for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...NEUTRAL_CARDS]) {
+// S8.1: rite vestment cards — registered for play/lookup, excluded from
+// every draft pool via the riteOnly flag (starter-only machinery)
+for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...NEUTRAL_CARDS, ...RITE_CARDS]) {
   if (CARDS[card.id]) throw new Error(`duplicate card id ${card.id}`);
   CARDS[card.id] = card;
 }
@@ -82,6 +86,15 @@ const envScale = (name: string, fallback: number): number => {
 export const PT1_ENEMY_HP_SCALE = envScale('TB_ENEMY_HP_SCALE', 1.45);
 export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
 
+// S7.5 (designer ruling 3, 2026-07-01): widened acts 1–2 — the two-track
+// event demand (clues + character events) needs a routing ceiling today's
+// L6/E22 maps can't offer (~1.24 events/act vs a demand of 5–8 across acts
+// 1–2). L7/E32 ≈ 2.3/act with combats/map nearly flat. L8/E32 is the
+// reserve config if S7.8's timing telemetry says demand is unmet. Same
+// env-knob pattern as the enemy scales; active values ride in telemetry.
+export const MAP_LAYERS = Math.round(envScale('TB_MAP_LAYERS', 7));
+export const MAP_EVENT_PCT = Math.round(envScale('TB_MAP_EVENT_PCT', 32));
+
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {
   def.hp = [Math.round(def.hp[0] * PT1_ENEMY_HP_SCALE), Math.round(def.hp[1] * PT1_ENEMY_HP_SCALE)];
@@ -100,15 +113,21 @@ for (const def of Object.values(ENEMIES)) {
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };
-for (const ev of [...M2_EVENTS, ...CLUE_EVENTS]) {
+for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS]) {
   if (EVENTS[ev.id]) throw new Error(`duplicate event id ${ev.id}`);
   EVENTS[ev.id] = ev;
 }
 
-/** nt-slice: clue events enter the pool only on flagged (tracks) runs. */
-export function eventsForAct(act: 1 | 2, tracks = false): EventDef[] {
+/** nt-slice: clue events enter the pool only on flagged (tracks) runs.
+ *  S7.3: character events only on rites runs, and only for characters
+ *  actually in the run. */
+export function eventsForAct(
+  act: 1 | 2, tracks = false, riteCharacters: readonly string[] = [],
+): EventDef[] {
   return Object.values(EVENTS).filter(
-    (e) => (e.act === act || e.act === 0) && (tracks || !e.clue),
+    (e) => (e.act === act || e.act === 0)
+      && (tracks || !e.clue)
+      && (!e.character || riteCharacters.includes(e.character)),
   );
 }
 

@@ -15,6 +15,7 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
+import { ritesFor } from './content/rites';
 import { computeResonanceSlots } from './combat';
 import { removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
@@ -36,6 +37,15 @@ export interface BotPolicyOptions {
    *  non-lockstep peer (e.g. the human seat in solo tests) or both sides
    *  stall waiting for each other's slot. */
   lockstep?: boolean;
+  /** S7.7 SIM-ONLY (TB_BOT_SEEK_EVENTS): prefer reachable EVENT nodes over
+   *  the lowest-id rule so the battery can measure birth-rite timing.
+   *  Default off; the server's solo driver must never set it — the solo
+   *  bot follows the human's pick and this knob never applies there. */
+  seekEvents?: boolean;
+  /** S7.8 gate-5 sim accommodation (S6.2 precedent, clearly marked): flagged
+   *  batteries only — occasionally Reclaim from the partner's piles so the
+   *  engagement gate is measurable. NEVER set in production/solo. */
+  reclaimNudge?: boolean;
 }
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
@@ -67,6 +77,9 @@ export class BotPolicy {
   seed: number;
   readonly mode: 'sim' | 'solo';
   private lockstep: boolean;
+  private seekEvents: boolean;
+  private reclaimNudge: boolean;
+  private reclaimedTurn = -1;
   private pulsedTurn = -1;
   private reorderedTurn = -1;
   private reorderCount = 0;
@@ -79,6 +92,8 @@ export class BotPolicy {
     this.seed = opts.seed ?? 12345;
     this.mode = opts.mode ?? 'sim';
     this.lockstep = opts.lockstep ?? true;
+    this.seekEvents = opts.seekEvents ?? false;
+    this.reclaimNudge = opts.reclaimNudge ?? false;
   }
 
   /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
@@ -132,7 +147,25 @@ export class BotPolicy {
         // both sim bots take the lowest-id reachable node → instant agreement (M2-B3)
         if (view.map.picks[you] === null) {
           const options = this.pickable(view);
-          if (options.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+          if (options.length > 0) {
+            // S7.7 TB_BOT_SEEK_EVENTS (sim-only): reachable EVENT nodes win;
+            // among events, lowest id — both seats still agree instantly
+            if (this.seekEvents) {
+              const events = options.filter((id) =>
+                view.map.nodes.find((n) => n.id === id)?.kind === 'event');
+              if (events.length > 0) return { type: 'NODE_PICK', player: you, nodeId: Math.min(...events) };
+            }
+            return { type: 'NODE_PICK', player: you, nodeId: Math.min(...options) };
+          }
+        }
+        return null;
+      }
+      case 'rites': {
+        // S7.2: don a vestment — seeded pick from the 2-card offer
+        const offer = view.ritesState?.offer?.[you];
+        const vested = (view.players[you].rites ?? []).length > 0;
+        if (offer && offer.length > 0 && !vested) {
+          return { type: 'RITE_PICK', player: you, riteId: offer[this.pickIdx(view, offer.length, 'rite:death')] };
         }
         return null;
       }
@@ -234,6 +267,19 @@ export class BotPolicy {
         if (pulse) {
           this.pulsedTurn = combat.turn;
           return pulse;
+        }
+      }
+      // S7.8 gate-5 sim accommodation: with thread to spare, sometimes pull a
+      // partner card across (state-pure roll — deterministic per situation)
+      if (this.reclaimNudge && !anyFallen && !severed && this.reclaimedTurn !== combat.turn
+        && view.thread >= 5 && me.hand.length < 10) {
+        const partner = view.players[you === 'p1' ? 'p2' : 'p1'];
+        const pool = [...partner.discard, ...partner.exhaust].filter(
+          (id) => !combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id),
+        );
+        if (pool.length > 0 && this.roll(view, 'reclaim-nudge') < 0.3) {
+          this.reclaimedTurn = combat.turn;
+          return { type: 'DECLARE_THREAD', player: you, kind: 'reclaim', targetId: pool[0] };
         }
       }
       if (this.mode === 'solo' && !partnerIsReady) return null; // readies last (S1.2)
@@ -460,6 +506,11 @@ export class BotPolicy {
 
   private playEvent(view: BotView): Action | null {
     const you = view.you;
+    // S7.4: a birth-rite pick owed at this screen blocks ADVANCE — choose
+    if (view.ritesState?.birthChoice === you) {
+      const pool = ritesFor(view.players[you].character, 'birth').map((r) => r.id);
+      return { type: 'RITE_PICK', player: you, riteId: pool[this.pickIdx(view, pool.length, 'rite:birth')] };
+    }
     const ev = view.event!;
     if (ev.chosen === null) {
       if (ev.chooser !== you) return null;

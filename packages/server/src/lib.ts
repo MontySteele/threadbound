@@ -784,6 +784,8 @@ export class GameServer {
           type: 'START_RUN', seed,
           unlockedCards: this.unlockUnion(ctx.room),
           tracks: !!process.env.TB_TRACKS,
+          // S7: the rites flag crosses here too (pure engine never reads env)
+          rites: !!process.env.TB_RITES,
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
@@ -900,9 +902,21 @@ export class GameServer {
         if (action.type === 'START_RUN') return this.send(socket, { type: 'error', message: 'use start' });
         // S4.4: ascension votes are clamped to the room's unlocked max —
         // profiles are claims, the server never trusts them
+        // S7.7 (OQ#44, ruled): the rung is HOST-ONLY — the room creator's
+        // seat (p1) picks; the server casts the second seat's vote itself,
+        // so the engine's both-confirm machinery stays untouched.
         if (action.type === 'SET_ASCENSION') {
+          if (ctx.pid !== 'p1') {
+            return this.send(socket, { type: 'error', message: 'the rung is the host\'s to set — theirs binds you both' });
+          }
           const lvl = Number((action as { level?: unknown }).level ?? 0);
-          (action as { level: number }).level = Math.max(0, Math.min(Number.isFinite(lvl) ? Math.floor(lvl) : 0, this.maxAscension(ctx.room)));
+          const level = Math.max(0, Math.min(Number.isFinite(lvl) ? Math.floor(lvl) : 0, this.maxAscension(ctx.room)));
+          this.applyAction(ctx.room, socket, { type: 'SET_ASCENSION', player: 'p1', level });
+          // mirror only if the host's vote landed (e.g. not outside the lobby)
+          if (ctx.room.state.ascensionVotes?.p1 === level && ctx.room.state.ascensionVotes.p2 !== level) {
+            this.applyAction(ctx.room, null, { type: 'SET_ASCENSION', player: 'p2', level });
+          }
+          return;
         }
         (action as any).player = ctx.pid;
         this.applyAction(ctx.room, socket, action);

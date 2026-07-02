@@ -18,6 +18,7 @@ import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
+import { RITES_BY_ID, ritesFor } from './content/rites';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
@@ -162,7 +163,10 @@ function apply(state: GameState, action: Action): void {
       state.ascension = ascension;
       state.ascensionVotes = { p1: ascension, p2: ascension };
       state.unlockedCards = action.unlockedCards ?? [];
-      const gen = generateActMap(state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks);
+      const gen = generateActMap(
+        state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
+        action.rites ? [state.players.p1.character, state.players.p2.character] : [],
+      );
       state.rng = gen.rng;
       state.map = gen.map;
       // nt-slice: the truth roll happens LAST in START_RUN so the unflagged
@@ -196,7 +200,36 @@ function apply(state: GameState, action: Action): void {
           codexWrites: null,
         };
       }
-      state.phase = 'map';
+      // S7.2: the rites roll happens after the truth roll (both LAST) so
+      // unflagged and tracks-only rng streams are untouched (flag covenant)
+      if (action.rites) {
+        state.rites = true;
+        const offer: Record<PlayerId, string[]> = { p1: [], p2: [] };
+        for (const pid of ['p1', 'p2'] as PlayerId[]) {
+          const pool = ritesFor(state.players[pid].character, 'death').map((r) => r.id);
+          // seeded 2-of-4: draw twice without replacement (Neow-class variance)
+          const first = rngInt(state.rng, pool.length);
+          state.rng = first.state;
+          const rest = pool.filter((_, i) => i !== first.value);
+          const second = rngInt(state.rng, rest.length);
+          state.rng = second.state;
+          offer[pid] = [pool[first.value], rest[second.value]];
+        }
+        state.ritesState = {
+          offer,
+          progress: { p1: 0, p2: 0 },
+          seenEvents: [],
+          birthChoice: null,
+          birthPicked: { p1: false, p2: false },
+        };
+        state.telemetry.rites = {
+          deathPick: { p1: null, p2: null },
+          birthPick: { p1: null, p2: null },
+          characterEvents: { p1: 0, p2: 0 },
+          birthTiming: { p1: null, p2: null },
+        };
+      }
+      state.phase = action.rites ? 'rites' : 'map';
       if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
       return;
     }
@@ -324,7 +357,11 @@ function apply(state: GameState, action: Action): void {
       }
       if (action.kind === 'reclaim') {
         const partner = state.players[otherPlayer(action.player)];
-        assert(action.targetId && partner.discard.includes(action.targetId), "reclaim needs a card in your partner's discard");
+        // S7.6 (OQ#38, ruled): the partner's exhaust joins their discard as a source
+        assert(
+          action.targetId && (partner.discard.includes(action.targetId) || partner.exhaust.includes(action.targetId)),
+          "reclaim needs a card in your partner's discard or exhaust",
+        );
         // PT2: Reclaim copies (the original stays in the discard), so without
         // this guard the same card could be declared twice in one turn
         assert(
@@ -389,6 +426,46 @@ function apply(state: GameState, action: Action): void {
       return;
     }
 
+    case 'RITE_PICK': {
+      const rs = state.ritesState;
+      assert(state.rites && rs, 'no rites this run');
+      const rite = RITES_BY_ID[action.riteId];
+      assert(rite, 'no such rite');
+      const p = state.players[action.player];
+      if (state.phase === 'rites') {
+        // S7.2/S8.0: the death pick — the vestment card joins the deck
+        assert(rite.kind === 'death', 'the first rite is a death rite');
+        assert(rs.offer?.[action.player]?.includes(rite.id), 'that vestment was not offered');
+        assert(!(p.rites ?? []).some((id) => RITES_BY_ID[id]?.kind === 'death'), 'already vested');
+        (p.rites ??= []).push(rite.id);
+        addCardToDeck(state, action.player, rite.cardId!);
+        if (state.telemetry.rites) state.telemetry.rites.deathPick[action.player] = rite.id;
+        state.log.push({ e: 'witness', line: `Don the vestment of ${rite.name}, then. It has been waiting.` });
+        const bothVested = (['p1', 'p2'] as PlayerId[]).every((pid) =>
+          (state.players[pid].rites ?? []).some((id) => RITES_BY_ID[id]?.kind === 'death'));
+        if (bothVested) {
+          rs.offer = null;
+          state.phase = 'map';
+        }
+        return;
+      }
+      // S7.4: the birth pick, immediately at the event screen
+      assert(rs.birthChoice === action.player, 'no rite is owed to you here');
+      assert(rite.kind === 'birth' && rite.role === p.character, 'that rite is not yours to take');
+      assert(!rs.birthPicked[action.player], 'already reborn');
+      (p.rites ??= []).push(rite.id);
+      rs.birthPicked[action.player] = true;
+      rs.birthChoice = null;
+      if (state.telemetry.rites) {
+        state.telemetry.rites.birthPick[action.player] = rite.id;
+        const node = state.map.nodes.find((n) => n.id === state.map.position);
+        state.telemetry.rites.birthTiming[action.player] = { act: state.map.act, layer: node?.layer ?? -1 };
+      }
+      // held reveal: a line that only makes sense later (S8.7 owns the pool)
+      state.log.push({ e: 'witness', line: `${rite.name}. Hm. The other half of that arrives before you understand it.` });
+      return;
+    }
+
     case 'EVENT_CHOOSE': {
       assert(state.phase === 'event' && state.event, 'not in event');
       const ev = state.event!;
@@ -405,6 +482,16 @@ function apply(state: GameState, action: Action): void {
       // S2.1: a crossed choice the bot made FOR the human gets its own gloat
       if (state.botSeat && def.crossed && action.player === state.botSeat) {
         sayWitness(state, 'crossed_choice_made');
+      }
+      // S7.3/S7.4: a character event pays its ACTOR 1 birth-rite progress;
+      // at 2 the mirror sacrament arrives, immediately, at this screen
+      const rs = state.ritesState;
+      if (def.character && rs) {
+        rs.progress[ev.subject]++;
+        if (state.telemetry.rites) state.telemetry.rites.characterEvents[ev.subject]++;
+        if (rs.progress[ev.subject] >= 2 && !rs.birthPicked[ev.subject] && rs.birthChoice === null) {
+          rs.birthChoice = ev.subject;
+        }
       }
       return;
     }
@@ -591,6 +678,11 @@ function apply(state: GameState, action: Action): void {
     }
 
     case 'ADVANCE': {
+      // S7.4: the mirror sacrament is picked HERE, at the event screen —
+      // the owing seat cannot advance until it chooses
+      if (state.phase === 'event' && state.ritesState?.birthChoice === action.player) {
+        throw new IllegalAction('the loom holds its breath — choose your rite');
+      }
       assert(['reward', 'event', 'rest', 'shop', 'loom'].includes(state.phase), 'cannot advance now');
       if (state.phase === 'loom') {
         assert(state.truth?.shrine?.verdict, 'the loom has not spoken yet');
@@ -913,9 +1005,20 @@ function enterNode(state: GameState): void {
       if (def.clue && state.truth && !(state.truth.seenClueEvents ??= []).includes(def.id)) {
         state.truth.seenClueEvents.push(def.id);
       }
+      // S7.3: same dedup for character events (no double-crediting progress)
+      if (def.character && state.ritesState && !state.ritesState.seenEvents.includes(def.id)) {
+        state.ritesState.seenEvents.push(def.id);
+      }
       const r = rngInt(state.rng, 2);
       state.rng = r.state;
-      const subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
+      // character events are ABOUT that character: the subject roll is still
+      // consumed (rng parity), but the matching seat is the actor (S7.3).
+      // MIRROR pairs (both seats the same character): keep the rolled
+      // subject, or one seat could never earn birth-rite progress.
+      let subject: PlayerId = r.value === 0 ? 'p1' : 'p2';
+      if (def.character && state.players.p1.character !== state.players.p2.character) {
+        subject = state.players.p1.character === def.character ? 'p1' : 'p2';
+      }
       state.event = {
         eventId: def.id,
         subject,
@@ -1025,7 +1128,8 @@ function advanceAct(state: GameState): void {
     healBetweenActs(state);
     const gen = generateActMap(
       state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
-      state.truth?.seenClueEvents ?? [],
+      [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? [])],
+      state.rites ? [state.players.p1.character, state.players.p2.character] : [],
     );
     state.rng = gen.rng;
     state.map = gen.map;

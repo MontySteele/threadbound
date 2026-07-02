@@ -6,6 +6,7 @@
 import { CARDS } from './content/cards';
 import { ENEMIES } from './content/registry';
 import { POWERS } from './content/powers';
+import { RITES_BY_ID } from './content/rites';
 import { RELICS_BY_ID } from './content/registry';
 import {
   ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, HookEvent, HookOp,
@@ -58,6 +59,8 @@ export function effectiveDef(inst: CardInstance): CardDef {
 
 export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
   if (player.relics.some((r) => RELICS_BY_ID[r]?.passives?.includes(passive))) return true;
+  // S7/S8.1: birth-rite passives ride the relic slot semantics (never dormant)
+  if ((player.rites ?? []).some((r) => RITES_BY_ID[r]?.passives?.includes(passive))) return true;
   if (player.fallen) return false; // powers go dormant while Fallen (M2-A3)
   return player.powers.some((p) => POWERS[p]?.passives?.includes(passive));
 }
@@ -68,8 +71,10 @@ export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
 
 export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): void {
   const p = state.players[holder];
-  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean }[] }> = [
+  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean; oncePerCombat?: boolean }[] }> = [
     ...p.relics.map((r) => RELICS_BY_ID[r]).filter(Boolean),
+    // S7/S8.1: birth-rite hooks — hidden-relic semantics, never dormant
+    ...(p.rites ?? []).map((r) => RITES_BY_ID[r]).filter(Boolean),
     ...(p.fallen ? [] : p.powers.map((pw) => POWERS[pw]).filter(Boolean)),
   ];
   for (const src of sources) {
@@ -79,6 +84,14 @@ export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): 
       if (hook.oncePerTurn && state.combat) {
         const key = `${holder}:${src.id}:${hook.on}`;
         const fired = (state.combat.hookOnceFired ??= []);
+        if (fired.includes(key)) continue;
+        fired.push(key);
+      }
+      // S7.1: oncePerCombat charges never recharge mid-combat ('first X
+      // each combat' — the rite-table pattern)
+      if (hook.oncePerCombat && state.combat) {
+        const key = `${holder}:${src.id}:${hook.on}`;
+        const fired = (state.combat.hookCombatFired ??= []);
         if (fired.includes(key)) continue;
         fired.push(key);
       }
@@ -325,7 +338,10 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
       }
     }
     if (def.tag === 'Strike' && momSpent && !keepMomentum && !hasPassive(state.players[owner], 'momentumNoHalve')) {
-      mom[owner] = Math.floor(mom[owner] / 2);
+      // S8.1 Hearth-Keeper: the halving IS the decay — keep up to 3 instead
+      mom[owner] = hasPassive(state.players[owner], 'momentumCarry3')
+        ? Math.max(Math.floor(mom[owner] / 2), Math.min(mom[owner], 3))
+        : Math.floor(mom[owner] / 2);
     }
   }
   return dealt;
@@ -709,16 +725,23 @@ export function resolveTurn(state: GameState): void {
       case 'reclaim': {
         spendThread(state, 2);
         const src = findInstance(partner, ta.targetId!);
-        if (!src || !partner.discard.includes(ta.targetId!)) break;
+        // S7.6 (OQ#38, ruled): partner's exhaust is a legal source alongside
+        // the discard — everything downstream (echo, mutation, hooks) is
+        // source-blind on purpose.
+        if (!src || !(partner.discard.includes(ta.targetId!) || partner.exhaust.includes(ta.targetId!))) break;
         const def = CARDS[src.defId];
         const echo: CardInstance = {
           instanceId: `echo_${src.instanceId}_t${combat.turn}_${actor.combatCards.length}`,
           defId: src.defId,
           echo: true,
           mutated: !!def.mutation,
+          // S8.1 Quickening: what returns through you comes back more alive
+          ...(hasPassive(actor, 'reclaimUpgraded') && def.upgrade ? { upgraded: true } : {}),
         };
         actor.combatCards.push(echo);
         if (actor.hand.length < 10) actor.hand.push(echo.instanceId);
+        // S8.1 Dowry-Bound: reclaiming a partner's card feeds the engine
+        runHooks(state, ta.player, 'reclaim');
         break;
       }
       case 'sever': {
@@ -768,12 +791,30 @@ export function resolveTurn(state: GameState): void {
     const def = effectiveDef(inst);
     const resonance = resonanceSlots.has(i);
 
-    const effects: EffectOp[] =
+    // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +1 to the
+    // linked effect (never Hex ops: the OQ#28/OQ#43 caps are load-bearing)
+    const wardenBoost =
+      fired[i] && def.link && i > 0
+      && chain[i - 1].owner !== slot.owner
+      && hasPassive(state.players[chain[i - 1].owner], 'cradleWarden');
+    const BUMPABLE = new Set(['damage', 'block', 'partnerBlock', 'draw', 'partnerDraw',
+      'kindled', 'partnerKindled', 'momentum', 'thread', 'heal', 'partnerHeal']);
+    const bump = (ops: EffectOp[], by: number): EffectOp[] => ops.map((e) =>
+      BUMPABLE.has(e.op) && 'amount' in e ? { ...e, amount: (e.amount as number) + by } : e);
+    const linkEffects = def.link ? (wardenBoost ? bump(def.link.effects, 1) : def.link.effects) : [];
+    let effects: EffectOp[] =
       fired[i] && def.link
         ? def.link.replace
-          ? def.link.effects
-          : [...def.base, ...def.link.effects]
+          ? linkEffects
+          : [...def.base, ...linkEffects]
         : def.base;
+    // S8.1 Naming-Day: your mutated cards' effects +2 (damage/block/heal
+    // only — Hex growth is covenant-barred, draw/economy would be degenerate)
+    if (inst.mutated && hasPassive(owner, 'namingDay')) {
+      const NAMED = new Set(['damage', 'block', 'heal']);
+      effects = effects.map((e) =>
+        NAMED.has(e.op) && 'amount' in e ? { ...e, amount: (e.amount as number) + 2 } : e);
+    }
 
     const ctx: CardContext = {
       owner, partner, slotIndex: i, targetId: slot.targetId, def, fired, resonance,
@@ -821,7 +862,10 @@ export function resolveTurn(state: GameState): void {
     }
 
     if (def.tag === 'Strike' && ctx.momentumSpent && !ctx.keepMomentum && !hasPassive(owner, 'momentumNoHalve')) {
-      owner.momentum = Math.floor(owner.momentum / 2);
+      // S8.1 Hearth-Keeper: the halving IS the decay — keep up to 3 instead
+      owner.momentum = hasPassive(owner, 'momentumCarry3')
+        ? Math.max(Math.floor(owner.momentum / 2), Math.min(owner.momentum, 3))
+        : Math.floor(owner.momentum / 2);
     }
 
     const hi = owner.hand.indexOf(slot.cardInstanceId);

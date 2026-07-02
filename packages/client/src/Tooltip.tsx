@@ -54,7 +54,7 @@ export function resolveInspect(key: string): InspectContent | null {
       }
       return {
         title: def.name + (flag === 'upgraded' ? '+' : ''),
-        subtitle: `${def.rarity}${def.starterOnly ? ' · starter' : ''} · ${def.character}`,
+        subtitle: `${def.rarity}${def.starterOnly ? ' · starter' : ''}${def.riteOnly ? ' · rite vestment' : ''} · ${def.character}`,
         body,
         keywords: keywordsIn(...body, def.link?.condition === 'partner' ? 'link' : ''),
         aside: WITNESS_ASIDES[hashStr(id) % WITNESS_ASIDES.length],

@@ -24,6 +24,7 @@ import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
+import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -641,40 +642,53 @@ function ProfilePanel(): JSX.Element {
   );
 }
 
-/** S4.4: lobby ascension select — both players must land on the same level
- *  (concede pattern; in solo the Witness follows the human's vote). Levels
- *  above this browser's unlocked max are shown locked; the server clamps
- *  regardless (profiles are claims, not authority). */
+/** S4.4 lobby ascension select · S7.7 (OQ#44, ruled): the picker is
+ *  HOST-ONLY — p1, the room creator, holds the dial; the non-host seat sees
+ *  the selected rung read-only, mirrored from state. Wire protocol
+ *  unchanged (still SET_ASCENSION votes; server-side enforcement is a
+ *  separate commit). Levels above this browser's unlocked max are shown
+ *  locked; the server clamps regardless (profiles are claims, not
+ *  authority). */
 function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; solo: boolean }): JSX.Element {
   const you = state.you;
-  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
   const votes = state.ascensionVotes ?? { p1: 0, p2: 0 };
+  const host = you === 'p1';
+  const level = votes.p1; // the host's selection is THE rung
+  if (!host) {
+    if (level === 0) return <></>; // nothing set: keep the lobby quiet
+    return (
+      <div className="panel">
+        <h3>Ascension</h3>
+        <p>
+          <b>A{level}</b> <span className="muted">— set by the host</span>
+        </p>
+        <p className="muted">
+          {Array.from({ length: level }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+        </p>
+      </div>
+    );
+  }
   const myMax = loadProfile().ascensionUnlocked[state.players[you].character] ?? 0;
-  if (myMax === 0 && votes.p1 === 0 && votes.p2 === 0) {
-    return <></>; // nothing unlocked, nothing voted: keep the lobby quiet
+  if (myMax === 0 && level === 0) {
+    return <></>; // nothing unlocked, nothing set: keep the lobby quiet
   }
   return (
     <div className="panel">
       <h3>Ascension</h3>
       <label>
         Level{' '}
-        <select value={votes[you]} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
+        <select value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
           {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
             <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
           ))}
         </select>
       </label>
-      {votes[you] > 0 && (
+      {level > 0 && (
         <p className="muted">
-          {Array.from({ length: votes[you] }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
+          {Array.from({ length: level }, (_, i) => ASCENSION_RUNGS[i + 1]).join(' · ')}
         </p>
       )}
-      {!solo && (
-        <p className="muted">
-          You: <b>A{votes[you]}</b> · Partner: <b>A{votes[partner]}</b>
-          {votes.p1 === votes.p2 ? ' — agreed' : ' — both must pick the same level'}
-        </p>
-      )}
+      {!solo && <p className="muted">You hold the dial — the rung binds both seats.</p>}
     </div>
   );
 }
@@ -703,6 +717,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
         </div>
       );
     }
+    case 'rites':
+      return <RiteOffer state={state} net={net} />;
     case 'map':
       return <MapView state={state} net={net} />;
     case 'combat':
@@ -787,11 +803,11 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       </p>
       <p className="map-picks">
         <span style={{ color: PCOLOR[you] }}>
-          You: <b>{map.picks[you] !== null ? nodeLabel(map, map.picks[you]!) : 'choosing…'}</b>
+          You<RitePips state={state} pid={you} />: <b>{map.picks[you] !== null ? nodeLabel(map, map.picks[you]!) : 'choosing…'}</b>
         </span>
         {' · '}
         <span style={{ color: PCOLOR[partner] }}>
-          {state.players[partner].character}: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
+          {state.players[partner].character}<RitePips state={state} pid={partner} />: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
         </span>
       </p>
       <div className={`mapwrap act-${map.act}`} style={{ width: W, height: H }}>
@@ -1169,6 +1185,7 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen }
   return (
     <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
       <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
+      <RitePips state={state} pid={pid} />{/* S7.3: glanceable on flagged runs only */}
       {pid === state.botSeat && <span className="muted"> · the Witness</span>}
       {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
       <div>
@@ -1466,6 +1483,10 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   const ev = state.event!;
   const def = EVENTS[ev.eventId];
   const youChoose = ev.chooser === you;
+  // S7.4: the mirror sacrament arrives HERE, at the event result — the engine
+  // gates the owed seat's ADVANCE, so the trio stands where Onward would be
+  const owedYou = state.ritesState?.birthChoice === you;
+  const owedPartner = state.ritesState?.birthChoice != null && !owedYou;
   return (
     <div className="center event">
       <h2>{def.name}</h2>
@@ -1492,9 +1513,18 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         <>
           <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
           <Log log={state.log} state={state} />
-          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
-            {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
-          </button>
+          {owedYou ? (
+            <BirthRiteTrio state={state} net={net} />
+          ) : (
+            <>
+              {owedPartner && (
+                <p className="muted">The loom holds its breath — {seatName(state, you === 'p1' ? 'p2' : 'p1')} must choose.</p>
+              )}
+              <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+                {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+              </button>
+            </>
+          )}
         </>
       )}
     </div>
@@ -1686,7 +1716,7 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
 // ---------------------------------------------------------------------------
 
-function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
+export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
   if (!log || log.length === 0) return <></>;
   return (
     <div className="log">

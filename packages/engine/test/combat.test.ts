@@ -357,6 +357,38 @@ describe('The Thread (§5) — Pulse per §14.12', () => {
     expect(echo.mutated).toBe(true);
     expect(s.players.p2.discard).toContain(rend);
   });
+
+  it("S7.6 (OQ#38): Reclaim reads the partner's EXHAUST — echo created, hook fires, per-card guard holds", () => {
+    let s = combatState();
+    toughen(s);
+    // surgery: move a p2 card into their exhaust pile (the new source)
+    const target = s.players.p2.draw[0];
+    s.players.p2.draw = s.players.p2.draw.slice(1);
+    s.players.p2.exhaust.push(target);
+    // Dowry-Bound's 'reclaim' hook proves hooks are source-blind
+    s.players.p1.rites = ['br_dowry_bound'];
+    const momBefore = s.players.p1.momentum;
+    s = reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'reclaim', targetId: target });
+    // the once-per-turn-per-card guard extends across the new source unchanged
+    expect(() =>
+      reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'reclaim', targetId: target }),
+    ).toThrow(/already being reclaimed/);
+    s = ready(s);
+    if (s.phase !== 'combat') return;
+    const echo = s.players.p1.combatCards.find((c) => c.echo);
+    expect(echo).toBeTruthy();
+    expect([...s.players.p1.hand, ...s.players.p1.discard, ...s.players.p1.exhaust]).toContain(echo!.instanceId);
+    expect(s.players.p2.exhaust).toContain(target); // Reclaim copies — the original stays put
+    expect(s.players.p1.momentum).toBe(momBefore + 2); // the hook fired
+  });
+
+  it('S7.6: a card in neither partner pile is still rejected', () => {
+    const s = combatState();
+    const held = s.players.p2.hand[0];
+    expect(() =>
+      reduce(s, { type: 'DECLARE_THREAD', player: 'p1', kind: 'reclaim', targetId: held }),
+    ).toThrow(/partner's discard or exhaust/);
+  });
 });
 
 describe('Fallen (M2-A3)', () => {

@@ -383,3 +383,52 @@ describe('drain flag (S6.2)', () => {
     expect((await a2.nextOf('joined')).playerId).toBe('p1');
   });
 });
+
+describe('host-only ascension (S7.7, OQ#44)', () => {
+  const claim = (lvl: number) => ({ unlockedCards: [], ascensionUnlocked: { vess: lvl, bram: lvl } });
+
+  async function lobbyPair(port: number, hostLvl: number, joinLvl: number): Promise<{ a: Client; b: Client }> {
+    const a = new Client(port);
+    await a.open();
+    a.send({ type: 'create', character: 'vess', p2Character: 'bram', profile: claim(hostLvl) });
+    const joined = await a.nextOf('joined');
+    const b = new Client(port);
+    await b.open();
+    b.send({ type: 'join', code: joined.code, profile: claim(joinLvl) });
+    await b.nextOf('joined');
+    return { a, b };
+  }
+
+  async function stateWhere(c: Client, pred: (s: any) => boolean): Promise<any> {
+    for (;;) {
+      const m = await c.nextOf('state');
+      if (pred(m.state)) return m.state;
+    }
+  }
+
+  it('rejects the non-host seat with an in-fiction error and leaves the votes alone', async () => {
+    const { gs, port } = await mkServer();
+    const { b } = await lobbyPair(port, 3, 3);
+    b.send({ type: 'action', action: { type: 'SET_ASCENSION', level: 2 } });
+    expect((await b.nextOf('error')).message).toMatch(/host/);
+    const room: Room = [...(gs as any).rooms.values()][0] as Room;
+    expect(room.state.ascensionVotes).toEqual({ p1: 0, p2: 0 });
+    expect(room.state.ascension).toBe(0);
+  });
+
+  it("mirrors the host's vote to both seats — the engine's both-confirm machinery agrees at once", async () => {
+    const { port } = await mkServer();
+    const { a } = await lobbyPair(port, 3, 3);
+    a.send({ type: 'action', action: { type: 'SET_ASCENSION', level: 2 } });
+    const state = await stateWhere(a, (s) => s.ascension === 2);
+    expect(state.ascensionVotes).toEqual({ p1: 2, p2: 2 });
+  });
+
+  it('still clamps to the unlock union: the lower seat caps the rung', async () => {
+    const { port } = await mkServer();
+    const { a } = await lobbyPair(port, 5, 1); // joiner has only A1 unlocked
+    a.send({ type: 'action', action: { type: 'SET_ASCENSION', level: 4 } });
+    const state = await stateWhere(a, (s) => s.ascensionVotes.p1 === 1 && s.ascensionVotes.p2 === 1);
+    expect(state.ascension).toBe(1);
+  });
+});
