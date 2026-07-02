@@ -44,7 +44,10 @@ describe('rite registry covenant (S7.1/S8.1)', () => {
   });
 
   it('no rite effect grows Hex (OQ#28/OQ#43 caps are load-bearing)', () => {
-    const HEX_OPS = new Set(['hex', 'hexAll', 'hexPerLinkFired', 'doubleHex']);
+    // application AND scaling (S7.1: "no Hex application, Hex scaling, or Hex
+    // density") — damagePerHex is the S5 Worn-Knife cap class; detonate stays
+    // legal as cash-out only (Knell)
+    const HEX_OPS = new Set(['hex', 'hexAll', 'hexPerLinkFired', 'doubleHex', 'damagePerHex']);
     const scan = (ops: EffectOp[] | undefined, label: string): void => {
       for (const op of ops ?? []) {
         expect(HEX_OPS.has(op.op), `${label}: ${op.op} grows Hex`).toBe(false);
