@@ -18,7 +18,7 @@ import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
-import { RITES_BY_ID, ritesFor } from './content/rites';
+import { RITES_BY_ID, unlockedRites } from './content/rites';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSayWitness, sayWitness } from './witness-draw';
@@ -213,7 +213,11 @@ function apply(state: GameState, action: Action): void {
         state.rites = true;
         const offer: Record<PlayerId, string[]> = { p1: [], p2: [] };
         for (const pid of ['p1', 'p2'] as PlayerId[]) {
-          const pool = ritesFor(state.players[pid].character, 'death').map((r) => r.id);
+          // S9a: the offer draws from the UNLOCKED pool (union of both
+          // profiles' claims). Everything is seeded unlocked tonight, so the
+          // stream matches pre-S9a; a pool under 2 falls back to the full
+          // set — a claim must never brick the mandatory offer.
+          const pool = unlockedRites(state.players[pid].character, 'death', action.riteUnlocks);
           // seeded 2-of-4: draw twice without replacement (Neow-class variance)
           const first = rngInt(state.rng, pool.length);
           state.rng = first.state;
@@ -224,6 +228,7 @@ function apply(state: GameState, action: Action): void {
         }
         state.ritesState = {
           offer,
+          ...(action.riteUnlocks ? { unlocks: action.riteUnlocks } : {}),
           progress: { p1: 0, p2: 0 },
           seenEvents: [],
           birthChoice: null,
@@ -461,6 +466,8 @@ function apply(state: GameState, action: Action): void {
       // S7.4: the birth pick, immediately at the event screen
       assert(rs.birthChoice === action.player, 'no rite is owed to you here');
       assert(rite.kind === 'birth' && rite.role === p.character, 'that rite is not yours to take');
+      // S9a: the trio is the UNLOCKED trio (union read-path; all unlocked today)
+      assert(unlockedRites(p.character, 'birth', rs.unlocks).includes(rite.id), 'that rite is not yet yours to take');
       assert(!rs.birthPicked[action.player], 'already reborn');
       (p.rites ??= []).push(rite.id);
       rs.birthPicked[action.player] = true;

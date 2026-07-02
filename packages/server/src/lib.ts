@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, CONTENT_VERSION, GameState, IllegalAction, PlayerId,
-  PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE,
+  PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE, RiteUnlocks,
   clientTruthView, emptyTelemetry, initialState, reduce, hashState,
 } from '@threadbound/engine';
 import { buildSha } from './build';
@@ -28,6 +28,10 @@ export interface ProfileClaim {
   /** S8.7: profile codex fill % (0–100, clamped) — keys the Witness's voice
    *  register for the run; never rules. A forged claim buys a tone of voice. */
   codexPct?: number;
+  /** S9a: the profile's unlocked rites per role. The run pool is the UNION
+   *  over seats (S4 rule); ids are validated engine-side against the content
+   *  set, and everything ships unlocked, so a forged claim gains nothing. */
+  riteUnlocks?: RiteUnlocks;
 }
 
 export interface Seat {
@@ -562,7 +566,37 @@ export class GameServer {
     // S8.7: codex fill % rides the claim, clamped 0–100 (voice, not rules)
     const pct = Number(r.codexPct);
     if (Number.isFinite(pct)) claim.codexPct = Math.max(0, Math.min(100, Math.floor(pct)));
+    // S9a: rite unlocks — shape-checked here, id-validated engine-side
+    const ru = r.riteUnlocks as Record<string, { death?: unknown; birth?: unknown }> | undefined;
+    if (ru && typeof ru === 'object') {
+      const ids = (raw: unknown): string[] =>
+        Array.isArray(raw) ? (raw as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 50) : [];
+      claim.riteUnlocks = {
+        vess: { death: ids(ru.vess?.death), birth: ids(ru.vess?.birth) },
+        bram: { death: ids(ru.bram?.death), birth: ids(ru.bram?.birth) },
+      };
+    }
     return claim;
+  }
+
+  /** S9a union rule for rites: the run plays with the union of both seats'
+   *  claimed unlocks, per role. Returns undefined when no seat claims any —
+   *  the engine reads that as "everything" (pre-S9a clients, bots). */
+  private riteUnlockUnion(room: Room): RiteUnlocks | undefined {
+    let any = false;
+    const out: RiteUnlocks = { vess: { death: [], birth: [] }, bram: { death: [], birth: [] } };
+    for (const seat of Object.values(room.seats)) {
+      const ru = seat?.claim?.riteUnlocks;
+      if (!ru) continue;
+      for (const role of ['vess', 'bram'] as const) {
+        for (const kind of ['death', 'birth'] as const) {
+          for (const id of ru[role]?.[kind] ?? []) {
+            if (!out[role][kind].includes(id)) { out[role][kind].push(id); any = true; }
+          }
+        }
+      }
+    }
+    return any ? out : undefined;
   }
 
   /** S8.7: the run's Witness register key — the MAX over the seats' claimed
@@ -807,6 +841,9 @@ export class GameServer {
           rites: !!process.env.TB_RITES,
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
+          // S9a: rite pool = union of the seats' claimed unlocks (absent =
+          // everything; all rites ship unlocked tonight)
+          ...(process.env.TB_RITES ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.

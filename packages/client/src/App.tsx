@@ -25,6 +25,7 @@ import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
 import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
+import { CodexButton } from './Codex';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -394,6 +395,8 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
           )}
           {/* S6.5: the pause/menu-area bug report lives here */}
           <BugReportButton net={net} />
+          {/* S9a: the codex from the run's pause surface */}
+          <CodexButton />
           {solo && (
             <label>
               bot speed
@@ -598,6 +601,10 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
         <div>
           <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
         </div>
+      </div>
+      {/* S9a: the codex, from the title (the other door is the ♪ pop in-run) */}
+      <div className="panel" style={{ opacity: 0.85 }}>
+        <CodexButton />
       </div>
       <ProfilePanel />
       {/* S6.5 title footer: version stamp lives in the fixed corner footer;

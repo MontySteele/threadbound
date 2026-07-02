@@ -27,7 +27,7 @@ export {
 } from './content/registry';
 export { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
 export { POWERS } from './content/powers';
-export { RITES, RITES_BY_ID, RITE_CARDS, ritesFor } from './content/rites';
+export { RITES, RITES_BY_ID, RITE_CARDS, ritesFor, unlockedRites } from './content/rites';
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';
 export { WITNESS_POOLS, poolLines, witnessPoolLines } from './witness-draw';
 export type { WitnessPool, WitnessRegister, RegisteredPool } from './witness-draw';

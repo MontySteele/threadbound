@@ -4,7 +4,7 @@
 // everything here as a CLAIM and clamps (§11) — this file is bookkeeping,
 // not authority.
 
-import { AnswerDef, ANSWERS, ANSWERS_BY_ID, CharacterId } from '@threadbound/engine';
+import { AnswerDef, ANSWERS, ANSWERS_BY_ID, CharacterId, RiteUnlocks, ritesFor } from '@threadbound/engine';
 
 export interface Profile {
   version: 2;
@@ -21,6 +21,11 @@ export interface Profile {
    *  truths: proven TRUE at a Loom's Eye verdict; eliminations: asserted
    *  answers proven FALSE (engaged-but-wrong still advances the meta). */
   codex: { truths: string[]; eliminations: string[] };
+  /** S9a rite unlocks per role. Seeded state: ALL current rites (the S7
+   *  ruling — no gating tonight; the field exists and the offer reads it).
+   *  A pair plays with the UNION of both profiles' unlocks; credit accrues
+   *  to both (nothing accrues yet — unlock pacing is deferred). */
+  unlocks: Record<CharacterId, { deathRites: string[]; birthRites: string[] }>;
 }
 
 const KEY = 'tb_profile';
@@ -29,6 +34,15 @@ const ASCENSION_CAP = 5;
 function newInstallId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return `xx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** S9a seeded state: every rite currently in the content set, per role. */
+function allRitesUnlocked(): Profile['unlocks'] {
+  const forRole = (role: CharacterId) => ({
+    deathRites: ritesFor(role, 'death').map((r) => r.id),
+    birthRites: ritesFor(role, 'birth').map((r) => r.id),
+  });
+  return { vess: forRole('vess'), bram: forRole('bram') };
 }
 
 export function emptyProfile(): Profile {
@@ -40,6 +54,7 @@ export function emptyProfile(): Profile {
     unlockedCards: [],
     ascensionUnlocked: { vess: 0, bram: 0 },
     codex: { truths: [], eliminations: [] },
+    unlocks: allRitesUnlocked(),
   };
 }
 
@@ -77,6 +92,22 @@ function normalize(raw: unknown): Profile {
   const codex = r.codex as Record<string, unknown> | undefined;
   p.codex.truths = validAnswerIds(codex?.truths);
   p.codex.eliminations = validAnswerIds(codex?.eliminations);
+  // S9a: rite unlocks. A profile predating the field keeps the seeded
+  // all-unlocked default from emptyProfile; a stored field is kept as the
+  // intersection with the role's real rite set (unknown ids drop).
+  const un = r.unlocks as Record<string, { deathRites?: unknown; birthRites?: unknown }> | undefined;
+  if (un && typeof un === 'object') {
+    for (const c of ['vess', 'bram'] as CharacterId[]) {
+      if (!un[c] || typeof un[c] !== 'object') continue;
+      const keep = (raw: unknown, kind: 'death' | 'birth'): string[] => {
+        const real = new Set(ritesFor(c, kind).map((x) => x.id));
+        return Array.isArray(raw)
+          ? [...new Set((raw as unknown[]).filter((x): x is string => typeof x === 'string' && real.has(x)))]
+          : [];
+      };
+      p.unlocks[c] = { deathRites: keep(un[c].deathRites, 'death'), birthRites: keep(un[c].birthRites, 'birth') };
+    }
+  }
   return p;
 }
 
@@ -174,6 +205,13 @@ export function mergeProfiles(a: Profile, b: Profile): Profile {
   // codex union — never removes; base order first, then incoming novelties
   out.codex.truths = [...new Set([...a.codex.truths, ...b.codex.truths])];
   out.codex.eliminations = [...new Set([...a.codex.eliminations, ...b.codex.eliminations])];
+  // S9a rite unlocks — same union rule
+  for (const c of ['vess', 'bram'] as CharacterId[]) {
+    out.unlocks[c] = {
+      deathRites: [...new Set([...a.unlocks[c].deathRites, ...b.unlocks[c].deathRites])],
+      birthRites: [...new Set([...a.unlocks[c].birthRites, ...b.unlocks[c].birthRites])],
+    };
+  }
   return out;
 }
 
@@ -246,6 +284,7 @@ export function profileClaim(): {
   installId?: string;
   telemetryConsent: boolean | null;
   codexPct: number;
+  riteUnlocks: RiteUnlocks;
 } {
   const p = loadProfile();
   return {
@@ -254,5 +293,10 @@ export function profileClaim(): {
     ...(p.telemetryConsent === true ? { installId: p.installId } : {}),
     telemetryConsent: p.telemetryConsent,
     codexPct: codexPct(p),
+    // S9a: wire shape matches the engine's RiteUnlocks (death/birth keys)
+    riteUnlocks: {
+      vess: { death: p.unlocks.vess.deathRites, birth: p.unlocks.vess.birthRites },
+      bram: { death: p.unlocks.bram.deathRites, birth: p.unlocks.bram.birthRites },
+    },
   };
 }

@@ -520,3 +520,12 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .rite-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); border: 1px solid var(--line); }
 .rite-pip.lit { background: var(--thread); border-color: var(--thread); box-shadow: 0 0 4px color-mix(in srgb, var(--thread) 60%, transparent); }
 .rite-born { color: var(--thread); font-size: 0.85em; cursor: help; }
+
+/* ---- S9a the Codex — grouped by question, slots for the unproven ---- */
+.codex-panel { max-width: 760px; }
+.codex-group h4 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.codex-count { font-size: 0.78em; font-family: var(--font-ui); letter-spacing: 0.04em; }
+.codex-entry { margin: 5px 0 5px 8px; }
+.codex-truth { color: var(--text); }
+.codex-elim { color: var(--text-dim); }
+.codex-slot { color: var(--text-dim); opacity: 0.45; letter-spacing: 0.2em; }

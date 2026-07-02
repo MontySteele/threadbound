@@ -430,11 +430,20 @@ export interface TruthState {
   seenClueEvents?: string[];
 }
 
+/** S9a: the run's unlocked rite ids per role — the UNION of both profiles'
+ *  claims (the S4 union rule extended to rites). An absent record or empty
+ *  pool means ALL of that role's rites (seeded state unlocks everything; the
+ *  read-path exists now so gating is never retrofitted). */
+export type RiteUnlocks = Record<'vess' | 'bram', { death: string[]; birth: string[] }>;
+
 /** S7 run state for the Rites; present only when the rites flag is set. */
 export interface RitesState {
   /** run-start death offer: 2 seeded of the role's 4, per player; null once
    *  both have picked */
   offer: Record<PlayerId, string[]> | null;
+  /** S9a: unlocked rite pools the death offer and birth trio draw from
+   *  (absent = all unlocked — pre-S9a states and claimless seats) */
+  unlocks?: RiteUnlocks;
   /** character-event resolutions credited to each ACTOR (threshold 2) */
   progress: Record<PlayerId, number>;
   /** character events already visited — never re-offered (clue-dedup rule) */
@@ -783,7 +792,9 @@ export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number }
+  /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
+   *  same union rule as unlockedCards). Omitted = everything. */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

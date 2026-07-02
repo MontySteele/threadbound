@@ -199,3 +199,21 @@ for (const r of RITES) {
 export function ritesFor(role: 'vess' | 'bram', kind: 'death' | 'birth'): RiteDef[] {
   return RITES.filter((r) => r.role === role && r.kind === kind);
 }
+
+/** S9a read-path: the role's rite ids filtered to the run's unlock union.
+ *  Absent record or empty/unknown-id result = the FULL pool — the seeded
+ *  state unlocks everything, pre-S9a claims carry no field, and a malformed
+ *  claim must never brick a mandatory offer. Death offers additionally need
+ *  ≥2 options, so a 1-rite pool also falls back. */
+export function unlockedRites(
+  role: 'vess' | 'bram',
+  kind: 'death' | 'birth',
+  unlocks?: Record<'vess' | 'bram', { death: string[]; birth: string[] }>,
+): string[] {
+  const all = ritesFor(role, kind).map((r) => r.id);
+  const claimed = unlocks?.[role]?.[kind];
+  if (!claimed || claimed.length === 0) return all;
+  const pool = all.filter((id) => claimed.includes(id));
+  if (pool.length === 0 || (kind === 'death' && pool.length < 2)) return all;
+  return pool;
+}

@@ -200,3 +200,41 @@ describe('S8.7 codex fill claim (codexPct)', () => {
     expect(profileClaim().codexPct).toBe(100);
   });
 });
+
+describe('S9a rite unlocks (profile storage + union rule)', () => {
+  it('a fresh profile seeds ALL current rites unlocked, per role (the S7 ruling)', async () => {
+    const { ritesFor } = await import('@threadbound/engine');
+    const p = emptyProfile();
+    for (const role of ['vess', 'bram'] as const) {
+      expect(p.unlocks[role].deathRites).toEqual(ritesFor(role, 'death').map((r) => r.id));
+      expect(p.unlocks[role].birthRites).toEqual(ritesFor(role, 'birth').map((r) => r.id));
+    }
+  });
+
+  it('a pre-S9a stored profile (no unlocks field) normalizes to seeded-all; unknown ids drop', () => {
+    const p = emptyProfile();
+    const stored = { ...p } as Record<string, unknown>;
+    delete stored.unlocks;
+    localStorage.setItem('tb_profile', JSON.stringify(stored));
+    expect(loadProfile().unlocks).toEqual(emptyProfile().unlocks);
+
+    const garbage = { ...p, unlocks: { vess: { deathRites: ['dr_shroud', 'not_a_rite'], birthRites: [] }, bram: p.unlocks.bram } };
+    localStorage.setItem('tb_profile', JSON.stringify(garbage));
+    expect(loadProfile().unlocks.vess.deathRites).toEqual(['dr_shroud']);
+    expect(loadProfile().unlocks.vess.birthRites).toEqual([]);
+  });
+
+  it('merge is union (never downgrades), and the claim carries the wire shape', () => {
+    const a = emptyProfile();
+    const b = emptyProfile();
+    a.unlocks.vess.deathRites = ['dr_shroud'];
+    b.unlocks.vess.deathRites = ['dr_votive'];
+    const m = mergeProfiles(a, b);
+    expect(m.unlocks.vess.deathRites.sort()).toEqual(['dr_shroud', 'dr_votive']);
+
+    saveProfile(a);
+    const claim = profileClaim();
+    expect(claim.riteUnlocks.vess.death).toEqual(['dr_shroud']);
+    expect(claim.riteUnlocks.bram.birth).toEqual(a.unlocks.bram.birthRites);
+  });
+});

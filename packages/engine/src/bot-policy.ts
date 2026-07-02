@@ -15,7 +15,7 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
-import { ritesFor } from './content/rites';
+import { unlockedRites } from './content/rites';
 import { computeResonanceSlots } from './combat';
 import { removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
@@ -508,7 +508,8 @@ export class BotPolicy {
     const you = view.you;
     // S7.4: a birth-rite pick owed at this screen blocks ADVANCE — choose
     if (view.ritesState?.birthChoice === you) {
-      const pool = ritesFor(view.players[you].character, 'birth').map((r) => r.id);
+      // S9a: pick from the run's UNLOCKED trio (union read-path)
+      const pool = unlockedRites(view.players[you].character, 'birth', view.ritesState.unlocks);
       return { type: 'RITE_PICK', player: you, riteId: pool[this.pickIdx(view, pool.length, 'rite:birth')] };
     }
     const ev = view.event!;

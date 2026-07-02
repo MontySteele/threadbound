@@ -5,7 +5,7 @@
 // throughout: names, flavor, text — no explanation copy.
 
 import React from 'react';
-import { CARDS, RITES_BY_ID, PlayerId, RiteDef, ritesFor } from '@threadbound/engine';
+import { CARDS, RITES_BY_ID, PlayerId, RiteDef, unlockedRites } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { Card, Log } from './App';
 import { CHAR_NAME } from './chars';
@@ -114,7 +114,10 @@ export function RitePips({ state, pid }: { state: ClientState; pid: PlayerId }):
 export function BirthRiteTrio({ state, net }: { state: ClientState; net: Net }): JSX.Element | null {
   const you = state.you;
   if (state.ritesState?.birthChoice !== you) return null;
-  const trio = ritesFor(state.players[you].character, 'birth');
+  // S9a: the trio is the run's UNLOCKED trio (union of both profiles;
+  // everything ships unlocked, so this is the read-path, not a gate)
+  const trio = unlockedRites(state.players[you].character, 'birth', state.ritesState.unlocks)
+    .map((id) => RITES_BY_ID[id]);
   return (
     <div className="rite-row rite-birth">
       {trio.map((rite) => (

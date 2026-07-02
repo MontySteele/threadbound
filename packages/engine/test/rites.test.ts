@@ -298,3 +298,24 @@ describe('rites fuzz (flag on, 25 seeds)', () => {
     expect(vestings).toBeGreaterThan(25); // both seats vest in most runs
   });
 }, 300_000);
+
+describe('S9a unlockedRites read-path', () => {
+  it('absent record or empty pool = the full set (seeded state, claimless seats)', async () => {
+    const { ritesFor, unlockedRites } = await import('../src/content/rites');
+    const all = ritesFor('vess', 'death').map((r) => r.id);
+    expect(unlockedRites('vess', 'death')).toEqual(all);
+    expect(unlockedRites('vess', 'death', { vess: { death: [], birth: [] }, bram: { death: [], birth: [] } })).toEqual(all);
+  });
+
+  it('a claimed subset filters the pool; death pools under 2 fall back to the full set', async () => {
+    const { ritesFor, unlockedRites } = await import('../src/content/rites');
+    const deaths = ritesFor('bram', 'death').map((r) => r.id);
+    const births = ritesFor('bram', 'birth').map((r) => r.id);
+    const un = (death: string[], birth: string[]) =>
+      ({ vess: { death: [], birth: [] }, bram: { death, birth } });
+    expect(unlockedRites('bram', 'death', un(deaths.slice(0, 2), []))).toEqual(deaths.slice(0, 2));
+    expect(unlockedRites('bram', 'death', un(deaths.slice(0, 1), []))).toEqual(deaths); // <2 → full
+    expect(unlockedRites('bram', 'birth', un([], births.slice(0, 1)))).toEqual(births.slice(0, 1));
+    expect(unlockedRites('bram', 'birth', un([], ['bogus']))).toEqual(births); // unknown-only → full
+  });
+});
