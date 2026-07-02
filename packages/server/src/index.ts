@@ -21,7 +21,18 @@
 import path from 'node:path';
 import { CONTENT_VERSION } from '@threadbound/engine';
 import { buildSha } from './build';
-import { GameServer, proxyTrustFromEnv } from './lib';
+import { GameServer, proxyTrustFromEnv, envFlag } from './lib';
+
+// S10a: the playtest config (rites + narrative tracks) is the default for
+// interactive launches — `node dist/index.js` — so a solo tester gets the
+// Vestry without remembering the flags (render.yaml sets the same on the
+// hosted deploy). Guarded by require.main so importers DON'T inherit it: the
+// bot sim imports `server` from this module, and its baseline batteries must
+// stay flag-off (unset = off). Opt out interactively with TB_RITES=0 / =off.
+if (require.main === module) {
+  process.env.TB_RITES ??= '1';
+  process.env.TB_TRACKS ??= '1';
+}
 
 // `npm run server --human-session` doesn't reach argv — npm swallows unknown
 // flags into npm_config_* env. Accept all three spellings.
@@ -50,6 +61,9 @@ const game = new GameServer({
 game.listen().then((port) => {
   console.log(`Threadbound server listening on http://localhost:${port}`);
   console.log(`build ${buildSha()} · content ${CONTENT_VERSION}`); // S6.1
+  // playtest flags — echo so a "no death-rite screen" report can be diagnosed
+  // from the banner (both gate their phases off entirely when unset)
+  console.log(`flags: rites ${envFlag('TB_RITES') ? 'on' : 'off'} · tracks ${envFlag('TB_TRACKS') ? 'on' : 'off'}`);
   if (humanSession) console.log('human-session telemetry enabled (M3-A1)');
   if (process.env.TB_DRAIN === '1') console.log('DRAIN: no new rooms; existing rooms play on (S6.2)');
 });
