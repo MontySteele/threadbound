@@ -25,6 +25,9 @@ export interface ProfileClaim {
   ascensionUnlocked: Record<string, number>;
   installId?: string;
   telemetryConsent?: boolean;
+  /** S8.7: profile codex fill % (0–100, clamped) — keys the Witness's voice
+   *  register for the run; never rules. A forged claim buys a tone of voice. */
+  codexPct?: number;
 }
 
 export interface Seat {
@@ -556,7 +559,23 @@ export class GameServer {
       claim.telemetryConsent = true;
       if (typeof r.installId === 'string' && r.installId.length >= 8) claim.installId = r.installId.slice(0, 64);
     }
+    // S8.7: codex fill % rides the claim, clamped 0–100 (voice, not rules)
+    const pct = Number(r.codexPct);
+    if (Number.isFinite(pct)) claim.codexPct = Math.max(0, Math.min(100, Math.floor(pct)));
     return claim;
+  }
+
+  /** S8.7: the run's Witness register key — the MAX over the seats' claimed
+   *  codex fills. Max (not min) mirrors the S4 union rule: a fresh player
+   *  paired with a veteran hears the veteran's Witness for that run.
+   *  Flagged as a designer question (OQ#48) — min or per-seat are the
+   *  alternatives. Bots claim nothing and never lower it. */
+  private codexPct(room: Room): number {
+    let max = 0;
+    for (const seat of Object.values(room.seats)) {
+      max = Math.max(max, seat?.claim?.codexPct ?? 0);
+    }
+    return max;
   }
 
   /** S4.4: highest ascension this room may start at — the minimum over every
@@ -786,6 +805,8 @@ export class GameServer {
           tracks: !!process.env.TB_TRACKS,
           // S7: the rites flag crosses here too (pure engine never reads env)
           rites: !!process.env.TB_RITES,
+          // S8.7: Witness voice register — max of the seats' codex claims
+          codexPct: this.codexPct(ctx.room),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.

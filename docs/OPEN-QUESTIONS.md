@@ -553,3 +553,18 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     (Linked Shields partner Block 4 → 6), and amended sim gate 4: the
     Hex-share band applies to PAIR=vb only — mirror shares are telemetry,
     not gates.
+
+## S8 sprint (2026-07-01, s8-witness-mutations)
+
+48. **Witness voice register in co-op: whose codex?** (S8.7). The engine takes
+    one `codexPct` per run (START_RUN), and the server currently passes the
+    **MAX over the two seats' claimed codex fills** — chosen to mirror the S4
+    union rule (a fresh player paired with a veteran plays with the veteran's
+    unlocks; now they also hear the veteran's Witness). Consequence: the held
+    reveal (§5b — the sacrament-quoting fall-rebind line, the quieter 70%
+    registers) can reach a brand-new player early through a veteran partner.
+    Alternatives: MIN (the reveal waits for the table's slowest codex —
+    protects the held reveal, contradicts the union rule), or per-seat
+    registers (the Witness speaks differently to each listener — Babel-true
+    (§4) but needs per-viewer line projection, out of S8 scope).
+    **Needs a designer ruling; max-of-seats is the provisional call.**

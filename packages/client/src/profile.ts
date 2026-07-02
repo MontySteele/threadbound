@@ -4,7 +4,7 @@
 // everything here as a CLAIM and clamps (§11) — this file is bookkeeping,
 // not authority.
 
-import { AnswerDef, ANSWERS_BY_ID, CharacterId } from '@threadbound/engine';
+import { AnswerDef, ANSWERS, ANSWERS_BY_ID, CharacterId } from '@threadbound/engine';
 
 export interface Profile {
   version: 2;
@@ -222,10 +222,20 @@ export function codexEntries(): { truths: AnswerDef[]; eliminations: AnswerDef[]
   };
 }
 
+/** S8.7 voice arc: this profile's codex fill as a percentage of the PUBLIC
+ *  ontology (ANSWERS length — ids only, no prose crosses the wire). Truths
+ *  and eliminations both count: wrong answers are cartography too (§5). */
+export function codexPct(p: Profile = loadProfile()): number {
+  if (ANSWERS.length === 0) return 0;
+  const known = new Set([...p.codex.truths, ...p.codex.eliminations]).size;
+  return Math.max(0, Math.min(100, Math.round((100 * known) / ANSWERS.length)));
+}
+
 /** The claim sent at room join (create/join/hello). S6.3: carries the
  *  anonymous installId and this seat's telemetry consent — the server's
- *  both-consent rule reads these claims. Codex deliberately excluded:
- *  pure client-side narrative bookkeeping — the server has no use for it.
+ *  both-consent rule reads these claims. Codex CONTENT deliberately excluded
+ *  (pure client-side narrative bookkeeping); S8.7 adds only its fill
+ *  PERCENTAGE, which keys the Witness's voice register for the run.
  *  review fix: installId rides the claim ONLY with explicit consent — a
  *  non-consenting player's id must never reach the server (it was landing
  *  in the rooms persistence snapshot). Telemetry needs the id exactly when
@@ -235,6 +245,7 @@ export function profileClaim(): {
   ascensionUnlocked: Record<CharacterId, number>;
   installId?: string;
   telemetryConsent: boolean | null;
+  codexPct: number;
 } {
   const p = loadProfile();
   return {
@@ -242,5 +253,6 @@ export function profileClaim(): {
     ascensionUnlocked: p.ascensionUnlocked,
     ...(p.telemetryConsent === true ? { installId: p.installId } : {}),
     telemetryConsent: p.telemetryConsent,
+    codexPct: codexPct(p),
   };
 }
