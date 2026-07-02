@@ -72,7 +72,7 @@ export const ANSWERS: AnswerDef[] = [
   {
     questionId: 'q_what', id: 'a_abandoned',
     text: 'The rite was abandoned midway.',
-    codexTruthEntry: 'The Vigil set down its office mid-rite, and what it carried was left half-carried.',
+    codexTruthEntry: 'The Vigil-Keeper set down its office mid-rite, and what it carried was left half-carried.',
   },
   {
     questionId: 'q_what', id: 'a_starved',
