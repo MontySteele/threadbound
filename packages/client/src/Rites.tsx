@@ -5,7 +5,7 @@
 // throughout: names, flavor, text — no explanation copy.
 
 import React from 'react';
-import { CARDS, RITES_BY_ID, PlayerId, RiteDef } from '@threadbound/engine';
+import { CARDS, RITES_BY_ID, PlayerId, RiteDef, ritesFor } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { Card, Log } from './App';
 import { CHAR_NAME } from './chars';
@@ -79,6 +79,29 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
         </>
       )}
       <Log log={state.log} state={state} />
+    </div>
+  );
+}
+
+/** S7.4 birth-rite trio, rendered at the event result panel when this seat
+ *  is owed the pick (ritesState.birthChoice === you). Per the held-reveal
+ *  ruling: NO explanation copy — the rites present themselves and that's it.
+ *  The engine gates ADVANCE until the pick lands, so this stands where the
+ *  Onward button would be. */
+export function BirthRiteTrio({ state, net }: { state: ClientState; net: Net }): JSX.Element | null {
+  const you = state.you;
+  if (state.ritesState?.birthChoice !== you) return null;
+  const trio = ritesFor(state.players[you].character, 'birth');
+  return (
+    <div className="rite-row rite-birth">
+      {trio.map((rite) => (
+        <button key={rite.id} className="panel rite-option rite-birth-option" data-gp="META"
+          onClick={() => net.act({ type: 'RITE_PICK', riteId: rite.id })}>
+          <h3>{rite.name}</h3>
+          <p className="muted rite-flavor">{rite.flavor}</p>
+          <p className="rite-text">{rite.text}</p>
+        </button>
+      ))}
     </div>
   );
 }

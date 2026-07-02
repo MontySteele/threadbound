@@ -24,7 +24,7 @@ import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
-import { RiteOffer } from './Rites';
+import { BirthRiteTrio, RiteOffer, seatName } from './Rites';
 import { RunSummary } from './Summary';
 import { Hints } from './Hints';
 
@@ -1469,6 +1469,10 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   const ev = state.event!;
   const def = EVENTS[ev.eventId];
   const youChoose = ev.chooser === you;
+  // S7.4: the mirror sacrament arrives HERE, at the event result — the engine
+  // gates the owed seat's ADVANCE, so the trio stands where Onward would be
+  const owedYou = state.ritesState?.birthChoice === you;
+  const owedPartner = state.ritesState?.birthChoice != null && !owedYou;
   return (
     <div className="center event">
       <h2>{def.name}</h2>
@@ -1495,9 +1499,18 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
         <>
           <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
           <Log log={state.log} state={state} />
-          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
-            {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
-          </button>
+          {owedYou ? (
+            <BirthRiteTrio state={state} net={net} />
+          ) : (
+            <>
+              {owedPartner && (
+                <p className="muted">The loom holds its breath — {seatName(state, you === 'p1' ? 'p2' : 'p1')} must choose.</p>
+              )}
+              <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+                {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+              </button>
+            </>
+          )}
         </>
       )}
     </div>

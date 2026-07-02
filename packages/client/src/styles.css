@@ -507,3 +507,10 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .rite-flavor { font-style: italic; }
 .rite-card { display: flex; justify-content: center; }
 .rite-worn { margin: 8px auto; }
+
+/* S7.4 birth-rite trio — prominent (ADVANCE is gated), no explanation copy */
+.rite-birth { margin: 12px 0; }
+.rite-birth-option { cursor: pointer; text-align: center; font: inherit; color: inherit; }
+.rite-birth-option:hover, .rite-birth-option:focus-visible {
+  border-color: var(--thread); box-shadow: 0 0 12px color-mix(in srgb, var(--thread) 45%, transparent); }
+.rite-text { margin: 4px 0 2px; }
