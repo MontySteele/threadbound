@@ -400,7 +400,7 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
           {solo && (
             <label>
               bot speed
-              <select value={botSpeed} onChange={(e) => {
+              <select data-gp="META" value={botSpeed} onChange={(e) => {
                 const speed = e.target.value as 'paced' | 'instant';
                 setBotSpeed(speed);
                 net.setBotSpeed(speed);
@@ -694,7 +694,7 @@ function AscensionPicker({ state, net, solo }: { state: ClientState; net: Net; s
       <h3>Ascension</h3>
       <label>
         Level{' '}
-        <select value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
+        <select data-gp="META" value={level} onChange={(e) => net.act({ type: 'SET_ASCENSION', level: Number(e.target.value) })}>
           {Array.from({ length: ASCENSION_MAX + 1 }, (_, n) => (
             <option key={n} value={n} disabled={n > myMax}>A{n}{n > myMax ? ' 🔒' : ''}</option>
           ))}
