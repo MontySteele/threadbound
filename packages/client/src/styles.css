@@ -125,7 +125,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .dmg-forecast { color: #ff8a8a; font-weight: 600; }
 .dmg-lethal { color: #ff5a5a; }
 .chipblock { color: var(--guard); }
-.intent { color: #e0a060; margin-top: 4px; font-weight: 600; }
+.intent { color: var(--enemy-warm); margin-top: 4px; font-weight: 600; }
 .bound { font-size: 0.78em; margin-top: 4px; }
 .statuses span { background: var(--panel-2); border-radius: var(--radius); padding: 1px 6px; margin-right: 4px; font-size: 0.78em; }
 .fray { color: var(--strike); } .ready { color: var(--good); } .kindled { color: var(--kindled); }
@@ -190,7 +190,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .linkstate.pulse-target { color: var(--kindled); cursor: pointer; animation: pulse-target-breathe 0.9s ease-in-out infinite; }
 .chain-margin { display: flex; flex-direction: column; gap: 3px; margin-left: 10px; align-self: center; }
 .resonance { color: var(--ignite); font-weight: bold; }
-.target { font-size: 0.75em; color: #e0a060; }
+.target { font-size: 0.75em; color: var(--enemy-warm); }
 .reorder button { padding: 0 6px; font-size: 0.8em; }
 
 /* ---- thread cord (B3) ---- */
@@ -311,10 +311,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 }
 /* in combat the theater narrates; the log is reference — keep it short */
 .combat .log { max-height: 84px; margin: 6px 0; }
-.log .witness, .witness { color: #b9a8d4; font-style: italic; font-family: var(--font-display); }
+.log .witness, .witness { color: var(--witness); font-style: italic; font-family: var(--font-display); }
 .log .resonance { color: var(--ignite); }
 .prose { text-align: left; line-height: 1.65; background: var(--panel); padding: 14px 18px; border-left: 3px solid var(--line); border-radius: var(--radius); font-family: var(--font-display); }
-.crossed { color: #e0a060; }
+.crossed { color: var(--enemy-warm); }
 .reward-row { display: flex; gap: 14px; justify-content: center; align-items: flex-start; }
 .taken { opacity: 0.35; }
 .event button.big { display: block; margin: 8px auto; }
@@ -331,7 +331,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .inspect-divider { color: var(--thread); }
 .inspect-keywords { border-top: 1px dotted var(--line); margin-top: 8px; padding-top: 6px; display: grid; gap: 5px; color: var(--text-dim); }
 .inspect-keywords b { color: var(--text); }
-.inspect-aside { margin-top: 8px; color: #b9a8d4; font-style: italic; font-family: var(--font-display); font-size: 0.9em; }
+.inspect-aside { margin-top: 8px; color: var(--witness); font-style: italic; font-family: var(--font-display); font-size: 0.9em; }
 .inspect-hint { margin-top: 6px; color: var(--text-faint); font-size: 0.8em; }
 
 /* ---- resolution theater (B4) ---- */
@@ -346,8 +346,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .beat.b-resonance.beat-now { color: var(--ignite); font-weight: bold; }
 .beat.b-detonate.beat-now { color: var(--hex); }
 .beat.b-fray.beat-now, .beat.b-fallen.beat-now { color: var(--danger); font-weight: bold; }
-.beat.b-witness.beat-now { color: #b9a8d4; font-style: italic; font-family: var(--font-display); }
-.beat.b-enemy.beat-now { color: #e0a060; }
+.beat.b-witness.beat-now { color: var(--witness); font-style: italic; font-family: var(--font-display); }
+.beat.b-enemy.beat-now { color: var(--enemy-warm); }
 .beat-skip { color: var(--text-faint); font-size: 0.7em; margin-top: 4px; }
 
 /* ---- tutorial (D) ---- */
