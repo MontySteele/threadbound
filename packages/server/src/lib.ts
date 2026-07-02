@@ -784,6 +784,8 @@ export class GameServer {
           type: 'START_RUN', seed,
           unlockedCards: this.unlockUnion(ctx.room),
           tracks: !!process.env.TB_TRACKS,
+          // S7: the rites flag crosses here too (pure engine never reads env)
+          rites: !!process.env.TB_RITES,
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
