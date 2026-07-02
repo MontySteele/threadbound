@@ -28,11 +28,16 @@ export interface ClientShrineView {
   stakeLost: boolean;
 }
 
+/** A pin as the client sees it. The fragmentId stays server-side: variant ids
+ *  encode which answer the fragment eliminates (review fix — the screen never
+ *  shows eliminations before the shrine, so the wire must not either). */
+export type ClientPin = Omit<PinnedFragment, 'fragmentId'> & { witness?: true };
+
 export interface ClientTruthView {
   /** your own pinned fragments, rendered text included. In solo the Witness
    *  VOICES the partner channel (ruling 8): those pins appear here too,
    *  marked witness, and pin to the thread-gold column. */
-  board: (PinnedFragment & { witness?: true })[];
+  board: ClientPin[];
   /** the partner's threads, text and question withheld (ruling 5).
    *  Always empty in solo — there is no second screen to protect. */
   partnerStubs: TruthStub[];
@@ -52,19 +57,20 @@ function shrineView(shrine: ShrineState): ClientShrineView {
 
 export function clientTruthView(truth: TruthState, viewer: PlayerId, botSeat?: PlayerId): ClientTruthView {
   const partner = otherPlayer(viewer);
+  const pin = ({ fragmentId: _secret, ...rest }: PinnedFragment): ClientPin => rest;
   if (botSeat && viewer !== botSeat) {
     // solo (ruling 8): the bot's board is the Witness channel, spoken aloud
     return {
       board: [
-        ...truth.boards[viewer].map((p) => ({ ...p })),
-        ...truth.boards[partner].map((p) => ({ ...p, witness: true as const })),
+        ...truth.boards[viewer].map(pin),
+        ...truth.boards[partner].map((p) => ({ ...pin(p), witness: true as const })),
       ],
       partnerStubs: [],
       shrine: truth.shrine ? shrineView(truth.shrine) : null,
     };
   }
   return {
-    board: truth.boards[viewer].map((p) => ({ ...p })),
+    board: truth.boards[viewer].map(pin),
     partnerStubs: truth.boards[partner].map((p) => ({ eventId: p.eventId, act: p.act })),
     shrine: truth.shrine ? shrineView(truth.shrine) : null,
   };

@@ -287,7 +287,12 @@ describe('clientTruthView (S6.3)', () => {
     for (const viewer of ['p1', 'p2'] as const) {
       const partner = viewer === 'p1' ? 'p2' : 'p1';
       const view = clientTruthView(state.truth!, viewer);
-      expect(view.board).toEqual(state.truth!.boards[viewer]);
+      // review fix: pins shed their fragmentId — variant ids encode the
+      // eliminated answer, which the screen never shows before the shrine
+      expect(view.board).toEqual(
+        state.truth!.boards[viewer].map(({ fragmentId: _s, ...rest }) => rest),
+      );
+      for (const pin of view.board) expect('fragmentId' in pin).toBe(false);
       expect(view.partnerStubs.length).toBe(state.truth!.boards[partner].length);
       for (const stub of view.partnerStubs) {
         expect(Object.keys(stub).sort()).toEqual(['act', 'eventId']);
@@ -304,7 +309,13 @@ describe('clientTruthView (S6.3)', () => {
       expect(wire.includes('eliminates')).toBe(false);
       for (const pin of state.truth!.boards[partner]) {
         expect(wire.includes(pin.text), `${viewer} must not see ${pin.fragmentId}`).toBe(false);
-        expect(wire.includes(pin.fragmentId)).toBe(false);
+      }
+      // NO fragment id crosses to anyone — not even your own pins' (review
+      // fix: variant ids encode which answer the fragment eliminates)
+      for (const holder of ['p1', 'p2'] as const) {
+        for (const pin of state.truth!.boards[holder]) {
+          expect(wire.includes(pin.fragmentId)).toBe(false);
+        }
       }
       // the true answers never appear anywhere in a mid-run view
       for (const answerId of Object.values(state.truth!.tuple)) {

@@ -47,8 +47,8 @@ export function TapestryOverlay({ state, onClose }: { state: ClientState; onClos
               <div key={q.id} className="tapestry-col">
                 <h4>{q.text}</h4>
                 {pinned.length === 0 && <i className="muted">No thread yet.</i>}
-                {pinned.map((f) => (
-                  <div key={f.fragmentId} className="tapestry-card" style={{ borderLeftColor: f.witness ? 'var(--thread-gold)' : SEAT[you] }}>
+                {pinned.map((f, i) => (
+                  <div key={`${f.eventId}:${i}`} className="tapestry-card" style={{ borderLeftColor: f.witness ? 'var(--thread-gold)' : SEAT[you] }}>
                     <div className="tapestry-tag">{f.witness ? 'The Witness · ' : ''}{eventTag(f.eventId, f.act)}</div>
                     <div className="tapestry-text">{f.text}</div>
                   </div>
