@@ -24,7 +24,7 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     'There. Centuries of technique, spent on an errand no one will record. Except me. Obviously.',
     "Observe. No, don't applaud. It unsettles me.",
     'My card. My choice. The consequences, as ever, are shared.',
-    'I still have the hands for this. Somewhere.',
+    "Played without hands. I'd take a bow, but you see the difficulty.",
     'Adequate placement, if I say so myself. I am the only one who would.',
   ],
   // the human linked off one of its cards — grudging acknowledgment
@@ -61,7 +61,7 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     'Yes, help yourself to my leavings. The Witness provides. Apparently.',
     'Coveting from the keeper of the pile. The rite has a word for that. I am electing not to teach it to you.',
     "Fine. I wasn't using it. I wasn't going to get to use it.",
-    "I'll be taking that one. Consider it back rent for the haunting.",
+    "I'll be taking that one. Consider it a keeper's fee. Everything down here is kept by someone.",
     'Mine now. Eternity teaches one to grab.',
   ],
   // the human goes down; it holds the line

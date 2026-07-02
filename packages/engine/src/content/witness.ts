@@ -42,7 +42,7 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'Splendid. Now drag yourselves onward before something notices.',
   ],
   player_death: [
-    "Down they go. I'd weep, but I left my tears in another century.",
+    "Down they go. I'd weep, but weeping was never in my design.",
     'One falls. The thread pulls taut. This is the part that hurts.',
     'Dead. Or resting ambitiously. The distinction matters less down here.',
     'I did mention the dying. Repeatedly.',
@@ -116,8 +116,7 @@ export const S8_WITNESS: Record<string, string[]> = {
   rite_birth_arrival: [
     '{rite}. Hm. The other half of that arrives before you understand it.',
     '{rite}. That word is from the other column of the ledger. I did not expect to hear it down here.',
-    'Taken, not given — {rite} was never part of the descent. Note that I said nothing.',
-    '{rite}. The procession that used this word walked the other way. That is all I will say about the direction.',
+    'Taken, not given — {rite} was never part of the descent. That is already more than I meant to say.',
   ],
 };
 
@@ -157,6 +156,17 @@ export const WITNESS_REGISTERS: Record<string, { minPct: number; lines: string[]
       minPct: 70,
       lines: [
         '"What the thread carries, the hands receive. Be welcome, be warm, be borne." — the old words fit you better than they should.',
+      ],
+    },
+  ],
+  // the birth-rite arrival's directional hint (§5b held reveal): pulled from
+  // the ungated base pool (S8 audit — it landed on the FIRST pick) and held
+  // behind the 70% register, where the reveal is earned.
+  rite_birth_arrival: [
+    {
+      minPct: 70,
+      lines: [
+        '{rite}. The procession that used this word walked the other way. That is all I will say about the direction.',
       ],
     },
   ],

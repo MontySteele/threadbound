@@ -308,7 +308,7 @@ export const FRAGMENTS: FragmentDef[] = [
   frag('nt_winding_room', 'partner', 'q_came', 'a_compelled',
     'The compelled do the task in front of them and not one thing more — it is how you tell them, in any age, on any stair. Nobody made your friend unroll anything. I watched the choosing. It was a choosing.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_volunteered',
-    'Those who volunteer for a descent dress for it — I know the kit lists; I helped write the forms they are copied from. You two came down in what you stood up in. Nobody plans a pilgrimage in those boots.'),
+    'Those who volunteer for a descent dress for it — I know the kit lists; I could recite the forms they are copied from, article by article. You two came down in what you stood up in. Nobody plans a pilgrimage in those boots.'),
   frag('nt_winding_room', 'partner', 'q_came', 'a_fleeing',
     'I checked the door behind you for a long while after you came through it — an old habit; call it professional interest. Nothing followed. Nobody flees at the unhurried pace you two keep.'),
 ];

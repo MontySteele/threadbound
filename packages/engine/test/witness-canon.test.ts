@@ -16,12 +16,19 @@ import { WITNESS_POOLS } from '../src/witness-draw';
 import { EVENTS } from '../src/content/events';
 import { M2_EVENTS } from '../src/content/m2-world';
 import { CLUE_EVENTS } from '../src/content/clue-events';
+import { CHARACTER_EVENTS } from '../src/content/character-events';
+import { FRAGMENTS } from '../src/content/truth';
 
 // first-person mortal biography — the Witness never lived, never died,
 // never had masters, was never a legend among the living
 const BANNED_BIOGRAPHY = /my old masters|I'm the one who's dead|died properly|dead twice|I was a legend/i;
 // real-world scripture and calendar have no purchase down here
 const BANNED_WORLD = /Tuesday|commandments/i;
+// S8 audit residue: body-parts-in-time biography, the self-adopted ghost
+// persona, authorship of the rite's forms, and the claimed office — the
+// Witness knows the forms and the statutes; it never lived, haunted, wrote,
+// or held office
+const BANNED_RESIDUE = /another century|back rent|haunting|helped write the forms|the last professional/i;
 
 /** Every Witness-voiced line in the shipped content set (S8.3's
  *  character-events excluded — parallel ownership). Handles both plain
@@ -62,6 +69,22 @@ describe('S8.7 never-lies audit (gate 6)', () => {
   it('no Witness line reaches for real-world scripture or calendar', () => {
     for (const { where, line } of allWitnessLines()) {
       expect(BANNED_WORLD.test(line), `${where}: "${line}"`).toBe(false);
+    }
+  });
+
+  it('no Witness-voiced text carries the S8 audit residue markers (pools + events + character events + partner fragments)', () => {
+    const corpus = [...allWitnessLines()];
+    // character-events.ts is excluded from the S8.7 checks above (parallel
+    // S8.3 ownership) but the S8 audit markers are canon everywhere
+    for (const def of CHARACTER_EVENTS) {
+      for (const opt of def.options) corpus.push({ where: `character-events.ts ${def.id}`, line: opt.witness });
+    }
+    // partner-channel fragments are Witness-voiced (solo speaks them aloud)
+    for (const f of FRAGMENTS) {
+      if (f.channel === 'partner') corpus.push({ where: `truth.ts ${f.id}`, line: f.text });
+    }
+    for (const { where, line } of corpus) {
+      expect(BANNED_RESIDUE.test(line), `${where}: "${line}"`).toBe(false);
     }
   });
 

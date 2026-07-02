@@ -28,7 +28,7 @@ export const CHARACTER_EVENTS: EventDef[] = [
       {
         id: 'finish', label: 'Finish the row (the pattern will take from you)',
         resultText: 'Your hands find the rhythm before you consent to it. The row closes, the working settles into the frame like a held breath let out, and the pattern comes away with you — learned, the way a burn is learned.',
-        witness: 'A station banked mid-row. There is a procedure for that — three knots and a witness, as it happens. What she was weaving, I cannot tell you. That is not modesty.',
+        witness: 'Never banked, mid-row — there is a procedure for that, three knots and a witness, and none of it happened here. What she was weaving, I cannot tell you. That is not modesty.',
         effects: [{ op: 'loseHp', amount: 4 }, { op: 'gainCard', pool: 'uncommon' }],
       },
       {
@@ -51,7 +51,7 @@ export const CHARACTER_EVENTS: EventDef[] = [
       {
         id: 'complete', label: 'Close the sigil (your thread, your blood)',
         resultText: 'You wet the thread and finish another weaver’s sentence. The line takes, seals, sings one low note through the stone — and something on the far side of it stops listening. The leftover lengths coil to your wrist as if they have decided about you.',
-        witness: 'Ward-work closed with the weaver’s own blood. That is the old form — the correct form, if you want a professional opinion, and I am the last professional. What it wards, I won’t say.',
+        witness: 'Ward-work closed with the weaver’s own blood. That is the old form — the correct form, if you want a professional opinion, and no one left holds the office to give you one. Take mine anyway. What it wards, I won’t say.',
         effects: [{ op: 'loseHp', amount: 3 }, { op: 'thread', amount: 2 }],
       },
       {
