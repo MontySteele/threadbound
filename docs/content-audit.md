@@ -105,3 +105,94 @@ alone; the Link/scaling is the reward for cooperation, not the cost of
 playing. Mutations follow the cross-character convention (Cinder-honed Knife,
 Stitched Knuckle-Crack). Enforced in covenant.test.ts ("§14.11 starter
 payoffs").
+
+## S8.6 Mutation renames — the birth column (2026-07-01, s8-witness-mutations)
+
+ALL PROVISIONAL pending designer sign-off (S8.8 gate 1). Quota: 117 mutations
+ship (109 pool/starter + 8 rite cards); the 8 S7/S8.1 rite-card mutations
+already wear birth-column names, so 21 pool mutations were renamed for a
+birth-column total of 29/117 ≈ 1 in 4. Selection weighted toward mutations
+whose EFFECT reads as renewal (draw, heal, Thread, partner-gains) rather than
+damage. Names and matching text only — zero effect changes. Every new name
+checked unique against the full display-name set (no new OQ#36/#47-class
+collisions).
+
+| File | Old name | New name | Rationale (effect) |
+|---|---|---|---|
+| cards.ts | Stitched Brace-Up | Cradled Brace-Up | Block 3 + Thread 1 — Thread gain is renewal |
+| vess-m2.ts | Rough Comfort | Swaddled Comfort | Block 6 + Draw 1 — sheltering + draw |
+| vess-m2.ts | Ember Rites | Hearth Rites | Thread + Momentum — hearth is the birth column's fire |
+| vess-m2.ts | Brawler’s Oath | Cradled Oath | Block + taunt + draw — takes the blow to shelter another |
+| vess-m2.ts | Bellows-Breath | Quickened Bellows | Draw + Momentum 3 — pure tempo/renewal |
+| vess-m2.ts | Votive Cinder | Dowry Cinder | Thread + Momentum + link draw — votive (death) → dowry (birth) |
+| vess-m2.ts | Loose Spark | First-Drawn Spark | Draw + Momentum — draw-first identity |
+| vess-m2.ts | Cinderthread | Hearth-Thread | Thread + Momentum — Thread economy |
+| vess-m2.ts | Spent Inheritance | Dowered Inheritance | Thread 2 + Momentum 2 — spent (tithe) → dowered (arrival) |
+| bram-m2.ts | Stitched Banked Coals | Hearth-Banked Coals | Thread + Block — the kept fire |
+| bram-m2.ts | Stitched Hold the Line | Cradled Hold the Line | Block 6 + partner Block 6 — partner-gains |
+| bram-m2.ts | Stitched Drumbeat | Quickened Drumbeat | Draw + Thread — renewal |
+| bram-m2.ts | Stitched Forgefire | Quickened Forgefire | Thread 2 + Draw — renewal |
+| bram-m2.ts | Stitched Second Wind | First-Drawn Second Wind | Thread + Draw — second wind IS first breath |
+| bram-m2.ts | Stitched Brace | Cradled Brace | Block 6 + Thread — sheltering |
+| bram-m2.ts | Stitched Dig In | Cradled Dig In | Block + partner Block 4 — partner-gains |
+| bram-m2.ts | Hexbound Backdraft | First-Drawn Backdraft | Base is pure Draw 2 (Hex only on link) |
+| neutral-relics-m2.ts | Hold the Seam | Cradle the Seam | Block + Draw — holding become cradling |
+| neutral-relics-m2.ts | Worn Patience | Quickened Patience | Draw + Keep — the oxymoron is the reveal |
+| neutral-relics-m2.ts | Lean Tithe | Lean Dowry | Thread + Draw — tithe of passage → dowry of arrival (§2) |
+| neutral-relics-m2.ts | Quiet Words | Christening Words | Draw + Kindled — words that name |
+
+Deliberately NOT renamed: everything whose mutation effect is damage/Hex-forward
+(the death column keeps the majority — its rarity is the lore signal, §7), and
+the two designer-signed collision fixes (Caught Breath OQ#47, Slipped Breath
+OQ#36) to avoid churning ruled names. Rite-card mutations (rites.ts: Cradled
+Shroud, First-Lit Votive, Quickened Knell, Cradle-Vigil, First-Struck Toll,
+Quickened Brand, Cradled Step, First-Drawn Descant) count toward the quota and
+were left as authored.
+
+## S8.7 Witness never-lies audit (2026-07-01, s8-witness-mutations)
+
+Every Witness-voiced line audited against lore bible §4 (never-lies, RATIFIED;
+knowledge boundary; "it", never "he"). Corpus: witness.ts, witness-solo.ts,
+M2_WITNESS + event witness channels in m2-world.ts, events.ts, and the two
+S6-flagged clue-events.ts idiom lines. character-events.ts EXCLUDED (parallel
+S8.3 ownership). Verdict was KEEP for all lines not listed below — antiquity
+("centuries", "a thousand years"), self-deprecation, figurative deflection,
+and letting others' misreadings stand are all legal; first-person mortal
+biography, real-world scripture/calendar, and fabrication are not. Held by
+`packages/engine/test/witness-canon.test.ts` (S8.8 gate 6). Rewrites
+PROVISIONAL pending sign-off:
+
+| File:line (pre-edit) | Old | New |
+|---|---|---|
+| witness-solo :13 | "…Very well. I was a legend once." | "…Very well. I have been called worse than furniture." |
+| witness-solo :22 | "Centuries of technique, spent on a Tuesday." | "Centuries of technique, spent on an errand no one will record. Except me. Obviously." |
+| witness-solo :41 | "My old masters swore I would never resonate with the living again…" | "Ignition. No one ever designed me to resonate with the living. Apparently no one needed to." |
+| witness-solo :50 | "…and I'm the one who's dead." | "…and I'm the one without a pulse." |
+| witness-solo :56 | "I'm dead, not blind." | "I'm old, not blind." |
+| witness-solo :57 | "…not as if I can take it with me. Again." | "…not as if I'm going anywhere with it. I'm not going anywhere at all." |
+| witness-solo :59 | "Coveting from a ghost. The commandments never imagined…" | "Coveting from the keeper of the pile. The rite has a word for that. I am electing not to teach it to you." |
+| witness-solo :76 | "…I died properly the first time." | "…I have never once done this before. A debut." |
+| witness-solo :79 | "Dead twice now, by my count…" | "I am told this is what dying is like. I remain unqualified to confirm it." |
+| witness-solo :94 | "half-woven by a ghost" | "half-woven by the furniture" |
+| witness-solo :98 | "Somewhere, my old masters are filing a complaint." | "Set it down exactly as it happened; I will know." |
+| witness-solo :102 | "The worst was also mine, so — symmetry." | "I keep a list. You are nowhere near it." |
+| witness-solo :104 | "…I've died here twice now and it doesn't." | "…I have watched every descent there has ever been, and it doesn't." |
+| witness.ts :58 | "The commandments saw you coming." | "The rite has provisions for your kind. Filed under inevitable." |
+| m2-world :320 | "I once served kings. Now I supervise crafts." | "This place once received kings. Now it hosts crafts." |
+| m2-world :642 | "Somewhere, my old masters are quietly furious." | "Even the deep parts of this place felt that. I would know." |
+| clue-events :102 | "Grave-robbing, but make it textiles." | "Grave-robbing, refined to the textile arts. The dead wore it better." |
+| clue-events :185 | "This is why we cannot have nice expeditions." | "Fondling the anonymous gravestone. And they wonder why the dead keep to themselves." |
+| keywords.ts :55 (client) | Covet flavor quoted the commandments line | "The rite has provisions for your kind." |
+
+Deliberate KEEPs worth flagging for the designer: "I never had the cardio for
+this. Or the heart. Literally." (MORE true under §4 — kept verbatim); "I'm
+down. Insofar as I can be."; "Consider it back rent for the haunting" (others'
+misreading, tolerated, never claimed); "I still have the hands for this.
+Somewhere." (the 'Somewhere' is the admission); "I left my tears in another
+century" (figurative deprecation, not biography). Pronoun comments he → it
+throughout witness.ts / witness-solo.ts / witness-draw.ts.
+
+Golden fixture note: the rewrites change witnessSaid TEXT only — regenerated
+tracks-covenant golden in this commit per its own procedure; all 24 seeds kept
+identical action counts and finalRng (zero gameplay drift), 3 finalHash values
+moved (the rewritten strings drawn mid-walk).

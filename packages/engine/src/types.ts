@@ -650,6 +650,11 @@ export interface GameState {
   tracks?: true;
   /** nt-slice run state; present only when tracks is set */
   truth?: TruthState;
+  /** S8.7 voice arc: profile codex fill % (0–100), the max over the two
+   *  seats' claims, passed through START_RUN. Keys the Witness's register
+   *  selection (witness-draw) — never rules. Absent — not 0 — when unset or
+   *  zero, so pre-S8.7 serialized states stay byte-identical. */
+  codexPct?: number;
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
@@ -775,7 +780,7 @@ export type Action =
   /** unlockedCards: S4.5 union of both players' unlocked sets (server-built;
    *  profiles are claims, the server clamps). Omitted = everything. */
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

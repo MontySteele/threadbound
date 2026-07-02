@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, WITNESS_POOLS, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
+  CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
   computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
 } from '@threadbound/engine';
@@ -698,7 +698,8 @@ function Phase({ state, net, partnerOn }: { state: ClientState; net: Net; partne
     case 'lobby': {
       const solo = !!state.botSeat;
       // S2.1: in solo the Witness resents being drafted; co-op keeps its greeting
-      const soloPool = WITNESS_POOLS.solo_greeting ?? LOBBY_GREETINGS;
+      const soloLines = witnessPoolLines('solo_greeting');
+      const soloPool = soloLines.length > 0 ? soloLines : LOBBY_GREETINGS;
       const greeting = solo
         ? soloPool[(state.seed >>> 3) % soloPool.length]
         : LOBBY_GREETINGS[(state.seed >>> 3) % LOBBY_GREETINGS.length];

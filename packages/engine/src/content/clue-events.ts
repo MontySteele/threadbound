@@ -101,7 +101,7 @@ export const CLUE_EVENTS: EventDef[] = [
         id: 'robes',
         label: 'Bundle up the robes',
         resultText: 'Good cloth, warm and close-woven. Whoever the twelfth was, they left nothing behind to take.',
-        witness: 'Grave-robbing, but make it textiles.',
+        witness: 'Grave-robbing, refined to the textile arts. The dead wore it better.',
         effects: [{ op: 'gold', amount: 20 }, { op: 'heal', amount: 4 }],
       },
     ],
@@ -184,7 +184,7 @@ export const CLUE_EVENTS: EventDef[] = [
         id: 'trace',
         label: 'Trace the blank stone until it answers',
         resultText: 'Under your fingers the smoothness has a shape, and the shape is familiar in a way you dislike. ' + PINNED,
-        witness: 'Fondling the anonymous gravestone. This is why we cannot have nice expeditions.',
+        witness: 'Fondling the anonymous gravestone. And they wonder why the dead keep to themselves.',
         effects: [{ op: 'pendingFray', amount: 1 }, { op: 'fragments' }],
       },
       {

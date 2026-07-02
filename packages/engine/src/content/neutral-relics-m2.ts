@@ -45,7 +45,8 @@ export const NEUTRAL_CARDS: CardDef[] = [
     base: [{ op: 'block', amount: 5, primary: true }],
     link: { condition: 'Strike', text: 'Your partner gains 3 Block.', effects: [{ op: 'partnerBlock', amount: 3 }] },
     mutation: {
-      name: 'Hold the Seam', text: 'Gain 3 Block. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Hold the Seam'
+      name: 'Cradle the Seam', text: 'Gain 3 Block. Draw 1.',
       base: [{ op: 'block', amount: 3, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -132,7 +133,8 @@ export const NEUTRAL_CARDS: CardDef[] = [
     base: [{ op: 'kindled', amount: 1 }],
     link: { condition: 'Guard', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
     mutation: {
-      name: 'Worn Patience', text: 'Draw 1. Keep.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Worn Patience'
+      name: 'Quickened Patience', text: 'Draw 1. Keep.',
       base: [{ op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -162,7 +164,9 @@ export const NEUTRAL_CARDS: CardDef[] = [
     base: [{ op: 'thread', amount: 2 }],
     link: { condition: 'Surge', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     mutation: {
-      name: 'Lean Tithe', text: 'Gain 1 Thread. Draw 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Lean Tithe' — the
+      // tithe of passage (death) mirrored to the dowry of arrival (§2, §7)
+      name: 'Lean Dowry', text: 'Gain 1 Thread. Draw 1.',
       base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
@@ -189,7 +193,8 @@ export const NEUTRAL_CARDS: CardDef[] = [
     base: [{ op: 'draw', amount: 2 }],
     link: { condition: 'Strike', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] },
     mutation: {
-      name: 'Quiet Words', text: 'Draw 1. Gain Kindled 1.',
+      // S8.6 (PROVISIONAL): birth-column rename, was 'Quiet Words'
+      name: 'Christening Words', text: 'Draw 1. Gain Kindled 1.',
       base: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }],
     },
     upgrade: {

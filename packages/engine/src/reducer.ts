@@ -163,6 +163,13 @@ function apply(state: GameState, action: Action): void {
       state.ascension = ascension;
       state.ascensionVotes = { p1: ascension, p2: ascension };
       state.unlockedCards = action.unlockedCards ?? [];
+      // S8.7 voice arc: codex fill % keys Witness register selection. Stored
+      // only when nonzero — absent = 0, so zero/absent runs serialize (and
+      // hash) byte-identically to pre-S8.7 states (golden covenant).
+      {
+        const codexPct = Math.max(0, Math.min(100, Math.floor(action.codexPct ?? 0)));
+        if (codexPct > 0) state.codexPct = codexPct;
+      }
       const gen = generateActMap(
         state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
         action.rites ? [state.players.p1.character, state.players.p2.character] : [],
@@ -440,7 +447,9 @@ function apply(state: GameState, action: Action): void {
         (p.rites ??= []).push(rite.id);
         addCardToDeck(state, action.player, rite.cardId!);
         if (state.telemetry.rites) state.telemetry.rites.deathPick[action.player] = rite.id;
-        state.log.push({ e: 'witness', line: `Don the vestment of ${rite.name}, then. It has been waiting.` });
+        // S8.7: pooled acknowledgment (rites-flagged runs only, so the extra
+        // rng draw never touches an unflagged stream)
+        sayWitness(state, 'rite_death_pick', { rite: rite.name });
         const bothVested = (['p1', 'p2'] as PlayerId[]).every((pid) =>
           (state.players[pid].rites ?? []).some((id) => RITES_BY_ID[id]?.kind === 'death'));
         if (bothVested) {
@@ -461,8 +470,8 @@ function apply(state: GameState, action: Action): void {
         const node = state.map.nodes.find((n) => n.id === state.map.position);
         state.telemetry.rites.birthTiming[action.player] = { act: state.map.act, layer: node?.layer ?? -1 };
       }
-      // held reveal: a line that only makes sense later (S8.7 owns the pool)
-      state.log.push({ e: 'witness', line: `${rite.name}. Hm. The other half of that arrives before you understand it.` });
+      // held reveal (§5b): a line that only makes sense later — S8.7 pool
+      sayWitness(state, 'rite_birth_arrival', { rite: rite.name });
       return;
     }
 

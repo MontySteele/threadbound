@@ -317,7 +317,7 @@ export const M2_EVENTS: EventDef[] = [
         id: 'finish',
         label: 'Finish her stitch',
         resultText: 'Your hands know the work better than you do. The seam closes, and something in your own weave sits straighter for it.',
-        witness: 'Needlepoint in a tomb. I once served kings. Now I supervise crafts.',
+        witness: 'Needlepoint in a tomb. This place once received kings. Now it hosts crafts.',
         effects: [{ op: 'upgradeRandom' }],
       },
       {
@@ -639,6 +639,6 @@ export const M2_WITNESS: Record<string, string[]> = {
   resonance: [
     'The weave catches fire. Briefly, you deserve each other.',
     'Resonance. Whatever you just did — and I know you do not know — do it again.',
-    'The thread blazes. Somewhere, my old masters are quietly furious.',
+    'The thread blazes. Even the deep parts of this place felt that. I would know.',
   ],
 };
