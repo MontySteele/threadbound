@@ -1,5 +1,11 @@
 // The Witness (§10, §13.3): line pools drawn with no-repeat-within-run.
-// Text authored in docs/m1-writing.md. He holds the sarcasm monopoly.
+// Text authored in docs/m1-writing.md. It holds the sarcasm monopoly.
+//
+// S8.7 never-lies audit (lore bible §4, RATIFIED): the Witness never states
+// falsehoods — it withholds, deprecates, misdirects by omission, and deflects
+// where it does not know. It never lived, never died, and had no masters; no
+// line may assert a mortal biography. Mere antiquity ("centuries") is fine.
+// No real-world scripture or calendar. And it is "it", never "he".
 
 export type WitnessContext =
   | 'combat_start'
@@ -55,7 +61,7 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'Taking their leavings? How dignified.',
     "One person's trash, another's strategy. Allegedly.",
     "They didn't want it. You do. This says something about you.",
-    'Coveting already? The commandments saw you coming.',
+    'Coveting already? The rite has provisions for your kind. Filed under inevitable.',
     'Yes, take it. Scavenging from your dearest. Very touching.',
     'Their castoff, your treasure. Marriage is built on less.',
   ],

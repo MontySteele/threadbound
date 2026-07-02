@@ -148,3 +148,51 @@ OQ#36) to avoid churning ruled names. Rite-card mutations (rites.ts: Cradled
 Shroud, First-Lit Votive, Quickened Knell, Cradle-Vigil, First-Struck Toll,
 Quickened Brand, Cradled Step, First-Drawn Descant) count toward the quota and
 were left as authored.
+
+## S8.7 Witness never-lies audit (2026-07-01, s8-witness-mutations)
+
+Every Witness-voiced line audited against lore bible §4 (never-lies, RATIFIED;
+knowledge boundary; "it", never "he"). Corpus: witness.ts, witness-solo.ts,
+M2_WITNESS + event witness channels in m2-world.ts, events.ts, and the two
+S6-flagged clue-events.ts idiom lines. character-events.ts EXCLUDED (parallel
+S8.3 ownership). Verdict was KEEP for all lines not listed below — antiquity
+("centuries", "a thousand years"), self-deprecation, figurative deflection,
+and letting others' misreadings stand are all legal; first-person mortal
+biography, real-world scripture/calendar, and fabrication are not. Held by
+`packages/engine/test/witness-canon.test.ts` (S8.8 gate 6). Rewrites
+PROVISIONAL pending sign-off:
+
+| File:line (pre-edit) | Old | New |
+|---|---|---|
+| witness-solo :13 | "…Very well. I was a legend once." | "…Very well. I have been called worse than furniture." |
+| witness-solo :22 | "Centuries of technique, spent on a Tuesday." | "Centuries of technique, spent on an errand no one will record. Except me. Obviously." |
+| witness-solo :41 | "My old masters swore I would never resonate with the living again…" | "Ignition. No one ever designed me to resonate with the living. Apparently no one needed to." |
+| witness-solo :50 | "…and I'm the one who's dead." | "…and I'm the one without a pulse." |
+| witness-solo :56 | "I'm dead, not blind." | "I'm old, not blind." |
+| witness-solo :57 | "…not as if I can take it with me. Again." | "…not as if I'm going anywhere with it. I'm not going anywhere at all." |
+| witness-solo :59 | "Coveting from a ghost. The commandments never imagined…" | "Coveting from the keeper of the pile. The rite has a word for that. I am electing not to teach it to you." |
+| witness-solo :76 | "…I died properly the first time." | "…I have never once done this before. A debut." |
+| witness-solo :79 | "Dead twice now, by my count…" | "I am told this is what dying is like. I remain unqualified to confirm it." |
+| witness-solo :94 | "half-woven by a ghost" | "half-woven by the furniture" |
+| witness-solo :98 | "Somewhere, my old masters are filing a complaint." | "Set it down exactly as it happened; I will know." |
+| witness-solo :102 | "The worst was also mine, so — symmetry." | "I keep a list. You are nowhere near it." |
+| witness-solo :104 | "…I've died here twice now and it doesn't." | "…I have watched every descent there has ever been, and it doesn't." |
+| witness.ts :58 | "The commandments saw you coming." | "The rite has provisions for your kind. Filed under inevitable." |
+| m2-world :320 | "I once served kings. Now I supervise crafts." | "This place once received kings. Now it hosts crafts." |
+| m2-world :642 | "Somewhere, my old masters are quietly furious." | "Even the deep parts of this place felt that. I would know." |
+| clue-events :102 | "Grave-robbing, but make it textiles." | "Grave-robbing, refined to the textile arts. The dead wore it better." |
+| clue-events :185 | "This is why we cannot have nice expeditions." | "Fondling the anonymous gravestone. And they wonder why the dead keep to themselves." |
+| keywords.ts :55 (client) | Covet flavor quoted the commandments line | "The rite has provisions for your kind." |
+
+Deliberate KEEPs worth flagging for the designer: "I never had the cardio for
+this. Or the heart. Literally." (MORE true under §4 — kept verbatim); "I'm
+down. Insofar as I can be."; "Consider it back rent for the haunting" (others'
+misreading, tolerated, never claimed); "I still have the hands for this.
+Somewhere." (the 'Somewhere' is the admission); "I left my tears in another
+century" (figurative deprecation, not biography). Pronoun comments he → it
+throughout witness.ts / witness-solo.ts / witness-draw.ts.
+
+Golden fixture note: the rewrites change witnessSaid TEXT only — regenerated
+tracks-covenant golden in this commit per its own procedure; all 24 seeds kept
+identical action counts and finalRng (zero gameplay drift), 3 finalHash values
+moved (the rewritten strings drawn mid-walk).

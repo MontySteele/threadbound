@@ -38,7 +38,7 @@ export function maybeSayWitness(state: GameState, context: string, chancePct: nu
 
 /** S2.1 — the solo profile's chattier combat voice. No-op outside solo runs,
  *  so co-op cadence (and its rng stream) is untouched by construction. Capped
- *  at 2–3 lines per combat so he stays a partner, not a podcast. */
+ *  at 2–3 lines per combat so it stays a partner, not a podcast. */
 export const SOLO_COMBAT_LINE_CAP = 3;
 
 export function maybeSaySolo(state: GameState, context: string, chancePct: number): void {
