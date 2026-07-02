@@ -494,9 +494,11 @@ function hitEnemy(state: GameState, attacker: PlayerState, enemy: EnemyState, ra
   const blocked = Math.min(enemy.block, amt);
   enemy.block -= blocked;
   const hpLoss = Math.min(enemy.hp, amt - blocked);
-  applyEnemyHpLoss(state, enemy, hpLoss, 'attack');
-  // M2-D2: the log must not lie — post-block HP loss + blocked, separately
+  // M2-D2: the log must not lie — post-block HP loss + blocked, separately.
+  // The hit is logged BEFORE the hp loss applies so the killing blow's beat
+  // plays before enemy_dead (the theater dissolves on enemy_dead).
   state.log.push({ e: 'damage', target: enemy.id, hpLoss, blocked });
+  applyEnemyHpLoss(state, enemy, hpLoss, 'attack');
   return amt;
 }
 
@@ -506,13 +508,14 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
   if (stacks <= 0) return 0;
   enemy.hex -= stacks;
   const dmg = stacks * DETONATION_DAMAGE;
+  // the burst's beat plays before enemy_dead (see hitEnemy)
+  state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   applyEnemyHpLoss(state, enemy, dmg, 'detonate');
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.telemetry.detonatedStacks += stacks;
   state.telemetry.detonationEvents = (state.telemetry.detonationEvents ?? 0) + 1;
   if (by) state.telemetry.damageByPlayer[by] += dmg;
   turnDamage += dmg;
-  state.log.push({ e: 'detonate', target: enemy.id, stacks, damage: dmg });
   runHooks(state, 'p1', 'detonate');
   runHooks(state, 'p2', 'detonate');
   return stacks;
