@@ -609,3 +609,30 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     No action in S9b. S9d.A2 adds Immovable's partnerHeal 3 link to the
     same telemetry watch (same verb as Quiet Mending's A1 ritual, on the
     card the playtest already called strictly-better). **WATCH.**
+
+## S9c/S9d/S11 Wave A (2026-07-04, same branch)
+
+54. **S9d grower rates retuned on first battery** (Knell per 2→3,
+    Pyre-Brand 4→6, Mourner's 10→15) — the signed table read vb +8 /
+    vv +11 vs post-S9c, outside the ±6 gate; retuned reads +7/+6/+4.
+    Original rows in docs/threadbound_sprint_S9d.md §S9d.1; evidence in
+    docs/S9B-S11-STATUS.md. **OPEN — sign-off row (S9d.0-1).**
+
+55. **S11.2 escalation calibration gate UNMET at ladder ×1** (last/first
+    pair-HP ratio 1.07–1.27 vs the ≥2 gate). Recommendation: hold ×1 and
+    treat the gate as open until S11.9 gives bots knot-pricing, then
+    calibrate ladder and policy together (a steepened ladder against
+    price-blind bots measures the wrong thing). **OPEN — designer
+    (S11.11-2).**
+
+56. **Battery environment offset**: this container reads the recorded
+    S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
+    All session gates were judged against same-environment baselines.
+    Until the cause is found (cores/timing → bot concurrency?), treat
+    cross-machine win-rate comparisons as unreliable; deltas within one
+    environment hold. **OPEN — infra.**
+
+57. **Instrument gaps named**: "questions provable/run" (S11.3 target
+    band) has no harness calculation — distinctEliminations is the proxy;
+    "rite-card play rate" (S9c gate 2 direction read) is proxied by
+    realized growth > 0. **OPEN — engine-queue, small.**
