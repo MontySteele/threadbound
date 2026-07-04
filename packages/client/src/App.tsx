@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, reclaimEchoShape, removalPrice,
+  applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, reclaimEchoShape, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
@@ -45,7 +45,9 @@ function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | u
 
 function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   const i = inst(state, owner, id);
-  return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
+  // S9d: growers render their grown numbers everywhere (applyGrowth is a
+  // pass-through for non-growers and unflagged runs)
+  return i ? applyGrowth(effectiveDef(i), state.tallies, owner) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
 }
 
 /** Display name for an enemy instance. When the same enemy NAME appears more
@@ -1430,6 +1432,10 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
       {badge && <div className="card-badge" data-inspect="kw:momentum">{badge}</div>}
+      {/* S9d.3: the tally chip — the Machine's bookkeeping made visible */}
+      {(def.grownStep ?? 0) > 0 && (
+        <div className="card-badge tally-chip">{def.growsWith?.tiers ? `▲${'·'.repeat(def.grownStep!)}` : `▲+${def.grownStep}`}</div>
+      )}
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
       <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       {/* upgrade texts restate the link clause inline; the ⚡ line below is

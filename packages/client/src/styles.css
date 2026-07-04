@@ -293,6 +293,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   color: color-mix(in srgb, var(--witness) 70%, transparent); font-size: 0.9em;
   pointer-events: none;
 }
+/* S9d.3: the tally chip (grown rites) — Machine bookkeeping, not Witness
+   voice; left corner so the momentum badge keeps the right */
+.card-badge.tally-chip { left: -5px; right: auto; color: var(--witness); border-color: var(--witness); }
+.rite-axis { margin-top: 4px; font-size: 0.85em; }
 
 /* rest-site upgrade picker: before → after, click the pair (playtest 1) */
 .upgrade-pair {
