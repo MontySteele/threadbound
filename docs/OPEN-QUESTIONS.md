@@ -622,8 +622,11 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     pair-HP ratio 1.07–1.27 vs the ≥2 gate). Recommendation: hold ×1 and
     treat the gate as open until S11.9 gives bots knot-pricing, then
     calibrate ladder and policy together (a steepened ladder against
-    price-blind bots measures the wrong thing). **OPEN — designer
-    (S11.11-2).**
+    price-blind bots measures the wrong thing). PROBE DATA: a clean
+    TB_ELITE_ESCALATION=2 battery (ladder 20/60/120, vb A0 ×200) reads
+    ratio ~1.32–1.60 pooled ~1.44 — even doubling falls short of 2×,
+    confirming the bottleneck is structural, not a constant. **OPEN —
+    designer (S11.11-2).**
 
 56. **Battery environment offset**: this container reads the recorded
     S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
