@@ -9,8 +9,8 @@ import { POWERS } from './content/powers';
 import { RITES_BY_ID } from './content/rites';
 import { RELICS_BY_ID } from './content/registry';
 import {
-  ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, HookEvent, HookOp,
-  PassiveId, PlayerId, PlayerState,
+  ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, GrowthAxis,
+  HookEvent, HookOp, PassiveId, PlayerId, PlayerState, RunTallies,
 } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { FACE_BY_ANSWER, mechanicFireTurns } from './content/faces';
@@ -55,6 +55,129 @@ export function effectiveDef(inst: CardInstance): CardDef {
     };
   }
   return def;
+}
+
+// ---------------------------------------------------------------------------
+// S9d — the tally (stateless growth). Effective amounts are DERIVED from
+// state.tallies at resolution and preview time; Echoes/Reclaims inherit
+// correctness because nothing is stored on the instance.
+// ---------------------------------------------------------------------------
+
+/** Axis reader. `holder` matters only for the per-seat axis (boundKills —
+ *  "enemies that die Bound to YOU" reads on the seat holding the card). */
+export function tallyAxisValue(t: RunTallies, axis: GrowthAxis, holder: PlayerId): number {
+  switch (axis) {
+    case 'detonations': return t.detonations;
+    case 'falls': return t.falls;
+    case 'boundKills': return t.boundKills[holder];
+    case 'threadSpent': return t.threadSpent;
+    case 'kindledConsumed': return t.kindledConsumed;
+    case 'linksFired': return t.linksFired;
+    case 'momentumSpent': return t.momentumSpent;
+    case 'resonances': return t.resonances;
+  }
+}
+
+/** The growth step a def sits at: linear growers report the BONUS, tiered
+ *  growers the count of tiers reached. 0 = ungrown. */
+export function growthStep(state: GameState, def: CardDef, holder: PlayerId): number {
+  const g = def.growsWith;
+  if (!g || !state.tallies) return 0;
+  const v = tallyAxisValue(state.tallies, g.axis, holder);
+  if (g.tiers) return g.tiers.filter((t) => v >= t.at).length;
+  return Math.min(g.cap ?? 0, Math.floor(v / (g.per ?? 1)) * (g.amount ?? 0));
+}
+
+/** S9d.3 auto-render: one clause per effect op. Growers regenerate their
+ *  whole card text from effective ops — a grown card can never lie. */
+export function opClause(e: EffectOp): string {
+  switch (e.op) {
+    case 'damage': return `Deal ${e.amount}${(e.times ?? 1) > 1 ? ` ${e.times === 2 ? 'twice' : `${e.times} times`}` : ''}.`;
+    case 'damageAll': return `Deal ${e.amount} to ALL enemies.`;
+    case 'block': return `Gain ${e.amount} Block.`;
+    case 'partnerBlock': return `Your partner gains ${e.amount} Block.`;
+    case 'momentum': return `Gain ${e.amount} Momentum.`;
+    case 'thread': return `Gain ${e.amount} Thread.`;
+    case 'draw': return `Draw ${e.amount}.`;
+    case 'partnerDraw': return `Your partner draws ${e.amount}.`;
+    case 'heal': return `Heal ${e.amount}.`;
+    case 'partnerHeal': return `Your partner heals ${e.amount}.`;
+    case 'kindled': return `Gain Kindled ${e.amount}.`;
+    case 'partnerKindled': return `Your partner gains Kindled ${e.amount}.`;
+    case 'taunt': return 'Bind the target to you.';
+    case 'detonate': return 'max' in e && e.max !== undefined ? `Detonate up to ${e.max} Hexes on the target.` : 'Detonate.';
+    case 'hex': return `Apply ${e.amount} Hex.`;
+    case 'hexAll': return `Apply ${e.amount} Hex to ALL enemies.`;
+    case 'weak': return `Apply ${e.amount} Weak.`;
+    case 'weakAll': return `Apply ${e.amount} Weak to all.`;
+    default: return '';
+  }
+}
+
+/** Render base-op clauses, merging same-op amount pairs first so a tier's
+ *  added `draw 1` over a base `draw 1` reads "Draw 2." (mechanics stay two
+ *  ops — the merge is display-only and value-exact). */
+function renderBase(ops: EffectOp[]): string {
+  const merged: EffectOp[] = [];
+  for (const e of ops) {
+    const prior = merged.find((m) => m.op === e.op && 'amount' in m && 'amount' in e
+      && (m as { times?: number }).times === (e as { times?: number }).times);
+    if (prior && 'amount' in prior && 'amount' in e) {
+      (prior as { amount: number }).amount += e.amount as number;
+    } else {
+      merged.push(JSON.parse(JSON.stringify(e)));
+    }
+  }
+  return merged.map(opClause).filter(Boolean).join(' ');
+}
+
+/** S9d.2: the def a grower resolves and renders with — effectiveDef plus the
+ *  tally. Linear growers patch the first `appliesTo` base op and regenerate
+ *  text; tiered growers append their added ops and swap links. Non-growers
+ *  (and tally-less unflagged runs, where growers cannot exist) pass through
+ *  untouched. */
+export function grownDef(state: GameState, inst: CardInstance, holder: PlayerId): CardDef {
+  return applyGrowth(effectiveDef(inst), state.tallies, holder);
+}
+
+/** The growth application itself, shared by grownDef, the bot's defOf, and
+ *  the client's card rendering. */
+export function applyGrowth(def: CardDef, tallies: RunTallies | undefined, holder: PlayerId): CardDef {
+  const g = def.growsWith;
+  if (!g || !tallies) return def;
+  const v = tallyAxisValue(tallies, g.axis, holder);
+  if (g.tiers) {
+    let base = def.base;
+    let link = def.link;
+    for (const t of g.tiers) {
+      if (v < t.at) break; // ascending
+      if (t.addBase) base = [...base, ...t.addBase];
+      if (t.link !== undefined) link = t.link;
+    }
+    if (base === def.base && link === def.link) return def;
+    const text = `${renderBase(base)}${link ? ` Link (${link.condition}): ${link.text}` : ''}`;
+    return { ...def, base, link, text, grownStep: g.tiers!.filter((t) => v >= t.at).length };
+  }
+  const bonus = Math.min(g.cap ?? 0, Math.floor(v / (g.per ?? 1)) * (g.amount ?? 0));
+  if (bonus <= 0) return def;
+  let patched = false;
+  const base = def.base.map((e) => {
+    if (!patched && e.op === g.appliesTo && 'amount' in e) {
+      patched = true;
+      return { ...e, amount: (e.amount as number) + bonus };
+    }
+    return e;
+  });
+  if (!patched) return def;
+  const text = `${renderBase(base)}${def.link ? ` Link (${def.link.condition}): ${def.link.text}` : ''}`;
+  return { ...def, base, text, grownStep: bonus };
+}
+
+/** Tally increment — a no-op on unflagged runs (tallies absent), so every
+ *  call site is parity-safe by construction. */
+export function bumpTally(state: GameState, axis: Exclude<GrowthAxis, 'boundKills'>, n = 1): void {
+  if (!state.tallies || n <= 0) return;
+  state.tallies[axis] += n;
 }
 
 /** S9b.1-3: the shape a Reclaimed card ARRIVES in — one source of truth for
@@ -261,10 +384,10 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
+  const resonance = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
-    const def = effectiveDef(mustFind(state, slot));
+    const def = grownDef(state, mustFind(state, slot), slot.owner); // S9d: tally included
     const effects: EffectOp[] =
       fired[i] && def.link
         ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
@@ -297,7 +420,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
+  const resonance = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
 
   // working copies — forecasting must not mutate authoritative state
   const enemies = combat.enemies.map((e) => ({
@@ -334,7 +457,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
     const owner = slot.owner;
-    const def = effectiveDef(mustFind(state, slot));
+    const def = grownDef(state, mustFind(state, slot), slot.owner); // S9d: tally included
     const res = resonance.has(i);
     const sc = (amt: number, primary?: boolean): number => (primary && res ? Math.ceil(amt * 1.5) : amt);
     const effects: EffectOp[] =
@@ -497,6 +620,8 @@ function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _
 
 /** S10a death hooks — fire exactly once, on the hit that crosses to 0. */
 function onEnemyDeath(state: GameState, enemy: EnemyState): void {
+  // S9d: Vigil's axis — dying Bound to a seat is that SEAT's tally
+  if (state.tallies && enemy.boundTo) state.tallies.boundKills[enemy.boundTo]++;
   const def = ENEMIES[enemy.defId];
   // Tithe-Taker: a Thread-economy fight with a payoff
   if (def.threadOnDeath) {
@@ -568,6 +693,7 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.telemetry.detonatedStacks += stacks;
   state.telemetry.detonationEvents = (state.telemetry.detonationEvents ?? 0) + 1;
+  bumpTally(state, 'detonations'); // S9d: Knell's axis
   if (by) state.telemetry.damageByPlayer[by] += dmg;
   turnDamage += dmg;
   runHooks(state, 'p1', 'detonate');
@@ -663,15 +789,17 @@ function dmgTelemetry(state: GameState, tag: string, dealt: number, player?: Pla
 /** accumulator for the biggest-single-turn stat; reset/flushed by resolveTurn */
 let turnDamage = 0;
 
-function applyMomentum(ctx: CardContext, amt: number, hitIndex: number): number {
+function applyMomentum(state: GameState, ctx: CardContext, amt: number, hitIndex: number): number {
   const { owner, def } = ctx;
   if (def.tag !== 'Strike' || owner.momentum <= 0) return amt;
   if (ctx.momentumPerHit) {
+    if (!ctx.momentumSpent) bumpTally(state, 'momentumSpent', owner.momentum); // S9d: Mourner's axis (once per card)
     ctx.momentumSpent = true;
     return amt + owner.momentum; // M2-A4 rare design space
   }
   if (hitIndex === 0 && !ctx.momentumSpent) {
     ctx.momentumSpent = true;
+    bumpTally(state, 'momentumSpent', owner.momentum); // S9d: Mourner's axis
     return amt + owner.momentum; // OQ#3: once, on the first hit
   }
   return amt;
@@ -688,7 +816,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
       for (let t = 0; t < times; t++) {
         const target = retarget(state, first.id);
         if (!target) return;
-        const amt = applyMomentum(ctx, scale(ctx, eff.amount, eff.primary), t);
+        const amt = applyMomentum(state, ctx, scale(ctx, eff.amount, eff.primary), t);
         dmgTelemetry(state, tag, hitEnemy(state, owner, target, amt), owner.id);
       }
       break;
@@ -704,13 +832,14 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
         }
         dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, amt), owner.id);
       }
+      if (used && !ctx.momentumSpent) bumpTally(state, 'momentumSpent', ctx.owner.momentum); // S9d
       if (used) ctx.momentumSpent = true;
       break;
     }
     case 'damagePerHex': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy) return;
-      const amt = applyMomentum(ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
+      const amt = applyMomentum(state, ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
       // M2-B1: hex-scaling damage gets its own attribution bucket
       dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt), owner.id);
       break;
@@ -720,6 +849,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
       if (!enemy) return;
       dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, owner.momentum * eff.mult), owner.id);
       if (eff.keepMomentum) ctx.keepMomentum = true;
+      if (!ctx.momentumSpent) bumpTally(state, 'momentumSpent', owner.momentum); // S9d
       ctx.momentumSpent = true;
       break;
     }
@@ -927,6 +1057,7 @@ export function resolveTurn(state: GameState): void {
     // S3.1 thread economy: spend mix by action type (cost reflects any
     // Ring discount applied above)
     state.telemetry.threadSpent += cost;
+    bumpTally(state, 'threadSpent', cost); // S9d: Votive's axis
     state.telemetry.threadSpendByKind[ta.kind]++;
     if (ta.kind !== 'pulse') state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
   }
@@ -937,7 +1068,7 @@ export function resolveTurn(state: GameState): void {
   const natural = computeLinksFired(state, chain);
   const forcedSlots = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forcedSlots[i]);
-  const resonanceSlots = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
+  const resonanceSlots = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
   combat.lastSoloRun = longestSoloRun(chain);
   const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
 
@@ -947,8 +1078,23 @@ export function resolveTurn(state: GameState): void {
     const owner = state.players[slot.owner];
     const partner = state.players[otherPlayer(slot.owner)];
     const inst = mustFind(state, slot);
-    const def = effectiveDef(inst);
+    const def = grownDef(state, inst, slot.owner); // S9d: the tally applies
     const resonance = resonanceSlots.has(i);
+    // S9d.3: one log line when a rite crosses a growth step — the Machine's
+    // bookkeeping, not the Witness's voice
+    if (def.growsWith && state.tallies) {
+      const step = growthStep(state, def, slot.owner);
+      if (step > (state.tallies.seenStep[def.id] ?? 0)) {
+        state.tallies.seenStep[def.id] = step;
+        if (state.telemetry.rites) {
+          (state.telemetry.rites.growth ??= {})[def.id] = step;
+        }
+        state.log.push({
+          e: 'info',
+          detail: `The Machine keeps its tally: ${def.name} ${def.growsWith.tiers ? `reaches its ${step === 1 ? 'first' : step === 2 ? 'second' : `${step}th`} mark` : `+${step}`}.`,
+        });
+      }
+    }
 
     // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +2 to the
     // linked effect (S9c.1 table: +1 → +2; never Hex ops: the OQ#28/OQ#43
@@ -1003,6 +1149,7 @@ export function resolveTurn(state: GameState): void {
       // S2.1: in solo the streak includes HIM — the closest he comes to joy
       sayWitness(state, state.botSeat ? 'resonance_together' : 'resonance');
       state.telemetry.resonances++;
+      bumpTally(state, 'resonances'); // S9d: Descant's axis
       for (const t of streakTags) {
         state.telemetry.resonanceTagCounts[t] = (state.telemetry.resonanceTagCounts[t] ?? 0) + 1;
       }
@@ -1041,6 +1188,7 @@ export function resolveTurn(state: GameState): void {
     actStats.cardsPlayed++;
     if (fired[i]) {
       state.telemetry.linksFired++;
+      bumpTally(state, 'linksFired'); // S9d: Toll's axis
       state.telemetry.linkFiresByPlayer[slot.owner]++;
       if (forcedSlots[i]) state.telemetry.forcedLinkFires++; // §14.12
       actStats.linksFired++;
@@ -1362,6 +1510,7 @@ function fall(state: GameState, player: PlayerState): void {
     }
   }
   state.telemetry.fallsByPlayer[player.id]++;
+  bumpTally(state, 'falls'); // S9d: Shroud's axis
   state.log.push({ e: 'fallen', player: player.id });
   if (rebound > 0) {
     // say it out loud (playtest 1): the silent rebind undid a player's Sever
@@ -1413,6 +1562,7 @@ export function startTurn(state: GameState): void {
     }
     p.block = 0;
     p.energy = p.energyMax + p.kindled; // M2-A2
+    bumpTally(state, 'kindledConsumed', p.kindled); // S9d: Pyre-Brand's axis
     p.kindled = 0;
     p.ready = false;
     p.statuses.frayed = 0;

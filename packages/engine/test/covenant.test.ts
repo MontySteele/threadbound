@@ -3,6 +3,7 @@
 // content included. Mirrors docs/content-audit.md.
 
 import { describe, expect, it } from 'vitest';
+import { applyGrowth, effectiveDef } from '../src/combat';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, eventsForAct } from '../src/content/registry';
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from '../src/content/cards';
 import { POWERS } from '../src/content/powers';
@@ -240,6 +241,84 @@ describe('S9b.2 upgrade parity (the cards never lie)', () => {
         for (const [k, v] of Object.entries(op)) {
           if (typeof v === 'number' && v > 1) {
             expect(advertises(face, v), `${c.id} upgrade face omits ${op.op}.${k}=${v}: "${face}"`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S9d.4 grower covenant. Worn-Knife guardrail: every grower is CAPPED; no
+// growth is ever a Hex application or scaling op; grown text can never lie
+// (auto-render parity, swept over tally states).
+// ---------------------------------------------------------------------------
+
+describe('S9d.4 grower covenant', () => {
+  const growers = Object.values(CARDS).filter((c) => c.growsWith);
+
+  it('exactly the eight rite cards grow', () => {
+    expect(growers.map((c) => c.id).sort()).toEqual([
+      'rite_descant', 'rite_knell', 'rite_mourners_step', 'rite_pyre_brand',
+      'rite_shroud', 'rite_toll', 'rite_vigil', 'rite_votive',
+    ]);
+  });
+
+  it('every grower is capped: linear growers carry cap, tiered growers a terminal tier list', () => {
+    for (const c of growers) {
+      const g = c.growsWith!;
+      if (g.tiers) {
+        expect(g.tiers.length, `${c.id}: empty tier list`).toBeGreaterThan(0);
+        const ats = g.tiers.map((t) => t.at);
+        expect([...ats].sort((a, b) => a - b), `${c.id}: tiers must ascend`).toEqual(ats);
+      } else {
+        expect(g.cap, `${c.id}: linear grower without a cap`).toBeGreaterThan(0);
+        expect(g.per, c.id).toBeGreaterThan(0);
+        expect(g.amount, c.id).toBeGreaterThan(0);
+        expect(g.appliesTo, c.id).toBeTruthy();
+        expect(c.base.some((e) => e.op === g.appliesTo && 'amount' in e), `${c.id}: appliesTo op missing from base`).toBe(true);
+      }
+    }
+  });
+
+  it('no growth patch contains a Hex application or scaling op (covenant fence)', () => {
+    const HEX_OPS = new Set(['hex', 'hexAll', 'hexPerLinkFired', 'doubleHex', 'damagePerHex']);
+    for (const c of growers) {
+      const g = c.growsWith!;
+      expect(HEX_OPS.has(g.appliesTo ?? ''), c.id).toBe(false);
+      for (const t of g.tiers ?? []) {
+        for (const e of t.addBase ?? []) expect(HEX_OPS.has(e.op), `${c.id} tier@${t.at} base`).toBe(false);
+        for (const e of t.link?.effects ?? []) expect(HEX_OPS.has(e.op), `${c.id} tier@${t.at} link`).toBe(false);
+      }
+    }
+  });
+
+  it('auto-render parity: grown text matches grown mechanics over a tally sweep', () => {
+    const SWEEP = [0, 1, 2, 3, 5, 8, 10, 14, 20, 25, 50, 100, 500];
+    for (const c of growers) {
+      for (const v of SWEEP) {
+        const tallies = {
+          detonations: v, falls: v, boundKills: { p1: v, p2: v }, threadSpent: v,
+          kindledConsumed: v, linksFired: v, momentumSpent: v, resonances: v, seenStep: {},
+        };
+        for (const upgraded of [false, true]) {
+          const eff = applyGrowth(
+            effectiveDef({ instanceId: 'sweep', defId: c.id, ...(upgraded ? { upgraded: true } : {}) }),
+            tallies, 'p1',
+          );
+          // every numeric base amount >1 must appear in the rendered text
+          for (const e of eff.base) {
+            if ('amount' in e && typeof e.amount === 'number' && e.amount > 1) {
+              // merged-op display: the text may show the SUM of same-op amounts
+              const sum = eff.base.filter((o) => o.op === e.op && 'amount' in o)
+                .reduce((a, o) => a + (o as { amount: number }).amount, 0);
+              const shown = eff.text.includes(String(e.amount)) || eff.text.includes(String(sum));
+              expect(shown, `${c.id}${upgraded ? '+' : ''} tally=${v}: ${e.op}=${e.amount} not in "${eff.text}"`).toBe(true);
+            }
+          }
+          // linear bonus never exceeds its cap
+          if (c.growsWith!.cap !== undefined) {
+            expect(eff.grownStep ?? 0, c.id).toBeLessThanOrEqual(c.growsWith!.cap!);
           }
         }
       }

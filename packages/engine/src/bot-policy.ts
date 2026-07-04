@@ -16,7 +16,7 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
-import { computeResonanceSlots } from './combat';
+import { applyGrowth, computeResonanceSlots } from './combat';
 import { removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -54,11 +54,14 @@ function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
     p.deck.find((c) => c.instanceId === instanceId) ??
     p.combatCards.find((c) => c.instanceId === instanceId);
   const def = CARDS[inst!.defId];
-  if (inst!.mutated && def.mutation) return { ...def, base: def.mutation.base, link: def.mutation.link };
+  // S9d: growers show the bot their grown numbers — first-pass policy
+  // simply values the number in front of it (routing toward axes is
+  // S11.9's problem, explicitly out of scope here)
+  if (inst!.mutated && def.mutation) return applyGrowth({ ...def, base: def.mutation.base, link: def.mutation.link }, view.tallies, owner);
   if (inst!.upgraded && def.upgrade) {
-    return { ...def, cost: def.upgrade.cost ?? def.cost, base: def.upgrade.base ?? def.base, link: def.upgrade.link !== undefined ? def.upgrade.link : def.link };
+    return applyGrowth({ ...def, cost: def.upgrade.cost ?? def.cost, base: def.upgrade.base ?? def.base, link: def.upgrade.link !== undefined ? def.upgrade.link : def.link }, view.tallies, owner);
   }
-  return def;
+  return applyGrowth(def, view.tallies, owner);
 }
 
 function hash32(str: string): number {

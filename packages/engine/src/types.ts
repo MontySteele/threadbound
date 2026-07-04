@@ -161,6 +161,62 @@ export interface RiteDef {
   passives?: PassiveId[];
 }
 
+// ---------------------------------------------------------------------------
+// S9d — stateless growth (the tally). Growth is DERIVED at resolution and
+// preview time from state.tallies; no CardInstance field, no sync surface.
+// Echoes and Reclaims inherit correctness for free (S9d.0-3).
+// ---------------------------------------------------------------------------
+
+export type GrowthAxis =
+  | 'detonations'      // pair detonation events
+  | 'falls'            // either seat falls
+  | 'boundKills'       // enemies that die Bound to the HOLDER (per-seat)
+  | 'threadSpent'      // pair Thread spent
+  | 'kindledConsumed'  // pair Kindled converted to energy
+  | 'linksFired'       // pair links fired
+  | 'momentumSpent'    // pair Momentum cashed into Strikes
+  | 'resonances';      // pair Resonance ignitions
+
+export interface GrowthTier {
+  /** axis value at which this tier's additions apply (ascending; the last
+   *  tier is the terminal one — CI-required) */
+  at: number;
+  /** ops ADDED to base (never replacing — upgrades/mutations compose) */
+  addBase?: EffectOp[];
+  /** link replacement at this tier */
+  link?: CardDef['link'];
+}
+
+export interface GrowthDef {
+  axis: GrowthAxis;
+  /** linear grower: +amount to `appliesTo` per `per` of the axis */
+  per?: number;
+  amount?: number;
+  /** cap on the accumulated BONUS (CI-required for linear growers) */
+  cap?: number;
+  /** the op the linear bonus lands on (first matching op in base) */
+  appliesTo?: 'damage' | 'block' | 'momentum';
+  /** tiered grower (Votive/Descant shapes) */
+  tiers?: GrowthTier[];
+}
+
+/** S9d.2: run tallies — AUTHORITATIVE state (hashed; telemetry is not).
+ *  Present only when rites are on, so unflagged state shape and goldens
+ *  hold by construction. */
+export interface RunTallies {
+  detonations: number;
+  falls: number;
+  boundKills: Record<PlayerId, number>;
+  threadSpent: number;
+  kindledConsumed: number;
+  linksFired: number;
+  momentumSpent: number;
+  resonances: number;
+  /** highest growth step each rite card has RESOLVED at (defId → bonus or
+   *  tier count) — drives the once-per-step tally log line */
+  seenStep: Record<string, number>;
+}
+
 export interface CardDef {
   id: string;
   name: string;
@@ -176,6 +232,11 @@ export interface CardDef {
   /** S8.1: rite vestment card — same pool exclusion as starterOnly; enters
    *  play only via the death-rite pick */
   riteOnly?: boolean;
+  /** S9d: the grower spec (authored on the eight rite cards) */
+  growsWith?: GrowthDef;
+  /** S9d.3 display metadata — set by applyGrowth on the defs it returns
+   *  (linear: the bonus; tiered: tiers reached). NEVER authored. */
+  grownStep?: number;
   text: string;
   base: EffectOp[];
   link?: {
@@ -708,6 +769,8 @@ export interface GameState {
   rites?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
+  /** S9d.2 run tallies; present only when rites is set (grower rites) */
+  tallies?: RunTallies;
   /** S8.4 rare events (wrong-way) already visited — never re-offered, the
    *  clue-dedup rule. Rare events are neither clue nor character, so they
    *  get their own list; it is only ever created on flagged runs (rare
@@ -820,6 +883,10 @@ export interface Telemetry {
     characterEvents: Record<PlayerId, number>;
     /** where the birth pick landed — the data that arbitrates L7 vs L8 */
     birthTiming: Record<PlayerId, { act: number; layer: number } | null>;
+    /** S9d gate 3: max growth step each rite card reached this run
+     *  (defId → bonus or tier count) — "an axis nobody feeds is a dead
+     *  archetype" needs an instrument */
+    growth?: Record<string, number>;
   };
 }
 

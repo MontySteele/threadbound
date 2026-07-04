@@ -12,6 +12,8 @@ export type { AscensionMods } from './ascension';
 export {
   effectiveDef, otherPlayer, findInstance, hasPassive, reclaimEchoShape, targetableEnemies,
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
+  // S9d: stateless growth (the tally)
+  applyGrowth, grownDef, growthStep, tallyAxisValue, opClause, primaryMagnitude,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // nt-slice §11 extension: the truth surface meant for clients is the

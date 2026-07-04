@@ -246,11 +246,20 @@ function apply(state: GameState, action: Action): void {
           birthChoice: null,
           birthPicked: { p1: false, p2: false },
         };
+        // S9d.2: run tallies feed the grower rites. Authoritative (hashed)
+        // state, created ONLY on rites runs so unflagged shape and goldens
+        // hold by construction.
+        state.tallies = {
+          detonations: 0, falls: 0, boundKills: { p1: 0, p2: 0 },
+          threadSpent: 0, kindledConsumed: 0, linksFired: 0,
+          momentumSpent: 0, resonances: 0, seenStep: {},
+        };
         state.telemetry.rites = {
           deathPick: { p1: null, p2: null },
           birthPick: { p1: null, p2: null },
           characterEvents: { p1: 0, p2: 0 },
           birthTiming: { p1: null, p2: null },
+          growth: {},
         };
       }
       state.phase = action.rites ? 'rites' : 'map';
