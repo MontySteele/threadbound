@@ -17,6 +17,7 @@ export const FRAGMENTS_BY_ID: Record<string, never> = {};
 export const VALID_COMBOS: never[] = [];
 export const rollTruth = serverOnly;
 export const serveFragments = serverOnly;
+export const serveBoundWitness = serverOnly; // S11.3/S11.5 single supply ledger
 
 // content/faces surface
 export const FACES: never[] = [];
