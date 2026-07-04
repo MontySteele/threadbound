@@ -660,3 +660,19 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     named to it.** The post-S11.5 ledger row is the Wave A baseline
     for S11.6/S11.7 batteries. Human pricing of the gambles is a
     playtest read (bots are price-blind until S11.9). **CLOSED.**
+
+59. **TB_KNOTWORK first battery: mirrors read +22 (S11.10 gate 2 UNMET).**
+    vb 33 (−4 ✓) / vv 48 / bb 60 vs the Wave A baseline. Cause is
+    structural, not per-fight: a strand-runner fights ~1 less per run
+    (truth strand carries ≤2 combats incl. the opener) while taking more
+    reward events; HP/combat is unchanged. PROPOSED quota amendment to
+    the just-signed S11.11-4 table (one-line data changes,
+    content/strand-targets.ts): truth combats ≥2 with events at exactly
+    ≥3 (drop the 4th event slot for a mid combat); power combats ≥3
+    (treasure moves to truth-only; the weave-wide ≥1 floor holds).
+    Strand-runner fights return to ~5–6/act. Positive co-reads from the
+    same battery, no action needed: D6/D7 improves on every measure vs
+    the B6 ledger (gate 3 PASS), and the escalation ratio reads 1.45
+    with knot-pricing live (from 1.03) — the ladder/policy joint
+    recalibration has its instrument. **OPEN — designer (amend/battery
+    loop, or re-baseline the braid as its own mode).**
