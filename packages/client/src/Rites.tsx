@@ -61,7 +61,7 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
                 <div key={id} className="panel rite-option">
                   <h3>{rite.name}</h3>
                   <p className="muted rite-flavor">{rite.flavor}</p>
-                  <div className="rite-card">
+                  <div className="rite-cardwrap">
                     <Card def={card} />
                   </div>
                   {/* S9d.3: the archetype declaration must be legible at the
@@ -84,7 +84,7 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
           </p>
           <p className="muted rite-flavor">{mine.flavor}</p>
           {mine.cardId && CARDS[mine.cardId] && (
-            <div className="rite-card rite-worn">
+            <div className="rite-cardwrap rite-worn">
               <Card def={CARDS[mine.cardId]} small />
             </div>
           )}

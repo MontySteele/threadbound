@@ -820,11 +820,22 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const layerCount = Math.max(...map.nodes.map((n) => n.layer)) + 1;
   const laneCounts = new Map<number, number>();
   for (const n of map.nodes) laneCounts.set(n.layer, (laneCounts.get(n.layer) ?? 0) + 1);
-  const maxLanes = Math.max(...laneCounts.values());
+  // S11.8 braid maps: lane is a strand COLUMN (truth 0 · knot 1 · power 2,
+  // widened slots 1/3) and lanes within a layer can be sparse — stranded
+  // nodes and the knots keep their absolute lane so the two warps read as
+  // parallel verticals crossing only at the knots. Density-centering a
+  // braid layer shears the columns (and pushes lane 3 off-canvas). Only
+  // strandless layers (the shared breath, the boss) center; non-braid maps
+  // have dense lanes and keep the old layout exactly.
+  const braid = map.nodes.some((n) => n.strand);
+  const maxLanes = braid
+    ? Math.max(...map.nodes.map((n) => n.lane)) + 1
+    : Math.max(...laneCounts.values());
   const COL = 168, ROW = 92;
   const W = maxLanes * COL, H = layerCount * ROW;
   const pos = (n: MapNode): { x: number; y: number } => {
-    const offset = ((maxLanes - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
+    const absolute = braid && (!!n.strand || n.kind === 'elite');
+    const offset = absolute ? 0 : ((maxLanes - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
     return { x: offset + (n.lane + 0.5) * COL, y: H - (n.layer + 0.5) * ROW };
   };
   const hereLayer = map.nodes.find((n) => n.id === map.position)?.layer ?? -1;

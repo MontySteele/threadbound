@@ -38,5 +38,11 @@ services:
         value: "1"
       - key: TB_TRACKS
         value: "1"
+      # S11.8 knotwork braid ON for the playtest build only — gate 5 (solo
+      # manual pass) rides the playtest. The flag-off public/default path is
+      # untouched; TB_KNOTWORK stays default-off per the OQ#59 ruling. Remove
+      # to fall back to the lane generator.
+      - key: TB_KNOTWORK
+        value: "1"
       # maintenance window: set TB_DRAIN=1 in the dashboard, save, and the
       # title screen shows "the loom is being restrung"; unset to reopen

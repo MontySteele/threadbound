@@ -556,7 +556,10 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .rite-option { max-width: 280px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .rite-option h3 { margin: 2px 0; letter-spacing: 0.08em; }
 .rite-flavor { font-style: italic; }
-.rite-card { display: flex; justify-content: center; }
+/* layout wrapper only — named apart from .card.rite-card (the S9c.2 vestment
+   frame on the card itself), which this flex rule used to capture too,
+   rowing the card's sections out past its border */
+.rite-cardwrap { display: flex; justify-content: center; }
 .rite-worn { margin: 8px auto; }
 
 /* S7.4 birth-rite trio — prominent (ADVANCE is gated), no explanation copy */
