@@ -562,6 +562,8 @@ function apply(state: GameState, action: Action): void {
     case 'REST_CHOOSE': {
       assert(state.phase === 'rest' && state.rest, 'not at a rest site');
       const rest = state.rest!;
+      // S11.7: the toll door offers ONE mercy, not a menu
+      assert(!rest.toll, 'the toll-door grants one mercy — name who takes it');
       assert(rest.chosen[action.player] === null, 'already chosen');
       const p = state.players[action.player];
       const option: RestOption = action.option;
@@ -585,6 +587,86 @@ function apply(state: GameState, action: Action): void {
           throw new IllegalAction('the Wedding Knife is used via its own picks, not a rest choice');
       }
       rest.chosen[action.player] = option;
+      return;
+    }
+
+    case 'TOLL_PICK': {
+      // S11.7 toll door: both seats name who the door heals — vote-match
+      // like NODE_PICK, disagreement resets (the negotiation is the point)
+      assert(state.phase === 'rest' && state.rest?.toll, 'no toll-door here');
+      const toll = state.rest!.toll!;
+      assert(toll.healed === null, 'the toll is paid');
+      assert(action.seat === 'p1' || action.seat === 'p2', 'name a seat');
+      toll.votes[action.player] = action.seat;
+      // solo: the Witness follows the human's naming (S1.2 etiquette)
+      if (state.botSeat && action.player !== state.botSeat) {
+        toll.votes[state.botSeat] = action.seat;
+      }
+      const { p1, p2 } = toll.votes;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          // 1.5× a plain rest's heal, ONE seat (first-pass number — rides
+          // the same ascension knob a plain rest does)
+          const chosen = state.players[p1];
+          const heal = Math.floor(chosen.maxHp * ascensionMods(state.ascension).restHeal * 1.5);
+          chosen.hp = Math.min(chosen.maxHp, chosen.hp + heal);
+          toll.healed = p1;
+          state.rest!.chosen = { p1: 'rest', p2: 'rest' }; // the door is spent; Onward opens
+          state.log.push({ e: 'info', detail: `The toll-door opens for ${chosen.character} alone — ${heal} HP.` });
+          sayWitness(state, 'toll_door');
+        } else {
+          toll.votes = { p1: null, p2: null };
+        }
+      }
+      return;
+    }
+
+    case 'TREASURE_PICK': {
+      // S11.7 covet cache: the pair takes ONE of the two spoils, vote-match
+      assert(state.phase === 'covet_treasure' && state.covetTreasure, 'no cache to divide');
+      const ct = state.covetTreasure!;
+      assert(ct.taken === null, 'the cache is decided');
+      ct.votes[action.player] = action.choice;
+      // solo: the Witness follows the human's pick (S1.2 etiquette)
+      if (state.botSeat && action.player !== state.botSeat) {
+        ct.votes[state.botSeat] = action.choice;
+      }
+      const { p1, p2 } = ct.votes;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          ct.taken = p1;
+          if (p1 === 'gold') {
+            earnGold(state, ct.gold, 'treasure');
+            state.log.push({ e: 'info', detail: `The pair takes the coin — ${ct.gold} gold. The rest stays behind glass.` });
+          } else {
+            grantRelic(state, ct.owner, ct.relicId);
+          }
+        } else {
+          ct.votes = { p1: null, p2: null };
+        }
+      }
+      return;
+    }
+
+    case 'TREASURE_SEIZE': {
+      // S11.7: a Covet charge takes what the pair left — the existing Covet
+      // economy, spent on a cache instead of a partner's card set
+      assert(state.phase === 'covet_treasure' && state.covetTreasure, 'no cache here');
+      const ct = state.covetTreasure!;
+      assert(ct.taken !== null, 'divide the cache first');
+      assert(ct.seizedBy === null, 'the rest is already seized');
+      const p = state.players[action.player];
+      assert(p.covetCharges > 0, 'no Covet charges');
+      p.covetCharges--;
+      state.telemetry.covetsSpent[action.player]++;
+      if (ct.taken === 'gold') {
+        grantRelic(state, ct.owner, ct.relicId);
+      } else {
+        earnGold(state, ct.gold, 'treasure');
+        state.log.push({ e: 'info', detail: `${state.players[action.player].character} covets the coin too — ${ct.gold} gold.` });
+      }
+      ct.seizedBy = action.player;
+      sayWitness(state, 'covet_cache');
       return;
     }
 
@@ -746,7 +828,7 @@ function apply(state: GameState, action: Action): void {
       if (state.phase === 'event' && state.ritesState?.birthChoice === action.player) {
         throw new IllegalAction('the loom holds its breath — choose your rite');
       }
-      assert(['reward', 'event', 'rest', 'shop', 'loom'].includes(state.phase), 'cannot advance now');
+      assert(['reward', 'event', 'rest', 'shop', 'loom', 'covet_treasure'].includes(state.phase), 'cannot advance now');
       if (state.phase === 'loom') {
         assert(state.truth?.shrine?.verdict, 'the loom has not spoken yet');
         // solo: the bot follows the human out of the shrine
@@ -759,6 +841,8 @@ function apply(state: GameState, action: Action): void {
         assert(r.picked.p1 !== null && r.picked.p2 !== null, 'both players must pick first');
       }
       if (state.phase === 'event') assert(state.event!.chosen !== null, 'choose first');
+      // S11.7: the cache must be divided before anyone leaves it
+      if (state.phase === 'covet_treasure') assert(state.covetTreasure!.taken !== null, 'divide the cache first');
       if (state.phase === 'rest') {
         const rest = state.rest!;
         assert(rest.chosen[action.player] !== null, 'choose first');
@@ -778,6 +862,9 @@ function apply(state: GameState, action: Action): void {
         state.event = null;
         state.rest = null;
         state.shop = null;
+        // S11.7: DELETE, not null — the key only ever exists at a cache
+        // (flagged maps), so unflagged state shape stays byte-identical
+        delete state.covetTreasure;
         if (wasBoss) {
           advanceAct(state);
         } else {
@@ -1271,6 +1358,11 @@ function enterNode(state: GameState): void {
     }
     case 'rest':
       state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
+      // S11.7 toll door (only flagged maps carry the variant): one seat
+      // heals, named by vote-match — REST_CHOOSE is closed at this door
+      if (node.variant === 'toll') {
+        state.rest.toll = { votes: { p1: null, p2: null }, healed: null };
+      }
       state.phase = 'rest';
       sayWitness(state, 'rest_site');
       // nt-slice S6.5: the all-true completion boon — the full opening turn,
@@ -1290,15 +1382,27 @@ function enterNode(state: GameState): void {
       sayWitness(state, 'shop');
       return;
     case 'treasure': {
-      // instant spoils, shown on the reward screen with no card sets
+      // instant spoils, shown on the reward screen with no card sets.
+      // S11.7 covet cache: the SAME rolls in the SAME order (parity is a
+      // habit, not just a covenant) — only the GRANT is negotiated.
       const goldRoll = rngInt(state.rng, 21);
       state.rng = goldRoll.state;
       const gold = 30 + goldRoll.value;
-      earnGold(state, gold, 'treasure');
-      const relic = randomUnownedRelic(state);
+      const relicRolled = randomUnownedRelic(state);
       const ownerRoll = rngInt(state.rng, 2);
       state.rng = ownerRoll.state;
       const owner: PlayerId = ownerRoll.value === 0 ? 'p1' : 'p2';
+      if (node.variant === 'covet' && relicRolled) {
+        state.covetTreasure = {
+          gold, relicId: relicRolled, owner,
+          votes: { p1: null, p2: null }, taken: null, seizedBy: null,
+        };
+        state.phase = 'covet_treasure';
+        state.log.push({ e: 'info', detail: 'A cache behind old glass: coin, and something better guarded. The case opens ONCE.' });
+        return;
+      }
+      earnGold(state, gold, 'treasure');
+      const relic = relicRolled;
       if (relic) grantRelic(state, owner, relic);
       state.reward = {
         sets: { p1: [], p2: [] },

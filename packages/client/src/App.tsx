@@ -754,6 +754,8 @@ function Phase({ state, net, partnerOn, hpOffsets }: {
       return <EventView state={state} net={net} />;
     case 'rest':
       return <Rest state={state} net={net} />;
+    case 'covet_treasure':
+      return <CovetTreasure state={state} net={net} />;
     case 'shop':
       return <Shop state={state} net={net} />;
     case 'loom':
@@ -790,9 +792,17 @@ function Phase({ state, net, partnerOn, hpOffsets }: {
 // Map
 // ---------------------------------------------------------------------------
 
+/** S11.7: variant nodes wear their own names — the price is visible from
+ *  the map (both seats see the same face; scouting is the asymmetric layer) */
+function nodeName(n: MapNode): string {
+  if (n.variant === 'toll') return 'toll-door';
+  if (n.variant === 'covet') return 'covet cache';
+  return NODE_NAME[n.kind] ?? n.kind;
+}
+
 function nodeLabel(map: ClientState['map'], id: number): string {
   const n = map.nodes.find((x) => x.id === id);
-  return n ? `${NODE_ICON[n.kind]} ${NODE_NAME[n.kind] ?? n.kind}` : '?';
+  return n ? `${NODE_ICON[n.kind]} ${nodeName(n)}` : '?';
 }
 
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -876,7 +886,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               disabled={!can}
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id }); }}
             >
-              {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
+              {NODE_ICON[n.kind]} {nodeName(n)}
               {/* S11.6 asymmetric scouting: YOUR seat's face for this node —
                   the partner sees their own (or nothing). Say it out loud. */}
               {!cleared && state.scout?.[n.id] && (
@@ -1621,6 +1631,46 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const chosen = rest.chosen[you];
   const hasKnife = state.players.p1.relics.includes('wedding_knife') || state.players.p2.relics.includes('wedding_knife');
   const needUpgradePick = chosen === 'upgrade' && !rest.upgradePicked[you];
+  // S11.7 toll door: one seat heals (1.5× a plain rest), named by vote-match
+  if (rest.toll) {
+    const toll = rest.toll;
+    const healPct = Math.round(ascensionMods(state.ascension ?? 0).restHeal * 1.5 * 100);
+    return (
+      <div className="center">
+        <h2>Toll-Door Rest</h2>
+        <p className="prose">
+          The door grants ONE mercy — a deeper rest ({healPct}% HP) for a single traveler.
+          Name who takes it. You must both name the same seat.
+        </p>
+        <Log log={state.log} state={state} />
+        {toll.healed === null ? (
+          <>
+            {(['p1', 'p2'] as PlayerId[]).map((pid) => (
+              <button key={pid} className="big" data-gp="META"
+                style={toll.votes[you] === pid ? { outlineColor: PCOLOR[pid], outlineStyle: 'solid' } : {}}
+                onClick={() => net.act({ type: 'TOLL_PICK', seat: pid })}>
+                <span style={{ color: PCOLOR[pid] }}>{state.players[pid].character}</span>
+                {' '}takes it ({state.players[pid].hp}/{state.players[pid].maxHp} HP)
+              </button>
+            ))}
+            <p className="muted">
+              You: <b>{toll.votes[you] ? state.players[toll.votes[you]!].character : 'naming…'}</b>
+              {' · '}
+              {state.players[partner].character}: <b>{toll.votes[partner] ? 'has named' : 'naming…'}</b>
+              {' '}(disagreement resets both)
+            </p>
+          </>
+        ) : (
+          <>
+            <p>The door opened for <b style={{ color: PCOLOR[toll.healed] }}>{state.players[toll.healed].character}</b> alone.</p>
+            <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+              {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="center">
       <h2>Rest Site</h2>
@@ -1676,6 +1726,60 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </>
       )}
       {hasKnife && chosen !== null && !needUpgradePick && <Wedding state={state} net={net} />}
+    </div>
+  );
+}
+
+/** S11.7 covet cache: the treasure rolled its usual spoils, but the pair
+ *  takes ONE by vote-match — and a Covet charge seizes the other. */
+function CovetTreasure({ state, net }: { state: ClientState; net: Net }): JSX.Element {
+  const you = state.you;
+  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+  const ct = state.covetTreasure!;
+  const relic = RELICS_BY_ID[ct.relicId];
+  const me = state.players[you];
+  return (
+    <div className="center">
+      <h2>Covet Cache</h2>
+      <p className="prose">
+        Coin and a keepsake behind old glass. The case opens ONCE — take one, leave the other.
+        You must both name the same prize.
+      </p>
+      <Log log={state.log} state={state} />
+      {ct.taken === null ? (
+        <>
+          <button className="big" data-gp="META"
+            style={ct.votes[you] === 'gold' ? { outlineStyle: 'solid' } : {}}
+            onClick={() => net.act({ type: 'TREASURE_PICK', choice: 'gold' })}>
+            The coin — {ct.gold} gold
+          </button>
+          <button className="big" data-gp="META" data-inspect={`relic:${ct.relicId}`}
+            style={ct.votes[you] === 'relic' ? { outlineStyle: 'solid' } : {}}
+            onClick={() => net.act({ type: 'TREASURE_PICK', choice: 'relic' })}>
+            {relic?.name ?? ct.relicId} — to <span style={{ color: PCOLOR[ct.owner] }}>{state.players[ct.owner].character}</span>
+          </button>
+          <p className="muted">
+            You: <b>{ct.votes[you] ?? 'naming…'}</b> · {state.players[partner].character}: <b>{ct.votes[partner] ? 'has named' : 'naming…'}</b>
+            {' '}(disagreement resets both)
+          </p>
+        </>
+      ) : (
+        <>
+          <p>Taken: <b>{ct.taken === 'gold' ? `${ct.gold} gold` : relic?.name ?? ct.relicId}</b>.</p>
+          {ct.seizedBy === null ? (
+            <button className="big" data-gp="META" data-inspect="kw:covet" disabled={me.covetCharges < 1}
+              onClick={() => net.act({ type: 'TREASURE_SEIZE' })}>
+              Covet the rest ({ct.taken === 'gold' ? relic?.name ?? ct.relicId : `${ct.gold} gold`}) — 1 charge
+              {me.covetCharges < 1 ? ' (none left)' : ''}
+            </button>
+          ) : (
+            <p className="crossed">{state.players[ct.seizedBy].character} coveted the rest. The case stands empty.</p>
+          )}
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+            {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+          </button>
+        </>
+      )}
     </div>
   );
 }

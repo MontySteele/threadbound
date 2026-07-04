@@ -180,6 +180,8 @@ export class BotPolicy {
         return this.playEvent(view);
       case 'rest':
         return this.playRest(view);
+      case 'covet_treasure':
+        return this.playCovetTreasure(view);
       case 'shop':
         return this.playShop(view);
       case 'loom': {
@@ -577,6 +579,19 @@ export class BotPolicy {
     const me = view.players[you];
     const wedding = this.weddingMove(view);
     if (wedding) return wedding;
+    // S11.7 toll door: name the hurt seat (both seats compute the same
+    // fraction → instant vote-match; solo mirrors the human anyway)
+    if (rest.toll) {
+      if (rest.toll.healed === null) {
+        if (this.mode === 'solo') return null; // the human names it
+        if (rest.toll.votes[you] !== null) return null; // voted; wait
+        const frac = (pid: PlayerId): number => view.players[pid].hp / view.players[pid].maxHp;
+        const seat: PlayerId = frac('p1') <= frac('p2') ? 'p1' : 'p2';
+        return { type: 'TOLL_PICK', player: you, seat };
+      }
+      if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+      return null;
+    }
     if (rest.chosen[you] === null) {
       // heal when hurt, otherwise upgrade; sprinkle barter/rebraid
       const hurt = me.hp < me.maxHp * 0.6;
@@ -602,6 +617,27 @@ export class BotPolicy {
       if (candidates.length > 0) {
         return { type: 'UPGRADE_PICK', player: you, cardInstanceId: candidates[0].instanceId };
       }
+    }
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+
+  /** S11.7 covet cache: vote the relic (both seats agree instantly by the
+   *  same rule); the richer-in-charges seat seizes the coin after (tie →
+   *  p1, so the pair never double-attempts). Solo: the human drives. */
+  private playCovetTreasure(view: BotView): Action | null {
+    const you = view.you;
+    const ct = view.covetTreasure!;
+    if (ct.taken === null) {
+      if (this.mode === 'solo') return null;
+      if (ct.votes[you] !== null) return null;
+      return { type: 'TREASURE_PICK', player: you, choice: 'relic' };
+    }
+    if (ct.seizedBy === null && this.mode !== 'solo') {
+      const mine = view.players[you].covetCharges;
+      const theirs = view.players[otherOf(you)].covetCharges;
+      const seizer: PlayerId = theirs > mine ? otherOf(you) : mine > theirs ? you : 'p1';
+      if (seizer === you && mine > 0) return { type: 'TREASURE_SEIZE', player: you };
     }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;

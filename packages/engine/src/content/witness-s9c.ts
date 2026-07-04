@@ -25,6 +25,22 @@ export const S9C_WITNESS: Record<string, string[]> = {
     'It wants naming. That part, at least, is yours to do.',
   ],
 
+  // S11.7 — the toll door resolves: one seat healed, by agreement. Fires
+  // only at toll variants (flagged maps only carry them). PROVISIONAL.
+  toll_door: [
+    'One of you, mended. The other, edified. The door considers this fair.',
+    'The door asked its question and you answered together. It keeps a list of couples who could not.',
+    'A single mercy, split zero ways. The Undercroft admires clean arithmetic.',
+  ],
+
+  // S11.7 — a Covet charge spent on the cache's remainder. Fires only at
+  // covet variants (flagged maps only carry them). PROVISIONAL.
+  covet_cache: [
+    'Both, then. The case was a question about you, and you answered it.',
+    'The rite has provisions for wanting everything. You have just used one.',
+    'Coveting from a locked box now. At least the box will not resent you.',
+  ],
+
   // S11.3 — the bound witness: an elite kill pays a guaranteed fragment
   // (combat paying narrative). Register: the collector at work. PROVISIONAL.
   bound_witness: [

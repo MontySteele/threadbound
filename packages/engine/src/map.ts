@@ -439,6 +439,19 @@ export function generateActMap(
       n.scoutRelicId = pool[roll.value].id;
       pinned.add(n.scoutRelicId);
     }
+    // S11.7 pacing-node variants (ruling 6), same derived-stream discipline:
+    // half the MID-MAP rests become toll doors (heal ONE seat, vote-named),
+    // half the mid-map treasures become covet caches (one-of-two). The
+    // breath-before-boss layer never varies — toll doors can never fully
+    // replace plain rests, structurally. First-pass mix; the composition CI
+    // fences the reserved layers and battery + playtest tune the ratio.
+    for (const n of nodes) {
+      if (n.layer <= 0 || n.layer >= LAYERS - 1) continue;
+      if (n.kind !== 'rest' && n.kind !== 'treasure') continue;
+      const coin = rngInt(sRng, 2);
+      sRng = coin.state;
+      if (coin.value === 1) n.variant = n.kind === 'rest' ? 'toll' : 'covet';
+    }
   }
 
   // boss layer

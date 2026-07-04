@@ -20,6 +20,7 @@ export type Phase =
   | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
   | 'rest'
   | 'shop' // M2-B4
+  | 'covet_treasure' // S11.7: the covet cache — one-of-two, flagged maps only
   | 'game_over'
   | 'victory';
 
@@ -602,6 +603,11 @@ export interface MapNode {
    *  absent on unflagged maps, so their shape/hash/goldens are untouched.
    *  Victory rolls exactly as before and prefers the pin while unowned. */
   scoutRelicId?: string;
+  /** S11.7 pacing-node variants (ruling 6), same derived-stream discipline
+   *  and the same flagged-only absence rule: 'toll' rests heal ONE seat by
+   *  vote-match; 'covet' treasures offer one-of-two, the other seizable
+   *  with a Covet charge. The breath-before-boss layer never varies. */
+  variant?: 'toll' | 'covet';
 }
 
 export interface MapState {
@@ -749,6 +755,10 @@ export interface RestState {
   chosen: Record<PlayerId, RestOption | null>;
   /** M2-B6: chosen 'upgrade' → must then UPGRADE_PICK */
   upgradePicked: Record<PlayerId, boolean>;
+  /** S11.7 toll-door rest: one seat heals (bigger), named by vote-match
+   *  like NODE_PICK — the negotiation is the point. Present only at toll
+   *  variant nodes (flagged maps); REST_CHOOSE is closed at the door. */
+  toll?: { votes: Record<PlayerId, PlayerId | null>; healed: PlayerId | null };
   /** §7 Wedding Knife: both pick a card, both confirm, decks swap permanently */
   wedding: null | {
     offers: Record<PlayerId, string | null>; // cardInstanceId
@@ -857,11 +867,27 @@ export interface GameState {
   event: EventPhaseState | null;
   rest: RestState | null;
   shop: ShopState | null;
+  /** S11.7 covet cache (flagged maps only — absent otherwise, so unflagged
+   *  shape/hash hold): the treasure rolled its spoils as usual, but the pair
+   *  takes ONE by vote-match; a Covet charge seizes the other. */
+  covetTreasure?: CovetTreasureState | null;
   advanceReady: Record<PlayerId, boolean>;
   concede: Record<PlayerId, boolean>;
   witnessSaid: string[];
   log: GameEvent[];
   telemetry: Telemetry;
+}
+
+/** S11.7: the covet cache's table state. Spoils use the plain treasure's
+ *  exact rolls (gold, relic, owner) — only the GRANT is negotiated. */
+export interface CovetTreasureState {
+  gold: number;
+  relicId: string;
+  /** the seat the relic goes to if taken/seized (the plain treasure's roll) */
+  owner: PlayerId;
+  votes: Record<PlayerId, 'gold' | 'relic' | null>;
+  taken: 'gold' | 'relic' | null;
+  seizedBy: PlayerId | null;
 }
 
 export interface ActStats {
@@ -993,6 +1019,10 @@ export type Action =
   | { type: 'COVET_PICK'; player: PlayerId; pick: string | 'pass' }
   | { type: 'EVENT_CHOOSE'; player: PlayerId; optionId: string }
   | { type: 'REST_CHOOSE'; player: PlayerId; option: RestOption }
+  // S11.7 pacing-node variants (flagged maps only)
+  | { type: 'TOLL_PICK'; player: PlayerId; seat: PlayerId } // name who the door heals
+  | { type: 'TREASURE_PICK'; player: PlayerId; choice: 'gold' | 'relic' }
+  | { type: 'TREASURE_SEIZE'; player: PlayerId } // spend a Covet charge for the rest
   | { type: 'UPGRADE_PICK'; player: PlayerId; cardInstanceId: string } // M2-B6
   | { type: 'WEDDING_PICK'; player: PlayerId; cardInstanceId: string } // §7
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }
