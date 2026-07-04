@@ -176,15 +176,13 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
  *  cover (the doc counted 18) — it stays here pending a designer-ruled row;
  *  filed in OPEN-QUESTIONS. */
 const UPGRADE_RESTATEMENT_EXEMPT = new Set<string>([
-  'pinprick', 'withering', 'stitchblade', 'thornward', 'loose_stitch',
-  'crossguard', 'bellows', 'cinch', 'needle_wall', 'quiet_mending',
-  'gathering_slack', 'festering_knot', 'pale_unmaking', 'rend_the_weave',
-  'measured_cut', 'ashfall', 'banked_coals', 'pummel', 'tithe_of_thread',
+  'thornward', // the 19th — no S9b.3 row exists; awaiting designer ruling
 ]);
 
 /** S9b.1-2 class: upgrade texts whose numbers drift from their mechanics.
- *  pinprick/withering leave with their S9b.3 wholesale rewrites. */
-const UPGRADE_TEXT_EXEMPT = new Set<string>(['pinprick', 'withering']);
+ *  Emptied by the S9b.3 rewrites; stays as the place future exemptions
+ *  must be annotated. */
+const UPGRADE_TEXT_EXEMPT = new Set<string>([]);
 
 describe('S9b.2 upgrade parity (the cards never lie)', () => {
   const all = Object.values(CARDS);

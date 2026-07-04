@@ -170,6 +170,9 @@ export const NEUTRAL_CARDS: CardDef[] = [
       base: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
+      // S9b.3 row 18: neutral stays under character power; Thread untouched
+      base: [{ op: 'thread', amount: 2 }, { op: 'block', amount: 2 }],
+      text: 'Gain 2 Thread. Gain 2 Block.',
       link: { condition: 'Surge', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     },
   },
