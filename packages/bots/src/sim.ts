@@ -301,6 +301,25 @@ async function main(): Promise<void> {
     );
     console.log(`character events taken/run: ${(charEvents / riteRuns.length).toFixed(2)}`);
     console.log(`Reclaim attempts (threadSpendByKind.reclaim): ${spendMix.reclaim ?? 0}`);
+    // S9d gate 3 instrument: mean realized growth per rite across the runs
+    // where it was PICKED (an axis nobody feeds is a dead archetype).
+    const growthSum: Record<string, number> = {};
+    const growthRuns: Record<string, number> = {};
+    for (const r of riteRuns) {
+      const t = r.telemetry.rites!;
+      for (const pid of ['p1', 'p2'] as PlayerId[]) {
+        const death = t.deathPick[pid];
+        if (!death) continue;
+        const cardId = death.replace(/^dr_/, 'rite_');
+        growthRuns[cardId] = (growthRuns[cardId] ?? 0) + 1;
+        growthSum[cardId] = (growthSum[cardId] ?? 0) + (t.growth?.[cardId] ?? 0);
+      }
+    }
+    const growthLine = Object.entries(growthRuns)
+      .sort()
+      .map(([id, n]) => `${id} ${(growthSum[id] / n).toFixed(1)} (n=${n})`)
+      .join(', ');
+    console.log(`S9d mean realized growth/pick: ${growthLine || 'none'}`);
   }
   console.log('---------------- GATES ----------------');
   let allPass = true;
