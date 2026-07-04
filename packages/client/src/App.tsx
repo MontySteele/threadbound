@@ -936,7 +936,11 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
     try { return computeForcedLinks(state, combat.chain, fired); } catch { return combat.chain.map(() => false); }
   }, [state, combat.chain, fired]);
   const firedAll = useMemo(() => fired.map((f, i) => f || forced[i]), [fired, forced]);
-  const resonance = useMemo(() => computeResonanceSlots(combat.chain, firedAll), [combat.chain, firedAll]);
+  // S9c.6: same def resolver as engine resolution — preview == reality
+  const resonance = useMemo(
+    () => computeResonanceSlots(combat.chain, firedAll, (slot) => defFor(state, slot.owner, slot.cardInstanceId)),
+    [combat.chain, firedAll, state],
+  );
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
@@ -1375,11 +1379,16 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                   {forced[i] ? '⊕ forced' : lit ? '⚡ fires' : `link: ${def.link.condition}`}
                 </div>
               )}
-              {resonance.has(i) && (
-                <div className="resonance" data-inspect="kw:resonance">
-                  ✦ RESONANCE {scales ? '+50%' : '· streak only'}
-                </div>
-              )}
+              {resonance.has(i) && (() => {
+                // S9c.5 rung i: the multiplier renders explicitly — base
+                // ×1.5 → result (per hit) instead of an abstract "+50%"
+                const prim = resolvedEffects.find((e) => (e as { primary?: boolean }).primary && 'amount' in e) as { amount: number } | undefined;
+                return (
+                  <div className="resonance" data-inspect="kw:resonance">
+                    {prim && scales ? `✦ ${prim.amount} ×1.5 → ${Math.ceil(prim.amount * 1.5)}` : '✦ RESONANCE · streak only'}
+                  </div>
+                );
+              })()}
               {mine && !pendingPulse && (
                 <div className="reorder">
                   <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) })}>◀</button>
@@ -1416,7 +1425,7 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
 }): JSX.Element {
   return (
     <div
-      className={`card tag-${def.tag} r-${def.rarity ?? 'common'} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''} ${upgraded ? 'upgraded' : ''} ${mutated ? 'mutated' : ''}`}
+      className={`card tag-${def.tag} r-${def.rarity ?? 'common'} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''} ${upgraded ? 'upgraded' : ''} ${mutated ? 'mutated' : ''} ${def.riteOnly ? 'rite-card' : ''}`}
       data-gp={!disabled && onClick ? gpZone : undefined}
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
@@ -1791,7 +1800,8 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'thread_reignited': return 'THE THREAD REIGNITES at full strength.';
     case 'thread_action': return `${pname(e.player)} uses ${e.kind}.`;
     case 'fray': return 'The Thread FRAYS — you both pay for it.';
-    case 'resonance_ignite': return `✦ RESONANCE — [${e.tags.join(' → ')}]`;
+    // S9c.5 rung i: the log line names the streak length and the ignited card
+    case 'resonance_ignite': return `✦ RESONANCE — ${e.card ? `${e.card} ignites off ` : ''}a ${e.tags.length}-card streak [${e.tags.join(' → ')}]`;
     case 'relic': return `${pname(e.player)} claims a relic: ${RELICS_BY_ID[e.relic]?.name ?? e.relic}.`;
     case 'info': return subj(e.detail);
     default: return JSON.stringify(e);

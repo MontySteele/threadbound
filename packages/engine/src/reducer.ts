@@ -519,6 +519,10 @@ function apply(state: GameState, action: Action): void {
         if (state.telemetry.rites) state.telemetry.rites.characterEvents[ev.subject]++;
         if (rs.progress[ev.subject] >= 2 && !rs.birthPicked[ev.subject] && rs.birthChoice === null) {
           rs.birthChoice = ev.subject;
+          // S9c.4 (D10-B): acknowledge that a choice exists and is theirs —
+          // zero explanation of stakes or economy. Single-line pool +
+          // no-repeat = once per run; rites-flagged runs only.
+          sayWitness(state, 'rite_birth_pick');
         }
       }
       return;

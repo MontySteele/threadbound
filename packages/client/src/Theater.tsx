@@ -107,7 +107,8 @@ function eventBeat(e: GameEvent, pname: (p: PlayerId) => string, ename?: (id: st
         run: () => audio.play(e.resonance ? 'resonance' : e.linkFired ? 'link_fire' : 'card_place'),
       };
     case 'resonance_ignite':
-      return { text: `✦ RESONANCE — ${e.tags.join(' → ')}`, cls: 'b-resonance', extraMs: 200, run: () => emitCordFx({ kind: 'resonance' }) };
+      // S9c.5 rung i: name the ignited card and the streak length
+      return { text: `✦ RESONANCE — ${e.card ? `${e.card} · ` : ''}${e.tags.length}-card streak · ${e.tags.join(' → ')}`, cls: 'b-resonance', extraMs: 200, run: () => emitCordFx({ kind: 'resonance' }) };
     case 'damage': {
       const total = e.hpLoss + e.blocked;
       const heavy = total >= 15;
