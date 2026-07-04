@@ -25,6 +25,7 @@ comparable to numbers in older status docs; deltas are.
 | post-S9d (signed rates) | 26 | 29 | 29 | vb +8 / vv +11 — OUTSIDE ±6 → rate retune per the "provisional pending battery" clause |
 | post-S9d (retuned) + S11.2 escalation | 25 | 24 | 29 | vb +7 / vv +6 / bb +4 vs post-S9c. vb still a point over; see sign-off row 2. |
 | post-S11.5 (deep events + hs floor) | 36* | 26 | 34 | *vb pooled 600 runs (37/32/38). vb +11 / vv +2 / bb +5 vs prior stage — OUTSIDE ±6. PROBE: deep stages OFF reads vb 36 = the drift is 100% the [1,3] floor guaranteeing Carillon+Hymnal (their SHALLOW faces: relic, rare card) on every act-2 map, not the signed stakes. **RULED (2026-07-04): re-baseline; the floor demanded the drift and stays.** This row is the Wave A baseline for S11.6/S11.7 comparisons. |
+| post-S11.6+S11.7 (scouting + pacing variants) | 37 | 26 | 38 | +1 / 0 / +4 vs the re-baselined row — all inside ±6 ✓. **Wave A gate 2 CLOSED.** (bb shard-0 lost one run to a timeout; pooled 199.) |
 
 Act-1 HP loss runs 25–29 across all stages — ABOVE the 16–22 watch band,
 as it already was post-S10a (23.6–25.8 documented). Pre-existing, not
@@ -165,6 +166,26 @@ never kills — M2-A3 holds engine-wide).
 High-stakes flags land on rows 3 and 4 (one per act, inside the [1,3]
 CI bound). **RULED (2026-07-04): all four rows approved as proposed** —
 authoring proceeds this session.
+
+## S11.11-4 strand composition targets (enumerate→propose→SIGN-OFF)
+
+Per-strand, per-act quotas over the strand's ~7 layers (knot/crossing
+layers excluded from strand quotas — the knot belongs to the weave).
+DATA, not code: the generator reads this table; amendments are one-line.
+
+| Target | Truth strand | Power strand | Weave-wide (act) |
+|---|---|---|---|
+| combats | ≤ 3 | ≥ 4 | R4 budget holds (width unchanged) |
+| events | ≥ 3 (clue queue-weight ×2 here) | ≤ 2 | high-stakes [1,3] per act, either strand |
+| shop | — | ≥ 1 | ≥ 1 per act |
+| treasure | ≥ 0 | ≥ 1 | ≥ 1 per act (guarantee pass carries over) |
+| rest | ≥ 1 | ≥ 1 | breath layer stays shared + plain |
+| character events | ≥ 1 opportunity per seat | ≥ 1 per seat | ≥ 2 per seat per act (B6 floor unchanged, split-proof) |
+| knots | 2 fixed crossing layers per act | (same — crossings are shared) | A3: **extra crossing layer** recommended (S11.11-1) |
+
+Pacing-variant mix (S11.7) rides both strands unchanged; scouting
+(S11.6) is strand-agnostic. Sign-off gates the Wave B BATTERY, not the
+generator work (S11.11-4 as written).
 
 ## Remaining (next session)
 
