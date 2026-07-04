@@ -173,19 +173,26 @@ Per-strand, per-act quotas over the strand's ~7 layers (knot/crossing
 layers excluded from strand quotas — the knot belongs to the weave).
 DATA, not code: the generator reads this table; amendments are one-line.
 
+A strand is 7 nodes (layer-0 opener + 5 mid layers + 1 widened slot);
+quotas count a strand's OWN nodes — knots belong to the weave. The
+arithmetic that rules the row: a strand-runner's fights = strand
+combats + knots taken + boss, so combat quotas stay low and the knots
+carry the danger (escalation makes them the price).
+
 | Target | Truth strand | Power strand | Weave-wide (act) |
 |---|---|---|---|
-| combats | ≤ 3 | ≥ 4 | R4 budget holds (width unchanged) |
-| events | ≥ 3 (clue queue-weight ×2 here) | ≤ 2 | high-stakes [1,3] per act, either strand |
+| combats | ≤ 2 (incl. the layer-0 opener) | ≥ 2 (incl. opener) | strand-runner sees ~4–5 fights + boss (R4 band) |
+| events | ≥ 3 (clue queue-weight ×2 here; typically 4–5) | ≤ 2 (the character doors) | high-stakes [1,3] per act; the floor deals into TRUTH |
 | shop | — | ≥ 1 | ≥ 1 per act |
-| treasure | ≥ 0 | ≥ 1 | ≥ 1 per act (guarantee pass carries over) |
+| treasure | ≥ 1 | ≥ 1 | ≥ 2 per act |
 | rest | ≥ 1 | ≥ 1 | breath layer stays shared + plain |
-| character events | ≥ 1 opportunity per seat | ≥ 1 per seat | ≥ 2 per seat per act (B6 floor unchanged, split-proof) |
-| knots | 2 fixed crossing layers per act | (same — crossings are shared) | A3: **extra crossing layer** recommended (S11.11-1) |
+| character events | 1 door per seat | 1 door per seat | 2 per seat per act (B6 floor unchanged, split-proof) |
+| knots | 2 fixed crossing layers per act | (same — crossings are shared) | A3: **extra crossing layer** (S11.11-1 rec, implemented, pending ruling) |
 
 Pacing-variant mix (S11.7) rides both strands unchanged; scouting
 (S11.6) is strand-agnostic. Sign-off gates the Wave B BATTERY, not the
-generator work (S11.11-4 as written).
+generator work (S11.11-4 as written). The generator + 11 structure
+tests landed against exactly this table (content/strand-targets.ts).
 
 ## Remaining (next session)
 
