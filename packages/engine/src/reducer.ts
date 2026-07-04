@@ -470,6 +470,7 @@ function apply(state: GameState, action: Action): void {
       if (action.pick !== 'skip') {
         assert(reward.sets[action.player].includes(action.pick), 'not in your reward set');
         addCardToDeck(state, action.player, action.pick);
+        offerPickRemoval(state, action.player); // S13.3: taking a card opens the offer
       }
       reward.picked[action.player] = action.pick;
       // S13.1c: the take/skip DECISION, per act per seat
@@ -492,10 +493,31 @@ function apply(state: GameState, action: Action): void {
         p.covetCharges--;
         state.telemetry.covetsSpent[action.player]++;
         addCardToDeck(state, action.player, action.pick);
+        offerPickRemoval(state, action.player); // S13.3: a covet is a take too
         sayWitness(state, state.botSeat ? 'covet_solo' : 'covet_pick');
         runHooks(state, action.player, 'covet');
       }
       reward.coveted[action.player] = action.pick;
+      return;
+    }
+
+    case 'REWARD_REMOVE': {
+      // S13.3 pick-with-removal (D4-A). The offer exists only where a card
+      // was TAKEN on an act-2+ reward screen (offerPickRemoval); this action
+      // spends it — free, starters only, once per screen per taker.
+      assert(state.phase === 'reward' && state.reward, 'not in reward');
+      const reward = state.reward!;
+      assert(reward.removals && reward.removals[action.player] === null, 'no removal is owed to you here');
+      if (action.pick !== 'pass') {
+        const p = state.players[action.player];
+        const idx = p.deck.findIndex((c) => c.instanceId === action.pick);
+        assert(idx >= 0, 'no such card in your deck');
+        assert(CARDS[p.deck[idx].defId].starterOnly, 'only a STARTER may unravel here');
+        const [removed] = p.deck.splice(idx, 1);
+        economyCount(state, state.telemetry.economy.deckRemovalsByAct, action.player); // S13.1c
+        state.log.push({ e: 'info', detail: `${p.character} lets ${CARDS[removed.defId].name} unravel — the new thread takes its place.` });
+      }
+      reward.removals![action.player] = action.pick;
       return;
     }
 
@@ -921,6 +943,19 @@ function requireCombat(state: GameState) {
 
 function currentNode(state: GameState): MapNode | undefined {
   return state.map.nodes.find((n) => n.id === state.map.position);
+}
+
+/** S13.3 (D4: option A): taking a card on an act-2+ reward screen opens the
+ *  seat's free starter-removal offer — exactly where the tail begins; act 1
+ *  keeps its steep, simple picks. Lazy key creation keeps act-1 and pickless
+ *  (treasure) reward states byte-identical to pre-S13 shape. Once per
+ *  screen: an existing key (open, spent, or passed) is never re-offered. */
+function offerPickRemoval(state: GameState, pid: PlayerId): void {
+  if (state.map.act < 2) return;
+  const reward = state.reward;
+  if (!reward) return;
+  const removals = (reward.removals ??= {});
+  if (!(pid in removals)) removals[pid] = null;
 }
 
 function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {

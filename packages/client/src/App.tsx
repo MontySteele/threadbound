@@ -1550,6 +1550,25 @@ function Reward({ state, net }: { state: ClientState; net: Net }): JSX.Element {
           </div>
         </>
       )}
+      {/* S13.3 pick-with-removal (D4-A): taking a card on an act-2+ screen
+          opens a free, once-per-screen offer — let one STARTER unravel.
+          Optional: Onward never waits on it (an open offer just lapses). */}
+      {r.removals?.[you] === null && (
+        <div className="panel" data-inspect="kw:removal">
+          <h3>The new thread can take an old one’s place</h3>
+          <p className="muted">Let one starter unravel — free, this screen only. Or keep them all.</p>
+          <div className="hand">
+            {me.deck.filter((c) => CARDS[c.defId].starterOnly).map((c) => (
+              <Card key={c.instanceId} def={CARDS[c.defId]} small upgraded={c.upgraded} gpZone="META"
+                onClick={() => { audio.play('purchase'); net.act({ type: 'REWARD_REMOVE', pick: c.instanceId }); }} />
+            ))}
+          </div>
+          <button data-gp="META" onClick={() => net.act({ type: 'REWARD_REMOVE', pick: 'pass' })}>Keep them all</button>
+        </div>
+      )}
+      {r.removals?.[you] && r.removals[you] !== 'pass' && (
+        <p className="muted">A starter unravels. The weave is tighter for it.</p>
+      )}
       <div>
         {/* OQ#42: no separate "Pass on Coveting" — ADVANCE auto-passes an undecided Covet */}
         <button className="big" data-gp="META" disabled={(!treasureOnly && (r.picked.p1 === null || r.picked.p2 === null)) || state.advanceReady[you]}

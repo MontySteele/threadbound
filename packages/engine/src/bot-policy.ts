@@ -550,6 +550,16 @@ export class BotPolicy {
         return { type: 'COVET_PICK', player: you, pick: leftovers[0] };
       }
     }
+    // S13.3 pick-with-removal: v2 spends the free offer (it knows dilution
+    // is the disease — the bots' 94%-removal gold spend, now free at the
+    // screen); v1 ignores it so historical batteries stay comparable.
+    if (reward.removals?.[you] === null) {
+      if (this.draftV2) {
+        const starter = view.players[you].deck.find((c) => CARDS[c.defId].starterOnly);
+        return { type: 'REWARD_REMOVE', player: you, pick: starter?.instanceId ?? 'pass' };
+      }
+      // v1 passes explicitly only when it would otherwise idle — never blocks
+    }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;
   }

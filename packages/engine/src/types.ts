@@ -738,6 +738,15 @@ export interface RewardState {
   coveted: Record<PlayerId, string | 'pass' | null>;
   gold: number; // already collected; displayed
   relic?: string; // elite/treasure drop, auto-collected (alternates owners)
+  /** S13.3 pick-with-removal (D4: option A — act-2+ screens only): taking a
+   *  card on this screen opens a free, once-per-screen offer to remove one
+   *  STARTER from the taker's deck (starters only, so it cannot strip-mine
+   *  the picked engines; no gold interaction — the shop service stays the
+   *  paid, escalating, any-card version). Keys are created LAZILY per seat
+   *  at the moment a card is taken, so act-1 screens and pickless treasure
+   *  screens keep their exact pre-S13 state shape. null = offer open;
+   *  instanceId = the starter removed; 'pass' = declined. */
+  removals?: Partial<Record<PlayerId, string | 'pass' | null>>;
 }
 
 export interface EventPhaseState {
@@ -1055,6 +1064,9 @@ export type Action =
   | { type: 'SET_READY'; player: PlayerId; ready: boolean }
   | { type: 'REWARD_PICK'; player: PlayerId; pick: string | 'skip' }
   | { type: 'COVET_PICK'; player: PlayerId; pick: string | 'pass' }
+  /** S13.3 pick-with-removal: spend this screen's open offer — remove one
+   *  STARTER (by instanceId) from your own deck, or 'pass' to keep them all */
+  | { type: 'REWARD_REMOVE'; player: PlayerId; pick: string | 'pass' }
   | { type: 'EVENT_CHOOSE'; player: PlayerId; optionId: string }
   | { type: 'REST_CHOOSE'; player: PlayerId; option: RestOption }
   // S11.7 pacing-node variants (flagged maps only)
