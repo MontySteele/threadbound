@@ -47,11 +47,19 @@ export class Bot {
     /** S7.7 sim-only knob (TB_BOT_SEEK_EVENTS): prefer event nodes on the map */
     seekEvents?: boolean;
     reclaimNudge?: boolean;
+    /** S13.1a sim-only knobs: skip all card acquisition / deck-size ceiling */
+    skipPicks?: boolean;
+    pickCap?: number;
+    /** S13.1b: draft policy v2 (TB_BOT_DRAFT_V2, default off — D7) */
+    draftV2?: boolean;
     /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
      *  matching profile (profiles are claims; the server clamps to them). */
     ascension?: number;
   }) {
-    this.policy = new BotPolicy({ seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents, reclaimNudge: opts.reclaimNudge });
+    this.policy = new BotPolicy({
+      seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents, reclaimNudge: opts.reclaimNudge,
+      skipPicks: opts.skipPicks, pickCap: opts.pickCap, draftV2: opts.draftV2,
+    });
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);
     this.ws.on('open', () => {

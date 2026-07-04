@@ -39,5 +39,5 @@ export { RITES, RITES_BY_ID, RITE_CARDS, ritesFor, unlockedRites } from './conte
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';
 export { WITNESS_POOLS, poolLines, witnessPoolLines } from './witness-draw';
 export type { WitnessPool, WitnessRegister, RegisteredPool } from './witness-draw';
-export { BotPolicy } from './bot-policy';
+export { BotPolicy, STARTER_DECK_SIZE } from './bot-policy';
 export type { BotView, BotPolicyOptions } from './bot-policy';

@@ -961,6 +961,22 @@ export interface Telemetry {
   /** S4.3 (OQ#27): discounted Pulses fired by the Ring — is the relic dead
    *  at human Pulse rates? */
   ringDiscountsFired: number;
+  /** S13.1c economy telemetry: per-act (NOT end-of-run — closes the
+   *  run-length confound the S12 brief flagged) card-reward take/skip per
+   *  seat, and per-act relic/deck growth. Observational only (never hashed). */
+  economy: {
+    /** reward-screen picks, per act per seat: taken (a card joined the deck)
+     *  vs skipped. Treasure screens pre-fill 'skip' without a choice and are
+     *  not counted — this reads DECISIONS. */
+    picks: Record<number, Record<PlayerId, { taken: number; skipped: number }>>;
+    /** relics granted per act (pair total) */
+    relicsByAct: Record<number, number>;
+    /** cards that joined a deck per act per seat — every channel (reward,
+     *  covet, shop, event) flows through one choke point */
+    deckAddsByAct: Record<number, Record<PlayerId, number>>;
+    /** cards removed per act per seat (shop service, events, S13.3 lever) */
+    deckRemovalsByAct: Record<number, Record<PlayerId, number>>;
+  };
   /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
    *  is judged on this). Present only on flagged runs. */
   truth?: {

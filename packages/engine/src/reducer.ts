@@ -38,12 +38,25 @@ const startGold = (): number => {
   return 100;
 };
 
+/** S13.1a SIM-ONLY knobs (permanent probe flags; documented in sim.ts's
+ *  header). No production surface sets these — the envScale/startGold
+ *  pattern keeps the pure engine safe on envless hosts (browser).
+ *  TB_NO_RELICS=1: grantRelic no-ops and shops stock no relics (the relic
+ *  decomposition leg). TB_UPGRADE_ALL=1: every upgradeable starter begins
+ *  upgraded (the dilution-free-quality leg). */
+const noRelics = (): boolean =>
+  typeof process !== 'undefined' && !!process.env && process.env.TB_NO_RELICS === '1';
+const upgradeAll = (): boolean =>
+  typeof process !== 'undefined' && !!process.env && process.env.TB_UPGRADE_ALL === '1';
+
 export function initialState(seed: number, characters: Record<PlayerId, CharacterId>, botSeat?: PlayerId): GameState {
   const mkPlayer = (id: PlayerId): PlayerState => {
     const character = characters[id];
     const deck: CardInstance[] = STARTER_DECKS[character].map((defId, i) => ({
       instanceId: `${id}_${defId}_${i}`,
       defId,
+      // S13.1a TB_UPGRADE_ALL (sim-only): the dilution-free-quality probe
+      ...(upgradeAll() && CARDS[defId].upgrade ? { upgraded: true } : {}),
     }));
     return {
       id, character,
@@ -112,7 +125,22 @@ export function emptyTelemetry(): Telemetry {
     removalsByPlayer: { p1: 0, p2: 0 },
     goldResidual: 0,
     ringDiscountsFired: 0,
+    economy: { picks: {}, relicsByAct: {}, deckAddsByAct: {}, deckRemovalsByAct: {} },
   };
+}
+
+/** S13.1c: per-act per-seat economy cells, created on first touch so the
+ *  telemetry shape stays sparse (observational — never hashed). */
+function economyPicksFor(state: GameState, pid: PlayerId): { taken: number; skipped: number } {
+  const act = state.map.act;
+  const byAct = (state.telemetry.economy.picks[act] ??= {} as Record<PlayerId, { taken: number; skipped: number }>);
+  return (byAct[pid] ??= { taken: 0, skipped: 0 });
+}
+
+function economyCount(state: GameState, table: Record<number, Record<PlayerId, number>>, pid: PlayerId): void {
+  const act = state.map.act;
+  const byAct = (table[act] ??= {} as Record<PlayerId, number>);
+  byAct[pid] = (byAct[pid] ?? 0) + 1;
 }
 
 /** S4.2 (OQ#8): a player's next removal price — 75 + 25 × removals THEY have
@@ -444,6 +472,9 @@ function apply(state: GameState, action: Action): void {
         addCardToDeck(state, action.player, action.pick);
       }
       reward.picked[action.player] = action.pick;
+      // S13.1c: the take/skip DECISION, per act per seat
+      const cell = economyPicksFor(state, action.player);
+      if (action.pick === 'skip') cell.skipped++; else cell.taken++;
       return;
     }
 
@@ -772,6 +803,7 @@ function apply(state: GameState, action: Action): void {
       const [removed] = p.deck.splice(idx, 1);
       state.removalsByPlayer[action.player]++;
       state.telemetry.removalsByPlayer[action.player]++;
+      economyCount(state, state.telemetry.economy.deckRemovalsByAct, action.player); // S13.1c
       spendGold(state, action.player, price, 'removals');
       state.log.push({ e: 'info', detail: `${p.character} pays ${price}g to forget ${CARDS[removed.defId].name}. Next cut: ${removalPrice(state, action.player)}g.` });
       // §14.13 tone budget: one line for the 4th+ cut (no-repeat pool of one)
@@ -896,12 +928,16 @@ function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   assert(CARDS[defId], 'unknown card');
   assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
   p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
+  economyCount(state, state.telemetry.economy.deckAddsByAct, pid); // S13.1c
 }
 
 function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
+  if (noRelics()) return; // S13.1a TB_NO_RELICS (sim-only decomposition leg)
   const p = state.players[pid];
   if (p.relics.includes(relicId)) return;
   p.relics.push(relicId);
+  const eco = state.telemetry.economy; // S13.1c: per-act relic growth
+  eco.relicsByAct[state.map.act] = (eco.relicsByAct[state.map.act] ?? 0) + 1;
   state.log.push({ e: 'relic', player: pid, relic: relicId });
   const def = RELICS_BY_ID[relicId];
   for (const eff of def?.onPickup ?? []) {
@@ -1193,6 +1229,7 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       state.rng = r.state;
       const removed = starters[r.value];
       subject.deck.splice(subject.deck.findIndex((c) => c.instanceId === removed.instanceId), 1);
+      economyCount(state, state.telemetry.economy.deckRemovalsByAct, subject.id); // S13.1c
       state.log.push({ e: 'info', detail: `${CARDS[removed.defId].name} unravels and is gone.` });
       break;
     }
@@ -1683,12 +1720,15 @@ export function generateShop(state: GameState) {
       });
     }
   }
+  // S13.1a TB_NO_RELICS (sim-only): shops stock no relics on the probe leg
   const stocked = new Set<string>();
-  for (let i = 0; i < 2; i++) {
-    const relic = randomUnownedRelic(state, stocked);
-    if (relic) {
-      stocked.add(relic);
-      items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+  if (!noRelics()) {
+    for (let i = 0; i < 2; i++) {
+      const relic = randomUnownedRelic(state, stocked);
+      if (relic) {
+        stocked.add(relic);
+        items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+      }
     }
   }
   // S4.2: the removal service never sells out — one always-present row per
