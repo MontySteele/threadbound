@@ -170,9 +170,17 @@ worked; declare the remaining failure what it is — the bb pair
 asymmetry (on record since S9a: "bb runs ~5–10 pts easier... a
 pair-asymmetry question") amplified by braid structure, plus the
 never-calibrated knot-pricing/escalation ladder (OQ#55). That is a
-braid-recalibration sprint, not a lever in this one. TB_KNOTWORK
-stays default-OFF meanwhile (S11.11-5 unchanged), and these rows are
-its banked anchor.
+braid-recalibration sprint, not a lever in this one — and these rows
+are its banked anchor.
+
+**Status correction (designer, this review):** the braid is ALREADY
+the shipped game — `92e7492` (PR #10) set TB_KNOTWORK=1 on the
+playtest deployment, and the designer confirms it stands. The
+engine/sim fallback default remains off (baselines unaffected), but
+"default-off pending gate 2" is stale: the BRAID rows above are the
+game-as-played rows, the non-braid rows are the comparison
+instrument, and the bb +24 inflation is LIVE, not parked — which
+raises the braid follow-up sprint's priority accordingly.
 
 ## 6. Recommendations (each a designer yes/no; nothing pre-empted)
 
@@ -192,7 +200,9 @@ its banked anchor.
 3. **Close the fight-price question** (§4 — fights pay post-S13).
 4. **Re-scope S11.10 gate 2 per §5** — economy half CLOSED (fixed);
    remainder re-filed as the braid/bb-asymmetry sprint (with OQ#55's
-   ladder work). TB_KNOTWORK stays default-off.
+   ladder work). Priority raised: the braid is the shipped playtest
+   game (TB_KNOTWORK=1 on the deploy since PR #10), so bb's +24 is
+   live at the table.
 5. **Adopt the n≥200 pooling rule for ±6-style gates** (§0). The M2
    header gates stay as archaeology or retire with rec 1.
 
@@ -202,6 +212,7 @@ its banked anchor.
   drafting), human difficulty re-read (recs 1–2). Rare designs, the
   26 Witness lines, and the rare frame are RATIFIED (2026-07-04) —
   nothing provisional rides along.
-- If the braid sprint lands bb inside ±6, the TB_KNOTWORK default-on
-  question (S11.11-5) becomes askable — its own decision, its own
-  re-anchor, the D7 pattern.
+- The TB_KNOTWORK default-on question is MOOT — the playtest deploy
+  has run braid-on since PR #10 and the designer confirms it stands.
+  What remains is bringing bb inside ±6 on the shipped map (the braid
+  sprint's gate).

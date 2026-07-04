@@ -167,4 +167,7 @@ flipped build — the economy hypothesis CONFIRMED for vb (braid now
 reads −13.7: routing around combat finally costs), vv's inflation
 collapsed to the gate edge (+9.1), bb's persists (+24, 69% — the
 pair-asymmetry question, re-filed as the braid follow-up sprint).
-TB_KNOTWORK stays default-OFF.
+Correction from the designer at review: the braid is ALREADY the
+shipped playtest game (TB_KNOTWORK=1 on the deploy since PR #10,
+`92e7492`) — the braid rows are the game-as-played rows and bb's +24
+is live, raising that sprint's priority.
