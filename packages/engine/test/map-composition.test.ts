@@ -26,7 +26,10 @@ const CONFIGS: ConfigRow[] = [
   { act: 2, extraElite: true, label: 'act2+extraElite(A3)' },
 ];
 
-const highStakesContentExists = Object.values(EVENTS).some((e) => e.highStakes);
+// S11.5: armed PER ACT — the 2026-07-04 ruling put both flags in act 2;
+// act-1 maps have nothing to place until the deep-retrofit sprint lands
+const highStakesContentFor = (act: 1 | 2): boolean =>
+  Object.values(EVENTS).some((e) => e.highStakes && (e.act === act || e.act === 0));
 
 function violationsFor(row: ConfigRow, seedBase: number): Map<string, string[]> {
   const byKind = new Map<string, string[]>();
@@ -35,7 +38,7 @@ function violationsFor(row: ConfigRow, seedBase: number): Map<string, string[]> 
     const c = measureAct(map);
     for (const v of compositionViolations(c, row.extraElite ? 3 : 2, {
       charactersInRun: CHARS,
-      highStakesContentExists,
+      highStakesContentExists: highStakesContentFor(row.act),
     })) {
       const kind = v.startsWith('elite') ? 'eliteCount'
         : v.startsWith('no shop') ? 'shop'

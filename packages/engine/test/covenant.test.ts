@@ -353,12 +353,30 @@ describe('S11.4 event grammar covenant', () => {
     for (const e of Object.values(EVENTS)) walk(e.options, 1, e.id);
   });
 
-  it('high-stakes events per act stay within [1,3] once any exist (armed by content)', () => {
+  it('high-stakes events stay within [1,3] per act, armed PER ACT by content', () => {
+    // 2026-07-04 ruling (S11.5 table): both flags sit in act 2 — act 1's
+    // floor arms when act-1 high-stakes content lands (the deep-retrofit
+    // sprint ruling 5 schedules). An act with flagged content must be able
+    // to satisfy its floor; an act without any is not asserted against.
     const hs = Object.values(EVENTS).filter((e) => e.highStakes);
     for (const act of [1, 2] as const) {
       const n = hs.filter((e) => e.act === act || e.act === 0).length;
-      if (hs.length > 0) expect(n, `act ${act}`).toBeGreaterThanOrEqual(1);
       expect(n, `act ${act}`).toBeLessThanOrEqual(3);
+    }
+    // pin the ruled set — a new flag is a new sign-off row, edit this loudly
+    expect(hs.map((e) => e.id).sort()).toEqual(['broken_carillon', 'drowned_hymnal']);
+  });
+
+  it('S11.5: the deep events are exactly the four ruled rows, deep doors flag-gated', () => {
+    const deep = Object.values(EVENTS).filter((e) => e.options.some((o) => o.next));
+    expect(deep.map((e) => e.id).sort()).toEqual([
+      'broken_carillon', 'drowned_hymnal', 'ossuary_toll', 'wax_garden',
+    ]);
+    // every keyed door lives on a deep event (unflagged runs hide requires
+    // wholesale — a keyed option on a plain event would vanish for them)
+    for (const e of Object.values(EVENTS)) {
+      const keyed = e.options.some((o) => o.requires);
+      if (keyed) expect(deep, e.id).toContain(e);
     }
   });
 });

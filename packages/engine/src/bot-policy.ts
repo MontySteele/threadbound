@@ -17,7 +17,7 @@ import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
 import { applyGrowth, computeResonanceSlots } from './combat';
-import { removalPrice } from './reducer';
+import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
 /** What a bot actually sees: the REDACTED per-seat view. In particular
@@ -524,7 +524,12 @@ export class BotPolicy {
     const ev = view.event!;
     if (ev.chosen === null) {
       if (ev.chooser !== you) return null;
-      const options = EVENTS[ev.eventId].options;
+      // S11.5: the CURRENT stage's OPEN doors (deep events; unflagged views
+      // see stage 1 and no keyed options — same list as before). First-pass
+      // policy: deep options are valued by their immediate effects only;
+      // pot-aware pressing is S11.9's routing problem, out of scope here.
+      const options = eventStageAt(EVENTS[ev.eventId], ev.stagePath ?? []).options
+        .filter((o) => eventOptionAvailable(view as never, ev.subject, o));
       let opt: EventOptionDef;
       if (this.mode === 'solo') {
         const minRisk = Math.min(...options.map((o) => this.optionRisk(o)));

@@ -157,6 +157,13 @@ export function generateActMap(
   const pinnedNode = (n: MapNode): boolean =>
     n.kind === 'shop' || n.kind === 'elite'
     || (n.kind === 'treasure' && nodes.filter((t) => t.kind === 'treasure').length <= 1);
+  // S11.5: the LAST high-stakes slot may MOVE (relocation preserves the
+  // scene) but never plain-deletes and never hosts another scene — the
+  // composition [1,3] floor's teeth inside the repair ladder, without
+  // starving approach diversity the way a hard pin would.
+  const soleHighStakes = (n: MapNode): boolean =>
+    n.kind === 'event' && !!defOfEvent(n.eventId)?.highStakes
+    && nodes.filter((m) => m.kind === 'event' && defOfEvent(m.eventId)?.highStakes).length <= 1;
   const feederOf = (n: MapNode): MapNode | undefined =>
     nodes.find((k) => k.kind === 'elite' && k.layer === n.layer + 1) && (n.lane === 0 || n.lane === 1)
       ? nodes.find((o) => o.layer === n.layer && o.lane === (n.lane === 0 ? 1 : 0))
@@ -216,6 +223,65 @@ export function generateActMap(
     }
   }
 
+  // S11.5 high-stakes guarantee (the composition [1,3] floor, armed per act
+  // by content): flagged runs only — the deep doors only open there, so
+  // unflagged maps are untouched by construction (golden covenant). rng-FREE
+  // like the passes above. Retag the latest plain event node first (kind
+  // unchanged — approach diversity unaffected); convert a combat, then
+  // unpinned pacing nodes, only when no event node is free. The ceiling
+  // needs no repair: two flagged defs per act and a no-repeat queue.
+  if (tracks || riteCharacters.length > 0) {
+    const hsSpare = eventDefs.filter(
+      (e) => e.highStakes && !nodes.some((n) => n.eventId === e.id),
+    );
+    const hsHave = (): boolean =>
+      nodes.some((n) => n.kind === 'event' && defOfEvent(n.eventId)?.highStakes);
+    if (!hsHave() && hsSpare.length > 0) {
+      const byLateness = [...nodes].sort((a, b) => b.layer - a.layer);
+      const plain = byLateness.find(
+        (n) => n.kind === 'event' && !gatedEvent(n) && n.layer > 0 && n.layer < LAYERS - 1,
+      );
+      let placed = false;
+      if (plain) {
+        plain.eventId = hsSpare[0].id;
+        placed = true;
+      }
+      if (!placed) {
+        for (const kind of ['combat', 'rest', 'treasure'] as const) {
+          const n = byLateness.find(
+            (x) => x.kind === kind && x.layer > 0 && x.layer < LAYERS - 1 && !pinnedNode(x),
+          );
+          if (n) {
+            n.kind = 'event';
+            delete n.encounterId;
+            n.eventId = hsSpare[0].id;
+            placed = true;
+            break;
+          }
+        }
+      }
+      // dense gated maps (the char pass ate the rests, the sole treasure is
+      // pinned, combats all sit at layer 0): steal a rare, then a clue slot
+      // — the char pass's own ladder, same justifications (the rare event
+      // may be missed by design; the clue pool reshuffles across acts).
+      // Never a character scene (D6/D7 load-bearing).
+      if (!placed) {
+        for (const steal of ['rare', 'clue'] as const) {
+          const n = byLateness.find((x) => {
+            if (x.kind !== 'event') return false;
+            const d = defOfEvent(x.eventId);
+            return !!d && !d.character && !!d[steal];
+          });
+          if (n) {
+            n.eventId = hsSpare[0].id;
+            placed = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   // Approach diversity (≥2 distinct approach compositions per knot): a path
   // through the L-1 lane-0 feeder and one through the lane-1 feeder share
   // every other node choice, so distinct FEEDER kinds guarantee distinct
@@ -253,8 +319,8 @@ export function generateActMap(
       home.kind = 'event';
       delete home.encounterId;
       home.eventId = target.eventId;
-    } else if (gatedEvent(target)) {
-      return false; // never plain-delete a gated scene
+    } else if (gatedEvent(target) || soleHighStakes(target)) {
+      return false; // never plain-delete a gated scene or the last high-stakes slot
     }
     pacingFlip(target, target.kind);
     return true;
@@ -296,9 +362,10 @@ export function generateActMap(
             && n.layer > 0 && n.layer < LAYERS - 1 && n !== f0 && n !== f1,
         );
         // final relocation fallback: a clue/rare slot hosts the character
-        // scene (clue pool reshuffles across acts; char arrival outranks it)
+        // scene (clue pool reshuffles across acts; char arrival outranks it).
+        // S11.5: the LAST high-stakes slot never hosts another scene.
         const homeGated = home ?? byLateness.find((n) => {
-          if (n.kind !== 'event' || n === f0 || n === f1) return false;
+          if (n.kind !== 'event' || n === f0 || n === f1 || soleHighStakes(n)) return false;
           const d = defOfEvent(n.eventId);
           return !!d && !d.character;
         });
@@ -312,14 +379,44 @@ export function generateActMap(
           dirty = true;
           continue;
         }
-        // 3) sacrifice a clue slot — never a character event
+        // 3) sacrifice a clue slot — never a character event, and never the
+        //    last high-stakes slot (S11.5)
         const clue = [f1, f0].find((f) => {
           const d = f && f.kind === 'event' ? defOfEvent(f.eventId) : undefined;
-          return f && !pinnedNode(f) && d && !d.character;
+          return f && !pinnedNode(f) && !soleHighStakes(f) && d && !d.character;
         });
         if (clue) {
           pacingFlip(clue, clue.kind);
           dirty = true;
+        }
+      }
+      // 4) the SWAP rung (S11.5): every twin below the knot is a protected
+      //    scene (character events + the last high-stakes slot can fill a
+      //    narrow map wall to wall). Swap one event twin with a pacing or
+      //    combat node from ANOTHER layer: every kind's count is preserved
+      //    (the treasure and high-stakes guarantees are counts, not
+      //    positions), the scene survives at its new address, and the twin
+      //    pair gains a distinct kind.
+      if (distinctApproaches(mapView(), knot.id) < 2) {
+        for (let d = knot.layer - 1; d >= 1; d--) {
+          const t0 = nodes.find((n) => n.layer === d && n.lane === 0);
+          const t1 = nodes.find((n) => n.layer === d && n.lane === 1);
+          if (!t0 || !t1 || t0.kind !== 'event' || t1.kind !== 'event') continue;
+          const partner = [...nodes].sort((a, b) => b.layer - a.layer).find(
+            (n) => (n.kind === 'rest' || n.kind === 'treasure' || n.kind === 'combat')
+              && n.layer > 0 && n.layer < LAYERS - 1 && n.layer !== d,
+          );
+          if (!partner) continue;
+          const twin = t1; // lane-0 chains feed the knots; move the lane-1 scene
+          const movedEvent = twin.eventId;
+          twin.kind = partner.kind;
+          if (partner.encounterId !== undefined) twin.encounterId = partner.encounterId;
+          delete twin.eventId;
+          partner.kind = 'event';
+          delete partner.encounterId;
+          partner.eventId = movedEvent;
+          dirty = true;
+          break;
         }
       }
     }

@@ -284,6 +284,13 @@ export const M2_EVENTS: EventDef[] = [
       'only a femur propped against the bars like a staff someone meant to come back for. ' +
       'The lock is rusted to lace. You could pay, as the dead once paid. ' +
       'Or you could simply break the box and take what the dead left behind.',
+    // S11.5 deep extension (table row 1, ruled 2026-07-04): the shallow
+    // options keep their exact effects — unflagged runs resolve 'pay'
+    // terminal, byte-identical to pre-S11.5 (the reducer's flag gate).
+    // Deep path: pay −25 → count the alms −15 (worst line −40g total,
+    // 0 HP, gold-only wager) → take back double +80 (net +40, but the
+    // dead notice) / leave the tally. Codex door: a_starved (the Tithe)
+    // names what the toll feeds — free pass + one bound-witness thread.
     options: [
       {
         id: 'pay',
@@ -291,6 +298,54 @@ export const M2_EVENTS: EventDef[] = [
         resultText: 'The coin falls a long way before it lands. The gate opens without a sound, as if it had only been waiting to be asked properly.',
         witness: 'Paying tolls to a femur. Your fiscal instincts remain a marvel.',
         effects: [{ op: 'gold', amount: -25 }, { op: 'heal', amount: 8 }],
+        next: {
+          prose:
+            'The gate stands open, but the box does too — your coin has tripped some patient mechanism, ' +
+            'and a false bottom has folded back. Below it: alms. Generations of alms, stacked in neat ' +
+            'centuried rows, and beside them a sexton\'s ledger with one column still blank. The dead ' +
+            'kept accounts. The accounts do not balance. You could put in your own coin and count the ' +
+            'tally true. Or you could take your passage — it is, after all, paid for.',
+          options: [
+            {
+              id: 'pass_on',
+              label: 'Take your passage and go',
+              resultText: 'You leave the ledger to its long arithmetic. The gate closes behind you with the sound of a sum left unfinished.',
+              witness: 'Walking away from an open cashbox. I shall note the date.',
+              effects: [],
+            },
+            {
+              id: 'count',
+              label: 'Add your coin and count the alms',
+              resultText: '',
+              witness: 'Now you are doing bookkeeping for skeletons. Unpaid.',
+              effects: [{ op: 'gold', amount: -15 }],
+              next: {
+                prose:
+                  'The tally comes out true — to the coin, to the very coin, as if the column had been ' +
+                  'waiting centuries for exactly what you carry. The ledger\'s last line writes itself in ' +
+                  'a thin brown hand: PAID IN FULL, AND OWED AGAIN. The box swings wider. Everything the ' +
+                  'dead ever paid sits in reach of your two hands, and the gate holds politely open, and ' +
+                  'nothing in the ossuary moves at all.',
+                options: [
+                  {
+                    id: 'take_double',
+                    label: 'Take back double what you gave',
+                    resultText: 'Eighty coins, counted twice, and yours by any honest arithmetic. The dark behind the gate grows exactly that much less patient.',
+                    witness: 'You audited the dead and awarded yourself damages. Magnificent.',
+                    effects: [{ op: 'gold', amount: 80 }, { op: 'pendingFray', amount: 1 }],
+                  },
+                  {
+                    id: 'leave_tally',
+                    label: 'Leave the tally true',
+                    resultText: 'You close the ledger on a balanced column — the first in centuries. Somewhere below the gate, a very old debt stops accruing.',
+                    witness: 'Forty coins for the satisfaction of neat sums. The dead thank you. Quietly. In no material way.',
+                    effects: [],
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
       {
         id: 'break',
@@ -298,6 +353,14 @@ export const M2_EVENTS: EventDef[] = [
         resultText: 'The box gives way in a breath of rust. The coins inside are old and heavy, and the dark behind the gate feels suddenly less patient.',
         witness: 'Robbing the dead at their own gate. Bold. They keep ledgers, you know.',
         effects: [{ op: 'gold', amount: 45 }, { op: 'pendingFray', amount: 1 }],
+      },
+      {
+        id: 'name_dead',
+        label: 'Name the dead instead',
+        resultText: 'You say what the toll feeds, out loud, by name. The slot goes dark. The gate opens wide and stays open, the way doors do for family.',
+        witness: 'You knew its name. I find I have nothing clever to say about that.',
+        effects: [{ op: 'fragment' }],
+        requires: { codexProven: 'a_starved' },
       },
     ],
   },
@@ -349,11 +412,71 @@ export const M2_EVENTS: EventDef[] = [
         effects: [{ op: 'gainCard', pool: 'uncommon' }, { op: 'loseHp', amount: 5 }],
       },
       {
+        // S11.5 deep extension (table row 2): tend (heal 7, unchanged) →
+        // wait out the bloom −3 → harvest all (−5 more, uncommon + rare) /
+        // pinch one wick. Deep stake −3 → −8 total. Codex-adjacent key:
+        // a Hex-heavy deck (≥4) reads the veins for one thread.
         id: 'tend',
         label: 'Tend the garden and move on',
         resultText: 'You right a fallen stalk and trim a drowned wick, and the garden, in its cold way, breathes easier. So do you.',
         witness: 'Gardening for ghosts. Unpaid, naturally. I respect the tradition.',
         effects: [{ op: 'heal', amount: 7 }],
+        next: {
+          prose:
+            'The garden notices the tending. Along the path, a bloom you had taken for spent begins, ' +
+            'very slowly, to open — a bud of grey wax unclenching one petal at a time, and inside it ' +
+            'not one wick but a whole chandlery, folded like a promise. It is opening at the pace of ' +
+            'things that have never once been hurried. The cold is already in your boots. You could ' +
+            'wait it out. The garden clearly hopes you will.',
+          options: [
+            {
+              id: 'move_on',
+              label: 'Leave it to bloom alone',
+              resultText: 'You go while it is still opening. Whatever it becomes, it becomes for nobody, which may be what gardens prefer.',
+              witness: 'No patience for horticulture. Onward, then.',
+              effects: [],
+            },
+            {
+              id: 'read_veins',
+              label: 'Read the veins in the wax',
+              resultText: 'Hex-work teaches you to read what spreads slowly. The veins in the wax run in sentences, and one of them is worth keeping.',
+              witness: 'All that curse-stitching finally good for something literate.',
+              effects: [{ op: 'fragment' }],
+              requires: { tagCount: { tag: 'Hex', n: 4 } },
+            },
+            {
+              id: 'wait',
+              label: 'Wait out the bloom',
+              resultText: '',
+              witness: 'Standing very still in a freezing chapel, on purpose. The dead admire commitment.',
+              effects: [{ op: 'loseHp', amount: 3 }],
+              next: {
+                prose:
+                  'It opens. The chandlery unfolds: a dozen wicks, each one alight, each flame the ' +
+                  'exact color of the hour before dawn. The bloom holds itself out to you the way a ' +
+                  'palm holds coins — all of it offered, none of it insisted on. The wax at its heart ' +
+                  'is still soft. Still warm. Taking everything will mean reaching into that warmth, ' +
+                  'and the warmth has opinions about what it keeps.',
+                options: [
+                  {
+                    id: 'harvest_all',
+                    label: 'Harvest the whole bloom',
+                    resultText: 'The wax closes on your hands like a decision and lets go reluctantly. You leave with both hands full of light, and the light was not free.',
+                    witness: 'Both hands, straight into the warm wax. The garden will tell this story for years.',
+                    effects: [{ op: 'loseHp', amount: 5 }, { op: 'gainCard', pool: 'uncommon' }, { op: 'gainCard', pool: 'rare' }],
+                  },
+                  {
+                    id: 'pinch_one',
+                    label: 'Pinch a single wick',
+                    resultText: 'One wick, taken cleanly at the root. The bloom keeps the rest of itself, and its light follows you to the door like a nod.',
+                    witness: 'Restraint. In a looter. The Undercroft grows stranger by the hour.',
+                    effects: [{ op: 'gainCard', pool: 'uncommon' }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
     ],
   },
@@ -362,6 +485,13 @@ export const M2_EVENTS: EventDef[] = [
     name: 'The Broken Carillon',
     act: 2,
     crossed: false,
+    // S11.5 (table row 3): deep, and one of the two ruled high-stakes flags
+    // (relic-scale outcomes; worst deep line −10 HP total, survivable by
+    // construction). Deep path: cut (relic, −7, unchanged) → climb into the
+    // frame −3 → ring it once (+15g, the Choir hears) / wedge it silent.
+    // Codex door: a_sexton (the silencing was deliberate) opens the TRUE
+    // peal — relic + one bound-witness thread, no HP.
+    highStakes: true,
     prose:
       'The carillon fills the whole tower above you: forty bells, every one of them cracked, every ' +
       'crack stuffed with wax and rag by hands that wanted very badly for the ringing to stop. ' +
@@ -375,6 +505,54 @@ export const M2_EVENTS: EventDef[] = [
         resultText: 'You catch the bell before it can speak. It is heavier than it should be, and warm, like a held breath. The tower stays silent. Barely.',
         witness: 'Yes, take the cursed bell. Souvenirs were going so well for you.',
         effects: [{ op: 'gainRelic' }, { op: 'loseHp', amount: 7 }],
+        next: {
+          prose:
+            'With the small bell gone, its gap stares. And through the gap you can see up into the ' +
+            'frame itself: a black lattice of beams and bound clappers rising forty bells high, with ' +
+            'handholds worn into the wood by whoever did the binding. Near the crown hangs the great ' +
+            'bell, and taped to its shoulder — wax-sealed, rag-wrapped — something glints that is not ' +
+            'bell. The climb looks exactly as bad as it looks.',
+          options: [
+            {
+              id: 'down',
+              label: 'Climb down with what you have',
+              resultText: 'You leave the frame to its silence. The small bell rides warm against your ribs the whole way down, like something pleased.',
+              witness: 'One cursed bell is evidently plenty. Growth.',
+              effects: [],
+            },
+            {
+              id: 'climb',
+              label: 'Climb into the frame',
+              resultText: '',
+              witness: 'Up the haunted bell-scaffold, then. Mind the forty reasons to fall.',
+              effects: [{ op: 'loseHp', amount: 3 }],
+              next: {
+                prose:
+                  'The crown of the carillon, forty bells below you and the dark above. The glint is a ' +
+                  'sexton\'s purse, waxed shut, bound to the great bell\'s shoulder where no thief would ' +
+                  'reach and no ringing would shake it loose. The great bell\'s clapper-cord is one knot ' +
+                  'from free — the LAST knot, tied differently from all the others, tied by someone who ' +
+                  'wanted, someday, for somebody to have the choice you are having right now.',
+                options: [
+                  {
+                    id: 'ring_once',
+                    label: 'Take the purse and ring it once',
+                    resultText: 'One peal. It goes through the tower, the floor, your teeth, and out into the Undercroft like a name being called. The purse is heavy. The silence afterward is heavier.',
+                    witness: 'You rang the bell the whole parish died binding. The acoustics WERE lovely.',
+                    effects: [{ op: 'gold', amount: 15 }, { op: 'pendingFray', amount: 1 }],
+                  },
+                  {
+                    id: 'wedge_silent',
+                    label: 'Take the purse and wedge it silent',
+                    resultText: 'You cut the purse free and drive a wedge where the last knot was. The great bell will not ring for you, or for anyone, and something in the tower exhales.',
+                    witness: 'Quiet hands at the top of the tower. The old binders would have liked you.',
+                    effects: [{ op: 'gold', amount: 15 }, { op: 'thread', amount: 2 }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
       {
         id: 'silence',
@@ -382,6 +560,14 @@ export const M2_EVENTS: EventDef[] = [
         resultText: 'You knot the cord the way the old hands did, and the bell settles into stillness. The Choir owes you a silence now, for whatever that is worth.',
         witness: 'You climbed all that way to tie a knot. The heroism is suffocating.',
         effects: [{ op: 'gold', amount: 35 }],
+      },
+      {
+        id: 'true_peal',
+        label: 'Ring the TRUE peal',
+        resultText: 'You know why the bells were stuffed, so you know which one was stuffed last, in grief, out of order. You free it and let it speak the one note the silencing was built around. The tower gives up what it was keeping for whoever knew.',
+        witness: 'The sexton silenced forty bells to hide one. You rang the one. I am, briefly, impressed.',
+        effects: [{ op: 'gainRelic' }, { op: 'fragment' }],
+        requires: { codexProven: 'a_sexton' },
       },
     ],
   },
@@ -418,6 +604,12 @@ export const M2_EVENTS: EventDef[] = [
     name: 'The Drowned Hymnal',
     act: 2,
     crossed: false,
+    // S11.5 (table row 4): deep, the second ruled high-stakes flag. Deep
+    // path: retrieve (rare card, −4 max HP, unchanged) → dive for the
+    // spine (−5, Fray at the next fight, gated hpAtLeast 20 — the
+    // desperate can't) → wring it out (−7 more, relic) / surface empty.
+    // Worst deep line −12 HP + Fray: survivable, scary — as tabled.
+    highStakes: true,
     prose:
       'A font of black water, and at the bottom of it, a hymnal — open, weighted with a stone, its ' +
       'pages somehow unswollen after all this time. The ink has not run. From above, through the ' +
@@ -431,6 +623,55 @@ export const M2_EVENTS: EventDef[] = [
         resultText: 'The cold takes your arm to the shoulder and gives it back changed. The page you wanted comes away dry in your fist.',
         witness: 'An arm for sheet music. The Choir thanks you for your patronage.',
         effects: [{ op: 'gainCard', pool: 'rare' }, { op: 'maxHp', amount: -4 }],
+        next: {
+          prose:
+            'The page is yours, but the book is lighter now, and it shifts — and where it shifts, the ' +
+            'font goes DOWN. Not stone below it: water, black past reckoning, and along the hymnal\'s ' +
+            'exposed spine a stitchwork glints that was never thread. The whole psalm is sewn in there, ' +
+            'every voice of it, bound into the spine the way marrow is bound into bone. Your arm still ' +
+            'remembers the cold. The spine is a body-length down. Perhaps two.',
+          options: [
+            {
+              id: 'leave_pages',
+              label: 'Leave with the pages you have',
+              resultText: 'You let the book settle back onto its stone. One page of a psalm is still a psalm, if you sing it gently.',
+              witness: 'A souvenir page and a working arm. By your standards, triumph.',
+              effects: [],
+            },
+            {
+              id: 'dive',
+              label: 'Dive for the spine',
+              resultText: '',
+              witness: 'Head-first into the black font. Do give my regards to whatever answers.',
+              effects: [{ op: 'loseHp', amount: 5 }, { op: 'pendingFray', amount: 1 }],
+              requires: { hpAtLeast: 20 },
+              next: {
+                prose:
+                  'The water does not get darker as you go down; it gets QUIETER, which is worse. Your ' +
+                  'hand finds the spine. The stitchwork under your fingers is metal, old silver maybe, ' +
+                  'worked in a pattern your calluses half-recognize — and the book holds on. Not snagged: ' +
+                  'holding. It will come up with you, or the silver will, but the water has made it very ' +
+                  'clear that not both, and your lungs have opened negotiations.',
+                options: [
+                  {
+                    id: 'wring_out',
+                    label: 'Wring the spine for its silver',
+                    resultText: 'You break the stitchwork loose thread by silver thread while the quiet leans on you. When you surface, your hands are full of something the Choir spent a font to drown.',
+                    witness: 'You throttled a book underwater for its jewelry. And WON. I withdraw several earlier remarks.',
+                    effects: [{ op: 'loseHp', amount: 7 }, { op: 'gainRelic' }],
+                  },
+                  {
+                    id: 'surface',
+                    label: 'Let it keep its spine',
+                    resultText: 'You let go. The book settles back into its dark, holding what it holds, and the water lets you leave at exactly the speed of mercy.',
+                    witness: 'Empty hands and functioning lungs. The exchange rate could be worse.',
+                    effects: [],
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
       {
         id: 'read',

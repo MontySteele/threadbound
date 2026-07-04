@@ -10,7 +10,9 @@ const { EVENTS } = require('../packages/engine/dist/content/registry.js');
 
 const N = Number(process.argv[2] ?? 300);
 const CHARS = ['vess', 'bram'];
-const highStakes = Object.values(EVENTS).some((e) => e.highStakes);
+// S11.5: armed PER ACT (both ruled flags sit in act 2)
+const highStakesFor = (act) =>
+  Object.values(EVENTS).some((e) => e.highStakes && (e.act === act || e.act === 0));
 
 let bad = 0;
 for (const [act, extra] of [[1, false], [2, false], [1, true], [2, true]]) {
@@ -24,7 +26,7 @@ for (const [act, extra] of [[1, false], [2, false], [1, true], [2, true]]) {
     tally.shops += c.shops;
     tally.treasures += c.treasures;
     tally.events += map.nodes.filter((n) => n.kind === 'event').length;
-    const v = compositionViolations(c, extra ? 3 : 2, { charactersInRun: CHARS, highStakesContentExists: highStakes });
+    const v = compositionViolations(c, extra ? 3 : 2, { charactersInRun: CHARS, highStakesContentExists: highStakesFor(act) });
     if (v.length) {
       violations += v.length;
       if (violations <= 3) console.error(`  ${label} seed ${90_000 + i * 13}: ${v.join(' | ')}`);

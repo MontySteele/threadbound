@@ -3,8 +3,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { GameState } from '../src/types';
-import { eventOptionAvailable, initialState, reduce } from '../src/reducer';
-import { EVENTS } from '../src/content/registry';
+import { eventOptionAvailable, eventStageAt, initialState, reduce } from '../src/reducer';
+import { CARDS, EVENTS } from '../src/content/registry';
 import { escalationFactor, startCombat } from '../src/combat';
 import { ENCOUNTERS, ENCOUNTER_POOLS } from '../src/content/encounters';
 import { FRAGMENTS, rollTruth, serveBoundWitness, serveFragments } from '../src/content/truth';
@@ -139,6 +139,10 @@ describe('S11.4 event grammar v2', () => {
   function eventState(codexProven?: string[]): GameState {
     const s0 = initialState(3, { p1: 'vess', p2: 'bram' });
     const s = reduce(s0, { type: 'START_RUN', seed: 3, ...(codexProven ? { codexProven } : {}) });
+    // S11.5: the deep grammar is live only where a flag is — these tests
+    // exercise the grammar itself, so open the doors without paying the
+    // full tracks setup (the flag bool is the gate's whole read)
+    s.tracks = true;
     (EVENTS as Record<string, typeof DEEP>)[DEEP.id] = DEEP;
     s.phase = 'event';
     s.event = { eventId: DEEP.id, chooser: 'p1', subject: 'p1', chosen: null };
@@ -178,12 +182,132 @@ describe('S11.4 event grammar v2', () => {
     expect(() => reduce(open, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'codex_door' })).not.toThrow();
   });
 
-  it('flag-off parity: no shipped event carries stages or keys yet (rng untouched by construction)', () => {
-    for (const e of Object.values(EVENTS)) {
-      for (const o of e.options) {
-        expect(o.next, `${e.id}/${o.id}`).toBeUndefined();
-        expect(o.requires, `${e.id}/${o.id}`).toBeUndefined();
-      }
-    }
+  it('flag-off parity: an unflagged run treats a deep entry as terminal — original effects, zero rng, no stagePath', () => {
+    // S11.5 replaced the interim "no shipped stages" fence: stages now ship
+    // on the defs, and THIS is the covenant's new teeth — ossuary 'pay'
+    // unflagged must resolve byte-identically to pre-S11.5 (the flag-off
+    // golden holds because of exactly this).
+    const s0 = initialState(7, { p1: 'vess', p2: 'bram' });
+    let s = reduce(s0, { type: 'START_RUN', seed: 7 });
+    s.phase = 'event';
+    s.event = { eventId: 'ossuary_toll', chooser: 'p1', subject: 'p1', chosen: null };
+    s.gold = 100;
+    s.players.p1.hp = 20;
+    const rngBefore = s.rng;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'pay' });
+    expect(s.event!.chosen).toBe('pay'); // terminal — no deepening
+    expect(s.event!.stagePath).toBeUndefined();
+    expect(s.gold).toBe(75);
+    expect(s.players.p1.hp).toBe(28);
+    expect(s.rng).toBe(rngBefore); // gold/heal roll nothing: byte-parity
+    expect(s.event!.resultText).toContain('waiting to be asked properly');
+  });
+
+  it('flag-off parity: keyed doors never render unflagged, even when the clause itself holds', () => {
+    const s0 = initialState(7, { p1: 'vess', p2: 'bram' });
+    const s = reduce(s0, { type: 'START_RUN', seed: 7, codexProven: ['a_starved'] });
+    s.phase = 'event';
+    s.event = { eventId: 'ossuary_toll', chooser: 'p1', subject: 'p1', chosen: null };
+    const door = EVENTS['ossuary_toll'].options.find((o) => o.id === 'name_dead')!;
+    expect(eventOptionAvailable(s, 'p1', door)).toBe(false); // codex claimed, door still shut
+    s.rites = true; // any flag opens the grammar
+    expect(eventOptionAvailable(s, 'p1', door)).toBe(true);
+  });
+});
+
+describe('S11.5 deep events (the four ruled rows, authored 2026-07-04)', () => {
+  const flagged = (seed: number, eventId: string, codexProven?: string[]): GameState => {
+    const s0 = initialState(seed, { p1: 'vess', p2: 'bram' });
+    const s = reduce(s0, { type: 'START_RUN', seed, ...(codexProven ? { codexProven } : {}) });
+    s.rites = true; // rites-only flagged run: doors open, no Tapestry
+    s.phase = 'event';
+    s.event = { eventId, chooser: 'p1', subject: 'p1', chosen: null };
+    return s;
+  };
+
+  it('ossuary toll: pay → count the alms → take back double (net +40, the dead notice)', () => {
+    let s = flagged(13, 'ossuary_toll');
+    s.gold = 60;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'pay' });
+    expect(s.event!.stagePath).toEqual(['pay']);
+    expect(s.gold).toBe(35);
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'count' });
+    expect(s.event!.stagePath).toEqual(['pay', 'count']);
+    expect(s.gold).toBe(20); // −40 total in: the tabled worst line, gold-only
+    const frayBefore = s.players.p1.pendingFray;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'take_double' });
+    expect(s.event!.chosen).toBe('take_double');
+    expect(s.gold).toBe(100); // +80 back: net +40 across the wager
+    expect(s.players.p1.pendingFray).toBe(frayBefore + 1);
+    expect(s.event!.deltaLine).toContain('+80 gold');
+  });
+
+  it('ossuary toll: walking away at the alms realizes the worst line and survives', () => {
+    let s = flagged(13, 'ossuary_toll');
+    s.gold = 40;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'pay' });
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'count' });
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'leave_tally' });
+    expect(s.event!.chosen).toBe('leave_tally');
+    expect(s.gold).toBe(0); // −40 total, 0 HP — survivable by construction
+  });
+
+  it('wax garden: the Hex door needs 4 tagged cards; the full harvest costs −8 total for uncommon + rare', () => {
+    let s = flagged(17, 'wax_garden');
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'tend' });
+    const stage2 = eventStageAt(EVENTS['wax_garden'], ['tend']);
+    const veins = stage2.options.find((o) => o.id === 'read_veins')!;
+    const hexCount = s.players.p1.deck.filter((c) => CARDS[c.defId]?.tag === 'Hex').length;
+    expect(eventOptionAvailable(s, 'p1', veins)).toBe(hexCount >= 4);
+    const hpAfterTend = s.players.p1.hp;
+    const deckBefore = s.players.p1.deck.length;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'wait' });
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'harvest_all' });
+    expect(s.event!.chosen).toBe('harvest_all');
+    expect(s.players.p1.hp).toBe(hpAfterTend - 8); // −3 then −5: the tabled ladder
+    expect(s.players.p1.deck.length).toBe(deckBefore + 2); // uncommon + rare
+  });
+
+  it('drowned hymnal: the dive is gated hpAtLeast 20 — the desperate cannot', () => {
+    let s = flagged(19, 'drowned_hymnal');
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'retrieve' });
+    const dive = eventStageAt(EVENTS['drowned_hymnal'], ['retrieve']).options.find((o) => o.id === 'dive')!;
+    s.players.p1.hp = 19;
+    expect(eventOptionAvailable(s, 'p1', dive)).toBe(false);
+    s.players.p1.hp = 30;
+    expect(eventOptionAvailable(s, 'p1', dive)).toBe(true);
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'dive' });
+    const relicsBefore = s.players.p1.relics.length + s.players.p2.relics.length;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'wring_out' });
+    expect(s.event!.chosen).toBe('wring_out');
+    expect(s.players.p1.hp).toBe(30 - 5 - 7); // −12 deep total, survivable
+    expect(s.players.p1.pendingFray).toBeGreaterThan(0);
+    expect(s.players.p1.relics.length + s.players.p2.relics.length).toBe(relicsBefore + 1);
+  });
+
+  it('carillon codex door: a proven a_sexton rings the TRUE peal on a tracks run — relic + one thread, no HP', () => {
+    const s0 = initialState(23, { p1: 'vess', p2: 'bram' });
+    let s = reduce(s0, { type: 'START_RUN', seed: 23, tracks: true, codexProven: ['a_sexton'] });
+    s.phase = 'event';
+    s.event = { eventId: 'broken_carillon', chooser: 'p1', subject: 'p1', chosen: null };
+    const hpBefore = s.players.p1.hp;
+    const boardBefore = s.truth!.boards.p1.length;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'true_peal' });
+    expect(s.event!.chosen).toBe('true_peal');
+    expect(s.players.p1.hp).toBe(hpBefore); // no HP — as ruled
+    const board = s.truth!.boards.p1;
+    expect(board.length).toBe(boardBefore + 1); // one bound-witness thread
+    // truth-consistent: the served thread never eliminates a true answer
+    const served = FRAGMENTS.find((f) => f.id === board[board.length - 1].fragmentId)!;
+    expect(served.eliminates).not.toContain(s.truth!.tuple[served.bearsOn]);
+    expect(s.event!.deltaLine).toContain('a thread for your Tapestry');
+  });
+
+  it('the fragment op is SILENT on rites-only runs: door opens, no Tapestry, no rng', () => {
+    let s = flagged(29, 'ossuary_toll', ['a_starved']);
+    const rngBefore = s.rng;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'name_dead' });
+    expect(s.event!.chosen).toBe('name_dead');
+    expect(s.rng).toBe(rngBefore); // no truth ⇒ nothing served, NO rolls
   });
 });

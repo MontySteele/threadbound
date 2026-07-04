@@ -8,7 +8,8 @@ export * from './rng';
 export * from './hash';
 export { reduce, initialState, emptyTelemetry, removalPrice, STARTING_HP } from './reducer';
 // S11.4 event grammar v2: shared by the reducer's gate and the client's render
-export { eventStageAt, eventOptionAvailable, eventDeltaLine, eventEffectClause } from './reducer';
+// (S11.5 adds the flag gate — deep doors only open where a flag is)
+export { eventStageAt, eventOptionAvailable, eventDeltaLine, eventEffectClause, deepEventsOpen, eventOptionDeepens } from './reducer';
 export { ascensionMods, scaleIntent, ASCENSION_MAX, ASCENSION_RUNGS } from './ascension';
 export type { AscensionMods } from './ascension';
 export {

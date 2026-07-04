@@ -526,9 +526,11 @@ function apply(state: GameState, action: Action): void {
         (ev.pot ??= []).push(...opt.effects.filter((e) => e.op !== 'nothing'));
       }
       state.log.push({ e: 'witness', line: opt.witness });
-      if (opt.next) {
+      if (eventOptionDeepens(state, opt)) {
         // press on: the event deepens; the pot stays visible; nobody has
-        // "chosen" until a terminal option ends it (max 3 stages, CI-held)
+        // "chosen" until a terminal option ends it (max 3 stages, CI-held).
+        // Unflagged runs never take this branch (S11.5): the same option
+        // terminates below with its original effects and resultText.
         (ev.stagePath ??= []).push(opt.id);
         return;
       }
@@ -968,12 +970,32 @@ export function eventStageAt(def: EventDef, stagePath: readonly string[] = []): 
   return stage;
 }
 
+/** S11.5: the deep grammar is LIVE only where a flag is. The stage data
+ *  ships on the defs (removing events from the unflagged pool would change
+ *  the plain shuffle's rng consumption — the deeper covenant), so the gate
+ *  is behavioral: unflagged runs neither render nor walk the deep doors. */
+export function deepEventsOpen(state: GameState): boolean {
+  return !!(state.tracks || state.rites);
+}
+
+/** S11.5: does choosing this option deepen the event HERE? An unflagged
+ *  'pay' terminates exactly as it did before its extension (same effects,
+ *  zero rng — the golden covenant's teeth). Shared by reducer, client,
+ *  bots, and the fuzz driver. */
+export function eventOptionDeepens(state: GameState, opt: EventOptionDef): boolean {
+  return !!opt.next && deepEventsOpen(state);
+}
+
 /** S11.4: is a state-keyed option open? Every clause of `requires` must
  *  hold; optionless events pass trivially. Shared by the reducer's assert
  *  and the client's render (unmet options never render — R6). */
 export function eventOptionAvailable(state: GameState, subjectId: PlayerId, opt: EventOptionDef): boolean {
   const req = opt.requires;
   if (!req) return true;
+  // S11.5: keyed doors are deep grammar — unflagged runs never see them,
+  // even when the clause itself would hold (codexProven can be claimed on
+  // any run; the DOOR only exists where the grammar is live)
+  if (!deepEventsOpen(state)) return false;
   const subject = state.players[subjectId];
   if (req.thread !== undefined && state.thread < req.thread) return false;
   if (req.gold !== undefined && state.gold < req.gold) return false;
@@ -1014,6 +1036,7 @@ export function eventEffectClause(eff: EventEffectOp): string {
     case 'upgradeRandom': return 'a card upgrades';
     case 'removeRandomStarter': return 'a starter card removed';
     case 'fragments': return 'threads for the Tapestries';
+    case 'fragment': return 'a thread for your Tapestry';
     case 'nothing': return '';
   }
 }
@@ -1112,6 +1135,30 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
         if (tt) tt.fragmentsByPlayer[pid]++;
       }
       state.log.push({ e: 'info', detail: 'Threads pull loose and pin to your Tapestries.' });
+      break;
+    }
+    case 'fragment': {
+      // S11.5 codex doors: one thread, served from the WHOLE pool through
+      // the bound-witness channel (S11.3's single supply ledger — truth-
+      // consistent, dedup-preferred, never the same fragment twice), pinned
+      // to the door's ACTOR. Rites-only runs open the door for its other
+      // effects; with no truth there is nothing to serve and NO rng moves.
+      if (!state.truth || !state.event) break;
+      const actor = state.event.subject;
+      const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+      const served = serveBoundWitness(state.truth.tuple, state.rng, pinnedIds);
+      state.rng = served.state;
+      if (served.fragment) {
+        state.truth.boards[actor].push({
+          fragmentId: served.fragment.id,
+          eventId: served.fragment.eventId,
+          act: state.map.act,
+          questionId: served.fragment.bearsOn,
+          text: served.fragment.text,
+        });
+        if (state.telemetry.truth) state.telemetry.truth.fragmentsByPlayer[actor]++;
+        state.log.push({ e: 'info', detail: 'A thread pulls loose and pins to your Tapestry.' });
+      }
       break;
     }
     case 'nothing':

@@ -383,6 +383,12 @@ export type EventEffectOp =
    *  the actor's and partner's Tapestries server-side. The fragment table
    *  (content/truth.ts) picks variants consistent with the rolled truth. */
   | { op: 'fragments' }
+  /** S11.5 codex doors: ONE truth-consistent thread from the whole pool,
+   *  served through the bound-witness channel (S11.3's single supply
+   *  ledger) and pinned to the door's ACTOR. Without tracks there is no
+   *  Tapestry to pin to — the op is silently nothing, and consumes no rng
+   *  (rites-only streams stay whole). */
+  | { op: 'fragment' }
   | { op: 'nothing' };
 
 /** S11.4 (ruling 4): a state-keyed option's gate. Every clause must hold.

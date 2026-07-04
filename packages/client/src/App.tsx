@@ -7,7 +7,7 @@ import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
   applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef,
-  eventEffectClause, eventOptionAvailable, eventStageAt,
+  eventEffectClause, eventOptionAvailable, eventOptionDeepens, eventStageAt,
   hasPassive, reclaimEchoShape, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
@@ -1576,7 +1576,9 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
                   hand-authored; secret riders are not ops, so omission IS
                   the secrecy (R6) */}
               {stub(o.effects) && <span className="stub"> — {stub(o.effects)}</span>}
-              {o.next && <span className="stub"> …it goes deeper</span>}
+              {/* S11.5: the depth marker only where the door actually opens
+                  (unflagged runs resolve this option terminal — no tease) */}
+              {eventOptionDeepens(state as never, o) && <span className="stub"> …it goes deeper</span>}
             </button>
           ))
         ) : (
