@@ -1,6 +1,7 @@
 // S13.1 instruments: the OQ#59 decomposition probes as permanent sim knobs
-// (S13.1a), draft policy v2 behind TB_BOT_DRAFT_V2 (S13.1b, default OFF —
-// D7), and the economy telemetry (S13.1c). All knobs are SIM-ONLY: no
+// (S13.1a), draft policy v2 (S13.1b — the DEFAULT since the S13.6 D7 flip;
+// TB_BOT_DRAFT_V2=0 restores v1), and the economy telemetry (S13.1c). Knobs
+// other than the draft default are SIM-ONLY: no
 // production surface sets them; the engine reads them via the guarded
 // envScale/startGold pattern so browser hosts never touch process.env.
 
@@ -139,12 +140,19 @@ describe('S13.1a — TB_NO_RELICS / TB_UPGRADE_ALL (engine knobs)', () => {
   });
 });
 
-describe('S13.1b — draft policy v2 (TB_BOT_DRAFT_V2, default OFF)', () => {
-  it('v1 is byte-identical without the flag (unbroken_line stays undervalued)', () => {
+describe('S13.1b/S13.6 — draft policy v2 (the DEFAULT since the D7 flip)', () => {
+  it('S13.6 flip pin: the DEFAULT policy is v2 (unbroken_line wins the slot)', () => {
+    // pins the D7 default flip — a silent regression to v1 fails here
+    const s = rewardState(31, ['quickening', 'unbroken_line']);
+    const dflt = new BotPolicy({ mode: 'sim', seed: 7 });
+    expect(dflt.decide(asView(s))).toEqual({ type: 'REWARD_PICK', player: 'p1', pick: 'unbroken_line' });
+  });
+
+  it('v1 stays reachable via draftV2:false (unbroken_line undervalued — the comparison policy)', () => {
     // v1: unbroken_line scores 2 (rare +1, cost ≤2 +1) vs quickening 4
     // (link +3, cost ≤2 +1) — the power rare loses the slot
     const s = rewardState(31, ['quickening', 'unbroken_line']);
-    const v1 = new BotPolicy({ mode: 'sim', seed: 7 });
+    const v1 = new BotPolicy({ mode: 'sim', seed: 7, draftV2: false });
     expect(v1.decide(asView(s))).toEqual({ type: 'REWARD_PICK', player: 'p1', pick: 'quickening' });
   });
 

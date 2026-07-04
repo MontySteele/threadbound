@@ -28,14 +28,17 @@ TB_BOT_SEEK_EVENTS=1, A0, 100-run legs (4 × 25-run shards, seeds 1000+).
 | S13.3 | `2234a30` | Pick-with-removal (D4: option A — act-2+ screens): taking a card opens a free once-per-screen STARTER removal. Starters only; no gold interaction; v2 bots use it, v1 ignores it. Pinning tests per gate 1. |
 | S13.4 | `115f7ec` | Rare legibility rider: gilt funerary frame (Gate B row on /?style, screenshot with this hand-off) + the Witness names each rare on first pick (26 authored lines, PROVISIONAL — D5). Forced golden regen (naming consumes rng) — loud, in-commit. |
 
-## Sign-off rows (returning per D2/D3/D5 — numbers PROVISIONAL)
+## Sign-off rows — ALL RATIFIED (designer, 2026-07-04 follow-up)
 
-The six-rare verdict table (D2) implemented as ruled; the four new-rare
-briefs (D3) implemented as full designs. Every engine is an exhaust
-power, capped oncePerTurn, value riding pair state (dilution-resistant
-by construction — the design law of the pass):
+All three returning rows closed: the six rare designs' numbers ("look
+fine"), the 26 Witness naming lines (witness read passed), and the
+rare frame treatment (Gate B screenshot: "frames look good"). Source
+headers updated (witness-s13.ts, StyleScreen.tsx). Every engine is an
+exhaust power, capped oncePerTurn, value riding pair state
+(dilution-resistant by construction — the design law of the pass).
+The table stands as the shipped design record:
 
-| Card | Seat | Design as implemented | Numbers to ratify |
+| Card | Seat | Design as implemented | Numbers (ratified) |
 |---|---|---|---|
 | gravebloom (REVISE) | V | Power: first partner link-fire each turn → 2 Hex to ALL. Cost 2; + = cost 1. | 2 Hex, cost 2/1 |
 | call_and_answer (REVISE) | B | Power: first partner link-fire each turn → Kindled 1 + draw 1. Cost 1; + = cost 0. | K1/D1, cost 1/0 |
@@ -44,9 +47,7 @@ by construction — the design law of the pass):
 | bellmetal (NEW — Resonance amplifier) | B | Power: Resonance ignition → +3 Momentum, draw 1. Cost 2; + = cost 1. | M3/D1, cost 2/1 |
 | stokers_due (NEW — Thread-spend payoff) | B | Power: first pool spend each turn → +2 Momentum, +3 Block (either seat's spend). Cost 2; + = cost 1. | M2/B3, cost 2/1 |
 
-Also open for sign-off: the 26 Witness rare-naming lines
-(witness-s13.ts, PROVISIONAL until the witness read — D5) and the rare
-frame treatment (Gate B screenshot — PROVISIONAL to designer taste).
+Nothing in the S13 content set remains provisional.
 
 Rarity odds (60/30/10) NOT touched, per the packet — the reserve lever
 if gate 3 misses.
@@ -136,11 +137,37 @@ long-run class; comfort-pass note applies).
 - OQ#14 stands: bot evidence understates human card value; magnitudes
   re-read at the next playtest.
 
-## Post-sprint (designer-ruled sequencing)
+## S13.6 — THE FLIP, made (D7 second half, designer-ruled follow-up)
 
-The difficulty re-evaluation runs on THESE batteries, not before: HP
-bands (act-1 loss has sat above the 16–22 watch band since S10a), the
-fight-price question (~27 pair HP/fight vs its reward bundle), and the
-braid's S11.10 gate 2 re-anchor. D7's second half is also pending: draft
-v2 flips default-on in one loud, recorded re-anchor after its first
-clean battery.
+Draft v2 is the DEFAULT as of commit `f9b1d59` — BotPolicy, sim
+harness, and the server's in-process solo partner (the surface note
+honored as a decision). TB_BOT_DRAFT_V2=0 is the v1 escape hatch,
+comparison-only. Sanity rows on the flipped build: v1 51.0 (vs 50.0
+pre-flip ✓ hatch intact); default-vb 49.5/50.0 across two seed sets.
+
+**Correction to this doc's §"Readings on record":** the +10 v1-vs-v2
+delta was a single-leg read. The flip re-anchor exposed the sim's
+cross-invocation noise floor (~±7–10 win-points per 100-run leg;
+61/99 same-seed runs flip outcome between invocations — the
+review-sweep jitter class, now measured). Pooled: v2-vb 159/299 =
+53.2% vs v1 101/200 = 50.5% — **the win-rate edge is +2.7, within
+noise.** The flip stands on D7's process and v2's measured behavior
+(dilution discipline, lever usage, take-rate shape, texture), not on
+a win-rate claim. Full accounting + the instrument rule proposal
+(pooled n≥200 for ±6-style gates): docs/S13-DIFFICULTY-REVIEW.md §0–1.
+
+## Post-sprint (designer-ruled sequencing) — NOW RUN
+
+The difficulty re-evaluation ran on these batteries as ruled:
+**docs/S13-DIFFICULTY-REVIEW.md** (S13.6). Verdicts in brief: HP band
+still 4–8 hot (pre-existing, unchanged by S13; band decision
+proposed); fight-price question ANSWERED — fights pay now (winners
+fight more in every leg; close it); S11.10 gate 2 re-anchored on the
+flipped build — the economy hypothesis CONFIRMED for vb (braid now
+reads −13.7: routing around combat finally costs), vv's inflation
+collapsed to the gate edge (+9.1), bb's persists (+24, 69% — the
+pair-asymmetry question, re-filed as the braid follow-up sprint).
+Correction from the designer at review: the braid is ALREADY the
+shipped playtest game (TB_KNOTWORK=1 on the deploy since PR #10,
+`92e7492`) — the braid rows are the game-as-played rows and bb's +24
+is live, raising that sprint's priority.

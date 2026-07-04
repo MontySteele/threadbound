@@ -55,14 +55,18 @@ export interface BotPolicyOptions {
    *  slots back up (intentionally the dilution variable, not a pick counter);
    *  covets and shop card buys share the gate. Never set in production/solo. */
   pickCap?: number;
-  /** S13.1b (TB_BOT_DRAFT_V2, default OFF this sprint — D7): draftScore v2.
-   *  Learns (i) powers/engines +4, (ii) rare +3 (was +1), (iii) a dilution
-   *  term (score − max(0, deckSize − 16) × 0.4). ONE policy, no v1/v2 fork —
-   *  this flag is the S11.5-style re-anchor gate, flipped default-on in one
-   *  loud, recorded re-anchor after its first clean battery. Surface note on
-   *  record: BotPolicy is shared with the server's in-process solo partner,
-   *  so the eventual default flip changes real solo drafting — a decision,
-   *  not a side effect. */
+  /** S13.1b (TB_BOT_DRAFT_V2): draftScore v2. Learns (i) powers/engines +4,
+   *  (ii) rare +3 (was +1), (iii) a dilution term (score − max(0, deckSize −
+   *  16) × 0.4). ONE policy, no v1/v2 fork.
+   *
+   *  S13.6 — DEFAULT ON (D7 second half, designer-ruled 2026-07-04): flipped
+   *  in its own loud re-anchor after v2's first clean battery (post-content
+   *  v2 60% vs v1 50% same-environment; S13-ECONOMY-STATUS.md). v1 remains
+   *  reachable via TB_BOT_DRAFT_V2=0 / draftV2:false as the instrumented
+   *  comparison policy (gate-2 load-bearing rows) — never the default.
+   *  Surface note: BotPolicy is shared with the server's in-process solo
+   *  partner, so this flip changed real solo drafting — that was the
+   *  decision, not a side effect. */
   draftV2?: boolean;
 }
 
@@ -124,7 +128,7 @@ export class BotPolicy {
     this.reclaimNudge = opts.reclaimNudge ?? false;
     this.skipPicks = opts.skipPicks ?? false;
     this.pickCap = opts.pickCap;
-    this.draftV2 = opts.draftV2 ?? false;
+    this.draftV2 = opts.draftV2 ?? true; // S13.6: v2 IS the policy (D7 flip)
   }
 
   /** S13.1a: is this seat's deck at (or past) the pick-cap ceiling? The gate
@@ -496,7 +500,8 @@ export class BotPolicy {
   /** Draft scoring: the bots are a coordination floor — they draft like a pair
    *  that wants links to fire and the Hex→detonate axis to exist.
    *
-   *  S13.1b (draftV2, TB_BOT_DRAFT_V2): v2 learns what the S13 decomposition
+   *  S13.1b (draftV2 — DEFAULT since the S13.6 D7 flip; TB_BOT_DRAFT_V2=0
+   *  restores v1 for instrumented comparisons): v2 learns what the S13 decomposition
    *  proved — (i) powers/engines are dilution-resistant (+4), (ii) rares are
    *  systematically undervalued at +1 (→ +3; the OQ#59 caveat (a) fix),
    *  (iii) dilution is the disease: score − max(0, deckSize − 16) × 0.4, so

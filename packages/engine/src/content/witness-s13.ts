@@ -4,7 +4,8 @@
 // trigger: one authored line per draftable rare, single-line pools, and the
 // no-repeat-within-run rotation IS the once-per-run fence.
 //
-// ALL LINES PROVISIONAL until the witness read (D5; S9c gate-4 precedent).
+// ALL 26 LINES RATIFIED — designer witness read passed 2026-07-04 (D5;
+// S9c gate-4 precedent). Edits from here are content changes, not drafts.
 // Register (S9c.3): disdain with an edge of reluctant recognition. Fences:
 // existence-naming — what the card IS, never what it's for; marks the
 // card's weight without promising outcomes; never lies; no pip economy.

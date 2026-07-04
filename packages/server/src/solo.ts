@@ -22,12 +22,13 @@ export class SoloBotDriver {
   ) {
     // S13.1b surface note (on record): BotPolicy is shared with the sim
     // fleet, so TB_BOT_DRAFT_V2 governs the solo partner's drafting too.
-    // Default OFF this sprint (D7) — the flag protects the public build
-    // until v2 has a clean battery behind it; the default flip is a
-    // decision made in one loud re-anchor, not a side effect.
+    // S13.6 (D7 second half, designer-ruled): draft v2 is now the DEFAULT —
+    // the solo partner drafts engines, values rares, and respects dilution.
+    // Flipped in its own loud re-anchor after v2's first clean battery;
+    // TB_BOT_DRAFT_V2=0 is the v1 escape hatch for A/B comparisons only.
     this.policy = new BotPolicy({
       mode: 'solo',
-      draftV2: process.env.TB_BOT_DRAFT_V2 === '1',
+      draftV2: process.env.TB_BOT_DRAFT_V2 !== '0',
     });
     // safety net: re-decide if a broadcast was missed or an action bounced
     this.watchdog = setInterval(() => {
