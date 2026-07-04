@@ -585,7 +585,9 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       link: { condition: 'Strike', text: 'Apply 1 more Hex.', effects: [{ op: 'hex', amount: 1 }] },
     },
     upgrade: {
-      text: 'Apply 2 Hex. Link (Strike): deal 5.',
+      // S9b.1-2: base has been 3 Hex since M2-B1; the stale 2 hid the real
+      // link improvement (Deal 3 → 5) behind a lie
+      text: 'Apply 3 Hex. Link (Strike): deal 5.',
       link: { condition: 'Strike', text: 'Deal 5.', effects: [{ op: 'damage', amount: 5 }] },
     },
   },

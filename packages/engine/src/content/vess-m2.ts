@@ -533,7 +533,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   // Commons
   needlework: {
     upgrade: {
-      text: 'Apply 3 Hex. Link (Strike): apply 2 additional Hex per link fired earlier this Chain.',
+      // S9b.1-2: base has been 4 Hex since M2-B1; the overlay text still said 3
+      text: 'Apply 4 Hex. Link (Strike): apply 2 additional Hex per link fired earlier this Chain.',
       link: { condition: 'Strike', text: 'Apply 2 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 2 }] },
     },
   },
