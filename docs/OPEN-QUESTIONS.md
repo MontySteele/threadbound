@@ -644,3 +644,16 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     band) has no harness calculation — distinctEliminations is the proxy;
     "rite-card play rate" (S9c gate 2 direction read) is proxied by
     realized growth > 0. **OPEN — engine-queue, small.**
+
+58. **Post-S11.5 win-rate drift ruled floor-demanded (gate 2 exception
+    named).** Battery read vb 36 (pooled 600) / vv 26 / bb 34 — vb +11
+    vs the S9d stage, outside ±6. Probe battery with deep stages
+    DISABLED read vb 36 identically: the signed S11.5 stakes contribute
+    ~zero; the drift is entirely the high-stakes [1,3] composition
+    floor guaranteeing Broken Carillon + Drowned Hymnal (whose SHALLOW
+    faces pay relic / rare card) on every flagged act-2 map, where
+    queue weights previously buried plain events near-completely.
+    **RULED (2026-07-04): re-baseline — the floor stays, the drift is
+    named to it.** The post-S11.5 ledger row is the Wave A baseline
+    for S11.6/S11.7 batteries. Human pricing of the gambles is a
+    playtest read (bots are price-blind until S11.9). **CLOSED.**

@@ -24,6 +24,7 @@ comparable to numbers in older status docs; deltas are.
 | post-S9c | 18 | 18 | 25* | bb pooled 600 runs/side: +5.0, inside ±6 (first 200-run read was +9; two confirm rounds pulled it in). vv −6 at band edge — watch. |
 | post-S9d (signed rates) | 26 | 29 | 29 | vb +8 / vv +11 — OUTSIDE ±6 → rate retune per the "provisional pending battery" clause |
 | post-S9d (retuned) + S11.2 escalation | 25 | 24 | 29 | vb +7 / vv +6 / bb +4 vs post-S9c. vb still a point over; see sign-off row 2. |
+| post-S11.5 (deep events + hs floor) | 36* | 26 | 34 | *vb pooled 600 runs (37/32/38). vb +11 / vv +2 / bb +5 vs prior stage — OUTSIDE ±6. PROBE: deep stages OFF reads vb 36 = the drift is 100% the [1,3] floor guaranteeing Carillon+Hymnal (their SHALLOW faces: relic, rare card) on every act-2 map, not the signed stakes. **RULED (2026-07-04): re-baseline; the floor demanded the drift and stays.** This row is the Wave A baseline for S11.6/S11.7 comparisons. |
 
 Act-1 HP loss runs 25–29 across all stages — ABOVE the 16–22 watch band,
 as it already was post-S10a (23.6–25.8 documented). Pre-existing, not
@@ -86,7 +87,21 @@ death-pick distribution 10–36%, inside the 5–40 band. Votive's tier
 shape (S9d.0-4 designer flag) realized 1.9–2.0 tiers/pick — it functions;
 the shape question stands.
 
-## S11 Wave A — S11.1–S11.4 landed; S11.5 blocked on sign-off; S11.6/7 pending
+## S11 Wave A — S11.1–S11.6 landed; S11.7 in progress (same day)
+
+Post-ruling landings (2026-07-04, after the sign-off round):
+- **S11.5** all four deep events authored as tabled; flag-gated
+  behaviorally (`deepEventsOpen`: stages ship on defs, unflagged runs
+  terminate at stage 1 with original effects and zero extra rng — the
+  flag-off golden passed UNREGENERATED). New `fragment` op (one
+  bound-witness thread through the S11.3 supply ledger). High-stakes
+  guarantee pass + SWAP repair rung in the generator (rng-free).
+  Battery + drift ruling: see the ledger row above.
+- **S11.6** asymmetric scouting: per-seat node faces through the
+  ruling-5 projection (Vess reads clue bearings, Bram reads knot
+  relics — pinned at generation from a DERIVED stream, live rng
+  untouched; victory keeps its exact roll and grants the pin while
+  unowned). Character scenes name themselves to their own seat.
 
 - **S11.1** composition CI landed **hard on every assertion** (no staged
   list): exact elites, ≥1 shop, ≥1 treasure, ≥2 distinct approach
@@ -131,8 +146,7 @@ the shape question stands.
   thread/gold/HP/tag-counts/character/**codexProven** (claims cross at
   START_RUN, S4 union). No shipped event uses stages or keys yet
   (CI-proven) — flag-off parity holds by construction.
-- **S11.6 asymmetric scouting, S11.7 toll-door rest + Covet treasure:
-  NOT YET IMPLEMENTED** — next session, alongside Wave B.
+- (S11.6/S11.7 status: see the post-ruling section above.)
 
 ## S11.5 deep-event proposal table (enumerate→propose→SIGN-OFF)
 
