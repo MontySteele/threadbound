@@ -163,6 +163,92 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// S9b.2 upgrade-parity gate. Root cause of the class it closes: M2-B6's
+// "upgrades on every card" batch shipped restatement blocks green because
+// nothing compared an upgrade to its base. Same posture as the deducibility
+// CI: cheap, permanent, loud.
+// ---------------------------------------------------------------------------
+
+/** Exemption list per the S9b.0-4 ruling: the gate lands day one and this
+ *  list BURNS DOWN as S9b.3 rows land. Empty by sprint end.
+ *  NOTE: thornward is a 19th restatement upgrade the S9b.3 table does not
+ *  cover (the doc counted 18) — it stays here pending a designer-ruled row;
+ *  filed in OPEN-QUESTIONS. */
+const UPGRADE_RESTATEMENT_EXEMPT = new Set<string>([
+  'pinprick', 'withering', 'stitchblade', 'thornward', 'loose_stitch',
+  'crossguard', 'bellows', 'cinch', 'needle_wall', 'quiet_mending',
+  'gathering_slack', 'festering_knot', 'pale_unmaking', 'rend_the_weave',
+  'measured_cut', 'ashfall', 'banked_coals', 'pummel', 'tithe_of_thread',
+]);
+
+/** S9b.1-2 class: upgrade texts whose numbers drift from their mechanics.
+ *  pinprick/withering leave with their S9b.3 wholesale rewrites. */
+const UPGRADE_TEXT_EXEMPT = new Set<string>(['pinprick', 'withering']);
+
+describe('S9b.2 upgrade parity (the cards never lie)', () => {
+  const all = Object.values(CARDS);
+  const mech = (base: EffectOp[], link: CardDef['link'], cost: number, keep: boolean | undefined) =>
+    JSON.stringify({
+      base,
+      link: link ? { condition: link.condition, effects: link.effects, replace: link.replace ?? false } : null,
+      cost,
+      keep: keep ?? false,
+    });
+
+  it('every upgrade differs from its effective base in base/link/cost/keep', () => {
+    for (const c of all) {
+      if (!c.upgrade || UPGRADE_RESTATEMENT_EXEMPT.has(c.id)) continue;
+      const before = mech(c.base, c.link, c.cost, c.keep);
+      const after = mech(
+        c.upgrade.base ?? c.base,
+        c.upgrade.link !== undefined ? c.upgrade.link : c.link,
+        c.upgrade.cost ?? c.cost,
+        c.upgrade.keep ?? c.keep,
+      );
+      expect(after, `${c.id}: upgrade is a restatement of the base card`).not.toBe(before);
+    }
+  });
+
+  it('exemption burn-down: every exempt card is still actually a restatement (stale entries come off)', () => {
+    for (const id of UPGRADE_RESTATEMENT_EXEMPT) {
+      const c = CARDS[id];
+      expect(c?.upgrade, `${id}: exempt but has no upgrade`).toBeTruthy();
+      const before = mech(c.base, c.link, c.cost, c.keep);
+      const after = mech(
+        c.upgrade!.base ?? c.base,
+        c.upgrade!.link !== undefined ? c.upgrade!.link : c.link,
+        c.upgrade!.cost ?? c.cost,
+        c.upgrade!.keep ?? c.keep,
+      );
+      expect(after, `${id}: no longer a restatement — remove it from the exemption list`).toBe(before);
+    }
+  });
+
+  it('advertised numbers match effective mechanics (coarse lint, M2-B1 drift class)', () => {
+    // prose spells small counts ("twice", "three times") — the lint reads both
+    const WORDS: Record<number, string[]> = {
+      2: ['2', 'twice', 'two'], 3: ['3', 'three'], 4: ['4', 'four'], 5: ['5', 'five'], 6: ['6', 'six'],
+    };
+    const advertises = (text: string, v: number) => (WORDS[v] ?? [String(v)]).some((w) => text.includes(w));
+    for (const c of all) {
+      if (!c.upgrade || UPGRADE_TEXT_EXEMPT.has(c.id)) continue;
+      const link = c.upgrade.link !== undefined ? c.upgrade.link : c.link;
+      // the card face shows upgrade text plus the canonical link line —
+      // numbers may live in either
+      const face = `${c.upgrade.text ?? c.text} ${link?.text ?? ''}`;
+      const ops: EffectOp[] = [...(c.upgrade.base ?? c.base), ...(link?.effects ?? [])];
+      for (const op of ops) {
+        for (const [k, v] of Object.entries(op)) {
+          if (typeof v === 'number' && v > 1) {
+            expect(advertises(face, v), `${c.id} upgrade face omits ${op.op}.${k}=${v}: "${face}"`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+});
+
 describe('relics (M2-B2)', () => {
   it('28 relics, ≥8 co-op, Wedding Knife present, passives sane', () => {
     expect(ALL_RELICS.length).toBe(28);
