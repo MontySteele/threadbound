@@ -27,6 +27,17 @@ describe('S9b.1-2 stale upgrade texts (the cards never lie)', () => {
     expect(CARDS['needlework'].upgrade?.text).toBeTruthy();
     expect(CARDS['spark'].upgrade?.text).toBeTruthy();
   });
+
+  it('thornward+ carries the OQ#49-ruled link (2 Hex to ALL + 3 Block, no new Hex amounts)', () => {
+    const eff = effectiveDef({ instanceId: 'i', defId: 'thornward', upgraded: true });
+    expect(eff.link?.effects).toEqual([
+      { op: 'hexAll', amount: 2 },
+      { op: 'block', amount: 3 },
+    ]);
+    expect(eff.text).toContain('gain 3 Block');
+    // the base is untouched by the ruling
+    expect(eff.base).toEqual(CARDS['thornward'].base);
+  });
 });
 
 describe('S9b.1-3 reclaim arrival preview (reclaimEchoShape is the one truth)', () => {

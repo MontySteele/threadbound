@@ -174,12 +174,9 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
 
 /** Exemption list per the S9b.0-4 ruling: the gate lands day one and this
  *  list BURNS DOWN as S9b.3 rows land. Empty by sprint end.
- *  NOTE: thornward is a 19th restatement upgrade the S9b.3 table does not
- *  cover (the doc counted 18) — it stays here pending a designer-ruled row;
- *  filed in OPEN-QUESTIONS. */
-const UPGRADE_RESTATEMENT_EXEMPT = new Set<string>([
-  'thornward', // the 19th — no S9b.3 row exists; awaiting designer ruling
-]);
+ *  (thornward — the 19th restatement the S9b.3 table missed — came off
+ *  2026-07-04 with the OQ#49-ruled row. List is EMPTY; keep it that way.) */
+const UPGRADE_RESTATEMENT_EXEMPT = new Set<string>([]);
 
 /** S9b.1-2 class: upgrade texts whose numbers drift from their mechanics.
  *  Emptied by the S9b.3 rewrites; stays as the place future exemptions

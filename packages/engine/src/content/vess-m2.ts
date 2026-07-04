@@ -598,8 +598,10 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Hex): apply 2 Hex to ALL enemies.',
-      link: { condition: 'Hex', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
+      // OQ#49 ruling (2026-07-04): the 19th restatement, M2-B6 discipline —
+      // link deepened with a non-Hex rider, no new Hex amounts.
+      text: 'Gain 6 Block. Link (Hex): apply 2 Hex to ALL enemies and gain 3 Block.',
+      link: { condition: 'Hex', text: 'Apply 2 Hex to ALL enemies and gain 3 Block.', effects: [{ op: 'hexAll', amount: 2 }, { op: 'block', amount: 3 }] },
     },
   },
   wardknot: {
