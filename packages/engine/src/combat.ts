@@ -57,6 +57,23 @@ export function effectiveDef(inst: CardInstance): CardDef {
   return def;
 }
 
+/** S9b.1-3: the shape a Reclaimed card ARRIVES in — one source of truth for
+ *  the reducer's echo construction and the client's reclaim-list preview
+ *  (arrival cost, Quickening marker). Mutation precedence over the upgrade
+ *  overlay lives in effectiveDef, not here. */
+export function reclaimEchoShape(
+  actor: PlayerState, defId: string,
+): Pick<CardInstance, 'defId' | 'echo' | 'mutated' | 'upgraded'> {
+  const def = CARDS[defId];
+  return {
+    defId,
+    echo: true,
+    mutated: !!def.mutation,
+    // S8.1 Quickening: what returns through you comes back more alive
+    ...(hasPassive(actor, 'reclaimUpgraded') && def.upgrade ? { upgraded: true } : {}),
+  };
+}
+
 export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
   if (player.relics.some((r) => RELICS_BY_ID[r]?.passives?.includes(passive))) return true;
   // S7/S8.1: birth-rite passives ride the relic slot semantics (never dormant)
@@ -825,14 +842,9 @@ export function resolveTurn(state: GameState): void {
         // the discard — everything downstream (echo, mutation, hooks) is
         // source-blind on purpose.
         if (!src || !(partner.discard.includes(ta.targetId!) || partner.exhaust.includes(ta.targetId!))) break;
-        const def = CARDS[src.defId];
         const echo: CardInstance = {
           instanceId: `echo_${src.instanceId}_t${combat.turn}_${actor.combatCards.length}`,
-          defId: src.defId,
-          echo: true,
-          mutated: !!def.mutation,
-          // S8.1 Quickening: what returns through you comes back more alive
-          ...(hasPassive(actor, 'reclaimUpgraded') && def.upgrade ? { upgraded: true } : {}),
+          ...reclaimEchoShape(actor, src.defId),
         };
         actor.combatCards.push(echo);
         if (actor.hand.length < 10) actor.hand.push(echo.instanceId);

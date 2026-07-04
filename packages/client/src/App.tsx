@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
+  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, reclaimEchoShape, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
@@ -1144,15 +1144,22 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
               // PT2: Reclaim copies — the original stays listed, so a card
               // already being reclaimed this turn must read as taken
               const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
+              // S9b.1-3: show what the card will BE on arrival — its
+              // post-mutation cost, and Quickening's upgrade marker. The
+              // shape comes from the same helper the reducer builds the
+              // echo from, so this preview cannot drift from reality.
+              const srcDefId = inst(state, partner, id)!.defId;
+              const shape = reclaimEchoShape(state.players[you], srcDefId);
+              const arrival = effectiveDef({ instanceId: 'preview', ...shape });
               return (
                 <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
-                  data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+                  data-inspect={`card:${srcDefId}:mprev`}
                   onClick={() => {
                     if (claimed) return;
                     net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id });
                     setReclaimOpen(false);
                   }}>
-                  {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
+                  <span className="cost">{arrival.cost}</span> {defFor(state, partner, id).name}{shape.upgraded && !shape.mutated ? ` ${GLYPH.upgraded}` : ''}{CARDS[srcDefId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
                 </button>
               );
             })}

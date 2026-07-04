@@ -10,7 +10,7 @@ export { reduce, initialState, emptyTelemetry, removalPrice, STARTING_HP } from 
 export { ascensionMods, scaleIntent, ASCENSION_MAX, ASCENSION_RUNGS } from './ascension';
 export type { AscensionMods } from './ascension';
 export {
-  effectiveDef, otherPlayer, findInstance, hasPassive, targetableEnemies,
+  effectiveDef, otherPlayer, findInstance, hasPassive, reclaimEchoShape, targetableEnemies,
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';

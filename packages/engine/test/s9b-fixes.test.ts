@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { CARDS } from '../src/content/cards';
-import { effectiveDef } from '../src/combat';
+import { effectiveDef, reclaimEchoShape } from '../src/combat';
 import { generateShop, initialState, reduce } from '../src/reducer';
 
 describe('S9b.1-2 stale upgrade texts (the cards never lie)', () => {
@@ -26,6 +26,38 @@ describe('S9b.1-2 stale upgrade texts (the cards never lie)', () => {
   it('upgrade texts exist for both cards (the overlays are wired)', () => {
     expect(CARDS['needlework'].upgrade?.text).toBeTruthy();
     expect(CARDS['spark'].upgrade?.text).toBeTruthy();
+  });
+});
+
+describe('S9b.1-3 reclaim arrival preview (reclaimEchoShape is the one truth)', () => {
+  const player = () => initialState(7, { p1: 'vess', p2: 'bram' }).players.p1;
+
+  it('mutation-bearing cards arrive mutated; Quickening stays hidden behind mutation precedence', () => {
+    const withMutation = Object.values(CARDS).find((c) => c.mutation && c.upgrade)!;
+    const quickened = { ...player(), rites: ['br_quickening'] };
+    const shape = reclaimEchoShape(quickened, withMutation.id);
+    expect(shape.mutated).toBe(true);
+    expect(shape.echo).toBe(true);
+    const eff = effectiveDef({ instanceId: 'i', ...shape });
+    // mutation precedence: the arrival reads as the mutation, at base cost
+    expect(eff.name).toBe(withMutation.mutation!.name);
+    expect(eff.cost).toBe(withMutation.cost);
+  });
+
+  it('Quickening upgrades mutation-free cards on arrival (cost included)', () => {
+    const plain = Object.values(CARDS).find((c) => c.upgrade && !c.mutation);
+    expect(plain, 'pool needs at least one upgrade-only card for Quickening to mean anything').toBeTruthy();
+    const quickened = { ...player(), rites: ['br_quickening'] };
+    const shape = reclaimEchoShape(quickened, plain!.id);
+    expect(shape.upgraded).toBe(true);
+    const eff = effectiveDef({ instanceId: 'i', ...shape });
+    expect(eff.name).toBe(`${plain!.name}+`);
+    expect(eff.cost).toBe(plain!.upgrade!.cost ?? plain!.cost);
+  });
+
+  it('without Quickening nothing arrives upgraded', () => {
+    const plain = Object.values(CARDS).find((c) => c.upgrade && !c.mutation)!;
+    expect(reclaimEchoShape(player(), plain.id).upgraded).toBeUndefined();
   });
 });
 
