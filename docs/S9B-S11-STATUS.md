@@ -195,20 +195,39 @@ Pacing-variant mix (S11.7) rides both strands unchanged; scouting
 generator work (S11.11-4 as written). The generator + 11 structure
 tests landed against exactly this table (content/strand-targets.ts).
 
+## Wave B status (2026-07-04, same day)
+
+- **S11.8 braid generator LANDED** behind TB_KNOTWORK: two
+  currency-keyed strands, knots as the only crossings, first pick =
+  strand commitment, character doors on both strands, hs floor deals
+  into truth, A3's third knot on its OWN layer (S11.11-1 rec, pending
+  ruling). Composition as data (content/strand-targets.ts). 11
+  structure tests + invariant fuzz smoke. Unflagged path untouched —
+  the flag-off golden held UNREGENERATED through every landing today
+  (S11.10 gate 4 reads green already).
+- **S11.9 strand routing LANDED**, braid maps only (Wave A baselines
+  byte-identical, seek-events tests pin the old path): best-path DP,
+  seat-symmetric instant agreement, knot pricing = reward minus the
+  escalation ladder (crossing value rides the DP). The TB_KNOTWORK
+  battery IS this policy's baseline.
+- **BLOCKED on sign-off** (S11.11-4 table above): TB_KNOTWORK
+  batteries all pairs + the D6/D7 re-battery vs the B6 ledger + the
+  joint ladder/policy recalibration of the escalation gate (OQ#55).
+- Solo-on-strands manual pass: playtest-time (S11.10 gate 5).
+
 ## Remaining (next session)
 
-1. S11.6 scouting, S11.7 pacing-node variants (Wave A close-out).
-2. Wave B in full: TB_KNOTWORK braid generator, strand data tables
-   (S11.11-4 sign-off first), bot strand routing (S11.9), D6/D7
-   re-battery vs the B6 ledger, golden lock both flag states.
-3. S11.5 authoring once this table is ruled.
-4. ~~A2 battery legs~~ — RAN 2026-07-04 (see ledger); first in-env A2
+1. Wave B batteries + D6/D7 re-battery + ladder recalibration — on
+   the S11.11-4 sign-off.
+2. S11.5 deep RETROFITS of remaining events (later content sprint,
+   per ruling 5).
+3. ~~A2 battery legs~~ — RAN 2026-07-04 (see ledger); first in-env A2
    row banked, judged directionally (no pre-S9d A2 baseline exists).
    First OQ#57 instrument reading, same battery: rite-card play rate
    26.7 plays/run (4.29 per combat won) — rite cards are PLAYED, the
    S9c gate-2 direction read is healthy.
-5. Witness-string designer read (S9c gate 4 / S11.3 pool) before any
-   public build.
+4. Witness-string designer read (S9c gate 4 / S11.3 / S11.7 pools —
+   18 lines presented 2026-07-04) before any public build.
 
 ## Open designer rows — ALL RULED (2026-07-04, same day)
 
