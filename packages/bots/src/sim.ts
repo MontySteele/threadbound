@@ -321,6 +321,24 @@ async function main(): Promise<void> {
       .join(', ');
     console.log(`S9d mean realized growth/pick: ${growthLine || 'none'}`);
   }
+  // S11.2 calibration gate: pair HP cost per elite fight, keyed by kill
+  // order — the act's LAST-killed knot must cost >=2x its first-killed.
+  const byOrder: Record<number, { hp: number; n: number }> = {};
+  for (const r of results) {
+    for (const f of r.telemetry.eliteFights ?? []) {
+      (byOrder[f.order] ??= { hp: 0, n: 0 });
+      byOrder[f.order].hp += f.hpLost;
+      byOrder[f.order].n++;
+    }
+  }
+  const orders = Object.keys(byOrder).map(Number).sort((a, b) => a - b);
+  if (orders.length > 0) {
+    const line = orders.map((o) => `kill ${o + 1}: ${(byOrder[o].hp / byOrder[o].n).toFixed(1)} HP (n=${byOrder[o].n})`).join(' | ');
+    const first = byOrder[orders[0]];
+    const last = byOrder[orders[orders.length - 1]];
+    const ratio = (last.hp / last.n) / Math.max(1e-9, first.hp / first.n);
+    console.log(`S11.2 escalation calibration: ${line} — last/first ratio ${ratio.toFixed(2)} (gate >=2 needs steepening if unmet)`);
+  }
   console.log('---------------- GATES ----------------');
   let allPass = true;
   for (const g of gates) {
