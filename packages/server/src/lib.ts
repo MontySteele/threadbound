@@ -28,6 +28,9 @@ export interface ProfileClaim {
   /** S8.7: profile codex fill % (0–100, clamped) — keys the Witness's voice
    *  register for the run; never rules. A forged claim buys a tone of voice. */
   codexPct?: number;
+  /** S11.4: answer ids the profile claims PROVEN — opens codex-keyed event
+   *  doors (union across seats). A forged claim opens a door, never rules. */
+  codexProven?: string[];
   /** S9a: the profile's unlocked rites per role. The run pool is the UNION
    *  over seats (S4 rule); ids are validated engine-side against the content
    *  set, and everything ships unlocked, so a forged claim gains nothing. */
@@ -577,6 +580,10 @@ export class GameServer {
     // S8.7: codex fill % rides the claim, clamped 0–100 (voice, not rules)
     const pct = Number(r.codexPct);
     if (Number.isFinite(pct)) claim.codexPct = Math.max(0, Math.min(100, Math.floor(pct)));
+    // S11.4: proven answers open codex-keyed event doors (bounded, strings)
+    if (Array.isArray(r.codexProven)) {
+      claim.codexProven = r.codexProven.filter((x: unknown) => typeof x === 'string').slice(0, 64);
+    }
     // S9a: rite unlocks — shape-checked here, id-validated engine-side
     const ru = r.riteUnlocks as Record<string, { death?: unknown; birth?: unknown }> | undefined;
     if (ru && typeof ru === 'object') {
@@ -615,6 +622,16 @@ export class GameServer {
    *  paired with a veteran hears the veteran's Witness for that run.
    *  Flagged as a designer question (OQ#48) — min or per-seat are the
    *  alternatives. Bots claim nothing and never lower it. */
+  /** S11.4: union of the seats' claimed PROVEN answers — codex-keyed event
+   *  doors read this. Claims, not authority (the S4 posture). */
+  private codexProvenUnion(room: Room): string[] {
+    const out = new Set<string>();
+    for (const seat of Object.values(room.seats)) {
+      for (const a of seat?.claim?.codexProven ?? []) out.add(a);
+    }
+    return [...out];
+  }
+
   private codexPct(room: Room): number {
     let max = 0;
     for (const seat of Object.values(room.seats)) {
@@ -852,6 +869,10 @@ export class GameServer {
           rites: envFlag('TB_RITES'),
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
+          // S11.4: codex-keyed event doors — UNION of the seats' proven
+          // answers (S4 rule; a forged claim opens a door, never rules)
+          ...(this.codexProvenUnion(ctx.room).length > 0
+            ? { codexProven: this.codexProvenUnion(ctx.room) } : {}),
           // S9a: rite pool = union of the seats' claimed unlocks (absent =
           // everything; all rites ship unlocked tonight)
           ...(envFlag('TB_RITES') ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),

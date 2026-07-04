@@ -385,12 +385,44 @@ export type EventEffectOp =
   | { op: 'fragments' }
   | { op: 'nothing' };
 
+/** S11.4 (ruling 4): a state-keyed option's gate. Every clause must hold.
+ *  Codex-keyed options are the flywheel hook — meta-knowledge opening
+ *  in-run doors (state.codexProven, claimed at START_RUN). */
+export interface EventRequirement {
+  /** pair Thread pool >= n */
+  thread?: number;
+  /** pair gold >= n */
+  gold?: number;
+  /** subject HP <= n (the desperate door) */
+  hpAtMost?: number;
+  /** subject HP >= n */
+  hpAtLeast?: number;
+  /** subject deck carries >= n cards of this tag */
+  tagCount?: { tag: BroadTag; n: number };
+  /** this character stands somewhere in the run */
+  character?: CharacterId;
+  /** the profile codex has PROVEN this answer id */
+  codexProven?: string;
+}
+
+/** S11.4: a deeper stage of an event — press-on / walk-away structure,
+ *  max 3 stages (covenant-enforced), the pot visible throughout. */
+export interface EventStageDef {
+  prose: string;
+  options: EventOptionDef[];
+}
+
 export interface EventOptionDef {
   id: string;
   label: string;
   resultText: string;
   witness: string;
   effects: EventEffectOp[];
+  /** S11.4: choosing this leads DEEPER instead of ending the event */
+  next?: EventStageDef;
+  /** S11.4: gate on run state; unmet options never render (R6: doors you
+   *  cannot open are doors you do not see) */
+  requires?: EventRequirement;
 }
 
 export interface EventDef {
@@ -688,6 +720,16 @@ export interface EventPhaseState {
   subject: PlayerId;
   chosen: string | null;
   resultText?: string;
+  /** S11.4: option ids chosen so far on the way down (empty/absent = the
+   *  first stage; the grammar is backward-compatible — existing events are
+   *  1-stage and never set this) */
+  stagePath?: string[];
+  /** S11.4: the POT — every visible effect applied on the way down, shown
+   *  to both seats while the wager deepens */
+  pot?: EventEffectOp[];
+  /** S11.4: the delta line — one generated sentence of what actually
+   *  changed, rendered post-resolution (kills the oath-ring confusion) */
+  deltaLine?: string;
 }
 
 export type RestOption = 'rest' | 'barter' | 'rebraid' | 'upgrade' | 'wedding';
@@ -776,6 +818,10 @@ export interface GameState {
    *  selection (witness-draw) — never rules. Absent — not 0 — when unset or
    *  zero, so pre-S8.7 serialized states stay byte-identical. */
   codexPct?: number;
+  /** S11.4 flywheel hook: answer ids the profile codex has PROVEN (claimed
+   *  at START_RUN, S4 union rule across seats) — codex-keyed event options
+   *  read this. Absent on runs that claim nothing. */
+  codexProven?: string[];
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
@@ -919,7 +965,7 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

@@ -293,6 +293,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   color: color-mix(in srgb, var(--witness) 70%, transparent); font-size: 0.9em;
   pointer-events: none;
 }
+/* S11.4 event grammar v2: generated effect stubs, the visible pot, and the
+   post-resolution delta line */
+.event-option .stub { color: var(--muted, #999); font-size: 0.85em; font-weight: normal; }
+.event .pot { border: 1px dashed var(--line); border-radius: 6px; padding: 4px 10px; display: inline-block; }
+.event .delta { color: var(--ignite); font-weight: bold; }
+
 /* S9d.3: the tally chip (grown rites) — Machine bookkeeping, not Witness
    voice; left corner so the momentum badge keeps the right */
 .card-badge.tally-chip { left: -5px; right: auto; color: var(--witness); border-color: var(--witness); }

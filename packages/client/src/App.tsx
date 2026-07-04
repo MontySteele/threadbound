@@ -6,7 +6,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, reclaimEchoShape, removalPrice,
+  applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef,
+  eventEffectClause, eventOptionAvailable, eventStageAt,
+  hasPassive, reclaimEchoShape, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
@@ -1538,6 +1540,13 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   const ev = state.event!;
   const def = EVENTS[ev.eventId];
   const youChoose = ev.chooser === you;
+  // S11.4: the current stage (existing events are 1-stage at path [])
+  const stage = eventStageAt(def, ev.stagePath ?? []);
+  const deepened = (ev.stagePath ?? []).length > 0;
+  // unmet keyed options never render (R6: unseen doors); stubs are GENERATED
+  const options = stage.options.filter((o) => eventOptionAvailable(state as never, ev.subject, o));
+  const stub = (effects: readonly { op: string }[]): string =>
+    effects.map((e) => eventEffectClause(e as never)).filter(Boolean).join(' · ');
   // S7.4: the mirror sacrament arrives HERE, at the event result — the engine
   // gates the owed seat's ADVANCE, so the trio stands where Onward would be
   const owedYou = state.ritesState?.birthChoice === you;
@@ -1545,7 +1554,11 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   return (
     <div className="center event">
       <h2>{def.name}</h2>
-      <p className="prose" data-inspect={`scan:${def.prose}`}>{def.prose}</p>
+      <p className="prose" data-inspect={`scan:${stage.prose}`}>{stage.prose}</p>
+      {/* S11.4: the POT — visible while the wager deepens */}
+      {deepened && ev.chosen === null && (ev.pot?.length ?? 0) > 0 && (
+        <p className="muted pot">In the pot: {stub(ev.pot!)}</p>
+      )}
       {def.crossed && (
         <p className="crossed">
           Crossed choice: <b style={{ color: PCOLOR[ev.chooser] }}>{state.players[ev.chooser].character}</b> decides
@@ -1555,10 +1568,15 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       )}
       {ev.chosen === null ? (
         youChoose ? (
-          def.options.map((o) => (
-            <button key={o.id} className="big" data-gp="META" data-inspect={`scan:${o.label}`}
+          options.map((o) => (
+            <button key={o.id} className="big event-option" data-gp="META" data-inspect={`scan:${o.label}`}
               onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id })}>
               {o.label}
+              {/* S11.4 effect stub: generated from the effects array, never
+                  hand-authored; secret riders are not ops, so omission IS
+                  the secrecy (R6) */}
+              {stub(o.effects) && <span className="stub"> — {stub(o.effects)}</span>}
+              {o.next && <span className="stub"> …it goes deeper</span>}
             </button>
           ))
         ) : (
@@ -1567,6 +1585,8 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       ) : (
         <>
           <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
+          {/* S11.4 delta line: exactly what changed, generated */}
+          {ev.deltaLine && <p className="delta" data-inspect="scan:delta">Δ {ev.deltaLine}</p>}
           <Log log={state.log} state={state} />
           {owedYou ? (
             <BirthRiteTrio state={state} net={net} />

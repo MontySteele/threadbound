@@ -1,9 +1,10 @@
 // S11 Wave A — snarl escalation (S11.2) and the bound witness + tapestry
 // dedup rung 0 (S11.3).
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { GameState } from '../src/types';
-import { initialState, reduce } from '../src/reducer';
+import { eventOptionAvailable, initialState, reduce } from '../src/reducer';
+import { EVENTS } from '../src/content/registry';
 import { escalationFactor, startCombat } from '../src/combat';
 import { ENCOUNTERS, ENCOUNTER_POOLS } from '../src/content/encounters';
 import { FRAGMENTS, rollTruth, serveBoundWitness, serveFragments } from '../src/content/truth';
@@ -97,5 +98,92 @@ describe('S11.3 bound witness + tapestry dedup rung 0', () => {
     const allPinned = actors.map((f) => f.id);
     const { a } = serveFragments(eventId, tuple, 7, allPinned);
     expect(a).toBeTruthy();
+  });
+});
+
+describe('S11.4 event grammar v2', () => {
+  const DEEP: import('../src/types').EventDef = {
+    id: 'test_deep', name: 'The Test Door', act: 0, crossed: false,
+    prose: 'A door. It hums.',
+    options: [
+      {
+        id: 'walk', label: 'Walk away', resultText: 'You keep your hands.', witness: 'Sensible.',
+        effects: [{ op: 'gold', amount: 5 }],
+      },
+      {
+        id: 'press', label: 'Press on', resultText: '', witness: 'Oh, do.',
+        effects: [{ op: 'gold', amount: 10 }],
+        next: {
+          prose: 'Deeper. The hum has teeth.',
+          options: [
+            {
+              id: 'leave', label: 'Leave with the pot', resultText: 'You leave, heavier.', witness: 'Hm.',
+              effects: [],
+            },
+            {
+              id: 'deeper', label: 'The desperate door', resultText: 'It takes and gives.', witness: 'There it is.',
+              effects: [{ op: 'loseHp', amount: 4 }, { op: 'gainCard', pool: 'uncommon' }],
+              requires: { hpAtMost: 30 },
+            },
+            {
+              id: 'codex_door', label: 'Speak the proven name', resultText: 'The door knows you know.', witness: 'Clever.',
+              effects: [{ op: 'gainRelic' }],
+              requires: { codexProven: 'a_peal' },
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  function eventState(codexProven?: string[]): GameState {
+    const s0 = initialState(3, { p1: 'vess', p2: 'bram' });
+    const s = reduce(s0, { type: 'START_RUN', seed: 3, ...(codexProven ? { codexProven } : {}) });
+    (EVENTS as Record<string, typeof DEEP>)[DEEP.id] = DEEP;
+    s.phase = 'event';
+    s.event = { eventId: DEEP.id, chooser: 'p1', subject: 'p1', chosen: null };
+    return s;
+  }
+  afterEach(() => { delete (EVENTS as Record<string, unknown>)['test_deep']; });
+
+  it('press-on carries the pot, deepens the stage, and the delta line lands at the end', () => {
+    let s = eventState();
+    const goldBefore = s.gold;
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'press' });
+    expect(s.event!.chosen).toBeNull(); // not over — it deepened
+    expect(s.event!.stagePath).toEqual(['press']);
+    expect(s.event!.pot).toEqual([{ op: 'gold', amount: 10 }]);
+    expect(s.gold).toBe(goldBefore + 10); // effects land as you go
+    s = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'leave' });
+    expect(s.event!.chosen).toBe('leave');
+    expect(s.event!.deltaLine).toBe('+10 gold');
+  });
+
+  it('state-keyed options gate at the reducer: the desperate door needs low HP', () => {
+    const s = eventState();
+    let deep = reduce(s, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'press' });
+    expect(() => reduce(deep, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'deeper' })).toThrow();
+    deep.players.p1.hp = 20;
+    deep = reduce(deep, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'deeper' });
+    expect(deep.event!.chosen).toBe('deeper');
+    expect(deep.event!.deltaLine).toContain('−4 HP');
+    expect(deep.event!.deltaLine).toContain('uncommon card');
+  });
+
+  it('codex-keyed doors: proven answers open them; nothing else does', () => {
+    const closed = reduce(eventState(), { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'press' });
+    expect(eventOptionAvailable(closed, 'p1', DEEP.options[1].next!.options[2])).toBe(false);
+    const open = reduce(eventState(['a_peal']), { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'press' });
+    expect(eventOptionAvailable(open, 'p1', DEEP.options[1].next!.options[2])).toBe(true);
+    expect(() => reduce(open, { type: 'EVENT_CHOOSE', player: 'p1', optionId: 'codex_door' })).not.toThrow();
+  });
+
+  it('flag-off parity: no shipped event carries stages or keys yet (rng untouched by construction)', () => {
+    for (const e of Object.values(EVENTS)) {
+      for (const o of e.options) {
+        expect(o.next, `${e.id}/${o.id}`).toBeUndefined();
+        expect(o.requires, `${e.id}/${o.id}`).toBeUndefined();
+      }
+    }
   });
 });

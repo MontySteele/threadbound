@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { applyGrowth, effectiveDef } from '../src/combat';
+import { ANSWERS_BY_ID } from '../src/content/questions';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, eventsForAct } from '../src/content/registry';
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from '../src/content/cards';
 import { POWERS } from '../src/content/powers';
@@ -335,6 +336,33 @@ describe('relics (M2-B2)', () => {
     expect(knife!.id).toBe('wedding_knife');
     const ids = new Set(ALL_RELICS.map((r) => r.id));
     expect(ids.size).toBe(28);
+  });
+});
+
+describe('S11.4 event grammar covenant', () => {
+  it('stage depth never exceeds 3; every stage has options; requires reference real content', () => {
+    const walk = (opts: import('../src/types').EventOptionDef[], depth: number, where: string): void => {
+      expect(depth, `${where}: stage depth > 3`).toBeLessThanOrEqual(3);
+      for (const o of opts) {
+        if (o.requires?.codexProven) {
+          expect(ANSWERS_BY_ID[o.requires.codexProven], `${where}/${o.id}: unknown answer`).toBeTruthy();
+        }
+        if (o.next) {
+          expect(o.next.options.length, `${where}/${o.id}: empty stage`).toBeGreaterThan(0);
+          walk(o.next.options, depth + 1, `${where}/${o.id}`);
+        }
+      }
+    };
+    for (const e of Object.values(EVENTS)) walk(e.options, 1, e.id);
+  });
+
+  it('high-stakes events per act stay within [1,3] once any exist (armed by content)', () => {
+    const hs = Object.values(EVENTS).filter((e) => e.highStakes);
+    for (const act of [1, 2] as const) {
+      const n = hs.filter((e) => e.act === act || e.act === 0).length;
+      if (hs.length > 0) expect(n, `act ${act}`).toBeGreaterThanOrEqual(1);
+      expect(n, `act ${act}`).toBeLessThanOrEqual(3);
+    }
   });
 });
 

@@ -4,7 +4,8 @@
 // Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardDef, CardInstance, CharacterId, EnemyIntent, GameState, GoldSource, IllegalAction,
+  Action, CardDef, CardInstance, CharacterId, EnemyIntent, EventDef, EventEffectOp,
+  EventOptionDef, EventStageDef, GameState, GoldSource, IllegalAction,
   MapNode, PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
@@ -181,6 +182,10 @@ function apply(state: GameState, action: Action): void {
       {
         const codexPct = Math.max(0, Math.min(100, Math.floor(action.codexPct ?? 0)));
         if (codexPct > 0) state.codexPct = codexPct;
+        // S11.4 flywheel hook: proven answers open codex-keyed event doors
+        if (action.codexProven && action.codexProven.length > 0) {
+          state.codexProven = [...action.codexProven];
+        }
       }
       const gen = generateActMap(
         state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
@@ -509,13 +514,28 @@ function apply(state: GameState, action: Action): void {
       assert(ev.chosen === null, 'already chosen');
       assert(action.player === ev.chooser, 'this choice is not yours to make');
       const def = EVENTS[ev.eventId];
-      const opt = def.options.find((o) => o.id === action.optionId);
+      // S11.4: the choice addresses the CURRENT stage (existing events are
+      // 1-stage; stagePath stays absent and nothing changes for them)
+      const stage = eventStageAt(def, ev.stagePath ?? []);
+      const opt = stage.options.find((o) => o.id === action.optionId);
       assert(opt, 'no such option');
-      ev.chosen = opt.id;
-      ev.resultText = opt.resultText;
+      assert(eventOptionAvailable(state, ev.subject, opt), 'that door is not open to you');
       const subject = state.players[ev.subject];
       for (const eff of opt.effects) applyEventEffect(state, subject, eff);
+      if (opt.effects.length > 0) {
+        (ev.pot ??= []).push(...opt.effects.filter((e) => e.op !== 'nothing'));
+      }
       state.log.push({ e: 'witness', line: opt.witness });
+      if (opt.next) {
+        // press on: the event deepens; the pot stays visible; nobody has
+        // "chosen" until a terminal option ends it (max 3 stages, CI-held)
+        (ev.stagePath ??= []).push(opt.id);
+        return;
+      }
+      ev.chosen = opt.id;
+      ev.resultText = opt.resultText;
+      // the delta line: exactly what changed, generated from applied ops
+      ev.deltaLine = eventDeltaLine(ev.pot ?? opt.effects);
       // S2.1: a crossed choice the bot made FOR the human gets its own gloat
       if (state.botSeat && def.crossed && action.player === state.botSeat) {
         sayWitness(state, 'crossed_choice_made');
@@ -932,6 +952,69 @@ function resolveLoomVerdict(state: GameState): void {
     truth.reveals.openingIntent = true;
     // S8.2: the completion boon requires ALL FOUR questions named true
     state.log.push({ e: 'info', detail: 'All four named true. The loom shows you the first moment of the last fight.' });
+  }
+}
+
+/** S11.4: the stage an event currently stands at, derived by walking the
+ *  chosen-option path (backward-compatible: existing events are the single
+ *  stage at path []). */
+export function eventStageAt(def: EventDef, stagePath: readonly string[] = []): EventStageDef {
+  let stage: EventStageDef = { prose: def.prose, options: def.options };
+  for (const optId of stagePath) {
+    const opt = stage.options.find((o) => o.id === optId);
+    if (!opt?.next) break; // malformed path degrades to the last valid stage
+    stage = opt.next;
+  }
+  return stage;
+}
+
+/** S11.4: is a state-keyed option open? Every clause of `requires` must
+ *  hold; optionless events pass trivially. Shared by the reducer's assert
+ *  and the client's render (unmet options never render — R6). */
+export function eventOptionAvailable(state: GameState, subjectId: PlayerId, opt: EventOptionDef): boolean {
+  const req = opt.requires;
+  if (!req) return true;
+  const subject = state.players[subjectId];
+  if (req.thread !== undefined && state.thread < req.thread) return false;
+  if (req.gold !== undefined && state.gold < req.gold) return false;
+  if (req.hpAtMost !== undefined && subject.hp > req.hpAtMost) return false;
+  if (req.hpAtLeast !== undefined && subject.hp < req.hpAtLeast) return false;
+  if (req.tagCount !== undefined) {
+    const n = subject.deck.filter((c) => CARDS[c.defId]?.tag === req.tagCount!.tag).length;
+    if (n < req.tagCount.n) return false;
+  }
+  if (req.character !== undefined
+    && state.players.p1.character !== req.character
+    && state.players.p2.character !== req.character) return false;
+  if (req.codexProven !== undefined && !(state.codexProven ?? []).includes(req.codexProven)) return false;
+  return true;
+}
+
+/** S11.4 delta line: one generated sentence of what changed, from the ops
+ *  that were APPLIED (pot + final stage). Secret riders are not ops, so
+ *  bundle secrecy holds by omission (R6). */
+export function eventDeltaLine(effects: readonly EventEffectOp[]): string {
+  const parts = effects.map(eventEffectClause).filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : 'Nothing changed hands.';
+}
+
+/** S11.4 effect stubs: the same generator renders option-button stubs
+ *  ("-2 HP · +10 gold") — never hand-authored. */
+export function eventEffectClause(eff: EventEffectOp): string {
+  switch (eff.op) {
+    case 'heal': return `+${eff.amount} HP`;
+    case 'loseHp': return `−${eff.amount} HP`;
+    case 'maxHp': return `${eff.amount >= 0 ? '+' : '−'}${Math.abs(eff.amount)} max HP`;
+    case 'gainCard': return `gain a ${eff.pool} card`;
+    case 'gainRelic': return 'gain a relic';
+    case 'gold': return `${eff.amount >= 0 ? '+' : '−'}${Math.abs(eff.amount)} gold`;
+    case 'covetCharge': return `+${eff.amount} Covet`;
+    case 'pendingFray': return 'Fray at the next fight';
+    case 'thread': return `+${eff.amount} Thread at the next fight`;
+    case 'upgradeRandom': return 'a card upgrades';
+    case 'removeRandomStarter': return 'a starter card removed';
+    case 'fragments': return 'threads for the Tapestries';
+    case 'nothing': return '';
   }
 }
 
