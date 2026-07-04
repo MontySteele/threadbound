@@ -723,12 +723,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
 
   // Rares (mutations omitted — Echoing a rare delivers it unmutated, M2-B1)
-  gravebloom: {
-    upgrade: {
-      text: 'Apply 4 Hex to ALL enemies. Link (Partner’s card): apply 4 more to the target and 1 Weak to all.',
-      link: { condition: 'partner', text: 'Link (Partner’s card): apply 4 more to the target and 1 Weak to all.', effects: [{ op: 'hex', amount: 4 }, { op: 'weakAll', amount: 1 }] },
-    },
-  },
+  // S13.2: gravebloom's overlay retired — the revised engine (cards.ts)
+  // carries its own cost-cut upgrade, the power-card convention.
   final_word: {
     upgrade: {
       text: 'Detonate all Hexes on ALL enemies, then deal damage to the target equal to the stacks detonated. Link (Hex): equal to 2× the stacks instead.',

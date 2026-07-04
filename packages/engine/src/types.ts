@@ -78,7 +78,12 @@ export type HookEvent =
   | 'fray'
   | 'covet'
   | 'linkFired' // one of the holder's cards fired its link
-  | 'reclaim'; // S8.1 (Dowry-Bound): the holder Reclaimed a partner's card
+  | 'reclaim' // S8.1 (Dowry-Bound): the holder Reclaimed a partner's card
+  // S13.2 rare-engine events (new keys match no pre-S13 content, so every
+  // existing baseline holds by construction):
+  | 'partnerLinkFired' // the PARTNER's card fired its link (cross-seat engines)
+  | 'chainClose' // the resolved Chain's LAST card was the holder's
+  | 'threadSpend'; // a declared Thread action spent from the shared pool (both seats' hooks run)
 
 export type HookOp =
   | { op: 'block'; amount: number }
