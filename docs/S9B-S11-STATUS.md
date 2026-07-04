@@ -40,8 +40,8 @@ throughout.
   constructor the reducer builds the echo from (preview cannot drift).
 - **S9b.2** upgrade-parity covenant gate: restatement check + number lint
   (prose numerals AND link-line text understood). Exemption list burned
-  down to ONE entry: **thornward** — a 19th restatement upgrade the
-  S9b.3 table missed (OQ#49, proposed row awaits ruling).
+  down to EMPTY: **thornward** — the 19th restatement the S9b.3 table
+  missed — landed 2026-07-04 with the OQ#49-ruled row.
 - **S9b.3** all 18 rows as signed, incl. Pummel 4×4=16 (S9b.0-2), Pale
   Unmaking cost 2→1 (S9b.0-3), and row 7 per **S9d.A1** (Quiet Mending
   exhausts; upgrade = 6 Block, link heal 3 + partner heals 2).
@@ -149,7 +149,8 @@ never kills — M2-A3 holds engine-wide).
 | 4 | The Drowned Hymnal (A2) | retrieve → **dive for the spine** → (wring it out / leave with pages) | −5 HP + pendingFray → relic-or-HP-chunk (−12 HP total) | −12 HP + Fray at next fight — survivable, scary | hpAtLeast 20 gates the dive (the desperate can't) |
 
 High-stakes flags land on rows 3 and 4 (one per act, inside the [1,3]
-CI bound). Authoring starts on your strike/amend of this table.
+CI bound). **RULED (2026-07-04): all four rows approved as proposed** —
+authoring proceeds this session.
 
 ## Remaining (next session)
 
@@ -162,11 +163,14 @@ CI bound). Authoring starts on your strike/amend of this table.
 5. Witness-string designer read (S9c gate 4 / S11.3 pool) before any
    public build.
 
-## Open designer rows (quick strike list)
+## Open designer rows — ALL RULED (2026-07-04, same day)
 
-1. Thornward upgrade row (OQ#49).
-2. S9d rates: retune stands / amend (sign-off row 1).
-3. Escalation ladder: hold ×1 + calibrate with S11.9 (recommended) /
-   steepen now (sign-off row 2).
-4. S11.5 table above.
-5. Votive tier shape (S9d.0-4) — stands unless re-shaped.
+1. Thornward upgrade row (OQ#49): **proposed row accepted** — landed,
+   exemption list empty.
+2. S9d rates (sign-off row 1): **retune RATIFIED** (+7 read accepted as
+   band-edge).
+3. Escalation ladder (sign-off row 2): **hold ×1**; the ≥2× calibration
+   gate stays OPEN and moves to the S11.9 work queue.
+4. S11.5 table: **approved, all four rows as proposed** — authoring
+   proceeds; high-stakes flags on Broken Carillon + Drowned Hymnal.
+5. Votive tier shape (S9d.0-4): **stands** (default taken).

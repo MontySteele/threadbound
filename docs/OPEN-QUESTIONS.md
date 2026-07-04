@@ -583,7 +583,8 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     the covenant exemption list (loud, burn-down-checked). Proposed row for
     ruling, M2-B6 discipline (link deepened, non-Hex rider, no new Hex
     amounts): *Link: apply 2 Hex to ALL enemies and gain 3 Block.*
-    **OPEN — blocks the "exemption list empty" reading of S9b gate 1.**
+    **RULED (2026-07-04): proposed row accepted as written.** Landed with a
+    pinning test; exemption list now EMPTY — S9b gate 1 reads clean.
 
 50. **D8 → Branch A fired (T1): run length in band.** Baseline banked; the
     re-centering commit stays unspent. Filed per the S9b.4 paperwork rule.
@@ -616,7 +617,9 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     Pyre-Brand 4→6, Mourner's 10→15) — the signed table read vb +8 /
     vv +11 vs post-S9c, outside the ±6 gate; retuned reads +7/+6/+4.
     Original rows in docs/threadbound_sprint_S9d.md §S9d.1; evidence in
-    docs/S9B-S11-STATUS.md. **OPEN — sign-off row (S9d.0-1).**
+    docs/S9B-S11-STATUS.md. **RULED (2026-07-04): retune RATIFIED**
+    (vb's +7 read accepted as band-edge, pooled with escalation landing).
+    Votive's tier shape (S9d.0-4) stands by the same ruling's default.
 
 55. **S11.2 escalation calibration gate UNMET at ladder ×1** (last/first
     pair-HP ratio 1.07–1.27 vs the ≥2 gate). Recommendation: hold ×1 and
@@ -625,8 +628,10 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     price-blind bots measures the wrong thing). PROBE DATA: a clean
     TB_ELITE_ESCALATION=2 battery (ladder 20/60/120, vb A0 ×200) reads
     ratio ~1.32–1.60 pooled ~1.44 — even doubling falls short of 2×,
-    confirming the bottleneck is structural, not a constant. **OPEN —
-    designer (S11.11-2).**
+    confirming the bottleneck is structural, not a constant.
+    **RULED (2026-07-04): hold ladder ×1; the ≥2× calibration gate stays
+    OPEN, to be calibrated together with S11.9 bot knot-pricing.** The
+    open item moves to the S11.9 work queue, not this list.
 
 56. **Battery environment offset**: this container reads the recorded
     S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
