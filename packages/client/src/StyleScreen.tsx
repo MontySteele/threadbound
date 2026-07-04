@@ -135,8 +135,8 @@ export function StyleScreen(): JSX.Element {
       {/* S13.4 rare legibility rider — the Gate B screenshot row. A rare
           must READ as rare before its text is read: doubled gilt frame,
           gilded name, spark mark. The vestment's lavender still wins on
-          rite cards (a vestment is a vestment first). PROVISIONAL until
-          the sign-off screenshot gate closes. */}
+          rite cards (a vestment is a vestment first). SIGNED OFF
+          2026-07-04 (Gate B screenshot approved). */}
       <h3>S13.4 rare legibility — common · uncommon · rare engine · rare spike · vestment</h3>
       <div className="hand">
         <Card def={CARDS.needlework} />

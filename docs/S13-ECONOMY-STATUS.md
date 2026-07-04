@@ -28,14 +28,17 @@ TB_BOT_SEEK_EVENTS=1, A0, 100-run legs (4 × 25-run shards, seeds 1000+).
 | S13.3 | `2234a30` | Pick-with-removal (D4: option A — act-2+ screens): taking a card opens a free once-per-screen STARTER removal. Starters only; no gold interaction; v2 bots use it, v1 ignores it. Pinning tests per gate 1. |
 | S13.4 | `115f7ec` | Rare legibility rider: gilt funerary frame (Gate B row on /?style, screenshot with this hand-off) + the Witness names each rare on first pick (26 authored lines, PROVISIONAL — D5). Forced golden regen (naming consumes rng) — loud, in-commit. |
 
-## Sign-off rows (returning per D2/D3/D5 — numbers PROVISIONAL)
+## Sign-off rows — ALL RATIFIED (designer, 2026-07-04 follow-up)
 
-The six-rare verdict table (D2) implemented as ruled; the four new-rare
-briefs (D3) implemented as full designs. Every engine is an exhaust
-power, capped oncePerTurn, value riding pair state (dilution-resistant
-by construction — the design law of the pass):
+All three returning rows closed: the six rare designs' numbers ("look
+fine"), the 26 Witness naming lines (witness read passed), and the
+rare frame treatment (Gate B screenshot: "frames look good"). Source
+headers updated (witness-s13.ts, StyleScreen.tsx). Every engine is an
+exhaust power, capped oncePerTurn, value riding pair state
+(dilution-resistant by construction — the design law of the pass).
+The table stands as the shipped design record:
 
-| Card | Seat | Design as implemented | Numbers to ratify |
+| Card | Seat | Design as implemented | Numbers (ratified) |
 |---|---|---|---|
 | gravebloom (REVISE) | V | Power: first partner link-fire each turn → 2 Hex to ALL. Cost 2; + = cost 1. | 2 Hex, cost 2/1 |
 | call_and_answer (REVISE) | B | Power: first partner link-fire each turn → Kindled 1 + draw 1. Cost 1; + = cost 0. | K1/D1, cost 1/0 |
@@ -44,9 +47,7 @@ by construction — the design law of the pass):
 | bellmetal (NEW — Resonance amplifier) | B | Power: Resonance ignition → +3 Momentum, draw 1. Cost 2; + = cost 1. | M3/D1, cost 2/1 |
 | stokers_due (NEW — Thread-spend payoff) | B | Power: first pool spend each turn → +2 Momentum, +3 Block (either seat's spend). Cost 2; + = cost 1. | M2/B3, cost 2/1 |
 
-Also open for sign-off: the 26 Witness rare-naming lines
-(witness-s13.ts, PROVISIONAL until the witness read — D5) and the rare
-frame treatment (Gate B screenshot — PROVISIONAL to designer taste).
+Nothing in the S13 content set remains provisional.
 
 Rarity odds (60/30/10) NOT touched, per the packet — the reserve lever
 if gate 3 misses.

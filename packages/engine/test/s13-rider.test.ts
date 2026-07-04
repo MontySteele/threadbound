@@ -1,7 +1,7 @@
 // S13.4 rare legibility rider (D5): the Witness NAMES a rare on first pick.
 // Machinery: S9c D9-C existence-naming on the acquisition trigger — one
 // authored line per draftable rare, single-line pools, no-repeat-within-run
-// as the once-per-run fence. Lines PROVISIONAL until the witness read.
+// as the once-per-run fence. Lines RATIFIED (witness read 2026-07-04).
 
 import { describe, expect, it } from 'vitest';
 import { WITNESS_POOLS } from '../src/witness-draw';
