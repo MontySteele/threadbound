@@ -17,7 +17,7 @@ import { CHAR_NAME } from './chars';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
-import { Sigil, CharacterSigil } from './sigils';
+import { CharacterMark, Mark, MarkDefs } from './sigils';
 import { InspectPanel, inspectElement, previewInspect } from './Tooltip';
 import { ThreadCord } from './ThreadCord';
 import { ResolutionTheater, isResolution, displayHp } from './Theater';
@@ -225,6 +225,7 @@ export default function App(): JSX.Element {
 
   return (
     <>
+      <MarkDefs />
       <div id="fx-overlay" />
       <VersionFooter />
       {needConsent && <ConsentCard net={net} onDone={() => consentTick((n) => n + 1)} />}
@@ -447,13 +448,13 @@ function TitleCord({ left, right }: {
   return (
     <div className="title-cord">
       <div className={`title-frame ${left ? 'filled' : ''}`}>
-        {left ? <CharacterSigil who={left} size={84} /> : <span className="title-empty">?</span>}
+        {left ? <CharacterMark who={left} size={84} /> : <span className="title-empty">?</span>}
       </div>
       <svg width="220" height="56" viewBox="0 0 220 56" aria-hidden>
         <path className={`cord-line ${left && right ? '' : 'cord-dim'}`} d="M 0 20 Q 110 52 220 20" fill="none" />
       </svg>
       <div className={`title-frame ${right ? 'filled' : ''}`}>
-        {right ? <CharacterSigil who={right} size={84} /> : <span className="title-empty">?</span>}
+        {right ? <CharacterMark who={right} size={84} /> : <span className="title-empty">?</span>}
       </div>
     </div>
   );
@@ -1072,7 +1073,7 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
               style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : 'var(--line)', animationDelay: `${(i * 0.7) % 2}s` }}
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
-              <Sigil id={e.defId} size={sigilSize} aura={def.elite || def.boss} className="enemy-sigil" />
+              <Mark id={e.defId} tier={def.boss ? 'boss' : def.elite ? 'elite' : 'normal'} act={def.act} size={sigilSize} className="enemy-sigil" />
               <div className="ename">{enemyName(combat, e.id)}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar">
                 <div className="hpfill" style={{ width: `${curPct}%` }} />

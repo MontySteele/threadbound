@@ -1,13 +1,75 @@
-// B0 — style sample screen (/?style): card, tooltip, enemy frame, and gauge
-// states side by side. The designer's cheapest veto point before asset work.
+// B0/B6 — style sample screen (/?style). S12: rebuilt as the B6 review
+// instrument for the sigil vocabulary v2 (the adoption surface for sign-off
+// gate 2): archetype row, tier row, act row, then the full registry set at
+// combat-representative sizes — the LOD tiers must be reviewable HERE, not
+// discovered in combat. The original B0 samples (cards, glyphs, gauge,
+// tooltip) remain below; still the designer's cheapest veto point.
 
 import React from 'react';
-import { CARDS, ENEMIES } from '@threadbound/engine';
+import { CARDS, ENEMIES, EnemyDef } from '@threadbound/engine';
 import { Card } from './App';
 import { GLYPH } from './keywords';
-import { Sigil, CharacterSigil } from './sigils';
+import { CharacterMark, Mark, MarkDefs, Tier } from './sigils';
 import { ThreadCord } from './ThreadCord';
 import { resolveInspect } from './Tooltip';
+
+const tierOf = (def: EnemyDef): Tier => (def.boss ? 'boss' : def.elite ? 'elite' : 'normal');
+
+/** Axis 1 exemplars — one per silhouette family (mirrors the reference doc). */
+const ARCH_EXAMPLES: Array<{ id: string; act: 1 | 2 | 3; label: string }> = [
+  { id: 'sexton', act: 1, label: 'figure — the interred' },
+  { id: 'tallow_wisp', act: 1, label: 'flame — votive fire' },
+  { id: 'bell_husk', act: 2, label: 'bell — the Choir' },
+  { id: 'thread_leech', act: 1, label: 'crawler — parasites' },
+  { id: 'votive_throng', act: 1, label: 'swarm — the many' },
+  { id: 'the_unraveled', act: 3, label: 'frayed — coming apart' },
+  { id: 'character_witness', act: 1, label: 'eye — the Witness' },
+];
+
+// 'minion' exists in the grammar but has no data source yet (S13+) — excluded.
+const TIERS: Tier[] = ['normal', 'elite', 'boss', 'character'];
+
+const ACT_LABEL: Record<number, string> = {
+  1: 'Act 1 — the Undercroft', 2: 'Act 2 — the Hollow Choir', 3: 'Act 3 — the Last Braid',
+};
+
+function MarkCell({ label, tier, children }: { label: string; tier?: string; children: React.ReactNode }): JSX.Element {
+  return (
+    <div className="mark-cell">
+      {children}
+      <div className="mark-label">{label}</div>
+      {tier && <div className={`mark-tier ${tier}`}>{tier}</div>}
+    </div>
+  );
+}
+
+/** The full registry set (grouped by act) plus the characters, at one size. */
+function FullSetRow({ size }: { size: number }): JSX.Element {
+  const byAct: Record<number, Array<[string, EnemyDef]>> = { 1: [], 2: [], 3: [] };
+  for (const [id, def] of Object.entries(ENEMIES)) byAct[def.act].push([id, def]);
+  return (
+    <>
+      {[1, 2, 3].map((act) => (
+        <div key={act}>
+          <h4 className="mark-group">{ACT_LABEL[act]} <span className="muted">({size}px)</span></h4>
+          <div className="mark-grid">
+            {byAct[act].map(([id, def]) => (
+              <MarkCell key={id} label={def.name} tier={tierOf(def)}>
+                <Mark id={id} tier={tierOf(def)} act={def.act} size={size} />
+              </MarkCell>
+            ))}
+          </div>
+        </div>
+      ))}
+      <h4 className="mark-group">The bound pair, and the one who watches <span className="muted">({size}px)</span></h4>
+      <div className="mark-grid">
+        <MarkCell label="Vess" tier="character"><CharacterMark who="vess" size={size} /></MarkCell>
+        <MarkCell label="Bram" tier="character"><CharacterMark who="bram" size={size} /></MarkCell>
+        <MarkCell label="The Witness" tier="character"><CharacterMark who="witness" size={size} /></MarkCell>
+      </div>
+    </>
+  );
+}
 
 export function StyleScreen(): JSX.Element {
   const sample = resolveInspect('card:rendcall');
@@ -16,7 +78,41 @@ export function StyleScreen(): JSX.Element {
   const mutable = Object.values(CARDS).find((c) => c.mutation);
   return (
     <div className="app style-screen">
+      <MarkDefs />
       <header><span className="title">THREADBOUND — STYLE SAMPLE</span><span className="muted">/?style</span></header>
+
+      <h3>Sigil vocabulary v2 — Axis 1: archetypes <span className="muted">(silhouette families)</span></h3>
+      <div className="mark-grid">
+        {ARCH_EXAMPLES.map((a) => (
+          <MarkCell key={a.id} label={a.label}>
+            {a.id === 'character_witness'
+              ? <CharacterMark who="witness" size={96} />
+              : <Mark id={a.id} tier="normal" act={a.act} size={96} />}
+          </MarkCell>
+        ))}
+      </div>
+
+      <h3>Axis 2: tier dress <span className="muted">(same entity, every rank — characters alone wear the unbroken ring)</span></h3>
+      <div className="mark-grid">
+        {TIERS.map((t) => (
+          <MarkCell key={t} label={t}>
+            <Mark id="sexton" tier={t} act={1} size={96} />
+          </MarkCell>
+        ))}
+      </div>
+
+      <h3>Axis 3: act <span className="muted">(same entity — accent pool and frame-tick construction shift per act)</span></h3>
+      <div className="mark-grid">
+        {([1, 2, 3] as const).map((a) => (
+          <MarkCell key={a} label={`act ${a}`}>
+            <Mark id="gravewax_husk" tier="normal" act={a} size={96} />
+          </MarkCell>
+        ))}
+      </div>
+
+      <h3>The full set at combat sizes <span className="muted">(64px = full LOD tier boundary review, 40px = smallest LOD)</span></h3>
+      <FullSetRow size={64} />
+      <FullSetRow size={40} />
 
       <h3>Cards</h3>
       <div className="hand">
@@ -41,13 +137,13 @@ export function StyleScreen(): JSX.Element {
         {Object.entries(GLYPH).map(([k, g]) => <span key={k}><b>{g}</b> {k}</span>)}
       </div>
 
-      <h3>Enemy frames & sigils <span className="muted">(boss scale; Unraveled fraying mid-sever)</span></h3>
+      <h3>Enemy frames & marks <span className="muted">(combat chrome; Unraveled fraying mid-sever)</span></h3>
       <div className="enemies">
         {['cinder_husk', 'mourner', 'the_unraveled', 'chorister_mid'].map((id, i) => {
           const def = ENEMIES[id];
           return (
             <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`} style={{ borderColor: i % 2 ? 'var(--p2)' : 'var(--p1)' }}>
-              <Sigil id={id} size={def.boss ? 104 : def.elite ? 82 : 64} aura={def.elite || def.boss} className="enemy-sigil" />
+              <Mark id={id} tier={tierOf(def)} act={def.act} size={def.boss ? 104 : def.elite ? 82 : 64} className="enemy-sigil" />
               <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar"><div className="hpfill" style={{ width: '62%' }} /></div>
               <div>26/42 <span className="chipblock">🛡6</span></div>
@@ -78,7 +174,7 @@ export function StyleScreen(): JSX.Element {
 
       <h3>Character marks</h3>
       <div className="home-sigils">
-        <CharacterSigil who="vess" size={84} /><CharacterSigil who="witness" size={56} /><CharacterSigil who="bram" size={84} />
+        <CharacterMark who="vess" size={84} /><CharacterMark who="witness" size={56} /><CharacterMark who="bram" size={84} />
       </div>
 
       <h3>Voice</h3>

@@ -3,7 +3,7 @@
 // fray snap-shake, slack (Fallen) drop, severed cut, resonance fire.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { CharacterSigil } from './sigils';
+import { CharacterMark } from './sigils';
 
 export type CordMode = 'normal' | 'slack' | 'severed';
 
@@ -45,7 +45,7 @@ export function ThreadCord({ value, max, mode, left, right, compact }: {
 
   return (
     <div className={`cord ${mode} ${compact ? 'compact' : ''} ${fx ? `fx-${fx}` : ''}`} data-inspect="thread" data-gp="THREAD">
-      {!compact && <div className="cord-portrait"><CharacterSigil who={left} size={56} /></div>}
+      {!compact && <div className="cord-portrait"><CharacterMark who={left} size={56} /></div>}
       <div className="cord-mid">
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
           {mode === 'severed' ? (
@@ -75,7 +75,7 @@ export function ThreadCord({ value, max, mode, left, right, compact }: {
         {mode === 'slack' && <div className="cord-state-label">SLACK — your partner has fallen</div>}
         {mode === 'severed' && <div className="cord-state-label">SEVERED</div>}
       </div>
-      {!compact && <div className="cord-portrait"><CharacterSigil who={right} size={56} /></div>}
+      {!compact && <div className="cord-portrait"><CharacterMark who={right} size={56} /></div>}
     </div>
   );
 }
