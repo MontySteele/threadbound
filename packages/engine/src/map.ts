@@ -4,7 +4,7 @@
 import { MapNode, MapState } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { ENCOUNTER_POOLS } from './content/encounters';
-import { MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
+import { ALL_RELICS, MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
 import { distinctApproaches } from './map-composition';
 
 // S7.5: acts 1–2 widened L6→L7, event share 22%→32% (combat absorbs the
@@ -421,6 +421,24 @@ export function generateActMap(
       }
     }
     if (!dirty) break;
+  }
+
+  // S11.6 scouting: pin each knot's carried relic from a DERIVED stream —
+  // seeded off the entry rng VALUE but never consuming the live one ("no
+  // rng impact", §3c). Flagged runs only: unflagged nodes keep their exact
+  // shape (hash/golden covenant). Distinct pins within an act; the reducer
+  // prefers the pin at victory only while it is still unowned.
+  if (tracks || riteCharacters.length > 0) {
+    let sRng = (rngState ^ 0x53c007e5 ^ Math.imul(act, 0x9e3779b9)) >>> 0;
+    const pinned = new Set<string>();
+    for (const n of nodes) {
+      if (n.kind !== 'elite') continue;
+      const pool = ALL_RELICS.filter((r) => !pinned.has(r.id));
+      const roll = rngInt(sRng, pool.length);
+      sRng = roll.state;
+      n.scoutRelicId = pool[roll.value].id;
+      pinned.add(n.scoutRelicId);
+    }
   }
 
   // boss layer

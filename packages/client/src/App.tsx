@@ -877,6 +877,11 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id }); }}
             >
               {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
+              {/* S11.6 asymmetric scouting: YOUR seat's face for this node —
+                  the partner sees their own (or nothing). Say it out loud. */}
+              {!cleared && state.scout?.[n.id] && (
+                <span className="map-scout">{state.scout[n.id]}</span>
+              )}
               {(myPick || theirPick) && (
                 <span className="pick-tags">
                   {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}

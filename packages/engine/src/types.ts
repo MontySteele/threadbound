@@ -597,6 +597,11 @@ export interface MapNode {
   lane: number;
   encounterId?: string;
   eventId?: string;
+  /** S11.6 scouting: the relic this knot carries, pinned at generation from
+   *  a DERIVED stream (the live rng is never consumed). Flagged runs only —
+   *  absent on unflagged maps, so their shape/hash/goldens are untouched.
+   *  Victory rolls exactly as before and prefers the pin while unowned. */
+  scoutRelicId?: string;
 }
 
 export interface MapState {

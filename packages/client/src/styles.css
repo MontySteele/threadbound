@@ -89,6 +89,14 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
+/* S11.6 asymmetric scouting: your seat's face for a node — a whispered
+   sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
+   you"). Italic + dim: it reads as knowledge, not as the node's name. */
+.map-scout {
+  display: block; font-size: 10.5px; font-style: italic; line-height: 1.25;
+  color: color-mix(in srgb, var(--thread) 70%, var(--text));
+  max-width: 150px; margin-top: 2px;
+}
 
 /* ---- enemies (B5) ---- */
 .enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }

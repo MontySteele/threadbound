@@ -10,7 +10,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, CONTENT_VERSION, GameState, IllegalAction, PlayerId,
   PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE, RiteUnlocks,
-  clientTruthView, emptyTelemetry, initialState, reduce, hashState,
+  clientTruthView, emptyTelemetry, initialState, reduce, hashState, scoutView,
 } from '@threadbound/engine';
 import { buildSha } from './build';
 import { BotSpeed, SoloBotDriver } from './solo';
@@ -696,7 +696,15 @@ export class GameServer {
       clone.rng = 0;
     }
     const truth = clone.truth ? clientTruthView(clone.truth, viewer, clone.botSeat) : undefined;
-    return { ...clone, ...(truth ? { truth } : {}), counts, you: viewer };
+    // S11.6 asymmetric scouting: per-seat node faces, rendered HERE so the
+    // text never crosses screens (ruling 5) — each seat's lines ride only
+    // that seat's view. Empty (and absent) on unflagged runs.
+    const scout = scoutView(state, viewer);
+    return {
+      ...clone, ...(truth ? { truth } : {}),
+      ...(Object.keys(scout).length > 0 ? { scout } : {}),
+      counts, you: viewer,
+    };
   }
 
   private send(socket: WebSocket | null, msg: unknown): void {

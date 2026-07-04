@@ -25,6 +25,9 @@ export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // deliberately NOT re-exported; only the reducer touches it.
 export { clientTruthView } from './truth-view';
 export type { ClientTruthView, ClientShrineView, TruthStub } from './truth-view';
+// S11.6 asymmetric scouting: per-seat node faces, rendered server-side at
+// projection time (text never crosses screens — ruling 5)
+export { scoutView } from './scout';
 export { QUESTIONS, ANSWERS, QUESTIONS_BY_ID, ANSWERS_BY_ID, answersFor } from './content/questions';
 export {
   CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, LOCKED_CARDS, eventsForAct,

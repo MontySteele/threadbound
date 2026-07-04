@@ -1436,10 +1436,19 @@ function afterResolution(state: GameState): void {
       }
       const r = randomUnownedRelic(state);
       if (r) {
+        // S11.6: the scouted pin is the truth ("the cards never lie" applies
+        // to node faces too). The roll above is KEPT for byte-identical rng
+        // consumption; its value is used when the pin is absent (unflagged,
+        // boss nodes) or already owned by then (bought since — the one
+        // honest staleness, rare and fallback-covered).
+        const pin = node.kind === 'elite' && (state.tracks || state.rites) ? node.scoutRelicId : undefined;
+        const pinFree = pin !== undefined
+          && !state.players.p1.relics.includes(pin) && !state.players.p2.relics.includes(pin);
+        const granted = pinFree ? pin : r;
         const ownerRoll = rngInt(state.rng, 2);
         state.rng = ownerRoll.state;
-        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', r);
-        relic = r;
+        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', granted);
+        relic = granted;
       }
     }
 
