@@ -132,6 +132,20 @@ export function StyleScreen(): JSX.Element {
         {mutable && <Card def={mutable} small echo mutated />}
       </div>
 
+      {/* S13.4 rare legibility rider — the Gate B screenshot row. A rare
+          must READ as rare before its text is read: doubled gilt frame,
+          gilded name, spark mark. The vestment's lavender still wins on
+          rite cards (a vestment is a vestment first). PROVISIONAL until
+          the sign-off screenshot gate closes. */}
+      <h3>S13.4 rare legibility — common · uncommon · rare engine · rare spike · vestment</h3>
+      <div className="hand">
+        <Card def={CARDS.needlework} />
+        {uncommon && <Card def={uncommon} />}
+        <Card def={CARDS.unbroken_line} />
+        <Card def={CARDS.avalanche} />
+        <Card def={CARDS.rite_shroud} />
+      </div>
+
       <h3>Status glyph set — same marks on cards, intents, status bars</h3>
       <div className="statuses glyph-row">
         {Object.entries(GLYPH).map(([k, g]) => <span key={k}><b>{g}</b> {k}</span>)}

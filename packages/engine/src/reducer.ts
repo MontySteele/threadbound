@@ -964,6 +964,14 @@ function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
   p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
   economyCount(state, state.telemetry.economy.deckAddsByAct, pid); // S13.1c
+  // S13.4 (D5): the Witness NAMES a rare the first time it joins a deck —
+  // any channel; single-line pool + no-repeat = once per run. Vestments are
+  // named at first DRAW instead (S9c.2) and are riteOnly-excluded here.
+  // Lines PROVISIONAL until the witness read. (This is a deliberate rng
+  // consumer on rare acquisition — golden regen was forced, loudly.)
+  if (CARDS[defId].rarity === 'rare' && !CARDS[defId].riteOnly) {
+    sayWitness(state, `rare_first_pick_${defId}`);
+  }
 }
 
 function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
