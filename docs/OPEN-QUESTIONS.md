@@ -572,3 +572,40 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     plays from a fresh profile, else the host codex pulls the quiet/high
     registers (possibly the sacrament quote) into a first-timer's first
     run.
+
+## S9b sprint (2026-07-04, playtest response)
+
+49. **Thornward: the 19th restatement upgrade.** The S9b.2 parity gate's
+    seeding scan found 19 upgrades deep-equal to their base, not the 18
+    the S9b.3 table covers — thornward (V, C, 1: Gain 6 Block; Link (Hex):
+    apply 2 Hex to ALL) was missed by the doc's count. Per
+    enumerate→propose→sign-off it was NOT rewritten here; it sits alone on
+    the covenant exemption list (loud, burn-down-checked). Proposed row for
+    ruling, M2-B6 discipline (link deepened, non-Hex rider, no new Hex
+    amounts): *Link: apply 2 Hex to ALL enemies and gain 3 Block.*
+    **OPEN — blocks the "exemption list empty" reading of S9b gate 1.**
+
+50. **D8 → Branch A fired (T1): run length in band.** Baseline banked; the
+    re-centering commit stays unspent. Filed per the S9b.4 paperwork rule.
+    **CLOSED (fired branch, recorded).**
+
+51. **D5 → Branch A signal at T1** (cross-player Reclaims occur and are
+    articulated: "0-cost cards to start new links"). OQ#38 closes at T2 per
+    the tier gate, not before. Re-read after S9b.1-3 (the reclaim list now
+    shows arrival costs) in case cost-invisibility was steering target
+    selection toward "mostly 0-cost cards". **SIGNAL LOGGED — T2 closes.**
+
+52. **D9/D10 classification pending designer** (rite impact: duds vs
+    concept; birth-rite read: stall vs intrigue vs no-registration). The
+    fired EXECUTE joins the next sprint. NOTE: S9c pre-spends the likely
+    verdicts (D9-C identity frame + first-draw naming = D9 Branch C's
+    EXECUTE; D10-B pick line = D10 Branch B's EXECUTE) — if the designer
+    classification lands differently, S9c's presentation commits already
+    cover the stronger branch. **OPEN — designer.**
+
+53. **Linked Shields vs Immovable dominance evidence** filed to the §7
+    guard-suite item: 7/6 vs 12/8 at equal cost; the niche (Guard
+    self-trigger vs partner cross-play) exists but is illegible/underpriced.
+    No action in S9b. S9d.A2 adds Immovable's partnerHeal 3 link to the
+    same telemetry watch (same verb as Quiet Mending's A1 ritual, on the
+    card the playtest already called strictly-better). **WATCH.**
