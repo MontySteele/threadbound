@@ -16,7 +16,7 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
-import { applyGrowth, computeResonanceSlots } from './combat';
+import { applyGrowth, computeResonanceSlots, escalationFactor } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -151,6 +151,11 @@ export class BotPolicy {
         if (view.map.picks[you] === null) {
           const options = this.pickable(view);
           if (options.length > 0) {
+            // S11.9 strand routing: braid maps ONLY — the non-braid policy
+            // below is byte-identical, so every Wave A baseline holds
+            if (view.knotwork && view.map.nodes.some((n) => n.strand)) {
+              return { type: 'NODE_PICK', player: you, nodeId: this.pickBraidNode(view, options) };
+            }
             // S7.7 TB_BOT_SEEK_EVENTS (sim-only): reachable EVENT nodes win;
             // among events, lowest id — both seats still agree instantly
             if (this.seekEvents) {
@@ -620,6 +625,61 @@ export class BotPolicy {
     }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;
+  }
+
+  /** S11.9 (Wave B): strand routing on braid maps. A pick is valued by its
+   *  best-path summed node utility through the act — a deterministic DP
+   *  over the DAG. Knot pricing: the elite's own utility pays the S11.3
+   *  reward table MINUS the escalation ladder's current price, while the
+   *  crossing's value rides the DP naturally (a knot's forward max spans
+   *  BOTH strands; a bypass sees only its own). Seat-symmetric inputs and
+   *  a lowest-id tie-break: both seats name the same node instantly, so
+   *  the NODE_PICK vote never thrashes. Non-braid maps never reach this —
+   *  every Wave A baseline holds byte-identically. */
+  private pickBraidNode(view: BotView, options: number[]): number {
+    const byId = new Map(view.map.nodes.map((n) => [n.id, n]));
+    // seat-SYMMETRIC on purpose: both seats must compute identical values
+    const worstHp = Math.min(
+      view.players.p1.hp / view.players.p1.maxHp,
+      view.players.p2.hp / view.players.p2.maxHp,
+    );
+    const cut = view.map.knotsCut ?? 0;
+    const kindValue = (n: { kind: string }): number => {
+      switch (n.kind) {
+        case 'event': return this.seekEvents ? 3 : 1.25;
+        case 'shop': return view.gold >= 150 ? 1.5 : 0.75;
+        case 'treasure': return 1.5;
+        case 'rest': return worstHp < 0.5 ? 2 : 1;
+        // the knot: gold + relic + bound witness + the crossing, priced by
+        // the ladder (+10/+30/+60 → the third knot this act is near-free
+        // to skip). First-pass constants; the ladder gate recalibrates
+        // against THIS policy (OQ#55's ruling: calibrate them together).
+        case 'elite': return 3 - escalationFactor(cut) * 5;
+        case 'combat': return 0.5;
+        default: return 0;
+      }
+    };
+    const memo = new Map<number, number>();
+    const best = (id: number): number => {
+      const seen = memo.get(id);
+      if (seen !== undefined) return seen;
+      const n = byId.get(id)!;
+      memo.set(id, 0); // DAG — the guard only protects against bad data
+      const forward = n.edges.length > 0 ? Math.max(...n.edges.map(best)) : 0;
+      const v = kindValue(n) + forward;
+      memo.set(id, v);
+      return v;
+    };
+    let bestId = options[0];
+    let bestVal = -Infinity;
+    for (const id of [...options].sort((a, b) => a - b)) {
+      const v = best(id);
+      if (v > bestVal + 1e-9) {
+        bestVal = v;
+        bestId = id;
+      }
+    }
+    return bestId;
   }
 
   /** S11.7 covet cache: vote the relic (both seats agree instantly by the
