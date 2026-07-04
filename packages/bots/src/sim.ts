@@ -321,6 +321,19 @@ async function main(): Promise<void> {
       .join(', ');
     console.log(`S9d mean realized growth/pick: ${growthLine || 'none'}`);
   }
+  // S11.3 fragment-supply readout (D2 instruments): distinct eliminations
+  // and bound-witness fragments per flagged run
+  const truthRuns = results.filter((r) => r.telemetry.truth);
+  if (truthRuns.length > 0) {
+    const mean = (f: (t: NonNullable<RunResult['telemetry']['truth']>) => number): string =>
+      (truthRuns.reduce((a, r) => a + f(r.telemetry.truth!), 0) / truthRuns.length).toFixed(2);
+    console.log(
+      `S11.3 fragment supply: distinct eliminations/run ${mean((t) => t.distinctEliminations ?? 0)}, ` +
+      `bound-witness fragments/run ${mean((t) => t.boundWitnessFragments ?? 0)}, ` +
+      `fragments/run ${mean((t) => t.fragmentsByPlayer.p1 + t.fragmentsByPlayer.p2)}`,
+    );
+  }
+
   // S11.2 calibration gate: pair HP cost per elite fight, keyed by kill
   // order — the act's LAST-killed knot must cost >=2x its first-killed.
   const byOrder: Record<number, { hp: number; n: number }> = {};

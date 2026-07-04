@@ -25,6 +25,15 @@ export const S9C_WITNESS: Record<string, string[]> = {
     'It wants naming. That part, at least, is yours to do.',
   ],
 
+  // S11.3 — the bound witness: an elite kill pays a guaranteed fragment
+  // (combat paying narrative). Register: the collector at work. PROVISIONAL.
+  bound_witness: [
+    'Hold still. I am reading what it was.',
+    'Every snarl is a record of what snagged. This one kept accounts.',
+    'It fought like something with a story. I have taken the story.',
+    'The Machine unpicks the dead. I merely take notes.',
+  ],
+
   // S9c.2 — existence-naming on the rite card's first draw of the run:
   // what it is, never what it's for. One line per card; the single-line
   // pool + no-repeat-within-run machinery IS the once-per-run fence.

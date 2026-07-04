@@ -325,22 +325,63 @@ for (const f of FRAGMENTS) {
   FRAGMENTS_BY_ID[f.id] = f;
 }
 
+/** S11.3 tapestry dedup rung 0: the answers a set of pinned fragments has
+ *  already eliminated. */
+function pinnedEliminations(pinnedFragmentIds: readonly string[]): Set<string> {
+  const out = new Set<string>();
+  for (const id of pinnedFragmentIds) {
+    for (const a of FRAGMENTS_BY_ID[id]?.eliminates ?? []) out.add(a);
+  }
+  return out;
+}
+
+/** S11.3: prefer variants whose elimination is NEW to both boards; fall
+ *  back to duplicates only when the fresh pool is exhausted. */
+function preferFresh(variants: FragmentDef[], pinned: Set<string>): FragmentDef[] {
+  const fresh = variants.filter((f) => f.eliminates.some((a) => !pinned.has(a)));
+  return fresh.length > 0 ? fresh : variants;
+}
+
 /** Serve a clue event's two fragments: for each channel, pick (seeded) among
  *  the variants consistent with the rolled truth — a served fragment never
- *  eliminates a true answer. Null when an event has no slot on that channel. */
+ *  eliminates a true answer. Null when an event has no slot on that channel.
+ *  S11.3 (dedup rung 0): variants whose elimination is not already pinned to
+ *  either board are preferred; duplicates only when exhausted. One rngInt
+ *  per channel regardless — consumption is unchanged. */
 export function serveFragments(
   eventId: string, tuple: Record<string, string>, rng: number,
+  pinnedFragmentIds: readonly string[] = [],
 ): { a: FragmentDef | null; b: FragmentDef | null; state: number } {
   let s = rng;
+  const pinned = pinnedEliminations(pinnedFragmentIds);
   const pick = (channel: 'actor' | 'partner'): FragmentDef | null => {
     const variants = FRAGMENTS.filter(
       (f) => f.eventId === eventId && f.channel === channel
         && !f.eliminates.includes(tuple[f.bearsOn]),
     );
     if (variants.length === 0) return null;
-    const r = rngInt(s, variants.length);
+    const pool = preferFresh(variants, pinned);
+    const r = rngInt(s, pool.length);
     s = r.state;
-    return variants[r.value];
+    // the second channel's pick counts the first channel's elimination
+    for (const a of pool[r.value].eliminates) pinned.add(a);
+    return pool[r.value];
   };
   return { a: pick('actor'), b: pick('partner'), state: s };
+}
+
+/** S11.3 bound witness: elites pay a guaranteed fragment on kill — combat
+ *  paying narrative, on-lore (the Witness reads what the enemy was). Serves
+ *  through the same variant machinery: truth-consistent, dedup-preferred,
+ *  one seeded pick from the WHOLE fragment pool. */
+export function serveBoundWitness(
+  tuple: Record<string, string>, rng: number, pinnedFragmentIds: readonly string[] = [],
+): { fragment: FragmentDef | null; state: number } {
+  const consistent = FRAGMENTS.filter((f) => !f.eliminates.includes(tuple[f.bearsOn]));
+  if (consistent.length === 0) return { fragment: null, state: rng };
+  // never serve the exact fragment twice (the dedup ladder's rung below 0)
+  const unseen = consistent.filter((f) => !pinnedFragmentIds.includes(f.id));
+  const pool = preferFresh(unseen.length > 0 ? unseen : consistent, pinnedEliminations(pinnedFragmentIds));
+  const r = rngInt(rng, pool.length);
+  return { fragment: pool[r.value], state: r.state };
 }

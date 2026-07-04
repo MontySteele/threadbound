@@ -876,6 +876,9 @@ export interface Telemetry {
     clueEventsOffered: number;
     clueEventsTaken: number;
     fragmentsByPlayer: Record<PlayerId, number>;
+    /** S11.3 fragment-supply keys (the stranger cohort's D2 instruments) */
+    boundWitnessFragments?: number;
+    distinctEliminations?: number;
     /** T-key opens per act — is the board used? (client-reported) */
     boardOpensByAct: Record<number, number>;
     /** sheet-edit churn at the shrine (talk proxy) */

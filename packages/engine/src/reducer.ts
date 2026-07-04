@@ -16,7 +16,7 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
-import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
+import { FRAGMENTS_BY_ID, rollTruth, serveBoundWitness, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
 import { RITES_BY_ID, unlockedRites } from './content/rites';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
@@ -1006,7 +1006,10 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       // elimination mapping stays inside content/truth.ts (§11 extension).
       if (!state.truth || !state.event) break;
       const actor = state.event.subject;
-      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng);
+      // S11.3 dedup rung 0: both boards' pins steer the pick toward fresh
+      // eliminations (one supply ledger, moved once)
+      const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng, pinnedIds);
       state.rng = served.state;
       const pins: Array<[PlayerId, typeof served.a]> = [
         [actor, served.a],
@@ -1260,6 +1263,41 @@ function afterResolution(state: GameState): void {
         won: true,
       });
       state.map.knotsCut = (state.map.knotsCut ?? 0) + 1;
+      // S11.3 bound witness: the knot pays a guaranteed fragment — combat
+      // paying narrative, on-lore (the Witness reads what the enemy was).
+      // Flagged runs only (truth exists), served through the standard
+      // channel machinery with dedup rung 0.
+      if (state.truth) {
+        const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+        const served = serveBoundWitness(state.truth.tuple, state.rng, pinnedIds);
+        state.rng = served.state;
+        if (served.fragment) {
+          const ownerRoll = rngInt(state.rng, 2);
+          state.rng = ownerRoll.state;
+          const owner: PlayerId = ownerRoll.value === 0 ? 'p1' : 'p2';
+          state.truth.boards[owner].push({
+            fragmentId: served.fragment.id,
+            eventId: served.fragment.eventId,
+            act: state.map.act,
+            questionId: served.fragment.bearsOn,
+            text: served.fragment.text,
+          });
+          const tt = state.telemetry.truth;
+          if (tt) {
+            tt.fragmentsByPlayer[owner]++;
+            tt.boundWitnessFragments = (tt.boundWitnessFragments ?? 0) + 1;
+            const all = new Set<string>();
+            for (const pid of ['p1', 'p2'] as PlayerId[]) {
+              for (const b of state.truth.boards[pid]) {
+                for (const a of FRAGMENTS_BY_ID[b.fragmentId]?.eliminates ?? []) all.add(a);
+              }
+            }
+            tt.distinctEliminations = all.size;
+          }
+          state.log.push({ e: 'info', detail: 'The Witness reads what the enemy was — a thread pins to the Tapestry.' });
+          sayWitness(state, 'bound_witness');
+        }
+      }
     }
     if (node.kind === 'elite' || node.kind === 'boss') {
       for (const pid of ['p1', 'p2'] as PlayerId[]) {
