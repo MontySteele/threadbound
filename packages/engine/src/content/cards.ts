@@ -136,11 +136,16 @@ def({
 
 // Rares (3) — narrow 'partner' condition lives only here (§2.2).
 def({
+  // S13.2 (D2: REVISE — hex BODY → hex ENGINE): a rare must be
+  // dilution-resistant. The old 4-Hex-all body was a bigger Withering that
+  // rotted as the deck grew; the power echoes the PARTNER's link-fire —
+  // cross-seat, once per turn (the cap), covenant-clean (flat amount, no
+  // Hex growth). Numbers PROVISIONAL until the S13.2 sign-off row.
   id: 'gravebloom', name: 'Gravebloom', character: 'vess', rarity: 'rare', cost: 2, tag: 'Hex',
-  needsTarget: true,
-  text: 'Apply 4 Hex to ALL enemies.',
-  base: [{ op: 'hexAll', amount: 4, primary: true }],
-  link: { condition: 'partner', text: 'Link (Partner’s card): apply 4 more to the target.', effects: [{ op: 'hex', amount: 4 }] },
+  exhaust: true,
+  text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. Exhaust.',
+  base: [{ op: 'power', power: 'gravebloom' }],
+  upgrade: { cost: 1, text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. Exhaust.' },
 });
 def({
   id: 'final_word', name: 'Final Word', character: 'vess', rarity: 'rare', cost: 3, tag: 'Strike',
@@ -292,13 +297,16 @@ def({
   base: [{ op: 'power', power: 'wildfire_heart' }],
 });
 def({
+  // S13.2 (D2: REVISE — smooth utility → cross-seat engine): Draw-2 was a
+  // rare-framed common; the power answers the PARTNER's link-fire with
+  // tempo, once per turn (the cap). Kindled/draw amounts flat — the value
+  // scales with pair play, never with its own draw frequency. Numbers
+  // PROVISIONAL until the S13.2 sign-off row.
   id: 'call_and_answer', name: 'Call and Answer', character: 'bram', rarity: 'rare', cost: 1, tag: 'Surge',
-  text: 'Draw 2.',
-  base: [{ op: 'draw', amount: 2 }],
-  // M2-A2: link energy is meaningful again as Kindled.
-  // PT3: link.text is just the effect — the Card UI already prints the
-  // "Link (partner):" prefix, so embedding it here rendered the clause twice.
-  link: { condition: 'partner', text: 'Gain Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
+  exhaust: true,
+  text: 'Power: the first time your partner’s card fires a Link each turn, gain Kindled 1 and draw 1. Exhaust.',
+  base: [{ op: 'power', power: 'call_and_answer' }],
+  upgrade: { cost: 0, text: 'Power: the first time your partner’s card fires a Link each turn, gain Kindled 1 and draw 1. Exhaust.' },
 });
 
 // ---------------------------------------------------------------------------

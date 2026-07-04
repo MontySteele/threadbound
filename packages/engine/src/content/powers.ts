@@ -22,3 +22,14 @@ defPower({ id: 'loom_of_hours', name: 'Loom of Hours', hooks: [{ on: 'turnStart'
 defPower({ id: 'forgefire', name: 'Forgefire', hooks: [{ on: 'turnStart', effects: [{ op: 'kindled', amount: 1 }] }] });
 defPower({ id: 'eye_for_an_opening', name: 'Eye for an Opening', hooks: [{ on: 'linkFired', effects: [{ op: 'momentum', amount: 1 }] }] });
 defPower({ id: 'aftershock', name: 'Aftershock', hooks: [{ on: 'detonate', effects: [{ op: 'damageAll', amount: 3 }] }] });
+
+// S13.2 rare identity pass: every hook capped (oncePerTurn — the Worn
+// Knife/Saturate cap discipline, CI-enforced); no Hex-amount growth.
+// gravebloom / call_and_answer are the D2 REVISE rows; the other four are
+// the D3 new rares (s13-rares.ts). Numbers PROVISIONAL until sign-off.
+defPower({ id: 'gravebloom', name: 'Gravebloom', hooks: [{ on: 'partnerLinkFired', effects: [{ op: 'hexAll', amount: 2 }], oncePerTurn: true }] });
+defPower({ id: 'call_and_answer', name: 'Call and Answer', hooks: [{ on: 'partnerLinkFired', effects: [{ op: 'kindled', amount: 1 }, { op: 'draw', amount: 1 }], oncePerTurn: true }] });
+defPower({ id: 'selvage', name: 'Selvage', hooks: [{ on: 'chainClose', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }], oncePerTurn: true }] });
+defPower({ id: 'keepsake', name: 'Keepsake', hooks: [{ on: 'reclaim', effects: [{ op: 'thread', amount: 1 }, { op: 'draw', amount: 1 }], oncePerTurn: true }] });
+defPower({ id: 'bellmetal', name: 'Bellmetal', hooks: [{ on: 'resonance', effects: [{ op: 'momentum', amount: 3 }, { op: 'draw', amount: 1 }], oncePerTurn: true }] });
+defPower({ id: 'stokers_due', name: 'Stoker’s Due', hooks: [{ on: 'threadSpend', effects: [{ op: 'momentum', amount: 2 }, { op: 'block', amount: 3 }], oncePerTurn: true }] });

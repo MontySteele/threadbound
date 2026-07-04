@@ -7,6 +7,21 @@
 //   - link-fire rate: Act 1 ≥ 30%, Act 2 within 40–60%
 //   - no single tag > 50% of resonance-streak cards
 //   - Hex damage share (incl. HexScaling) 20–30%
+//
+// S13.1a — permanent sim knobs (the OQ#59 decomposition probes, kept). ALL
+// SIM-ONLY: no production surface reads them.
+//   TB_BOT_SKIP_PICKS=1  bots forgo all reward picks, covets, shop card buys
+//   TB_NO_RELICS=1       grantRelic no-ops; shops stock no relics (engine-side)
+//   TB_UPGRADE_ALL=1     start with every upgradeable starter upgraded (engine-side)
+//   TB_BOT_PICK_CAP=N    deck-SIZE ceiling: draft normally until deck.length >=
+//                        10 + N, then skip. Removals free slots back up — the
+//                        cap is intentionally the dilution variable, not a pick
+//                        counter. Covets and shop card buys share the gate.
+//                        The constant 10 is STARTER_DECK_SIZE (pinned by test).
+// S13.1b — TB_BOT_DRAFT_V2=1: draftScore v2 (powers/engines +4, rare +3, a
+// dilution term past deck 16). Default OFF this sprint (D7) so historical
+// batteries stay comparable; flips default-on in one loud re-anchor after its
+// first clean battery.
 
 process.env.PORT = process.env.PORT ?? '0';
 process.env.PERSIST = ''; // sims never persist rooms
@@ -43,6 +58,12 @@ const SEEK_EVENTS = process.env.TB_BOT_SEEK_EVENTS === '1';
 // S7.8 gate-5 sim accommodation: flagged batteries only — bots occasionally
 // Reclaim so engagement is measurable (S6.2 precedent; never in production)
 const RECLAIM_NUDGE = process.env.TB_RITES === '1';
+// S13.1a/b knobs (header above) — threaded into BotPolicy per seat
+const SKIP_PICKS = process.env.TB_BOT_SKIP_PICKS === '1';
+const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT_PICK_CAP !== ''
+  ? Math.max(0, Number(process.env.TB_BOT_PICK_CAP) || 0)
+  : undefined;
+const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 === '1';
 
 function port(): number {
   const addr = server.address();
@@ -52,9 +73,10 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE });
+  const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, draftV2: DRAFT_V2 };
+  const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
   await new Promise((r) => setTimeout(r, 150));
-  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE });
+  const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
   const timeout = new Promise<RunResult>((_, rej) =>
     setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
   );
@@ -80,6 +102,15 @@ async function main(): Promise<void> {
   // S3.1 run header: a batch is uninterpretable without the difficulty on record
   // S4.4: the rung joins the scales in the header — a batch is uninterpretable without both
   console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
+  // S13.1a/b: a batch is uninterpretable without its economy knobs on record
+  const knobLine = [
+    SKIP_PICKS ? 'SKIP_PICKS' : null,
+    PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
+    process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
+    process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
+    DRAFT_V2 ? 'DRAFT_V2' : null,
+  ].filter(Boolean).join(' ');
+  console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
 
   const results: RunResult[] = [];
   // Comfort pass: bounded-concurrency pool (TB_SIM_CONC, default 8). Each run
@@ -338,6 +369,31 @@ async function main(): Promise<void> {
       `S11.3 questions provable/run: confident ${mean((t) => t.questionsConfident ?? 0)}, ` +
       `narrowed gambles ${mean((t) => t.questionsNarrowed ?? 0)}`,
     );
+  }
+  // ---- S13.1c economy telemetry -----------------------------------------------
+  // Per-act pick take/skip rate per seat + per-act relic and deck growth —
+  // the per-act split closes the run-length confound the S12 brief flagged
+  // (winners see more screens; end-of-run counts conflate rate with length).
+  {
+    const acts = [...new Set(results.flatMap((r) => [
+      ...Object.keys(r.telemetry.economy?.picks ?? {}),
+      ...Object.keys(r.telemetry.economy?.relicsByAct ?? {}),
+      ...Object.keys(r.telemetry.economy?.deckAddsByAct ?? {}),
+    ]))].map(Number).sort((a, b) => a - b);
+    console.log('---------------- S13.1c ECONOMY (per act) ----------------');
+    for (const act of acts) {
+      const seat = (pid: PlayerId): string => {
+        const taken = sum((r) => r.telemetry.economy?.picks?.[act]?.[pid]?.taken ?? 0);
+        const skipped = sum((r) => r.telemetry.economy?.picks?.[act]?.[pid]?.skipped ?? 0);
+        const offers = taken + skipped;
+        const adds = sum((r) => r.telemetry.economy?.deckAddsByAct?.[act]?.[pid] ?? 0);
+        const removes = sum((r) => r.telemetry.economy?.deckRemovalsByAct?.[act]?.[pid] ?? 0);
+        return `${pid} take ${offers ? ((100 * taken) / offers).toFixed(0) : 'n/a'}% (${taken}/${offers})` +
+          ` deck +${(adds / n).toFixed(2)}/−${(removes / n).toFixed(2)}`;
+      };
+      const relics = sum((r) => r.telemetry.economy?.relicsByAct?.[act] ?? 0);
+      console.log(`  act ${act}: ${seat('p1')} | ${seat('p2')} | relics/run ${(relics / n).toFixed(2)}`);
+    }
   }
   // OQ#59 economy instruments: do wins ride relics or card growth? Split by
   // outcome so the winning build's shape is visible directly.

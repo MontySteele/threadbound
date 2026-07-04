@@ -78,7 +78,12 @@ export type HookEvent =
   | 'fray'
   | 'covet'
   | 'linkFired' // one of the holder's cards fired its link
-  | 'reclaim'; // S8.1 (Dowry-Bound): the holder Reclaimed a partner's card
+  | 'reclaim' // S8.1 (Dowry-Bound): the holder Reclaimed a partner's card
+  // S13.2 rare-engine events (new keys match no pre-S13 content, so every
+  // existing baseline holds by construction):
+  | 'partnerLinkFired' // the PARTNER's card fired its link (cross-seat engines)
+  | 'chainClose' // the resolved Chain's LAST card was the holder's
+  | 'threadSpend'; // a declared Thread action spent from the shared pool (both seats' hooks run)
 
 export type HookOp =
   | { op: 'block'; amount: number }
@@ -733,6 +738,15 @@ export interface RewardState {
   coveted: Record<PlayerId, string | 'pass' | null>;
   gold: number; // already collected; displayed
   relic?: string; // elite/treasure drop, auto-collected (alternates owners)
+  /** S13.3 pick-with-removal (D4: option A — act-2+ screens only): taking a
+   *  card on this screen opens a free, once-per-screen offer to remove one
+   *  STARTER from the taker's deck (starters only, so it cannot strip-mine
+   *  the picked engines; no gold interaction — the shop service stays the
+   *  paid, escalating, any-card version). Keys are created LAZILY per seat
+   *  at the moment a card is taken, so act-1 screens and pickless treasure
+   *  screens keep their exact pre-S13 state shape. null = offer open;
+   *  instanceId = the starter removed; 'pass' = declined. */
+  removals?: Partial<Record<PlayerId, string | 'pass' | null>>;
 }
 
 export interface EventPhaseState {
@@ -961,6 +975,22 @@ export interface Telemetry {
   /** S4.3 (OQ#27): discounted Pulses fired by the Ring — is the relic dead
    *  at human Pulse rates? */
   ringDiscountsFired: number;
+  /** S13.1c economy telemetry: per-act (NOT end-of-run — closes the
+   *  run-length confound the S12 brief flagged) card-reward take/skip per
+   *  seat, and per-act relic/deck growth. Observational only (never hashed). */
+  economy: {
+    /** reward-screen picks, per act per seat: taken (a card joined the deck)
+     *  vs skipped. Treasure screens pre-fill 'skip' without a choice and are
+     *  not counted — this reads DECISIONS. */
+    picks: Record<number, Record<PlayerId, { taken: number; skipped: number }>>;
+    /** relics granted per act (pair total) */
+    relicsByAct: Record<number, number>;
+    /** cards that joined a deck per act per seat — every channel (reward,
+     *  covet, shop, event) flows through one choke point */
+    deckAddsByAct: Record<number, Record<PlayerId, number>>;
+    /** cards removed per act per seat (shop service, events, S13.3 lever) */
+    deckRemovalsByAct: Record<number, Record<PlayerId, number>>;
+  };
   /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
    *  is judged on this). Present only on flagged runs. */
   truth?: {
@@ -1034,6 +1064,9 @@ export type Action =
   | { type: 'SET_READY'; player: PlayerId; ready: boolean }
   | { type: 'REWARD_PICK'; player: PlayerId; pick: string | 'skip' }
   | { type: 'COVET_PICK'; player: PlayerId; pick: string | 'pass' }
+  /** S13.3 pick-with-removal: spend this screen's open offer — remove one
+   *  STARTER (by instanceId) from your own deck, or 'pass' to keep them all */
+  | { type: 'REWARD_REMOVE'; player: PlayerId; pick: string | 'pass' }
   | { type: 'EVENT_CHOOSE'; player: PlayerId; optionId: string }
   | { type: 'REST_CHOOSE'; player: PlayerId; option: RestOption }
   // S11.7 pacing-node variants (flagged maps only)

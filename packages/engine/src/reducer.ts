@@ -38,12 +38,25 @@ const startGold = (): number => {
   return 100;
 };
 
+/** S13.1a SIM-ONLY knobs (permanent probe flags; documented in sim.ts's
+ *  header). No production surface sets these — the envScale/startGold
+ *  pattern keeps the pure engine safe on envless hosts (browser).
+ *  TB_NO_RELICS=1: grantRelic no-ops and shops stock no relics (the relic
+ *  decomposition leg). TB_UPGRADE_ALL=1: every upgradeable starter begins
+ *  upgraded (the dilution-free-quality leg). */
+const noRelics = (): boolean =>
+  typeof process !== 'undefined' && !!process.env && process.env.TB_NO_RELICS === '1';
+const upgradeAll = (): boolean =>
+  typeof process !== 'undefined' && !!process.env && process.env.TB_UPGRADE_ALL === '1';
+
 export function initialState(seed: number, characters: Record<PlayerId, CharacterId>, botSeat?: PlayerId): GameState {
   const mkPlayer = (id: PlayerId): PlayerState => {
     const character = characters[id];
     const deck: CardInstance[] = STARTER_DECKS[character].map((defId, i) => ({
       instanceId: `${id}_${defId}_${i}`,
       defId,
+      // S13.1a TB_UPGRADE_ALL (sim-only): the dilution-free-quality probe
+      ...(upgradeAll() && CARDS[defId].upgrade ? { upgraded: true } : {}),
     }));
     return {
       id, character,
@@ -112,7 +125,22 @@ export function emptyTelemetry(): Telemetry {
     removalsByPlayer: { p1: 0, p2: 0 },
     goldResidual: 0,
     ringDiscountsFired: 0,
+    economy: { picks: {}, relicsByAct: {}, deckAddsByAct: {}, deckRemovalsByAct: {} },
   };
+}
+
+/** S13.1c: per-act per-seat economy cells, created on first touch so the
+ *  telemetry shape stays sparse (observational — never hashed). */
+function economyPicksFor(state: GameState, pid: PlayerId): { taken: number; skipped: number } {
+  const act = state.map.act;
+  const byAct = (state.telemetry.economy.picks[act] ??= {} as Record<PlayerId, { taken: number; skipped: number }>);
+  return (byAct[pid] ??= { taken: 0, skipped: 0 });
+}
+
+function economyCount(state: GameState, table: Record<number, Record<PlayerId, number>>, pid: PlayerId): void {
+  const act = state.map.act;
+  const byAct = (table[act] ??= {} as Record<PlayerId, number>);
+  byAct[pid] = (byAct[pid] ?? 0) + 1;
 }
 
 /** S4.2 (OQ#8): a player's next removal price — 75 + 25 × removals THEY have
@@ -442,8 +470,12 @@ function apply(state: GameState, action: Action): void {
       if (action.pick !== 'skip') {
         assert(reward.sets[action.player].includes(action.pick), 'not in your reward set');
         addCardToDeck(state, action.player, action.pick);
+        offerPickRemoval(state, action.player); // S13.3: taking a card opens the offer
       }
       reward.picked[action.player] = action.pick;
+      // S13.1c: the take/skip DECISION, per act per seat
+      const cell = economyPicksFor(state, action.player);
+      if (action.pick === 'skip') cell.skipped++; else cell.taken++;
       return;
     }
 
@@ -461,10 +493,31 @@ function apply(state: GameState, action: Action): void {
         p.covetCharges--;
         state.telemetry.covetsSpent[action.player]++;
         addCardToDeck(state, action.player, action.pick);
+        offerPickRemoval(state, action.player); // S13.3: a covet is a take too
         sayWitness(state, state.botSeat ? 'covet_solo' : 'covet_pick');
         runHooks(state, action.player, 'covet');
       }
       reward.coveted[action.player] = action.pick;
+      return;
+    }
+
+    case 'REWARD_REMOVE': {
+      // S13.3 pick-with-removal (D4-A). The offer exists only where a card
+      // was TAKEN on an act-2+ reward screen (offerPickRemoval); this action
+      // spends it — free, starters only, once per screen per taker.
+      assert(state.phase === 'reward' && state.reward, 'not in reward');
+      const reward = state.reward!;
+      assert(reward.removals && reward.removals[action.player] === null, 'no removal is owed to you here');
+      if (action.pick !== 'pass') {
+        const p = state.players[action.player];
+        const idx = p.deck.findIndex((c) => c.instanceId === action.pick);
+        assert(idx >= 0, 'no such card in your deck');
+        assert(CARDS[p.deck[idx].defId].starterOnly, 'only a STARTER may unravel here');
+        const [removed] = p.deck.splice(idx, 1);
+        economyCount(state, state.telemetry.economy.deckRemovalsByAct, action.player); // S13.1c
+        state.log.push({ e: 'info', detail: `${p.character} lets ${CARDS[removed.defId].name} unravel — the new thread takes its place.` });
+      }
+      reward.removals![action.player] = action.pick;
       return;
     }
 
@@ -772,6 +825,7 @@ function apply(state: GameState, action: Action): void {
       const [removed] = p.deck.splice(idx, 1);
       state.removalsByPlayer[action.player]++;
       state.telemetry.removalsByPlayer[action.player]++;
+      economyCount(state, state.telemetry.economy.deckRemovalsByAct, action.player); // S13.1c
       spendGold(state, action.player, price, 'removals');
       state.log.push({ e: 'info', detail: `${p.character} pays ${price}g to forget ${CARDS[removed.defId].name}. Next cut: ${removalPrice(state, action.player)}g.` });
       // §14.13 tone budget: one line for the 4th+ cut (no-repeat pool of one)
@@ -891,17 +945,42 @@ function currentNode(state: GameState): MapNode | undefined {
   return state.map.nodes.find((n) => n.id === state.map.position);
 }
 
+/** S13.3 (D4: option A): taking a card on an act-2+ reward screen opens the
+ *  seat's free starter-removal offer — exactly where the tail begins; act 1
+ *  keeps its steep, simple picks. Lazy key creation keeps act-1 and pickless
+ *  (treasure) reward states byte-identical to pre-S13 shape. Once per
+ *  screen: an existing key (open, spent, or passed) is never re-offered. */
+function offerPickRemoval(state: GameState, pid: PlayerId): void {
+  if (state.map.act < 2) return;
+  const reward = state.reward;
+  if (!reward) return;
+  const removals = (reward.removals ??= {});
+  if (!(pid in removals)) removals[pid] = null;
+}
+
 function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   const p = state.players[pid];
   assert(CARDS[defId], 'unknown card');
   assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
   p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
+  economyCount(state, state.telemetry.economy.deckAddsByAct, pid); // S13.1c
+  // S13.4 (D5): the Witness NAMES a rare the first time it joins a deck —
+  // any channel; single-line pool + no-repeat = once per run. Vestments are
+  // named at first DRAW instead (S9c.2) and are riteOnly-excluded here.
+  // Lines PROVISIONAL until the witness read. (This is a deliberate rng
+  // consumer on rare acquisition — golden regen was forced, loudly.)
+  if (CARDS[defId].rarity === 'rare' && !CARDS[defId].riteOnly) {
+    sayWitness(state, `rare_first_pick_${defId}`);
+  }
 }
 
 function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
+  if (noRelics()) return; // S13.1a TB_NO_RELICS (sim-only decomposition leg)
   const p = state.players[pid];
   if (p.relics.includes(relicId)) return;
   p.relics.push(relicId);
+  const eco = state.telemetry.economy; // S13.1c: per-act relic growth
+  eco.relicsByAct[state.map.act] = (eco.relicsByAct[state.map.act] ?? 0) + 1;
   state.log.push({ e: 'relic', player: pid, relic: relicId });
   const def = RELICS_BY_ID[relicId];
   for (const eff of def?.onPickup ?? []) {
@@ -1193,6 +1272,7 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       state.rng = r.state;
       const removed = starters[r.value];
       subject.deck.splice(subject.deck.findIndex((c) => c.instanceId === removed.instanceId), 1);
+      economyCount(state, state.telemetry.economy.deckRemovalsByAct, subject.id); // S13.1c
       state.log.push({ e: 'info', detail: `${CARDS[removed.defId].name} unravels and is gone.` });
       break;
     }
@@ -1683,12 +1763,15 @@ export function generateShop(state: GameState) {
       });
     }
   }
+  // S13.1a TB_NO_RELICS (sim-only): shops stock no relics on the probe leg
   const stocked = new Set<string>();
-  for (let i = 0; i < 2; i++) {
-    const relic = randomUnownedRelic(state, stocked);
-    if (relic) {
-      stocked.add(relic);
-      items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+  if (!noRelics()) {
+    for (let i = 0; i < 2; i++) {
+      const relic = randomUnownedRelic(state, stocked);
+      if (relic) {
+        stocked.add(relic);
+        items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+      }
     }
   }
   // S4.2: the removal service never sells out — one always-present row per

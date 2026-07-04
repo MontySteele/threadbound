@@ -20,7 +20,15 @@ export class SoloBotDriver {
     private getSpeed: () => BotSpeed,
     private submit: (action: Action) => void,
   ) {
-    this.policy = new BotPolicy({ mode: 'solo' });
+    // S13.1b surface note (on record): BotPolicy is shared with the sim
+    // fleet, so TB_BOT_DRAFT_V2 governs the solo partner's drafting too.
+    // Default OFF this sprint (D7) — the flag protects the public build
+    // until v2 has a clean battery behind it; the default flip is a
+    // decision made in one loud re-anchor, not a side effect.
+    this.policy = new BotPolicy({
+      mode: 'solo',
+      draftV2: process.env.TB_BOT_DRAFT_V2 === '1',
+    });
     // safety net: re-decide if a broadcast was missed or an action bounced
     this.watchdog = setInterval(() => {
       if (!this.pending && this.lastView) this.schedule(this.lastView);

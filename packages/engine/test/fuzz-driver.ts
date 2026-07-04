@@ -91,6 +91,15 @@ export function randomAction(state: GameState, die: Die): Action | null {
       if (r.coveted[pid] === null && r.picked[partner] !== null && r.sets[partner].length > 0 && die.chance(0.4)) {
         return { type: 'COVET_PICK', player: pid, pick: die.chance(0.5) ? 'pass' : die.pick(r.sets[partner]) };
       }
+      // S13.3 pick-with-removal: spend the open offer with a random deck card
+      // (often a NON-starter — the guard must throw) or pass
+      if (r.removals?.[pid] === null && die.chance(0.6)) {
+        const deck = state.players[pid].deck;
+        return {
+          type: 'REWARD_REMOVE', player: pid,
+          pick: die.chance(0.3) || deck.length === 0 ? 'pass' : die.pick(deck).instanceId,
+        };
+      }
       return { type: 'ADVANCE', player: pid };
     }
     case 'event': {

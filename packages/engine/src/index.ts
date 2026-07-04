@@ -1,7 +1,7 @@
 // S6.1 build identity: human telemetry is pooled across patches — every
 // telemetry file, feedback record, and client footer carries this manual
 // content tag alongside the injected buildSha. Bump when content changes.
-export const CONTENT_VERSION = 's10a';
+export const CONTENT_VERSION = 's13';
 
 export * from './types';
 export * from './rng';
@@ -39,5 +39,5 @@ export { RITES, RITES_BY_ID, RITE_CARDS, ritesFor, unlockedRites } from './conte
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';
 export { WITNESS_POOLS, poolLines, witnessPoolLines } from './witness-draw';
 export type { WitnessPool, WitnessRegister, RegisteredPool } from './witness-draw';
-export { BotPolicy } from './bot-policy';
+export { BotPolicy, STARTER_DECK_SIZE } from './bot-policy';
 export type { BotView, BotPolicyOptions } from './bot-policy';

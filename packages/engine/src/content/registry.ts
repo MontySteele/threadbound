@@ -8,6 +8,7 @@ import { ENEMIES as M1_ENEMIES } from './enemies';
 import { EVENTS as M1_EVENTS } from './events';
 import { VESS_M2_CARDS, VESS_M1_OVERLAYS } from './vess-m2';
 import { BRAM_M2_CARDS, BRAM_M1_OVERLAYS } from './bram-m2';
+import { VESS_S13_RARES, BRAM_S13_RARES } from './s13-rares';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
 import { S10_ENEMIES } from './s10-enemies';
@@ -20,7 +21,9 @@ import { WRONG_WAY_EVENTS } from './wrong-way';
 
 // S8.1: rite vestment cards — registered for play/lookup, excluded from
 // every draft pool via the riteOnly flag (starter-only machinery)
-for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...NEUTRAL_CARDS, ...RITE_CARDS]) {
+// S13.2: the rare identity pass adds +2 rares per character (D3) — the
+// per-character pool grows 55 → 57 (25C/20U/12R), pinned in covenant.test.ts
+for (const card of [...VESS_M2_CARDS, ...BRAM_M2_CARDS, ...VESS_S13_RARES, ...BRAM_S13_RARES, ...NEUTRAL_CARDS, ...RITE_CARDS]) {
   if (CARDS[card.id]) throw new Error(`duplicate card id ${card.id}`);
   CARDS[card.id] = card;
 }

@@ -46,7 +46,29 @@ export interface BotPolicyOptions {
    *  batteries only — occasionally Reclaim from the partner's piles so the
    *  engagement gate is measurable. NEVER set in production/solo. */
   reclaimNudge?: boolean;
+  /** S13.1a SIM-ONLY (TB_BOT_SKIP_PICKS): forgo ALL card acquisition — reward
+   *  picks, covets, shop card buys. The decomposition probe's skip-all leg,
+   *  now a permanent knob. Never set in production/solo. */
+  skipPicks?: boolean;
+  /** S13.1a SIM-ONLY (TB_BOT_PICK_CAP=N): deck-SIZE ceiling — draft normally
+   *  until deck.length >= STARTER_DECK_SIZE + N, then skip. Removals free
+   *  slots back up (intentionally the dilution variable, not a pick counter);
+   *  covets and shop card buys share the gate. Never set in production/solo. */
+  pickCap?: number;
+  /** S13.1b (TB_BOT_DRAFT_V2, default OFF this sprint — D7): draftScore v2.
+   *  Learns (i) powers/engines +4, (ii) rare +3 (was +1), (iii) a dilution
+   *  term (score − max(0, deckSize − 16) × 0.4). ONE policy, no v1/v2 fork —
+   *  this flag is the S11.5-style re-anchor gate, flipped default-on in one
+   *  loud, recorded re-anchor after its first clean battery. Surface note on
+   *  record: BotPolicy is shared with the server's in-process solo partner,
+   *  so the eventual default flip changes real solo drafting — a decision,
+   *  not a side effect. */
+  draftV2?: boolean;
 }
+
+/** S13.1a: the true starter size the pick-cap gate anchors on. Pinned by
+ *  test so a starter-deck change can't silently skew the deck-size sweep. */
+export const STARTER_DECK_SIZE = 10;
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
   const p = view.players[owner];
@@ -82,6 +104,9 @@ export class BotPolicy {
   private lockstep: boolean;
   private seekEvents: boolean;
   private reclaimNudge: boolean;
+  private skipPicks: boolean;
+  private pickCap: number | undefined;
+  private draftV2: boolean;
   private reclaimedTurn = -1;
   private pulsedTurn = -1;
   private reorderedTurn = -1;
@@ -97,6 +122,16 @@ export class BotPolicy {
     this.lockstep = opts.lockstep ?? true;
     this.seekEvents = opts.seekEvents ?? false;
     this.reclaimNudge = opts.reclaimNudge ?? false;
+    this.skipPicks = opts.skipPicks ?? false;
+    this.pickCap = opts.pickCap;
+    this.draftV2 = opts.draftV2 ?? false;
+  }
+
+  /** S13.1a: is this seat's deck at (or past) the pick-cap ceiling? The gate
+   *  is deck SIZE, not picks taken — removals free slots back up. */
+  private atPickCap(view: BotView): boolean {
+    if (this.pickCap === undefined) return false;
+    return view.players[view.you].deck.length >= STARTER_DECK_SIZE + this.pickCap;
   }
 
   /** Deterministic in [0,1): same seed + situation + purpose → same roll. */
@@ -459,7 +494,14 @@ export class BotPolicy {
   }
 
   /** Draft scoring: the bots are a coordination floor — they draft like a pair
-   *  that wants links to fire and the Hex→detonate axis to exist. */
+   *  that wants links to fire and the Hex→detonate axis to exist.
+   *
+   *  S13.1b (draftV2, TB_BOT_DRAFT_V2): v2 learns what the S13 decomposition
+   *  proved — (i) powers/engines are dilution-resistant (+4), (ii) rares are
+   *  systematically undervalued at +1 (→ +3; the OQ#59 caveat (a) fix),
+   *  (iii) dilution is the disease: score − max(0, deckSize − 16) × 0.4, so
+   *  the take-rate falls as the deck grows (matches the observed human/StS
+   *  meta and the sweep's knee at ~+4 picks/seat). */
   private draftScore(view: BotView, defId: string): number {
     const def = CARDS[defId];
     const character = view.players[view.you].character;
@@ -472,8 +514,13 @@ export class BotPolicy {
     if (text.includes('detonate')) score += 5;
     if (text.includes("'hex'") || text.includes('hexAll')) score += character === 'vess' ? 3 : 0;
     if (text.includes('damagePerHex')) score += character === 'vess' ? 3 : 0;
-    if (def.rarity === 'rare') score += 1;
+    if (def.rarity === 'rare') score += this.draftV2 ? 3 : 1;
     if (def.cost <= 2) score += 1;
+    if (this.draftV2) {
+      const isPower = [...def.base, ...(def.link?.effects ?? [])].some((e) => e.op === 'power');
+      if (isPower) score += 4;
+      score -= Math.max(0, view.players[view.you].deck.length - 16) * 0.4;
+    }
     return score;
   }
 
@@ -482,11 +529,17 @@ export class BotPolicy {
     const reward = view.reward!;
     const partner = otherOf(you);
     if (reward.picked[you] === null && reward.sets[you].length > 0) {
+      // S13.1a: the skip-all probe and the deck-size ceiling gate every
+      // acquisition channel (covets below share both gates)
+      if (this.skipPicks || this.atPickCap(view)) {
+        return { type: 'REWARD_PICK', player: you, pick: 'skip' };
+      }
       const ranked = [...reward.sets[you]].sort((a, b) => this.draftScore(view, b) - this.draftScore(view, a));
       const pick = this.draftScore(view, ranked[0]) >= 3 || this.chance(view, 0.5, 'draft') ? ranked[0] : 'skip';
       return { type: 'REWARD_PICK', player: you, pick };
     }
     if (
+      !this.skipPicks && !this.atPickCap(view) &&
       reward.coveted[you] === null && reward.picked[partner] !== null && reward.sets[partner].length > 0 &&
       view.players[you].covetCharges > 0
     ) {
@@ -496,6 +549,16 @@ export class BotPolicy {
       if (leftovers.length > 0 && this.draftScore(view, leftovers[0]) >= 4 && this.chance(view, 0.7, 'covet')) {
         return { type: 'COVET_PICK', player: you, pick: leftovers[0] };
       }
+    }
+    // S13.3 pick-with-removal: v2 spends the free offer (it knows dilution
+    // is the disease — the bots' 94%-removal gold spend, now free at the
+    // screen); v1 ignores it so historical batteries stay comparable.
+    if (reward.removals?.[you] === null) {
+      if (this.draftV2) {
+        const starter = view.players[you].deck.find((c) => CARDS[c.defId].starterOnly);
+        return { type: 'REWARD_REMOVE', player: you, pick: starter?.instanceId ?? 'pass' };
+      }
+      // v1 passes explicitly only when it would otherwise idle — never blocks
     }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;
@@ -725,7 +788,8 @@ export class BotPolicy {
     if (removal && starter && removalPrice(view, you) <= view.gold && me.deck.length > 8) {
       return { type: 'SHOP_REMOVE', player: you, itemId: removal.id, cardInstanceId: starter.instanceId };
     }
-    if (myCard && this.draftScore(view, myCard.refId!) >= 5) {
+    // S13.1a: shop card buys share the skip/cap gates (deck-size ceiling)
+    if (myCard && !this.skipPicks && !this.atPickCap(view) && this.draftScore(view, myCard.refId!) >= 5) {
       return { type: 'SHOP_BUY', player: you, itemId: myCard.id };
     }
     if (relic && this.chance(view, 0.4, 'shop:relic')) {

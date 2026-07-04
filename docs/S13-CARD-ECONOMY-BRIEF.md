@@ -1,4 +1,12 @@
-# S12 brief — card rewards don't seem to matter (designer-ruled sprint seed)
+# S13 brief — card rewards don't seem to matter (designer-ruled sprint seed)
+
+> **D1 RULED (2026-07-04):** renamed S12 → S13 on merge. The art overhaul
+> (PR #9) landed under the S12 label in immutable commit messages, so the
+> card-economy sprint takes S13. This brief is SUPERSEDED by the sprint
+> packet (`threadbound_sprint_S13_card_economy.md`) and its Part 0
+> evidence — in particular, the brief's "not load-bearing" hypothesis was
+> OVERTURNED by the decomposition matrix (the card stream is the single
+> most load-bearing progression system; it SATURATES). Kept for the record.
 
 Ruled 2026-07-04 (OQ#59 close): the braid's fights-vs-events-vs-treasure
 mix STANDS as a design choice. The Wave B win-rate inflation indicts

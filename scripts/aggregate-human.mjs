@@ -278,6 +278,33 @@ for (const [sha, results] of [...groups.entries()].sort()) {
     console.log(`Reclaim attempts (threadSpendByKind.reclaim): ${spendMix.reclaim ?? 0}`);
   }
 
+  // ---- S13.1c economy (mirrored from sim.ts; prints only when the telemetry
+  // exists, so pre-S13 files keep their exact summary) -----------------------------
+  const ecoRuns = results.filter((r) => t(r).economy);
+  if (ecoRuns.length > 0) {
+    const nEco = Math.max(1, ecoRuns.length);
+    const esum = (f) => ecoRuns.reduce((a, r) => a + f(t(r).economy), 0);
+    const acts = [...new Set(ecoRuns.flatMap((r) => [
+      ...Object.keys(t(r).economy.picks ?? {}),
+      ...Object.keys(t(r).economy.relicsByAct ?? {}),
+      ...Object.keys(t(r).economy.deckAddsByAct ?? {}),
+    ]))].map(Number).sort((a, b) => a - b);
+    console.log('---------------- S13.1c ECONOMY (per act) ----------------');
+    for (const act of acts) {
+      const seat = (pid) => {
+        const taken = esum((e) => e.picks?.[act]?.[pid]?.taken ?? 0);
+        const skipped = esum((e) => e.picks?.[act]?.[pid]?.skipped ?? 0);
+        const offers = taken + skipped;
+        const adds = esum((e) => e.deckAddsByAct?.[act]?.[pid] ?? 0);
+        const removes = esum((e) => e.deckRemovalsByAct?.[act]?.[pid] ?? 0);
+        return `${pid} take ${offers ? ((100 * taken) / offers).toFixed(0) : 'n/a'}% (${taken}/${offers})` +
+          ` deck +${(adds / nEco).toFixed(2)}/−${(removes / nEco).toFixed(2)}`;
+      };
+      const relics = esum((e) => e.relicsByAct?.[act] ?? 0);
+      console.log(`  act ${act}: ${seat('p1')} | ${seat('p2')} | relics/run ${(relics / nEco).toFixed(2)}`);
+    }
+  }
+
   // ---- S6.4 human-only lines ------------------------------------------------------
   const installRuns = new Map();
   for (const r of results) {

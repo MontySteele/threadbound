@@ -1062,6 +1062,11 @@ export function resolveTurn(state: GameState): void {
     state.telemetry.threadSpent += cost;
     bumpTally(state, 'threadSpent', cost); // S9d: Votive's axis
     state.telemetry.threadSpendByKind[ta.kind]++;
+    // S13.2 Stoker's Due: the pool is the PAIR's, so either seat's spend
+    // stokes both seats' engines (each holder's oncePerTurn cap gates its
+    // own). New event key — no pre-S13 content listens.
+    runHooks(state, 'p1', 'threadSpend');
+    runHooks(state, 'p2', 'threadSpend');
     if (ta.kind !== 'pulse') state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
   }
 
@@ -1201,6 +1206,10 @@ export function resolveTurn(state: GameState): void {
       if (forcedSlots[i]) state.telemetry.forcedLinkFires++; // §14.12
       actStats.linksFired++;
       runHooks(state, slot.owner, 'linkFired');
+      // S13.2: cross-seat engines answer the PARTNER's fire (gravebloom,
+      // call_and_answer). New event key — pre-S13 content carries no such
+      // hook, so existing baselines are untouched.
+      runHooks(state, otherPlayer(slot.owner), 'partnerLinkFired');
       // S10a Votive Snuffer: answers every fired link with Block — from this
       // moment on, so damage already dealt this chain stays dealt
       for (const en of livingEnemies(state)) {
@@ -1218,7 +1227,13 @@ export function resolveTurn(state: GameState): void {
   // read it during the NEXT card loop (the turn after ignition).
   combat.resonatedLastTurn = resonanceSlots.size > 0;
   // Pall Warden: the last hand in the Chain
-  if (chain.length > 0) combat.lastChainOwner = chain[chain.length - 1].owner;
+  if (chain.length > 0) {
+    combat.lastChainOwner = chain[chain.length - 1].owner;
+    // S13.2 Selvage: the chain-position payoff — the resolved Chain closed
+    // on this seat's card (once per turn by construction; the hook's
+    // oncePerTurn cap is belt-and-braces for the CI)
+    runHooks(state, combat.lastChainOwner, 'chainClose');
+  }
 
   combat.chain = [];
   combat.threadActions = [];

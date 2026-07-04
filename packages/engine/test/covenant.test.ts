@@ -21,13 +21,15 @@ function isSelfSimilar(c: CardDef): boolean {
 describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   const all = Object.values(CARDS);
 
-  it('pool shape: 55 per character (25C/20U/10R) + 15 neutral (8/5/2), starters excluded', () => {
+  it('pool shape: 57 per character (25C/20U/12R) + 15 neutral (8/5/2), starters excluded', () => {
+    // S13.2 (D3, loud edit): the rare identity pass adds +2 rares per
+    // character — 55 (10R) → 57 (12R). Any further change is a sign-off row.
     for (const ch of CHARACTERS) {
       const pool = cardsForCharacter(ch);
-      expect(pool.length, ch).toBe(55);
+      expect(pool.length, ch).toBe(57);
       expect(pool.filter((c) => c.rarity === 'common').length, `${ch} commons`).toBe(25);
       expect(pool.filter((c) => c.rarity === 'uncommon').length, `${ch} uncommons`).toBe(20);
-      expect(pool.filter((c) => c.rarity === 'rare').length, `${ch} rares`).toBe(10);
+      expect(pool.filter((c) => c.rarity === 'rare').length, `${ch} rares`).toBe(12);
     }
     const n = neutralCards();
     expect(n.length).toBe(15);
@@ -74,8 +76,10 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   });
 
   it('§4: pools lean into their heavy tags without drowning them', () => {
-    const vessHex = cardsForCharacter('vess').filter((c) => c.tag === 'Hex').length / 55;
-    const bramStrike = cardsForCharacter('bram').filter((c) => c.tag === 'Strike').length / 55;
+    // S13.2: denominator follows the 57-pool (vess Hex 18/57 ≈ .32,
+    // bram Strike 21/57 ≈ .37 — both bands hold without retuning)
+    const vessHex = cardsForCharacter('vess').filter((c) => c.tag === 'Hex').length / 57;
+    const bramStrike = cardsForCharacter('bram').filter((c) => c.tag === 'Strike').length / 57;
     expect(vessHex).toBeGreaterThanOrEqual(0.27);
     expect(vessHex).toBeLessThanOrEqual(0.42);
     expect(bramStrike).toBeGreaterThanOrEqual(0.3);
@@ -319,6 +323,90 @@ describe('S9d.4 grower covenant', () => {
             expect(eff.grownStep ?? 0, c.id).toBeLessThanOrEqual(c.growsWith!.cap!);
           }
         }
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S13.2 rare identity covenant. Design law: a rare must be DILUTION-RESISTANT
+// — a power, a build-around, or a card scaling with chain/pair/run state,
+// never with its own draw frequency. Engine caps REQUIRED on anything that
+// scales (Worn Knife/Saturate precedent); no Hex-amount growth in any design.
+// ---------------------------------------------------------------------------
+
+describe('S13.2 rare identity covenant', () => {
+  /** The pass's rows: D2 revisions + D3 new rares. Editing this list is a
+   *  sign-off event, not a refactor. */
+  const S13_ENGINES = ['gravebloom', 'call_and_answer', 'selvage', 'keepsake', 'bellmetal', 'stokers_due'];
+  const KEEP_ROWS = ['unbroken_line', 'wildfire_heart', 'final_word', 'avalanche'];
+
+  it('the verdict table stands: KEEP rows untouched in kind, REVISE rows are engines now', () => {
+    // KEEP: the two working powers stay powers; the build-around payoff and
+    // the honest spike stay non-power rares
+    expect(CARDS.unbroken_line.base[0].op).toBe('power');
+    expect(CARDS.wildfire_heart.base[0].op).toBe('power');
+    expect(CARDS.final_word.base.some((e) => e.op === 'detonateAllEnemies')).toBe(true);
+    expect(CARDS.avalanche.link?.condition).toBe('partner'); // the 8×5 pair-texture spike
+    // REVISE: hex BODY → hex ENGINE; smooth utility → cross-seat engine
+    expect(CARDS.gravebloom.base).toEqual([{ op: 'power', power: 'gravebloom' }]);
+    expect(CARDS.gravebloom.exhaust).toBe(true);
+    expect(CARDS.call_and_answer.base).toEqual([{ op: 'power', power: 'call_and_answer' }]);
+    expect(CARDS.call_and_answer.exhaust).toBe(true);
+  });
+
+  it('every S13.2 engine hook is CAPPED (oncePerTurn/oncePerCombat) — scaling without a cap is covenant-barred', () => {
+    for (const id of S13_ENGINES) {
+      const power = POWERS[id];
+      expect(power, `${id}: power missing`).toBeTruthy();
+      expect(power.hooks?.length, `${id}: an engine needs hooks`).toBeGreaterThan(0);
+      for (const hook of power.hooks!) {
+        expect(hook.oncePerTurn || hook.oncePerCombat, `${id}: uncapped hook on '${hook.on}'`).toBe(true);
+      }
+    }
+  });
+
+  it('no Hex-amount growth: S13.2 hook Hex applications are flat and per-turn-capped', () => {
+    for (const id of S13_ENGINES) {
+      for (const hook of POWERS[id].hooks ?? []) {
+        for (const eff of hook.effects) {
+          if (eff.op === 'hexAll') {
+            expect(hook.oncePerTurn, `${id}: hexAll must be per-turn-capped`).toBe(true);
+            expect(eff.amount, `${id}: hex echo stays flat`).toBeLessThanOrEqual(2);
+          }
+        }
+      }
+    }
+  });
+
+  it('the four new rares (D3) are exhaust powers, +2 per character, on the co-op texture briefs', () => {
+    for (const id of ['selvage', 'keepsake', 'bellmetal', 'stokers_due']) {
+      const c = CARDS[id];
+      expect(c, id).toBeTruthy();
+      expect(c.rarity, id).toBe('rare');
+      expect(c.exhaust, id).toBe(true);
+      expect(c.base).toEqual([{ op: 'power', power: id }]);
+    }
+    expect(CARDS.selvage.character).toBe('vess'); // chain-position payoff
+    expect(CARDS.keepsake.character).toBe('vess'); // Reclaim-keyed (pull-based: the 'reclaim' hook fires for the RECLAIMER only)
+    expect(POWERS.keepsake.hooks![0].on).toBe('reclaim');
+    expect(CARDS.bellmetal.character).toBe('bram'); // Resonance amplifier
+    expect(POWERS.bellmetal.hooks![0].on).toBe('resonance');
+    expect(CARDS.stokers_due.character).toBe('bram'); // Thread-spend payoff
+    expect(POWERS.stokers_due.hooks![0].on).toBe('threadSpend');
+  });
+
+  it('render parity for revised texts: every number an S13.2 engine advertises exists in its hook mechanics', () => {
+    for (const id of S13_ENGINES) {
+      const face = CARDS[id].text;
+      const advertised = (face.match(/\d+/g) ?? []).map(Number);
+      const mechanical = (POWERS[id].hooks ?? []).flatMap((h) =>
+        h.effects.flatMap((e) => Object.values(e).filter((v): v is number => typeof v === 'number')));
+      for (const v of advertised) {
+        expect(mechanical, `${id}: text advertises ${v} but no hook effect carries it — "${face}"`).toContain(v);
+      }
+      for (const v of mechanical) {
+        expect(advertised, `${id}: hook effect ${v} not on the card face — "${face}"`).toContain(v);
       }
     }
   });
