@@ -643,7 +643,10 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
 57. **Instrument gaps named**: "questions provable/run" (S11.3 target
     band) has no harness calculation — distinctEliminations is the proxy;
     "rite-card play rate" (S9c gate 2 direction read) is proxied by
-    realized growth > 0. **OPEN — engine-queue, small.**
+    realized growth > 0. **CLOSED (2026-07-04): both real instruments
+    landed** — questionsConfident/questionsNarrowed at run end, ritePlays
+    per seat at the play site, sim readouts for both. Next battery reads
+    the stated measures.
 
 58. **Post-S11.5 win-rate drift ruled floor-demanded (gate 2 exception
     named).** Battery read vb 36 (pooled 600) / vv 26 / bb 34 — vb +11
