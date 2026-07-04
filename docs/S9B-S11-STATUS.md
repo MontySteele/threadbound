@@ -191,9 +191,10 @@ carry the danger (escalation makes them the price).
 | knots | 2 fixed crossing layers per act | (same — crossings are shared) | A3: **extra crossing layer** (S11.11-1 rec, implemented, pending ruling) |
 
 Pacing-variant mix (S11.7) rides both strands unchanged; scouting
-(S11.6) is strand-agnostic. Sign-off gates the Wave B BATTERY, not the
-generator work (S11.11-4 as written). The generator + 11 structure
-tests landed against exactly this table (content/strand-targets.ts).
+(S11.6) is strand-agnostic. The generator + 11 structure tests landed
+against exactly this table (content/strand-targets.ts).
+**RULED (2026-07-04): table SIGNED OFF as implemented; A3's extra
+crossing layer (S11.11-1) RATIFIED.** Wave B batteries unblocked.
 
 ## Wave B status (2026-07-04, same day)
 
@@ -210,9 +211,9 @@ tests landed against exactly this table (content/strand-targets.ts).
   seat-symmetric instant agreement, knot pricing = reward minus the
   escalation ladder (crossing value rides the DP). The TB_KNOTWORK
   battery IS this policy's baseline.
-- **BLOCKED on sign-off** (S11.11-4 table above): TB_KNOTWORK
-  batteries all pairs + the D6/D7 re-battery vs the B6 ledger + the
-  joint ladder/policy recalibration of the escalation gate (OQ#55).
+- S11.11-4 table **SIGNED OFF**; S11.11-1 (A3 extra crossing layer)
+  **RATIFIED** (both 2026-07-04). TB_KNOTWORK batteries + D6/D7
+  re-battery running; ladder/policy recalibration reads their output.
 - Solo-on-strands manual pass: playtest-time (S11.10 gate 5).
 
 ## Remaining (next session)
