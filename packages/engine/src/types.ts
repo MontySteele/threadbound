@@ -584,6 +584,9 @@ export interface CombatState {
   /** S2.1: solo Witness chatter budget — capped per combat. Optional so
    *  pre-S1 persisted rooms restore cleanly. */
   witnessLines?: number;
+  /** S9c.3: the rite_reclaim pool fires at most once per combat. Optional
+   *  for persisted-room compatibility. */
+  riteReclaimSaid?: boolean;
   /** PT2/OQ#29: `holder:event` keys of oncePerTurn hooks already fired this
    *  turn. Optional for persisted-room compatibility. */
   hookOnceFired?: string[];
@@ -661,7 +664,7 @@ export type GameEvent =
   | { e: 'revived'; player: PlayerId }
   | { e: 'thread_severed'; turns: number } // Unraveled
   | { e: 'thread_reignited' }
-  | { e: 'resonance_ignite'; slot: number; tags: string[] }
+  | { e: 'resonance_ignite'; slot: number; tags: string[]; card?: string } // card: S9c.5 rung i (log line names the ignited card)
   | { e: 'relic'; player: PlayerId; relic: string }
   | { e: 'witness'; line: string }
   | { e: 'info'; detail: string };

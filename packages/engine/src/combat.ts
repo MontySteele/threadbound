@@ -176,7 +176,34 @@ export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean
   return fired;
 }
 
-export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set<number> {
+/** S9c.6: the size of the PRIMARY effect a slot will resolve with (link
+ *  replacement respected) — the "note" Resonance rung ii compares. Multi-hit
+ *  primaries count their total (amount × times); primaries without a flat
+ *  amount (e.g. damagePerHex) read 0 and defer to the tie-break. */
+export function primaryMagnitude(def: CardDef, fired: boolean): number {
+  const effects: EffectOp[] =
+    fired && def.link
+      ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+      : def.base;
+  let best = 0;
+  for (const e of effects) {
+    if ((e as { primary?: boolean }).primary && 'amount' in e) {
+      const v = (e.amount as number) * ((e as { times?: number }).times ?? 1);
+      if (v > best) best = v;
+    }
+  }
+  return best;
+}
+
+/** S9c.6 rung ii ("the loudest note carries"): a qualifying streak ignites
+ *  its LARGEST primary effect, not its last slot; ties go to the latest
+ *  slot among the tied (which also reproduces the old last-slot behavior
+ *  when nothing in the streak scales). `defAt` resolves a slot's effective
+ *  card — resolution, previews, bots, and the client MUST pass the same
+ *  resolver so preview==reality holds by construction. */
+export function computeResonanceSlots(
+  chain: ChainSlot[], fired: boolean[], defAt: (slot: ChainSlot) => CardDef,
+): Set<number> {
   const out = new Set<number>();
   let i = 0;
   while (i < chain.length) {
@@ -188,7 +215,17 @@ export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set
       const owners = new Set<PlayerId>();
       // i can be 0 when slot 0's link was Pulse-forced (§14.12)
       for (let k = Math.max(0, i - 1); k <= j; k++) owners.add(chain[k].owner);
-      if (owners.size === 2) out.add(j); // solo streaks never ignite (§2.3)
+      if (owners.size === 2) { // solo streaks never ignite (§2.3)
+        let pick = j;
+        let best = -1;
+        // candidates are the FIRED slots (ignition sits on a fired link,
+        // as before); >= walks ascending, so ties land on the latest
+        for (let k = i; k <= j; k++) {
+          const v = primaryMagnitude(defAt(chain[k]), fired[k]);
+          if (v >= best) { best = v; pick = k; }
+        }
+        out.add(pick);
+      }
     }
     i = j + 1;
   }
@@ -224,7 +261,7 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired);
+  const resonance = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
     const def = effectiveDef(mustFind(state, slot));
@@ -260,7 +297,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired);
+  const resonance = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
 
   // working copies — forecasting must not mutate authoritative state
   const enemies = combat.enemies.map((e) => ({
@@ -577,7 +614,15 @@ function drawCards(state: GameState, player: PlayerState, n: number): void {
       player.draw = r.value;
       player.discard = [];
     }
-    player.hand.push(player.draw.shift()!);
+    const drawnId = player.draw.shift()!;
+    player.hand.push(drawnId);
+    // S9c.2: the Witness NAMES a rite card the first time it is drawn each
+    // run (existence-naming; the single-line pool's no-repeat IS the fence).
+    // Rite cards exist only in rites-flagged runs — unflagged rng untouched.
+    const drawnInst = findInstance(player, drawnId);
+    if (drawnInst && CARDS[drawnInst.defId]?.riteOnly) {
+      sayWitness(state, `rite_first_draw_${drawnInst.defId}`);
+    }
   }
 }
 
@@ -848,6 +893,12 @@ export function resolveTurn(state: GameState): void {
         };
         actor.combatCards.push(echo);
         if (actor.hand.length < 10) actor.hand.push(echo.instanceId);
+        // S9c.3: the rite_reclaim pool — a rite passed hand to hand. At most
+        // once per combat; rite cards exist only in rites-flagged runs.
+        if (CARDS[src.defId]?.riteOnly && !combat.riteReclaimSaid) {
+          combat.riteReclaimSaid = true;
+          sayWitness(state, 'rite_reclaim');
+        }
         // S8.1 Dowry-Bound: reclaiming a partner's card feeds the engine
         runHooks(state, ta.player, 'reclaim');
         break;
@@ -886,7 +937,7 @@ export function resolveTurn(state: GameState): void {
   const natural = computeLinksFired(state, chain);
   const forcedSlots = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forcedSlots[i]);
-  const resonanceSlots = computeResonanceSlots(chain, fired);
+  const resonanceSlots = computeResonanceSlots(chain, fired, (slot) => effectiveDef(mustFind(state, slot)));
   combat.lastSoloRun = longestSoloRun(chain);
   const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
 
@@ -899,8 +950,9 @@ export function resolveTurn(state: GameState): void {
     const def = effectiveDef(inst);
     const resonance = resonanceSlots.has(i);
 
-    // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +1 to the
-    // linked effect (never Hex ops: the OQ#28/OQ#43 caps are load-bearing)
+    // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +2 to the
+    // linked effect (S9c.1 table: +1 → +2; never Hex ops: the OQ#28/OQ#43
+    // caps are load-bearing)
     const wardenBoost =
       fired[i] && def.link && i > 0
       && chain[i - 1].owner !== slot.owner
@@ -909,7 +961,7 @@ export function resolveTurn(state: GameState): void {
       'kindled', 'partnerKindled', 'momentum', 'thread', 'heal', 'partnerHeal']);
     const bump = (ops: EffectOp[], by: number): EffectOp[] => ops.map((e) =>
       BUMPABLE.has(e.op) && 'amount' in e ? { ...e, amount: (e.amount as number) + by } : e);
-    const linkEffects = def.link ? (wardenBoost ? bump(def.link.effects, 1) : def.link.effects) : [];
+    const linkEffects = def.link ? (wardenBoost ? bump(def.link.effects, 2) : def.link.effects) : [];
     let effects: EffectOp[] =
       fired[i] && def.link
         ? def.link.replace
@@ -938,12 +990,16 @@ export function resolveTurn(state: GameState): void {
     if (resonance) {
       let start = i;
       while (start > 0 && fired[start]) start--;
-      const streakTags = chain.slice(start, i + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
+      // S9c.6: the ignited slot can sit MID-streak now ("the loudest note
+      // carries") — walk forward too so the logged streak is whole
+      let end = i;
+      while (end + 1 < chain.length && fired[end + 1]) end++;
+      const streakTags = chain.slice(start, end + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
       // S3.1: did this streak need a Pulse to exist?
-      for (let k = start; k <= i; k++) {
+      for (let k = start; k <= end; k++) {
         if (forcedSlots[k]) { state.telemetry.resonancesForced++; break; }
       }
-      state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags });
+      state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags, card: def.name });
       // S2.1: in solo the streak includes HIM — the closest he comes to joy
       sayWitness(state, state.botSeat ? 'resonance_together' : 'resonance');
       state.telemetry.resonances++;

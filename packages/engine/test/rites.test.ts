@@ -253,11 +253,13 @@ describe('character events and the birth threshold (S7.3/S7.4)', () => {
     s.combat = { hookOnceFired: [], hookCombatFired: [] } as never as GameState['combat'];
     const before = { p1: s.players.p1.hp, p2: s.players.p2.hp };
     runHooks(s, 'p1', 'resonance');
-    expect(s.players.p1.hp).toBe(before.p1 + 1);
-    expect(s.players.p2.hp).toBe(before.p2 + 1);
+    // S9c.1: First-Breath heals 2 (was 1) — the oncePerCombat fence is the
+    // reason the bump is not an attrition leak
+    expect(s.players.p1.hp).toBe(before.p1 + 2);
+    expect(s.players.p2.hp).toBe(before.p2 + 2);
     runHooks(s, 'p1', 'resonance'); // charge spent — no second heal
-    expect(s.players.p1.hp).toBe(before.p1 + 1);
-    expect(s.players.p2.hp).toBe(before.p2 + 1);
+    expect(s.players.p1.hp).toBe(before.p1 + 2);
+    expect(s.players.p2.hp).toBe(before.p2 + 2);
   });
 });
 

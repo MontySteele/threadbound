@@ -205,18 +205,33 @@ describe('combat basics (§2)', () => {
 
 });
 
-describe('Resonance (§2.3)', () => {
+describe('Resonance (§2.3 + S9c.6 rung ii)', () => {
   const slot = (owner: PlayerId) => ({ cardInstanceId: 'x', owner });
+  // flat resolver: every slot the same 3-damage primary — ties everywhere,
+  // so the tie-break (latest) reproduces the pre-S9c last-slot behavior
+  const flat = () => ({ base: [{ op: 'damage', amount: 3, primary: true }] } as never as import('../src/types').CardDef);
 
   it('requires 3+ fired links AND both players in the streak', () => {
     const cross = [slot('p1'), slot('p2'), slot('p1'), slot('p2')];
-    expect(computeResonanceSlots(cross, [false, true, true, true]).has(3)).toBe(true);
+    expect(computeResonanceSlots(cross, [false, true, true, true], flat).has(3)).toBe(true);
     const solo = [slot('p1'), slot('p1'), slot('p1'), slot('p1')];
-    expect(computeResonanceSlots(solo, [false, true, true, true]).size).toBe(0);
-    expect(computeResonanceSlots(cross, [false, true, true, false]).size).toBe(0);
+    expect(computeResonanceSlots(solo, [false, true, true, true], flat).size).toBe(0);
+    expect(computeResonanceSlots(cross, [false, true, true, false], flat).size).toBe(0);
   });
 
-  it('ignites in real resolution and boosts the final card by +50%', () => {
+  it('S9c.6: the loudest note carries — the largest primary in the streak ignites', () => {
+    const cross = [slot('p1'), slot('p2'), slot('p1'), slot('p2')];
+    const defs = [3, 9, 2, 4].map((amount) =>
+      ({ base: [{ op: 'damage', amount, primary: true }] } as never as import('../src/types').CardDef));
+    const byIndex = (s: { owner: PlayerId }) => defs[cross.indexOf(s as never)];
+    // slot 1 holds the 9 — it ignites instead of the last slot
+    expect(computeResonanceSlots(cross, [false, true, true, true], byIndex).has(1)).toBe(true);
+    // multi-hit totals count: 4×3=12 at slot 3 out-shouts the 9
+    defs[3] = { base: [{ op: 'damage', amount: 4, times: 3, primary: true }] } as never as import('../src/types').CardDef;
+    expect(computeResonanceSlots(cross, [false, true, true, true], byIndex).has(3)).toBe(true);
+  });
+
+  it('ignites in real resolution and boosts the LARGEST primary by +50% (S9c.6)', () => {
     let s = combatState(7);
     const [needle, stitch] = forceHand(s, 'p1', ['needlework', 'loose_stitch']);
     const [rend, opener] = forceHand(s, 'p2', ['rendcall', 'opener']);
@@ -227,10 +242,13 @@ describe('Resonance (§2.3)', () => {
     s = reduce(s, { type: 'STAGE_CARD', player: 'p2', cardInstanceId: opener, slot: 3, targetId: enemy });
     toughen(s);
     s = ready(s);
-    expect(s.log.find((e) => e.e === 'resonance_ignite')).toBeTruthy();
-    // opener's 4 damage resonates: ceil(4 * 1.5) = 6 raw
+    const ignite = s.log.find((e) => e.e === 'resonance_ignite');
+    expect(ignite).toBeTruthy();
+    // rendcall's 8 is the streak's loudest note (opener holds 4): the
+    // ignition sits mid-streak and deals ceil(8 * 1.5) = 12 raw
+    expect(ignite && ignite.e === 'resonance_ignite' ? ignite.card : '').toBe('Rendcall');
     const hits = s.log.filter((e) => e.e === 'damage');
-    expect(hits.some((h) => h.e === 'damage' && h.hpLoss + h.blocked === 6)).toBe(true);
+    expect(hits.some((h) => h.e === 'damage' && h.hpLoss + h.blocked === 12)).toBe(true);
     expect(s.telemetry.resonances).toBe(1);
   });
 });

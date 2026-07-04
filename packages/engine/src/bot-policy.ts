@@ -386,7 +386,10 @@ export class BotPolicy {
     );
     const targetable = combat.enemies.filter((e) => e.hp > 0 && !e.untargetable);
     const bigPile = targetable.some((e) => e.hex >= 4);
-    const resonancesAt = (f: boolean[]): number => computeResonanceSlots(chain, f).size;
+    // S9c.6: same def resolver as resolution — the bot prices the streaks
+    // the engine will actually ignite
+    const resonancesAt = (f: boolean[]): number =>
+      computeResonanceSlots(chain, f, (slot) => defs[chain.indexOf(slot)]).size;
     const baseRes = resonancesAt(fired);
     let best: { id: string; score: number } | null = null;
     for (let i = 0; i < chain.length; i++) {

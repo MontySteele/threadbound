@@ -165,13 +165,17 @@ export const RITES: RiteDef[] = [
     flavor: 'What returns through you comes back more alive.',
     text: 'Cards you Reclaim that keep their name arrive upgraded.',
     passives: ['reclaimUpgraded'] },
+  // S9c.1 (amended by S9d.A3: birth-passive rows stand, death rows struck):
+  // First-Breath 1→2 (oncePerCombat-fenced — not an attrition leak),
+  // Cradle-Warden +1→+2 (bump applied in combat.ts). HOLD rows unchanged:
+  // Naming-Day, Dowry-Bound, Hearth-Keeper, Quickening (S9b IS its buff).
   { id: 'br_first_breath', role: 'vess', kind: 'birth', name: 'First-Breath',
     flavor: 'The first note of the round is drawn from both lungs.',
-    text: 'First Resonance ignition each combat: both players heal 1.',
-    hooks: [{ on: 'resonance', oncePerCombat: true, effects: [{ op: 'heal', amount: 1 }, { op: 'partnerHeal', amount: 1 }] }] },
+    text: 'First Resonance ignition each combat: both players heal 2.',
+    hooks: [{ on: 'resonance', oncePerCombat: true, effects: [{ op: 'heal', amount: 2 }, { op: 'partnerHeal', amount: 2 }] }] },
   { id: 'br_cradle_warden', role: 'vess', kind: 'birth', name: 'Cradle-Warden',
     flavor: 'What is built on your work stands taller.',
-    text: 'Partner links fired off your cards: +1 to the linked effect.',
+    text: 'Partner links fired off your cards: +2 to the linked effect.',
     passives: ['cradleWarden'] },
   // Bram, birth
   { id: 'br_hearth_keeper', role: 'bram', kind: 'birth', name: 'Hearth-Keeper',
