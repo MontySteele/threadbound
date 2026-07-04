@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threadbound — sigil vocabulary v2</title>
+<style>
+  :root{
+    --ink:#14110f; --ink-2:#1a1612; --panel:#1f1a14; --panel-2:#262017;
+    --line:#4a3f31; --line-soft:#322a20;
+    --text:#d8cfc0; --text-dim:#8a7f6e; --text-faint:#5c5347;
+    --thread:#d4af6f; --hex:#b98fd4; --p2:#ffb070; --witness:#b9a8d4;
+    --font-display:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --font-ui:'Avenir Next','Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:var(--font-ui);font-size:15px}
+  body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2a221422 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 115%, #000 0%, transparent 45%),
+      repeating-linear-gradient(106deg, transparent 0 5px, #ffffff03 5px 6px),
+      linear-gradient(180deg,#16120e 0%, var(--ink) 60%);}
+  body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;box-shadow:inset 0 0 18vmin 4vmin #000a}
+  main{max-width:960px;margin:0 auto;padding:28px 16px 64px}
+  h1,h2,h3{font-family:var(--font-display);font-weight:normal}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:.5px}
+  h2{font-size:17px;margin:36px 0 6px;color:var(--text-dim);letter-spacing:.4px}
+  h3{font-size:14px;margin:20px 0 6px;color:var(--text-dim)}
+  .sub{color:var(--text-dim);font-size:13.5px;max-width:68ch;line-height:1.5;margin:0 0 8px}
+  .rule{border:none;border-top:1px solid var(--line-soft);margin:24px 0}
+  .controls{display:flex;gap:14px;align-items:center;margin:12px 0 4px;color:var(--text-dim);font-size:13px}
+  .controls label{display:flex;gap:6px;align-items:center;cursor:pointer}
+  input[type=checkbox]{accent-color:var(--thread)}
+  .grid{display:grid;gap:10px;margin-top:10px}
+  .g7{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+  .g5{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .g4{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .cell{background:var(--panel);border:1px solid var(--line-soft);border-radius:3px;padding:9px;display:flex;flex-direction:column;align-items:center}
+  .cell svg{width:100%;height:auto;display:block}
+  .clabel{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-faint);margin-top:6px;text-align:center;line-height:1.35}
+  .cname{font-family:var(--font-display);font-size:13px;color:var(--text);margin-top:6px;text-align:center;line-height:1.25}
+  .ctier{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-faint);text-align:center;margin-top:1px}
+  .ctier.elite{color:var(--thread)} .ctier.boss{color:#d4756f} .ctier.character{color:var(--witness)}
+  .thread-anim{animation:dashwalk 7s linear infinite}
+  @keyframes dashwalk{to{stroke-dashoffset:-32}}
+  body.no-anim *{animation:none !important}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Sigil vocabulary v2 — shape carries identity</h1>
+  <p class="sub">Three orthogonal axes, each readable at a glance. <b style="color:var(--text)">Archetype</b> — the silhouette family — says what kind of thing it is. <b style="color:var(--text)">Tier dress</b> says what rank it holds. <b style="color:var(--text)">Act</b> sets accent hue and frame-tick style. Constant throughlines hold the set together: the crossing thread, the grave-mark brand, the pale line language, the same ground. Glow is cut back; shape does the talking.</p>
+  <div class="controls">
+    <label><input type="checkbox" id="anim" checked> thread motion</label>
+    <span>·</span><span>all marks deterministic from id + motif map</span>
+  </div>
+
+  <h2>Axis 1 — archetypes (silhouette families)</h2>
+  <p class="sub">Every entity is assigned one family in a small motif map (data, not code). Families are built from the same primitives — seeded closed paths, knots, rim light — so they read as one hand.</p>
+  <div class="grid g7" id="arch"></div>
+
+  <h2>Axis 2 — tier dress (same entity, five ranks)</h2>
+  <p class="sub">Rank never changes the silhouette — it changes the framing. Minions shrink and lose their corner ticks. Elites tatter: notched double rim, barbed frame. Bosses take the broken crown, the inscription ring, a shoulder mass, a doubled frame. Player characters are the only marks held in an <i>unbroken</i> ring — bound and whole, where every enemy ring is broken.</p>
+  <div class="grid g5" id="tiers"></div>
+
+  <h2>Axis 3 — act (same entity, three descents)</h2>
+  <p class="sub">Accent pool shifts per act, and the frame ticks change construction: Act 1 squared (lamplit earth), Act 2 curved (the Choir), Act 3 frayed (the Braid coming apart).</p>
+  <div class="grid g5" id="acts"></div>
+
+  <hr class="rule">
+  <h2>The full bestiary in the new vocabulary</h2>
+  <div id="bestiary"></div>
+</main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden>
+  <defs>
+    <radialGradient id="tb-ground" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#1f1913"/><stop offset="62%" stop-color="#14110f"/><stop offset="100%" stop-color="#0b0908"/>
+    </radialGradient>
+    <filter id="tb-grain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 .85  0 0 0 0 .8  0 0 0 0 .72  0 0 0 .6 0"/>
+      <feComposite operator="in" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+</svg>
+
+<script>
+/* ---------- seed machinery (verbatim from sigils.tsx) ---------- */
+function hash32(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return h>>>0;}
+function Rand(s){this.s=s;}
+Rand.prototype.next=function(){this.s=(Math.imul(this.s,1664525)+1013904223)>>>0;return this.s/4294967296;};
+Rand.prototype.range=function(a,b){return a+this.next()*(b-a);};
+Rand.prototype.int=function(n){return Math.floor(this.next()*n);};
+var f=function(n){return n.toFixed(1);};
+
+var ACT_ACCENTS={
+  1:['#d4af6f','#d4756f','#c7b9a2','#e0a060'],
+  2:['#b98fd4','#b9a8d4','#7fd4ff'],
+  3:['#ff8a5c','#d4756f','#ffd470']
+};
+
+/* ---------- shared primitive: harmonic closed path ---------- */
+function blob(r,cx,cy,R0,harm,spikes,bottomBias,sx,sy){
+  sx=sx||1; sy=sy||1;
+  var N=96,pts=[];
+  for(var i=0;i<N;i++){
+    var th=i/N*Math.PI*2, rad=R0;
+    for(var h=0;h<harm.length;h++) rad+=harm[h].A*Math.sin(harm[h].k*th+harm[h].ph);
+    rad+=bottomBias*Math.max(0,Math.sin(th));
+    for(var s=0;s<spikes.length;s++){
+      var d=Math.atan2(Math.sin(th-spikes[s].th),Math.cos(th-spikes[s].th));
+      rad+=spikes[s].amt*Math.exp(-(d*d)/(spikes[s].w*spikes[s].w));
+    }
+    pts.push([cx+Math.cos(th)*rad*sx, cy+Math.sin(th)*rad*sy]);
+  }
+  var m0=[(pts[0][0]+pts[1][0])/2,(pts[0][1]+pts[1][1])/2];
+  var dstr='M '+f(m0[0])+' '+f(m0[1]);
+  for(var j=1;j<=96;j++){
+    var p=pts[j%96],q=pts[(j+1)%96];
+    dstr+=' Q '+f(p[0])+' '+f(p[1])+' '+f((p[0]+q[0])/2)+' '+f((p[1]+q[1])/2);
+  }
+  return dstr+' Z';
+}
+
+function stdHarm(r,tat){ /* tat: tatter amplitude multiplier (elite) */
+  tat=tat||1;
+  var h=[{k:2,A:r.range(1.5,3.5),ph:r.range(0,6.28)},{k:3,A:r.range(1.5,3),ph:r.range(0,6.28)}];
+  if(tat>1){h.push({k:5,A:r.range(1.5,3)*tat*0.7,ph:r.range(0,6.28)});h.push({k:7,A:r.range(1,2)*tat*0.7,ph:r.range(0,6.28)});}
+  return h;
+}
+function spikeSet(r,n){var s=[];for(var i=0;i<n;i++)s.push({th:r.range(0,6.28),amt:r.range(4,8),w:r.range(0.1,0.18)});return s;}
+
+/* ---------- archetype constructors ----------
+   Each returns {fills:[pathD...], rims:[pathD...], extra:svgString, cx, cy, brandAt:[x,y], brandR}
+   fills are drawn dark, rims get the top-lit gradient stroke.            */
+
+function archFigure(r,tier,m){
+  var tat=(tier==='elite')?1.8:1, cx=60,cy=70;
+  var sx=m.wide?0.86:0.62, sy=1.12, R0=r.range(24,27)*(m.small?0.8:1);
+  var sp=(tier==='elite')?spikeSet(r,2):[];
+  var body=blob(r,cx,cy,R0,stdHarm(r,tat),sp,r.range(3,6),sx,sy);
+  var hr=r.range(6.5,8.5), hx=cx+r.range(-2,2), hy=cy-R0*sy-hr*0.45;
+  var head=blob(r,hx,hy,hr,[{k:2,A:r.range(0.6,1.4),ph:r.range(0,6.28)}],[],1,1,1);
+  var extra='';
+  if(m.melt){ /* gravewax: drips off the base */
+    for(var i=0;i<3;i++){var dx=cx+r.range(-14,14);
+      extra+='<path d="M '+f(dx)+' '+f(cy+R0*sy-2)+' q '+f(r.range(-2,2))+' '+f(r.range(7,13))+' 0 '+f(r.range(9,15))+'" stroke="var(--text-dim)" stroke-width="1" fill="none" opacity="0.7"/>';}
+  }
+  if(m.veil){ /* mourner: hanging strands over the mass */
+    for(var v=0;v<4;v++){var vx=hx+r.range(-9,9);
+      extra+='<path d="M '+f(vx)+' '+f(hy)+' q '+f(r.range(-4,4))+' '+f(r.range(18,30))+' '+f(r.range(-3,3))+' '+f(r.range(34,44))+'" stroke="var(--text)" stroke-width="0.7" fill="none" opacity="0.55"/>';}
+  }
+  if(m.bars){ /* warden: gate verticals through the mark */
+    for(var b=0;b<3;b++){var bx=cx-14+b*14;
+      extra+='<line x1="'+f(bx)+'" y1="'+f(cy-R0*sy-14)+'" x2="'+f(bx)+'" y2="'+f(cy+R0*sy+4)+'" stroke="var(--text-dim)" stroke-width="1" opacity="0.5"/>';}
+  }
+  if(m.chains){ /* interred saint: dashed binding arcs */
+    extra+='<path d="M '+f(cx-R0*sx-8)+' '+f(cy-6)+' Q '+f(cx)+' '+f(cy+10)+' '+f(cx+R0*sx+8)+' '+f(cy-10)+'" stroke="var(--text)" stroke-width="1" stroke-dasharray="3 3" fill="none" opacity="0.7"/>'+
+          '<path d="M '+f(cx-R0*sx-6)+' '+f(cy+12)+' Q '+f(cx)+' '+f(cy+24)+' '+f(cx+R0*sx+6)+' '+f(cy+8)+'" stroke="var(--text)" stroke-width="1" stroke-dasharray="3 3" fill="none" opacity="0.55"/>';
+  }
+  if(m.tool){ /* sexton: a leaning haft */
+    extra+='<line x1="'+f(cx+R0*sx+2)+'" y1="'+f(cy+R0*sy+2)+'" x2="'+f(cx+R0*sx+14)+'" y2="'+f(hy-4)+'" stroke="var(--text-dim)" stroke-width="1.3" opacity="0.75"/>'+
+         '<line x1="'+f(cx+R0*sx+11)+'" y1="'+f(hy)+'" x2="'+f(cx+R0*sx+17)+'" y2="'+f(hy-8)+'" stroke="var(--text-dim)" stroke-width="1.3" opacity="0.75"/>';
+  }
+  if(m.burden){ /* pallbearer: the carried box above the shoulders */
+    extra+='<rect x="'+f(cx-20)+'" y="'+f(hy-13)+'" width="40" height="9" fill="#0b0908" stroke="var(--text-dim)" stroke-width="0.9" opacity="0.95" transform="rotate('+f(r.range(-4,4))+' 60 '+f(hy-9)+')"/>';
+    hy+=3;
+  }
+  if(m.book){ /* lectern: open leaves before the mass */
+    extra+='<path d="M '+f(cx-11)+' '+f(cy+8)+' q 5 -4 11 -2 q 6 -2 11 2 l 0 6 q -5 -3 -11 -1 q -6 -2 -11 1 Z" fill="#0b0908" stroke="var(--text)" stroke-width="0.8" opacity="0.95"/>';
+  }
+  if(m.weave){ /* vess: hex arcs woven around */
+    extra+='<path d="M '+f(cx-24)+' '+f(cy-8)+' Q '+f(cx)+' '+f(cy-30)+' '+f(cx+24)+' '+f(cy-4)+'" stroke="var(--hex)" stroke-width="0.9" fill="none" opacity="0.75"/>'+
+         '<path d="M '+f(cx-22)+' '+f(cy+8)+' Q '+f(cx)+' '+f(cy+26)+' '+f(cx+22)+' '+f(cy+4)+'" stroke="var(--hex)" stroke-width="0.9" fill="none" opacity="0.6"/>';
+  }
+  if(typeof m.pitch==='number'){ /* choristers: a note held low / mid / high */
+    var py=[cy+13,cy-2,cy-17][m.pitch];
+    extra+='<line x1="'+f(cx-16)+'" y1="'+f(py)+'" x2="'+f(cx+16)+'" y2="'+f(py)+'" stroke="var(--text-dim)" stroke-width="0.6" opacity="0.8"/>'+
+         '<circle cx="'+f(cx+r.range(-8,8))+'" cy="'+f(py)+'" r="2.6" fill="ACC" opacity="0.95"/>';
+  }
+  return {fills:[body,head],rims:[body,head],extra:extra,cx:cx,cy:cy,brandAt:[cx,cy+2],brandR:r.range(10,13),crestAt:[hx,hy-hr-2]};
+}
+
+function archFlame(r,tier,m){
+  var cx=60,cy=68,w=r.range(15,19),h=r.range(46,54),lean=r.range(-7,7);
+  if(tier==='elite'){w*=1.12;h*=1.08;}
+  var wob=function(a,b){return r.range(a,b);};
+  var d='M '+f(cx)+' '+f(cy+h/2)+
+    ' C '+f(cx-w)+' '+f(cy+h/2)+' '+f(cx-w*0.95)+' '+f(cy+wob(-2,4))+' '+f(cx-w*0.4)+' '+f(cy-h*0.22)+
+    ' C '+f(cx-w*0.18)+' '+f(cy-h*0.38)+' '+f(cx+lean*0.5)+' '+f(cy-h*0.34)+' '+f(cx+lean)+' '+f(cy-h/2)+
+    ' C '+f(cx+lean*0.4+w*0.32)+' '+f(cy-h*0.26)+' '+f(cx+w*0.95)+' '+f(cy+wob(-2,4))+' '+f(cx+w)+' '+f(cy+h*0.28)+
+    ' C '+f(cx+w)+' '+f(cy+h*0.46)+' '+f(cx+w*0.45)+' '+f(cy+h/2)+' '+f(cx)+' '+f(cy+h/2)+' Z';
+  /* the unburned heart: hollow inner flame */
+  var iw=w*0.42, ih=h*0.4;
+  var inner='M '+f(cx)+' '+f(cy+h*0.42)+' C '+f(cx-iw)+' '+f(cy+h*0.3)+' '+f(cx-iw*0.5)+' '+f(cy-ih*0.2)+' '+f(cx+lean*0.5)+' '+f(cy-ih*0.55)+
+    ' C '+f(cx+iw*0.6)+' '+f(cy-ih*0.1)+' '+f(cx+iw)+' '+f(cy+h*0.28)+' '+f(cx)+' '+f(cy+h*0.42)+' Z';
+  var extra='<path d="'+inner+'" fill="none" stroke="ACC" stroke-width="0.9" opacity="0.8"/>';
+  return {fills:[d],rims:[d],extra:extra,cx:cx,cy:cy,brandAt:[cx,cy+h*0.28],brandR:r.range(8,10)};
+}
+
+function archBell(r,tier,m){
+  var cx=60,cy=64,w=r.range(21,25),h=r.range(40,46);
+  if(m.big){w*=1.15;h*=1.1;}
+  var d='M '+f(cx-w*0.24)+' '+f(cy-h*0.5)+
+    ' C '+f(cx-w*0.85)+' '+f(cy-h*0.42)+' '+f(cx-w*0.5)+' '+f(cy+h*0.1)+' '+f(cx-w)+' '+f(cy+h*0.34)+
+    ' L '+f(cx-w)+' '+f(cy+h*0.44)+' L '+f(cx+w)+' '+f(cy+h*0.44)+' L '+f(cx+w)+' '+f(cy+h*0.34)+
+    ' C '+f(cx+w*0.5)+' '+f(cy+h*0.1)+' '+f(cx+w*0.85)+' '+f(cy-h*0.42)+' '+f(cx+w*0.24)+' '+f(cy-h*0.5)+' Z';
+  var extra='<line x1="'+f(cx-w)+'" y1="'+f(cy+h*0.34)+'" x2="'+f(cx+w)+'" y2="'+f(cy+h*0.34)+'" stroke="var(--text)" stroke-width="0.7" opacity="0.7"/>'+
+    '<circle cx="'+f(cx)+'" cy="'+f(cy+h*0.52)+'" r="'+f(r.range(2.6,3.6))+'" fill="ACC" opacity="0.95"/>'+
+    '<path d="M '+f(cx-w*0.22)+' '+f(cy-h*0.5)+' q '+f(w*0.22)+' '+f(-6)+' '+f(w*0.44)+' 0" stroke="var(--text)" stroke-width="1" fill="none" opacity="0.85"/>';
+  if(m.crack){extra+='<path d="M '+f(cx+r.range(-6,6))+' '+f(cy+h*0.44)+' l '+f(r.range(-3,3))+' -9 l '+f(r.range(-4,4))+' -8" stroke="#0b0908" stroke-width="1.6" fill="none"/>';}
+  return {fills:[d],rims:[d],extra:extra,cx:cx,cy:cy,brandAt:[cx,cy-h*0.08],brandR:r.range(9,11)};
+}
+
+function archCrawler(r,tier,m){
+  var n=(m.small?4:5)+r.int(2), cx=60, cy=72;
+  var x0=cx-26, x1=cx+26, qx=cx+r.range(-10,10), qy=cy-r.range(14,22);
+  var fills=[],rims=[],R=(m.small?7.5:9.5);
+  for(var i=0;i<n;i++){
+    var t=i/(n-1), it=1-t;
+    var px=it*it*x0+2*it*t*qx+t*t*x1, py=it*it*cy+2*it*t*qy+t*t*cy;
+    var rr=R*(1-0.55*t)*r.range(0.9,1.1);
+    var seg=blob(r,px,py,rr,[{k:2,A:r.range(0.5,1.2),ph:r.range(0,6.28)}],[],0.8,1,1);
+    fills.push(seg);rims.push(seg);
+  }
+  /* proboscis toward the thread */
+  var extra='<path d="M '+f(x1)+' '+f(cy)+' q 8 -2 12 -8" stroke="var(--text)" stroke-width="0.9" fill="none" opacity="0.8"/>';
+  return {fills:fills,rims:rims,extra:extra,cx:cx,cy:cy,brandAt:[x0+6,cy-2],brandR:7.5};
+}
+
+function archSwarm(r,tier,m){
+  var cx=60,cy=66,n=6+r.int(3),pts=[],fills=[],rims=[],extra='';
+  for(var i=0;i<n;i++){
+    var a=r.range(0,6.28),d=r.range(6,26);
+    pts.push([cx+Math.cos(a)*d, cy+Math.sin(a)*d*0.8]);
+  }
+  /* constellation hairlines first */
+  for(var j=0;j<n-1;j++){
+    extra+='<line x1="'+f(pts[j][0])+'" y1="'+f(pts[j][1])+'" x2="'+f(pts[j+1][0])+'" y2="'+f(pts[j+1][1])+'" stroke="var(--text-faint)" stroke-width="0.5" opacity="0.7"/>';
+  }
+  for(var k=0;k<n;k++){
+    var rr=r.range(2.4,4.6)*(k===0?1.7:1);
+    var b=blob(r,pts[k][0],pts[k][1],rr,[{k:2,A:r.range(0.3,0.9),ph:r.range(0,6.28)}],[],0.5,1,1);
+    fills.push(b);rims.push(b);
+    if(m.member==='flame'){extra+='<path d="M '+f(pts[k][0])+' '+f(pts[k][1]-rr)+' q '+f(r.range(-2,2))+' -4 '+f(r.range(-1.5,1.5))+' -6" stroke="ACC" stroke-width="0.8" fill="none" opacity="0.85"/>';}
+  }
+  return {fills:fills,rims:rims,extra:extra,cx:cx,cy:cy,brandAt:[pts[0][0],pts[0][1]],brandR:6};
+}
+
+function archFrayed(r,tier,m){
+  var cx=60,cy=68,R0=r.range(22,26);
+  var body=blob(r,cx,cy,R0,stdHarm(r,1.6),spikeSet(r,2),r.range(2,5),1,1.02);
+  var extra='';
+  var n=6+r.int(3);
+  for(var i=0;i<n;i++){ /* escaping thread-ends */
+    var a=r.range(0,6.28), ex=cx+Math.cos(a)*R0, ey=cy+Math.sin(a)*R0;
+    extra+='<path d="M '+f(ex)+' '+f(ey)+' q '+f(Math.cos(a)*10+r.range(-5,5))+' '+f(Math.sin(a)*10+r.range(-5,5))+' '+f(Math.cos(a)*20+r.range(-8,8))+' '+f(Math.sin(a)*20+r.range(-8,8))+'" stroke="var(--thread)" stroke-width="0.7" fill="none" opacity="0.6"/>';
+  }
+  if(m.maw){extra+='<path d="M '+f(cx-10)+' '+f(cy+4)+' q 10 9 20 0" stroke="var(--text)" stroke-width="1.1" fill="none" opacity="0.9"/>'+
+    '<line x1="'+f(cx-5)+'" y1="'+f(cy+7)+'" x2="'+f(cx-4)+'" y2="'+f(cy+11)+'" stroke="var(--text)" stroke-width="0.8" opacity="0.8"/>'+
+    '<line x1="'+f(cx+4)+'" y1="'+f(cy+8)+'" x2="'+f(cx+5)+'" y2="'+f(cy+12)+'" stroke="var(--text)" stroke-width="0.8" opacity="0.8"/>';}
+  return {fills:[body],rims:[body],extra:extra,cx:cx,cy:cy,brandAt:[cx,cy-4],brandR:r.range(9,12)};
+}
+
+function archEye(r,tier,m){
+  var cx=60,cy=66,w=30,h=16;
+  var d='M '+f(cx-w)+' '+f(cy)+' Q '+f(cx)+' '+f(cy-h*1.6)+' '+f(cx+w)+' '+f(cy)+' Q '+f(cx)+' '+f(cy+h*1.6)+' '+f(cx-w)+' '+f(cy)+' Z';
+  var extra='<circle cx="60" cy="'+f(cy)+'" r="8.5" fill="none" stroke="var(--text)" stroke-width="1" opacity="0.9"/>'+
+    '<circle cx="60" cy="'+f(cy)+'" r="3.4" fill="ACC" opacity="0.95"/>';
+  for(var i=0;i<5;i++){var a=-0.5-i*0.55;
+    extra+='<line x1="'+f(cx+Math.cos(a)*w*0.8)+'" y1="'+f(cy+Math.sin(a)*h*1.25)+'" x2="'+f(cx+Math.cos(a)*(w*0.8+7))+'" y2="'+f(cy+Math.sin(a)*(h*1.25)-5)+'" stroke="var(--text-dim)" stroke-width="0.7" opacity="0.8"/>';}
+  return {fills:[d],rims:[d],extra:extra,cx:cx,cy:cy,brandAt:null,brandR:0};
+}
+
+var ARCHS={figure:archFigure,flame:archFlame,bell:archBell,crawler:archCrawler,swarm:archSwarm,frayed:archFrayed,eye:archEye};
+
+/* ---------- motif map: data, not code ---------- */
+var MOTIFS={
+  cinder_husk:{arch:'figure',crest:'flame'},
+  tallow_wisp:{arch:'flame'},
+  thread_leech:{arch:'crawler'},
+  reliquary_mite:{arch:'crawler',small:true},
+  sexton:{arch:'figure',tool:true},
+  mourner:{arch:'figure',veil:true},
+  votive_throng:{arch:'swarm',member:'flame'},
+  gravewax_husk:{arch:'figure',melt:true},
+  pallbearer:{arch:'figure',wide:true,burden:true},
+  warden_of_the_crossing:{arch:'figure',bars:true},
+  interred_saint:{arch:'figure',chains:true},
+  psalm_eater:{arch:'frayed',maw:true},
+  bell_husk:{arch:'bell',crack:true},
+  lectern_wretch:{arch:'figure',book:true},
+  chorister_low:{arch:'figure',pitch:0},
+  chorister_mid:{arch:'figure',pitch:1},
+  chorister_high:{arch:'figure',pitch:2},
+  the_cantor:{arch:'figure',crest:'bell'},
+  bellkeeper:{arch:'bell',big:true},
+  choirmaster:{arch:'figure',crest:'bell'},
+  the_unraveled:{arch:'frayed'},
+  character_vess:{arch:'figure',weave:true},
+  character_bram:{arch:'figure',crest:'flame'},
+  character_witness:{arch:'eye'}
+};
+
+/* ---------- crests (small marks above the head) ---------- */
+function crest(kind,x,y,acc){
+  if(kind==='flame') return '<path d="M '+f(x)+' '+f(y)+' q -3 -4 -1 -8 q 3 3 2 -4 q 3 5 1 9 q -1 2 -2 3 Z" fill="none" stroke="'+acc+'" stroke-width="0.9" opacity="0.9"/>';
+  if(kind==='bell') return '<path d="M '+f(x-4)+' '+f(y)+' q 0 -7 4 -7 q 4 0 4 7 Z" fill="none" stroke="'+acc+'" stroke-width="0.9" opacity="0.9"/><circle cx="'+f(x)+'" cy="'+f(y+1.5)+'" r="1" fill="'+acc+'"/>';
+  return '';
+}
+
+/* ---------- frame ticks by act ---------- */
+function frameTicks(act){
+  if(act===2) return '<path d="M3 11 Q3 3 11 3 M109 3 Q117 3 117 11 M117 109 Q117 117 109 117 M11 117 Q3 117 3 109" fill="none" stroke="var(--text-faint)" stroke-width="0.8"/>';
+  if(act===3) return '<path d="M3 11 V5 M6 8 H11 M109 3 H115 M112 6 V11 M117 109 V115 M114 112 H109 M11 117 H5 M8 114 V109" fill="none" stroke="var(--text-faint)" stroke-width="0.8"/>';
+  return '<path d="M3 11 V3 H11 M109 3 H117 V11 M117 109 V117 H109 M11 117 H3 V109" fill="none" stroke="var(--text-faint)" stroke-width="0.8"/>';
+}
+
+/* ---------- brand: the grave-mark (ring / spokes / knot) ---------- */
+function brand(r,bx,by,bR,acc){
+  if(!bR) return '';
+  var out=[],bgap=r.next()<0.6?r.range(0.5,1.5):0;
+  var bdash=bgap?('stroke-dasharray="'+f(bR*(Math.PI*2-bgap))+' '+f(bR*bgap)+'"'):'';
+  out.push('<circle cx="'+f(bx)+'" cy="'+f(by)+'" r="'+f(bR)+'" fill="none" stroke="var(--text)" stroke-width="1" '+bdash+
+    ' transform="rotate('+f(r.range(0,360))+' '+f(bx)+' '+f(by)+')" opacity="0.9"/>');
+  var bsp=3+r.int(3);
+  for(var i=0;i<bsp;i++){
+    var a=(i/bsp)*Math.PI*2+r.range(-0.12,0.12), r1=r.range(1.5,4), r2=bR-r.range(0,2.5);
+    out.push('<line x1="'+f(bx+Math.cos(a)*r1)+'" y1="'+f(by+Math.sin(a)*r1)+'" x2="'+f(bx+Math.cos(a)*r2)+'" y2="'+f(by+Math.sin(a)*r2)+'" stroke="var(--text)" stroke-width="0.8" opacity="0.85"/>');
+  }
+  var ka=r.range(0,6.28), kr=r.range(3,bR-1);
+  out.push('<circle cx="'+f(bx+Math.cos(ka)*kr)+'" cy="'+f(by+Math.sin(ka)*kr)+'" r="'+f(r.range(1.1,2))+'" fill="'+acc+'" opacity="0.95"/>');
+  return out.join('');
+}
+
+/* ---------- the mark ---------- */
+function mark(id,tier,act,fixedAccent){
+  var m=MOTIFS[id]||{arch:'figure'};
+  var r=new Rand(hash32(id));
+  var pool=ACT_ACCENTS[act]||ACT_ACCENTS[1];
+  var acc=fixedAccent||pool[r.int(pool.length)];
+  var uid=id.replace(/[^a-z0-9_]/gi,'')+'_'+act+'_'+tier;
+  var A=ARCHS[m.arch](r,tier,m);
+  var extra=A.extra.split('ACC').join(acc);
+
+  var fills='',rims='';
+  for(var i=0;i<A.fills.length;i++) fills+='<path d="'+A.fills[i]+'" fill="#0b0908"/>';
+  for(var j=0;j<A.rims.length;j++) rims+='<path d="'+A.rims[j]+'" fill="none" stroke="url(#rim-'+uid+')" stroke-width="1.2"/>';
+  if(tier==='elite'){ /* notched double rim */
+    for(var e=0;e<A.rims.length;e++) rims+='<path d="'+A.rims[e]+'" fill="none" stroke="'+acc+'" stroke-width="0.6" stroke-dasharray="4 5" opacity="0.55" transform="translate(0 -1.5)"/>';
+  }
+  var crestSvg=(m.crest&&A.crestAt)?crest(m.crest,A.crestAt[0],A.crestAt[1],acc):'';
+  var brandSvg=A.brandAt?brand(r,A.brandAt[0],A.brandAt[1],A.brandR,acc):'';
+
+  /* the crossing thread — constant throughline */
+  var ty1=r.range(24,100),ty2=r.range(24,100),tqx=60+r.range(-22,22),tqy=64+r.range(-26,18);
+  var tD='M -4 '+f(ty1)+' Q '+f(tqx)+' '+f(tqy)+' 124 '+f(ty2);
+  var thread='<path d="'+tD+'" fill="none" stroke="var(--thread)" stroke-width="0.9" opacity="0.3"/>'+
+    '<path class="thread-anim" d="'+tD+'" fill="none" stroke="var(--thread)" stroke-width="1.2" stroke-dasharray="1.5 6.5" opacity="0.7"/>';
+
+  /* tier dress */
+  var dress='',frame='',shoulder='';
+  var frameRect='<rect x="3" y="3" width="114" height="114" fill="none" stroke="var(--line-soft)" stroke-width="0.8"/>';
+  var ticks=frameTicks(act);
+  if(tier==='minion'){ frame=frameRect; }
+  else if(tier==='elite'){
+    frame=frameRect+ticks+
+      '<path d="M 60 3 l -4 4 4 4 4 -4 Z M 60 117 l -4 -4 4 -4 4 4 Z" fill="none" stroke="'+acc+'" stroke-width="0.8" opacity="0.8"/>';
+  }else if(tier==='boss'){
+    var hr2=38,ha=-2.45,hb=-0.7;
+    var s2=new Rand(hash32(id+'::shoulder'));
+    shoulder='<path d="'+blob(s2,60+s2.range(-1,1)*s2.range(16,20),74,s2.range(11,14),stdHarm(s2,1),[],3,1,1)+'" fill="#0d0a08" opacity="0.9"/>';
+    dress='<circle cx="60" cy="64" r="52" fill="none" stroke="'+acc+'" stroke-width="0.6" stroke-dasharray="3 6" opacity="0.4"/>'+
+      '<path d="M '+f(60+Math.cos(ha)*hr2)+' '+f(64+Math.sin(ha)*hr2)+' A '+hr2+' '+hr2+' 0 0 1 '+f(60+Math.cos(hb)*hr2)+' '+f(64+Math.sin(hb)*hr2)+'" fill="none" stroke="'+acc+'" stroke-width="1.3" opacity="0.85"/>';
+    frame=frameRect+'<rect x="6" y="6" width="108" height="108" fill="none" stroke="var(--line-soft)" stroke-width="0.5"/>'+ticks;
+  }else if(tier==='character'){
+    dress='<circle cx="60" cy="64" r="51" fill="none" stroke="'+acc+'" stroke-width="1.1" opacity="0.85"/>'; /* unbroken */
+    frame=frameRect+ticks;
+  }else{ frame=frameRect+ticks; }
+
+  var inner=dress+shoulder+fills+rims+extra+crestSvg+brandSvg;
+  if(tier==='minion') inner='<g transform="translate(60 64) scale(0.74) translate(-60 -64)">'+inner+'</g>';
+
+  return '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden>'+
+    '<defs><linearGradient id="rim-'+uid+'" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="'+acc+'" stop-opacity="0.85"/>'+
+      '<stop offset="0.55" stop-color="'+acc+'" stop-opacity="0.15"/>'+
+      '<stop offset="1" stop-color="'+acc+'" stop-opacity="0"/></linearGradient></defs>'+
+    '<rect width="120" height="120" fill="url(#tb-ground)"/>'+
+    '<rect width="120" height="120" filter="url(#tb-grain)" opacity="0.045"/>'+
+    inner+thread+frame+'</svg>';
+}
+
+/* ---------- data ---------- */
+var BESTIARY=[
+  {act:1,label:'Act 1 — the Undercroft',rows:[
+    ['cinder_husk','Cinder Husk','normal'],['tallow_wisp','Tallow Wisp','normal'],['thread_leech','Thread-Leech','normal'],
+    ['reliquary_mite','Reliquary Mite','normal'],['sexton','Sexton','normal'],['votive_throng','Votive Throng','normal'],
+    ['gravewax_husk','Gravewax Husk','normal'],['pallbearer','Pallbearer','normal'],
+    ['mourner','The Mourner','elite'],['warden_of_the_crossing','Warden of the Crossing','elite'],
+    ['interred_saint','The Interred Saint','boss']]},
+  {act:2,label:'Act 2 — the Hollow Choir',rows:[
+    ['psalm_eater','Psalm-Eater','normal'],['bell_husk','Bell Husk','normal'],['lectern_wretch','Lectern Wretch','normal'],
+    ['chorister_low','Chorister (Low)','normal'],['chorister_mid','Chorister (Mid)','normal'],['chorister_high','Chorister (High)','normal'],
+    ['the_cantor','The Cantor','elite'],['bellkeeper','Bellkeeper','elite'],['choirmaster','Choirmaster','boss']]},
+  {act:3,label:'Act 3 — the Last Braid',rows:[
+    ['the_unraveled','The Unraveled','boss']]},
+  {act:1,label:'The bound pair, and the one who watches',rows:[
+    ['character_vess','Vess','character','#b98fd4'],['character_bram','Bram','character','#ffb070'],
+    ['character_witness','The Witness','character','#b9a8d4']]}
+];
+
+/* ---------- render ---------- */
+var archEl=document.getElementById('arch');
+var archExamples=[
+  ['figure','sexton','figure — the interred'],['flame','tallow_wisp','flame — votive fire'],
+  ['bell','bell_husk','bell — the Choir'],['crawler','thread_leech','crawler — parasites'],
+  ['swarm','votive_throng','swarm — the many'],['frayed','the_unraveled','frayed — coming apart'],
+  ['eye','character_witness','eye — the Witness']];
+var h='';
+archExamples.forEach(function(a){
+  h+='<div class="cell">'+mark(a[1], a[1]==='character_witness'?'character':'normal', a[1]==='the_unraveled'?3:(a[1]==='bell_husk'?2:1), a[1]==='character_witness'?'#b9a8d4':null)+'<div class="clabel">'+a[2]+'</div></div>';
+});
+archEl.innerHTML=h;
+
+var tierEl=document.getElementById('tiers');
+h='';
+['minion','normal','elite','boss','character'].forEach(function(t){
+  h+='<div class="cell">'+mark('sexton',t,1)+'<div class="clabel">'+t+'</div></div>';
+});
+tierEl.innerHTML=h;
+
+var actEl=document.getElementById('acts');
+h='';
+[1,2,3].forEach(function(a){
+  h+='<div class="cell">'+mark('gravewax_husk','normal',a)+'<div class="clabel">act '+a+'</div></div>';
+});
+actEl.innerHTML=h;
+
+var bEl=document.getElementById('bestiary');
+h='';
+BESTIARY.forEach(function(sec){
+  h+='<h3>'+sec.label+'</h3><div class="grid g4">';
+  sec.rows.forEach(function(row){
+    h+='<div class="cell">'+mark(row[0],row[2],sec.act,row[3])+'<div class="cname">'+row[1]+'</div><div class="ctier '+row[2]+'">'+row[2]+'</div></div>';
+  });
+  h+='</div>';
+});
+bEl.innerHTML=h;
+
+document.getElementById('anim').addEventListener('change',function(ev){
+  document.body.classList.toggle('no-anim',!ev.target.checked);
+});
+</script>
+</body>
+</html>

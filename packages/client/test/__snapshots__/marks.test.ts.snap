@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Gate B — determinism > snapshot hashes lock the approved look (committed at sign-off gate 3) 1`] = `
+{
+  "bell_husk/normal/act2": "fea6f37dd97037ea0f1c44f22af5e54ea8d3407a37ed7c4b128aee24c80fdd70",
+  "character_bram/character/act1": "a69a44a617812ffbe78bf430e171ec9356cf8379513170dd7a510e010ca854ab",
+  "character_vess/character/act1": "7f814006fa66667ff045492db3bf40648cf3c9630be4e41b14773ce919ede4e7",
+  "character_witness/character/act1": "1153264531946a428d5848a915ef33954475965523d38a5ff062bca04f7831c4",
+  "choirmaster/boss/act2": "2336f35bc804d69d78f29bd9715a56def6c19b26daa6db39e0ab6bc223ddc4fc",
+  "cinder_husk/normal/act1": "43e824fa966940b86964c0677c31aad783354b5305ead79f6ed39a20954a0cac",
+  "gravewax_husk/normal/act2": "ca5e65ca10189c4a558b89eced144d4a374fc544f8eaec69c786a501d82db2ff",
+  "gravewax_husk/normal/act3": "789631a5174fb3e3b27ca9c3c0f21075e0e5a1c63f5a7966a2bf1f4d2d5cd774",
+  "interred_saint/boss/act1": "cc812ba80f67514a5d6bbd31d39e1aa3c218ecb5645fdd204947d498624efe61",
+  "mislaid_sexton/elite/act1": "1212787ecccaabbbe6f90c61a749f6cfc14a1bd6f7311b5fe6d7767fd8cde123",
+  "mourner/elite/act1": "75a4ef6ba12aed5b3e13232a7821b04eb420c3d5cc9c199461355d54dc9b86cf",
+  "psalm_eater/normal/act2": "e39adace4ecb43993fabca87df1486b2d45b36a1d86955873272e45870fa7644",
+  "tallow_wisp/normal/act1": "6cbe8e49c33b939de7098145d015263d570dea199ad4127c85cb8fac3264e3ff",
+  "the_cantor/elite/act2": "25e866356c91dff5a01b2e0b4a3c359ab63c5fdb2bc2acf39fc9c29818ab884b",
+  "the_unraveled/boss/act3": "09d4f31a1aa129486a24775c99d1bef0dffa576ac3baf58eb23f72a53f6d89e8",
+  "thread_leech/normal/act1": "721d488db1c227ed37a104ffdc52ed4999293af297af6e9eff00dca0fa1642a9",
+  "votive_throng/normal/act1": "aa4c2e74784f1f9b0184d2fd7d2530b30a27fb97dd03bdfa1437acceddb45faf",
+}
+`;

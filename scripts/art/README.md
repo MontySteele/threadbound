@@ -1,7 +1,10 @@
 # Art pipeline (M3-B6)
 
 The game currently ships the **procedural sigil set** (`packages/client/src/sigils.tsx`)
-— deterministic SVG marks, whole-set consistent by construction. This pipeline
+— deterministic SVG marks, whole-set consistent by construction. As of S12 the
+shipped set is the **sigil vocabulary v2** (archetype silhouettes + tier dress
++ act accents; visual spec at `docs/reference/sigil_vocabulary_v2.html`) — that
+v2 set is now the sanctioned fallback this pipeline would replace. This pipeline
 exists to replace that set wholesale with AI-generated portraits **only if the
 generated set can hold one style**. Mixing sets is forbidden (M3 plan B6).
 
@@ -15,8 +18,8 @@ generated set can hold one style**. Mixing sets is forbidden (M3 plan B6).
    ./post-process.sh raw/ out/    # palette-quantize → vignette → frame → crop
    ```
 3. Drop `out/*.png` into `packages/client/public/art/` named `<entity_id>.png`.
-   The client auto-prefers a portrait file over the sigil when present
-   (see `sigils.tsx` — `Portrait` wrapper, TODO on adoption).
+   Adoption wiring (a portrait-over-mark preference in the client) does not
+   exist yet — it is part of the adoption pass itself, gated on step 4.
 4. **Designer review against /?style before adopting.** If more than ~3 images
    fight the set's style, abandon the pass and keep sigils (sanctioned fallback).
 
@@ -29,6 +32,6 @@ generated set can hold one style**. Mixing sets is forbidden (M3 plan B6).
 
 ## Fallbacks (in order)
 
-1. Procedural sigils (current, shipped).
+1. Procedural sigils, v2 vocabulary (current, shipped).
 2. CC0 dark-fantasy portrait packs (itch.io) run through the same post-process.
 3. Typographic sigil cards intensified (= option 1, more so).

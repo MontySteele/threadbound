@@ -52,6 +52,9 @@ down simply is not finished.
   the Machine IS — patching gaps by re-description. Deckbuilding is
   theology. The work is necessary (it is how the Witness's codex gets
   written) and harmful: every re-description worsens the total damage.
+- **The ring on the marks (S12, ruling R3, canon):** the bound pair's
+  mark is held in a whole ring; everything else in the descent wears a
+  broken one.
 - **Ascension is the harm accumulating.** The existing unlock rule
   already tells this story: clearing A(N) unlocks A(N+1) — the world is
   harder next time BECAUSE you succeeded last time. No retrofit needed;
