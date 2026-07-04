@@ -608,6 +608,10 @@ export interface MapNode {
    *  vote-match; 'covet' treasures offer one-of-two, the other seizable
    *  with a Covet charge. The breath-before-boss layer never varies. */
   variant?: 'toll' | 'covet';
+  /** S11.8 (TB_KNOTWORK only): which warp strand this node rides. Absent
+   *  on knots (crossings belong to the weave), the shared breath layer,
+   *  the boss — and on every node of a non-braid map. */
+  strand?: 'truth' | 'power';
 }
 
 export interface MapState {
@@ -846,6 +850,10 @@ export interface GameState {
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
+  /** S11.8 (Wave B): the braid run flag (server reads TB_KNOTWORK, tracks
+   *  pattern — absent when unflagged, so flag-off state is byte-identical
+   *  and the current generator remains the unflagged path). */
+  knotwork?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
   /** S9d.2 run tallies; present only when rites is set (grower rites) */
@@ -1011,7 +1019,7 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; knotwork?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

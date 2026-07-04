@@ -877,7 +877,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             <button
               key={n.id}
               data-gp="MAP"
-              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
+              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
               style={{
                 left: x, top: y,
                 ...(myPick ? { outlineColor: PCOLOR[you] } : {}),

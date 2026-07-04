@@ -340,14 +340,14 @@ async function main(): Promise<void> {
     );
   }
   // OQ#57: rite-card play rate, the real S9c gate-2 measure
-  const riteRuns = results.filter((r) => r.telemetry.rites?.ritePlays);
-  if (riteRuns.length > 0) {
-    const plays = riteRuns.reduce(
+  const ritePlayRuns = results.filter((r) => r.telemetry.rites?.ritePlays);
+  if (ritePlayRuns.length > 0) {
+    const plays = ritePlayRuns.reduce(
       (a, r) => a + r.telemetry.rites!.ritePlays!.p1 + r.telemetry.rites!.ritePlays!.p2, 0);
-    const combats = riteRuns.reduce((a, r) => a + r.combatsWon, 0);
+    const combats = ritePlayRuns.reduce((a, r) => a + r.combatsWon, 0);
     console.log(
-      `S9c rite-card play rate: ${(plays / riteRuns.length).toFixed(1)} plays/run` +
-      ` (${combats > 0 ? (plays / combats).toFixed(2) : 'n/a'} per combat won, n=${riteRuns.length} runs)`,
+      `S9c rite-card play rate: ${(plays / ritePlayRuns.length).toFixed(1)} plays/run` +
+      ` (${combats > 0 ? (plays / combats).toFixed(2) : 'n/a'} per combat won, n=${ritePlayRuns.length} runs)`,
     );
   }
 

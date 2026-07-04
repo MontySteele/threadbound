@@ -875,6 +875,8 @@ export class GameServer {
           tracks: envFlag('TB_TRACKS'),
           // S7: the rites flag crosses here too (pure engine never reads env)
           rites: envFlag('TB_RITES'),
+          // S11.8 (Wave B): the braid generator, flag-gated during development
+          knotwork: envFlag('TB_KNOTWORK'),
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
           // S11.4: codex-keyed event doors — UNION of the seats' proven

@@ -89,6 +89,11 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
+/* S11.8 (TB_KNOTWORK): the two warp strands read as textures, not labels —
+   a cool cast on the truth strand, an ember cast on the power strand.
+   PROVISIONAL palette pending the string/lore pass. */
+.mapnode.strand-truth { border-color: color-mix(in srgb, #7d9bd6 55%, var(--panel)); }
+.mapnode.strand-power { border-color: color-mix(in srgb, #d69b62 55%, var(--panel)); }
 /* S11.6 asymmetric scouting: your seat's face for a node — a whispered
    sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
    you"). Italic + dim: it reads as knowledge, not as the node's name. */
