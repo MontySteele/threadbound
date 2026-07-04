@@ -26,6 +26,7 @@ comparable to numbers in older status docs; deltas are.
 | post-S9d (retuned) + S11.2 escalation | 25 | 24 | 29 | vb +7 / vv +6 / bb +4 vs post-S9c. vb still a point over; see sign-off row 2. |
 | post-S11.5 (deep events + hs floor) | 36* | 26 | 34 | *vb pooled 600 runs (37/32/38). vb +11 / vv +2 / bb +5 vs prior stage — OUTSIDE ±6. PROBE: deep stages OFF reads vb 36 = the drift is 100% the [1,3] floor guaranteeing Carillon+Hymnal (their SHALLOW faces: relic, rare card) on every act-2 map, not the signed stakes. **RULED (2026-07-04): re-baseline; the floor demanded the drift and stays.** This row is the Wave A baseline for S11.6/S11.7 comparisons. |
 | post-S11.6+S11.7 (scouting + pacing variants) | 37 | 26 | 38 | +1 / 0 / +4 vs the re-baselined row — all inside ±6 ✓. **Wave A gate 2 CLOSED.** (bb shard-0 lost one run to a timeout; pooled 199.) |
+| post-S11.7 at **A2** | 18 | 15 | 11 | The S9d gate's A2 legs, run at last. NO in-env A2 baseline exists (the legs never ran pre-S9d), so no delta gate is computable — recorded as the FIRST in-env A2 row and judged directionally: A2 sits well under A0 at every pair, no degenerate reads. Named, not gated. |
 
 Act-1 HP loss runs 25–29 across all stages — ABOVE the 16–22 watch band,
 as it already was post-S10a (23.6–25.8 documented). Pre-existing, not
@@ -201,7 +202,11 @@ tests landed against exactly this table (content/strand-targets.ts).
    (S11.11-4 sign-off first), bot strand routing (S11.9), D6/D7
    re-battery vs the B6 ledger, golden lock both flag states.
 3. S11.5 authoring once this table is ruled.
-4. A2 battery legs (the S9d gate asks A0 + A2; only A0 ran — named).
+4. ~~A2 battery legs~~ — RAN 2026-07-04 (see ledger); first in-env A2
+   row banked, judged directionally (no pre-S9d A2 baseline exists).
+   First OQ#57 instrument reading, same battery: rite-card play rate
+   26.7 plays/run (4.29 per combat won) — rite cards are PLAYED, the
+   S9c gate-2 direction read is healthy.
 5. Witness-string designer read (S9c gate 4 / S11.3 pool) before any
    public build.
 
