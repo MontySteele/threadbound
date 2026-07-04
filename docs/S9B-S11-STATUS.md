@@ -228,8 +228,9 @@ crossing layer (S11.11-1) RATIFIED.** Wave B batteries unblocked.
    First OQ#57 instrument reading, same battery: rite-card play rate
    26.7 plays/run (4.29 per combat won) — rite cards are PLAYED, the
    S9c gate-2 direction read is healthy.
-4. Witness-string designer read (S9c gate 4 / S11.3 / S11.7 pools —
-   18 lines presented 2026-07-04) before any public build.
+4. ~~Witness-string designer read~~ — **APPROVED as written
+   2026-07-04** (all 18 lines; S9c gate 4 CLOSED). Public build
+   unblocked on this axis.
 
 ## Open designer rows — ALL RULED (2026-07-04, same day)
 

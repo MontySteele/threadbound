@@ -339,6 +339,19 @@ async function main(): Promise<void> {
       `narrowed gambles ${mean((t) => t.questionsNarrowed ?? 0)}`,
     );
   }
+  // OQ#59 economy instruments: do wins ride relics or card growth? Split by
+  // outcome so the winning build's shape is visible directly.
+  {
+    const wins = results.filter((r) => r.outcome === 'victory');
+    const losses = results.filter((r) => r.outcome !== 'victory');
+    const m = (rs: typeof results, f: (r: RunResult) => number): string =>
+      rs.length > 0 ? (rs.reduce((a, r) => a + f(r), 0) / rs.length).toFixed(1) : 'n/a';
+    console.log(
+      `OQ#59 economy: relics/run wins ${m(wins, (r) => r.relicsEnd ?? 0)} vs losses ${m(losses, (r) => r.relicsEnd ?? 0)}` +
+      ` | deck/run wins ${m(wins, (r) => r.deckEnd ?? 0)} vs losses ${m(losses, (r) => r.deckEnd ?? 0)}` +
+      ` | combats/run wins ${m(wins, (r) => r.combatsWon)} vs losses ${m(losses, (r) => r.combatsWon)}`,
+    );
+  }
   // OQ#57: rite-card play rate, the real S9c gate-2 measure
   const ritePlayRuns = results.filter((r) => r.telemetry.rites?.ritePlays);
   if (ritePlayRuns.length > 0) {

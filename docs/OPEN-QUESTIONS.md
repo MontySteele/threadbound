@@ -676,3 +676,16 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     with knot-pricing live (from 1.03) — the ladder/policy joint
     recalibration has its instrument. **OPEN — designer (amend/battery
     loop, or re-baseline the braid as its own mode).**
+    DESIGNER HYPOTHESIS (2026-07-04, supersedes the quota amendment as
+    the first lever): the inflation may indict the CARD-REWARD economy,
+    not the fight count — a pair that routes around combat should do
+    WORSE at the knots (their deck never grew), and instead they fight
+    exactly as well (HP/combat 29.7 braid vs 29.6 Wave A — the single
+    strongest datum). Card rewards may be too weak relative to relics
+    (the S11.5 probe already showed one relic-bearing event/map = +11
+    alone). Decomposition probe running: braid WITHOUT event-seeking
+    (if mirrors stay hot → fight scarcity; if they cool → relic/event
+    take), plus new economy instruments (relics + deck size per run,
+    wins vs losses split). Bot-meta caveat applies (OQ#14): bots draft
+    junk, so card value reads LOW on bot evidence — a card-economy
+    rebalance should be sized against playtest reads too.

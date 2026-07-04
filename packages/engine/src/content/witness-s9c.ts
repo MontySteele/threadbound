@@ -1,5 +1,7 @@
-// S9c Witness pools (S9c.2–S9c.4). ALL STRINGS PROVISIONAL — designer read
-// against the never-lies / wrong-way fences gates the merge (S9c gate 4).
+// S9c Witness pools (S9c.2–S9c.4). Designer read PASSED 2026-07-04 (all 18
+// then-provisional lines approved as written: 8 first-draw namings, 4
+// bound-witness, 3 toll-door, 3 covet-cache) — S9c gate 4 CLOSED; the
+// rite_reclaim + birth-pick lines were doc-verbatim all along.
 //
 // Register (S9c.3): disdain with an edge of reluctant recognition — the
 // Witness has seen funerals; it has not often seen them shared. Fences:
@@ -26,7 +28,7 @@ export const S9C_WITNESS: Record<string, string[]> = {
   ],
 
   // S11.7 — the toll door resolves: one seat healed, by agreement. Fires
-  // only at toll variants (flagged maps only carry them). PROVISIONAL.
+  // only at toll variants (flagged maps only carry them). Approved 2026-07-04.
   toll_door: [
     'One of you, mended. The other, edified. The door considers this fair.',
     'The door asked its question and you answered together. It keeps a list of couples who could not.',
@@ -34,7 +36,7 @@ export const S9C_WITNESS: Record<string, string[]> = {
   ],
 
   // S11.7 — a Covet charge spent on the cache's remainder. Fires only at
-  // covet variants (flagged maps only carry them). PROVISIONAL.
+  // covet variants (flagged maps only carry them). Approved 2026-07-04.
   covet_cache: [
     'Both, then. The case was a question about you, and you answered it.',
     'The rite has provisions for wanting everything. You have just used one.',
@@ -42,7 +44,7 @@ export const S9C_WITNESS: Record<string, string[]> = {
   ],
 
   // S11.3 — the bound witness: an elite kill pays a guaranteed fragment
-  // (combat paying narrative). Register: the collector at work. PROVISIONAL.
+  // (combat paying narrative). Register: the collector at work. Approved 2026-07-04.
   bound_witness: [
     'Hold still. I am reading what it was.',
     'Every snarl is a record of what snagged. This one kept accounts.',
