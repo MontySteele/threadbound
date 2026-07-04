@@ -18,9 +18,9 @@ describe('applyGrowth — linear growers', () => {
   const knell = (t: RunTallies) =>
     applyGrowth(effectiveDef({ instanceId: 'i', defId: 'rite_knell' }), t, 'p1');
 
-  it('Knell: +1 damage per 2 detonations, text auto-rendered', () => {
+  it('Knell: +1 damage per 3 detonations (first-battery retune of the signed per-2), text auto-rendered', () => {
     expect(knell(tallies()).base[0]).toMatchObject({ op: 'damage', amount: 3 });
-    const grown = knell(tallies({ detonations: 7 })); // floor(7/2)=3
+    const grown = knell(tallies({ detonations: 9 })); // floor(9/3)=3
     expect(grown.base[0]).toMatchObject({ op: 'damage', amount: 6 });
     expect(grown.text).toContain('Deal 6.');
     expect(grown.grownStep).toBe(3);
@@ -41,7 +41,7 @@ describe('applyGrowth — linear growers', () => {
   });
 
   it('growth composes with upgrades and mutations (the tally is carved into the object)', () => {
-    const t = tallies({ detonations: 4 }); // +2
+    const t = tallies({ detonations: 6 }); // +2 at the retuned per-3
     const up = applyGrowth(effectiveDef({ instanceId: 'i', defId: 'rite_knell', upgraded: true }), t, 'p1');
     expect(up.base[0]).toMatchObject({ op: 'damage', amount: 7 }); // 5 + 2
     const mut = applyGrowth(effectiveDef({ instanceId: 'i', defId: 'rite_knell', mutated: true, echo: true }), t, 'p1');
@@ -105,7 +105,7 @@ describe('tallies in real runs', () => {
     s = reduce(s, { type: 'NODE_PICK', player: 'p2', nodeId: node });
     expect(s.phase).toBe('combat');
     // seed the tally and force the Knell into hand (test-only surgery)
-    s.tallies!.detonations = 10; // +5
+    s.tallies!.detonations = 15; // +5 at the retuned per-3
     const p1 = s.players.p1;
     const hasKnell = p1.combatCards.some((c) => c.defId === 'rite_knell');
     if (!hasKnell) {

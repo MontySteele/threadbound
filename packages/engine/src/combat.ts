@@ -4,7 +4,7 @@
 // is of the working copy only.
 
 import { CARDS } from './content/cards';
-import { ENEMIES } from './content/registry';
+import { ELITE_ESCALATION_SCALE, ENEMIES } from './content/registry';
 import { POWERS } from './content/powers';
 import { RITES_BY_ID } from './content/rites';
 import { RELICS_BY_ID } from './content/registry';
@@ -1318,7 +1318,7 @@ export function resolveTurn(state: GameState): void {
     enemy.scriptIndex = (enemy.scriptIndex + 1) % def.script.length;
     // S4.4 A2: intents are stored scaled, so every displayed number is the
     // truth the hit will use (same contract as the §14.8 registry scales)
-    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale);
+    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
     // nt-slice S6.5: the face's live mechanics override the script on their
     // fixed turns; hidden ones whisper one turn before their first firing
     applyBossMechanicIntent(state, enemy, combat.turn + 1);
@@ -1339,7 +1339,7 @@ function applyBossMechanicIntent(state: GameState, enemy: EnemyState, upcomingTu
     const { first, period } = mechanicFireTurns(slot);
     if (upcomingTurn < first || (upcomingTurn - first) % period !== 0) return;
     const mech = face.mechanicPool.find((m) => m.id === mechId)!;
-    enemy.intent = scaleIntent(mech.intent, ascensionMods(state.ascension).dmgScale);
+    enemy.intent = scaleIntent(mech.intent, ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
     const revealed = slot === 0 ? state.truth!.reveals.bossFace : state.truth!.reveals.bossMechanic;
     if (upcomingTurn === first && !revealed) {
       enemy.telegraph = mech.telegraphLine;
@@ -1472,6 +1472,7 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
   player.hp = Math.max(0, player.hp - hpLoss);
   if (hpLoss > 0) {
     state.log.push({ e: 'player_hit', player: player.id, hpLoss, blocked });
+    if (state.combat) state.combat.hpLostThisCombat = (state.combat.hpLostThisCombat ?? 0) + hpLoss;
     const act = state.map.act;
     const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
     actStats.hpLost += hpLoss;
@@ -1589,12 +1590,27 @@ export function startTurn(state: GameState): void {
 // Combat setup
 // ---------------------------------------------------------------------------
 
+/** S11.2 snarl escalation (ruling 2, STEEP): after each knot cut this act,
+ *  the remaining knots tighten — cumulative +10% / +30% / +60% HP and DMG,
+ *  scaled by TB_ELITE_ESCALATION. Cutting a snarl pulls the weave tighter
+ *  everywhere else. */
+export function escalationFactor(knotsCut: number): number {
+  const LADDER = [0, 0.10, 0.30, 0.60];
+  return LADDER[Math.min(knotsCut, LADDER.length - 1)] * ELITE_ESCALATION_SCALE;
+}
+
 export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const enemies: EnemyState[] = [];
   // S4.4 A1/A2: ascension rungs stack multiplicatively on the §14.8 anchor.
   // Identity at A0 by construction (scale 1 short-circuits) — same rng draws,
   // same numbers, byte-equal combats.
   const mods = ascensionMods(state.ascension);
+  // S11.2: elite fights carry the act's current escalation. No extra rolls;
+  // factor 0 keeps the integer HP path (byte-equal non-elite combats).
+  const esc = enemyDefIds.some((id) => ENEMIES[id]?.elite)
+    ? escalationFactor(state.map?.knotsCut ?? 0) : 0;
+  const hpScale = mods.hpScale * (1 + esc);
+  const dmgScale = mods.dmgScale * (1 + esc);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;
   const chorusIds = enemyDefIds.filter((id) => ENEMIES[id]?.chorus);
@@ -1603,7 +1619,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     const def = ENEMIES[defId];
     const roll = rngInt(state.rng, def.hp[1] - def.hp[0] + 1);
     state.rng = roll.state;
-    const hp = mods.hpScale === 1 ? def.hp[0] + roll.value : Math.round((def.hp[0] + roll.value) * mods.hpScale);
+    const hp = hpScale === 1 ? def.hp[0] + roll.value : Math.round((def.hp[0] + roll.value) * hpScale);
     const start = rngInt(state.rng, def.script.length);
     state.rng = start.state;
     // Choristers (§6): exactly one body starts unbound + untargetable
@@ -1616,7 +1632,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       boundTo: isChorusOdd ? null : (i + first.value) % 2 === 0 ? 'p1' : 'p2',
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
-      intent: scaleIntent(def.script[start.value], mods.dmgScale),
+      intent: scaleIntent(def.script[start.value], dmgScale),
     });
   });
 
@@ -1665,6 +1681,8 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     severTriggered: false,
     witnessLines: 0,
     hookOnceFired: [],
+    // S11.2: carried so per-turn intent rescaling keeps the tightened DMG
+    ...(esc > 0 ? { escalation: esc } : {}),
   };
   state.thread = 6; // §5
   state.phase = 'combat';

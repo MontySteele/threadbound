@@ -64,7 +64,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     rng: seed >>> 0,
     phase: 'lobby',
     ...(botSeat ? { botSeat } : {}),
-    map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
+    map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 },
     gold: startGold(), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
     removalsByPlayer: { p1: 0, p2: 0 },
     ascension: 0,
@@ -1249,6 +1249,18 @@ function afterResolution(state: GameState): void {
     earnGold(state, gold, node.kind as GoldSource);
 
     let relic: string | undefined;
+    if (node.kind === 'elite') {
+      // S11.2: the knot is cut — remaining snarls this act tighten. The
+      // calibration instrument records the kill ORDER and what the fight
+      // cost (comfort-pass per-encounter telemetry, keyed by order).
+      (state.telemetry.eliteFights ??= []).push({
+        act: state.map.act,
+        order: state.map.knotsCut ?? 0,
+        hpLost: state.combat?.hpLostThisCombat ?? 0,
+        won: true,
+      });
+      state.map.knotsCut = (state.map.knotsCut ?? 0) + 1;
+    }
     if (node.kind === 'elite' || node.kind === 'boss') {
       for (const pid of ['p1', 'p2'] as PlayerId[]) {
         const p = state.players[pid];

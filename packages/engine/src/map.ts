@@ -5,6 +5,7 @@ import { MapNode, MapState } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { ENCOUNTER_POOLS } from './content/encounters';
 import { MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
+import { distinctApproaches } from './map-composition';
 
 // S7.5: acts 1–2 widened L6→L7, event share 22%→32% (combat absorbs the
 // delta; rest/treasure untouched). Env-overridable via TB_MAP_LAYERS /
@@ -99,7 +100,13 @@ export function generateActMap(
   const shopLayer = 1 + shopLayerRoll.value;
   const treasureLayerRoll = rngInt(rng, 4);
   rng = treasureLayerRoll.state;
-  const treasureLayer = 1 + treasureLayerRoll.value;
+  let treasureLayer = 1 + treasureLayerRoll.value;
+  // S11.1: the treasure guarantee had two leaks — 2-lane layers never placed
+  // it (the old width>2 condition), and sharing the shop's layer lost lane 1
+  // ordering fights on 2-lane layers. Deterministic layer shift, zero extra
+  // rolls: rng consumption is unchanged, node KINDS shift (golden regen,
+  // loudly, per the Wave A gate).
+  if (treasureLayer === shopLayer) treasureLayer = 1 + (treasureLayer % 4);
 
   let id = 0;
   for (let layer = 0; layer < LAYERS; layer++) {
@@ -113,7 +120,7 @@ export function generateActMap(
         node = { id, kind: 'elite', edges: [], layer, lane, encounterId: eliteIds[eliteLayers.indexOf(layer) % eliteIds.length] };
       } else if (layer === shopLayer && lane === laneCounts[layer] - 1) {
         node = { id, kind: 'shop', edges: [], layer, lane };
-      } else if (layer === treasureLayer && lane === 1 && laneCounts[layer] > 2) {
+      } else if (layer === treasureLayer && lane === 1) {
         node = { id, kind: 'treasure', edges: [], layer, lane };
       } else {
         const roll = rngInt(rng, 100);
@@ -134,6 +141,191 @@ export function generateActMap(
       id++;
     }
   }
+  // ---------------------------------------------------------------------
+  // S11.1 composition repairs — rng-FREE post-passes (no rolls, so rng
+  // consumption is byte-identical; node kinds shift → golden regen, loud).
+  // Order matters: the character-opportunity pass can convert nodes to
+  // events, so the approach-diversity repair runs LAST and is gated-aware.
+  // ---------------------------------------------------------------------
+  const defOfEvent = (eid: string | undefined) => eventDefs.find((e) => e.id === eid);
+  const gatedEvent = (n: MapNode): boolean => {
+    const d = n.kind === 'event' ? defOfEvent(n.eventId) : undefined;
+    return !!(d && (d.character || d.clue || d.rare));
+  };
+  // the treasure GUARANTEE is a count (≥1), not a position — only the last
+  // treasure standing is protected from repairs
+  const pinnedNode = (n: MapNode): boolean =>
+    n.kind === 'shop' || n.kind === 'elite'
+    || (n.kind === 'treasure' && nodes.filter((t) => t.kind === 'treasure').length <= 1);
+  const feederOf = (n: MapNode): MapNode | undefined =>
+    nodes.find((k) => k.kind === 'elite' && k.layer === n.layer + 1) && (n.lane === 0 || n.lane === 1)
+      ? nodes.find((o) => o.layer === n.layer && o.lane === (n.lane === 0 ? 1 : 0))
+      : undefined;
+
+  // Character-event opportunities (≥2 per seat per act, queue admission —
+  // D6/D7 language): flagged runs only, so unflagged maps are untouched by
+  // construction. Retag plain event nodes first (latest layers first — the
+  // early queue already leans gated via the B6 weights); when event nodes
+  // run out, convert combats, then unpinned pacing nodes. Conversions skip
+  // an elite feeder whose twin is already an event (approach diversity).
+  if (riteCharacters.length > 0) {
+    for (const ch of riteCharacters) {
+      const have = (): number =>
+        nodes.filter((n) => n.kind === 'event' && defOfEvent(n.eventId)?.character === ch).length;
+      const spare = eventDefs.filter(
+        (e) => e.character === ch && !nodes.some((n) => n.eventId === e.id),
+      );
+      const byLateness = [...nodes].sort((a, b) => b.layer - a.layer);
+      // pass 1: retag events (kind unchanged — diversity unaffected), taking
+      // from whichever class is over-represented so the S8.4 clue:normal
+      // node contract (~2:1) survives the guarantee
+      for (let taken = 0; taken < 4; taken++) {
+        if (have() >= 2 || spare.length === 0) break;
+        const clueNodes = nodes.filter((n) => n.kind === 'event' && defOfEvent(n.eventId)?.clue);
+        const plainNodes = nodes.filter((n) => n.kind === 'event' && !gatedEvent(n));
+        const takeClue = clueNodes.length > 2 * Math.max(1, plainNodes.length - 1);
+        const pool = takeClue ? clueNodes : plainNodes;
+        const n = byLateness.find((x) => pool.includes(x));
+        if (!n) break;
+        n.eventId = spare.shift()!.id;
+      }
+      // pass 2: convert combats, then unpinned rests/treasures
+      for (const kind of ['combat', 'rest', 'treasure'] as const) {
+        for (const n of byLateness) {
+          if (have() >= 2 || spare.length === 0) break;
+          if (n.kind !== kind || n.layer === 0 || n.layer >= LAYERS - 1 || pinnedNode(n)) continue;
+          n.kind = 'event';
+          delete n.encounterId;
+          n.eventId = spare.shift()!.id;
+        }
+      }
+      // pass 3 (dense flagged maps only): steal a RARE slot, then a clue
+      // slot — never another character's. The rare event is half-weight
+      // ("a run can miss it entirely, which is the point"); the clue pool
+      // reshuffles across acts. Character arrival is D6/D7 load-bearing
+      // and outranks both.
+      for (const steal of ['rare', 'clue'] as const) {
+        for (const n of byLateness) {
+          if (have() >= 2 || spare.length === 0) break;
+          if (n.kind !== 'event') continue;
+          const d = defOfEvent(n.eventId);
+          if (!d || d.character || !d[steal]) continue;
+          n.eventId = spare.shift()!.id;
+        }
+      }
+    }
+  }
+
+  // Approach diversity (≥2 distinct approach compositions per knot): a path
+  // through the L-1 lane-0 feeder and one through the lane-1 feeder share
+  // every other node choice, so distinct FEEDER kinds guarantee distinct
+  // path multisets. Pinned nodes and gated events never flip.
+  // Approach diversity (≥2 distinct approach compositions per knot). When a
+  // knot reads as one composition, EVERY lane-0/1 twin pair below it shares
+  // a kind (distinct twins at any layer d<L give two paths differing only
+  // in that twin — common parent above, lane-0 chain below). Repair ladder,
+  // cheapest first; character events are D6/D7 load-bearing and are always
+  // RELOCATED, never dropped; a clue slot may be sacrificed last (the clue
+  // pool reshuffles across acts).
+  const isEventTwinFeeder = (n: MapNode): boolean =>
+    (n.lane === 0 || n.lane === 1)
+    && nodes.some((k) => k.kind === 'elite' && k.layer === n.layer + 1)
+    && (nodes.find((o) => o.layer === n.layer && o.lane === (n.lane === 0 ? 1 : 0))?.kind === 'event');
+  const mapView = (): MapState =>
+    ({ act, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 });
+  const pacingFlip = (n: MapNode, awayFrom: MapNode['kind']): void => {
+    n.kind = awayFrom === 'rest' ? 'treasure' : 'rest';
+    delete n.encounterId;
+    delete n.eventId;
+  };
+  /** Flip an EVENT node's kind without losing the event: its scene moves to
+   *  a pacing/combat node elsewhere (event counts — and the S8.4 clue:normal
+   *  node ratio — survive the repair). Falls back to a plain delete only
+   *  when the map has nowhere to put it. */
+  const relocateAndFlip = (target: MapNode, exclude: (MapNode | undefined)[]): boolean => {
+    const byLateness = [...nodes].sort((a, b) => b.layer - a.layer);
+    const home = byLateness.find(
+      (n) => (n.kind === 'rest' || n.kind === 'treasure' || n.kind === 'combat')
+        && !pinnedNode(n) && !isEventTwinFeeder(n)
+        && n.layer > 0 && n.layer < LAYERS - 1 && !exclude.includes(n),
+    );
+    if (home) {
+      home.kind = 'event';
+      delete home.encounterId;
+      home.eventId = target.eventId;
+    } else if (gatedEvent(target)) {
+      return false; // never plain-delete a gated scene
+    }
+    pacingFlip(target, target.kind);
+    return true;
+  };
+  for (let round = 0; round < 3; round++) {
+    let dirty = false;
+    for (const knot of nodes.filter((n) => n.kind === 'elite')) {
+      if (distinctApproaches(mapView(), knot.id) >= 2) continue;
+      let repaired = false;
+      // 1) flip a flippable twin below the knot (layer 0 is fixed all-combat
+      //    by design; twins there never flip). Non-event twins flip first —
+      //    flipping plain events starves the S8.4 clue:normal node ratio.
+      for (const allowEvents of [false, true]) {
+        for (let d = knot.layer - 1; d >= 1 && !repaired; d--) {
+          const t0 = nodes.find((n) => n.layer === d && n.lane === 0);
+          const t1 = nodes.find((n) => n.layer === d && n.lane === 1);
+          if (!t0 || !t1 || t0.kind !== t1.kind) continue;
+          if (!allowEvents && t0.kind === 'event') continue;
+          const flip = [t1, t0].find((f) => !pinnedNode(f) && !gatedEvent(f));
+          if (flip && t0.kind === 'event') {
+            if (relocateAndFlip(flip, [t0, t1])) repaired = dirty = true;
+          } else if (flip) {
+            pacingFlip(flip, t0.kind);
+            repaired = dirty = true;
+          }
+        }
+        if (repaired) break;
+      }
+      if (repaired) continue;
+      // 2) relocate a gated feeder scene, then flip the vacated node
+      const f1 = nodes.find((n) => n.layer === knot.layer - 1 && n.lane === 1);
+      const f0 = nodes.find((n) => n.layer === knot.layer - 1 && n.lane === 0);
+      const target = [f1, f0].find((f) => f && !pinnedNode(f) && f.kind === 'event');
+      if (target) {
+        const byLateness = [...nodes].sort((a, b) => b.layer - a.layer);
+        const home = byLateness.find(
+          (n) => (n.kind === 'rest' || n.kind === 'treasure' || n.kind === 'combat')
+            && !pinnedNode(n) && !isEventTwinFeeder(n)
+            && n.layer > 0 && n.layer < LAYERS - 1 && n !== f0 && n !== f1,
+        );
+        // final relocation fallback: a clue/rare slot hosts the character
+        // scene (clue pool reshuffles across acts; char arrival outranks it)
+        const homeGated = home ?? byLateness.find((n) => {
+          if (n.kind !== 'event' || n === f0 || n === f1) return false;
+          const d = defOfEvent(n.eventId);
+          return !!d && !d.character;
+        });
+        if (homeGated) {
+          if (homeGated.kind !== 'event') {
+            homeGated.kind = 'event';
+            delete homeGated.encounterId;
+          }
+          homeGated.eventId = target.eventId;
+          pacingFlip(target, target.kind);
+          dirty = true;
+          continue;
+        }
+        // 3) sacrifice a clue slot — never a character event
+        const clue = [f1, f0].find((f) => {
+          const d = f && f.kind === 'event' ? defOfEvent(f.eventId) : undefined;
+          return f && !pinnedNode(f) && d && !d.character;
+        });
+        if (clue) {
+          pacingFlip(clue, clue.kind);
+          dirty = true;
+        }
+      }
+    }
+    if (!dirty) break;
+  }
+
   // boss layer
   const bossId = id;
   nodes.push({ id: bossId, kind: 'boss', edges: [], layer: LAYERS, lane: 0, encounterId: pools.boss });
@@ -154,7 +346,7 @@ export function generateActMap(
   }
 
   return {
-    map: { act, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
+    map: { act, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 },
     rng,
   };
 }
@@ -176,7 +368,7 @@ export function generateFinaleMap(tracks = false): MapState {
         { id: 1, kind: 'shop', edges: [2], layer: 1, lane: 0 },
         { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'finale_boss' },
       ];
-  return { act: 3, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 };
+  return { act: 3, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 };
 }
 
 /** Nodes currently pickable: layer-0 entries at position -1, else current edges. */

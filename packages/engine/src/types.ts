@@ -414,6 +414,10 @@ export interface EventDef {
    *  miss it entirely, which is the point. Never repeats within a run
    *  (rides the seenGatedEvents exclusion). */
   rare?: boolean;
+  /** S11.4: a deep event whose top-stage outcomes reach relic-or-HP-chunk
+   *  scale. The composition CI bounds these per act ([1, 3] once any
+   *  exist); every worst line stays run-survivable by construction. */
+  highStakes?: boolean;
   prose: string;
   options: EventOptionDef[];
 }
@@ -564,6 +568,9 @@ export interface MapState {
   position: number;
   picks: Record<PlayerId, number | null>; // M2-B3: both must pick the same node
   mismatchStreak: number; // Witness material (M2-B5)
+  /** S11.2: knots (elites) cut THIS act — each kill tightens the remaining
+   *  snarls (escalation ladder). Resets with the act map. */
+  knotsCut: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -648,6 +655,11 @@ export interface CombatState {
   /** S9c.3: the rite_reclaim pool fires at most once per combat. Optional
    *  for persisted-room compatibility. */
   riteReclaimSaid?: boolean;
+  /** S11.2 snarl escalation: the increment this combat carries (0 for
+   *  non-elite fights). Optional for persisted-room compatibility. */
+  escalation?: number;
+  /** S11.2 calibration instrument: pair HP lost THIS combat. */
+  hpLostThisCombat?: number;
   /** PT2/OQ#29: `holder:event` keys of oncePerTurn hooks already fired this
    *  turn. Optional for persisted-room compatibility. */
   hookOnceFired?: string[];
@@ -815,6 +827,10 @@ export interface Telemetry {
   /** per-encounter difficulty attribution: pair HP lost + combat count,
    *  keyed by encounterId (comfort pass, pre-S10a battery gate 4) */
   encounterStats?: Record<string, { combats: number; hpLost: number }>;
+  /** S11.2 calibration gate: per elite fight, the kill ORDER it was fought
+   *  at (0 = first knot of the act) and the pair HP it cost. The gate wants
+   *  last-killed >= 2x first-killed across the battery. */
+  eliteFights?: Array<{ act: number; order: number; hpLost: number; won: boolean }>;
   resonanceTagCounts: Record<string, number>;
   /** damage attribution; 'HexScaling' bucket for hex-scaling Strike damage (M2-B1) */
   damageByTag: Record<string, number>;

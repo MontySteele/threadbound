@@ -71,7 +71,10 @@ export const RITE_CARDS: CardDef[] = [
     riteOnly: true, needsTarget: true,
     // S9d.1-1: the Hex archetype finally pays outside Hex amounts —
     // damage growth, covenant-clean. Watch: Hex damage share band.
-    growsWith: { axis: 'detonations', per: 2, amount: 1, cap: 12, appliesTo: 'damage' },
+    // RETUNE (first battery, 2026-07-04): per 2→3 — the signed rate read
+    // +8/+11 win-rate drift with Knell the hottest realized grower (8.8–9.2
+    // mean). Original row preserved in the sprint report for re-ruling.
+    growsWith: { axis: 'detonations', per: 3, amount: 1, cap: 12, appliesTo: 'damage' },
     text: 'Deal 3. Link (Hex): Detonate.',
     base: [{ op: 'damage', amount: 3, primary: true }],
     link: { condition: 'Hex', text: 'Detonate.', effects: [{ op: 'detonate' }] },
@@ -117,8 +120,8 @@ export const RITE_CARDS: CardDef[] = [
   {
     id: 'rite_pyre_brand', name: 'Pyre-Brand', character: 'bram', rarity: 'rare', cost: 1, tag: 'Strike',
     riteOnly: true, needsTarget: true,
-    // S9d.1-5
-    growsWith: { axis: 'kindledConsumed', per: 4, amount: 1, cap: 8, appliesTo: 'damage' },
+    // S9d.1-5. RETUNE (first battery): per 4→6 — see Knell's note.
+    growsWith: { axis: 'kindledConsumed', per: 6, amount: 1, cap: 8, appliesTo: 'damage' },
     text: 'Deal 4. Link (Strike): Kindled 2.',
     base: [{ op: 'damage', amount: 4, primary: true }],
     link: { condition: 'Strike', text: 'Kindled 2.', effects: [{ op: 'kindled', amount: 2 }] },
@@ -132,8 +135,8 @@ export const RITE_CARDS: CardDef[] = [
   {
     id: 'rite_mourners_step', name: 'Mourner’s Step', character: 'bram', rarity: 'rare', cost: 1, tag: 'Guard',
     riteOnly: true,
-    // S9d.1-7
-    growsWith: { axis: 'momentumSpent', per: 10, amount: 1, cap: 6, appliesTo: 'block' },
+    // S9d.1-7. RETUNE (first battery): per 10→15 — see Knell's note.
+    growsWith: { axis: 'momentumSpent', per: 15, amount: 1, cap: 6, appliesTo: 'block' },
     text: 'Gain 4 Block. Link (Guard): gain 2 Momentum.',
     base: [{ op: 'block', amount: 4, primary: true }],
     link: { condition: 'Guard', text: 'Gain 2 Momentum.', effects: [{ op: 'momentum', amount: 2 }] },

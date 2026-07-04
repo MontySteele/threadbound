@@ -1,51 +1,40 @@
-// Experiment: map composition vs LAYERS. Run with TB_MAP_LAYERS=N.
-// Reports per act: mean event nodes on map, mean max-events-on-one-path
-// (routing ceiling), mean nodes per path, and rest/treasure supply.
+// S11.1 — standalone composition CI (the vitest twin lives in
+// packages/engine/test/map-composition.test.ts; this runner is for CI
+// pipelines and quick local sweeps). Replaces the old TB_MAP_LAYERS
+// experiment script of the same name (git history keeps it).
+// Exit 1 on any violation.
+// Usage: node scripts/map-composition.js [N-seeds-per-config]
 const { generateActMap } = require('../packages/engine/dist/map.js');
+const { measureAct, compositionViolations } = require('../packages/engine/dist/map-composition.js');
+const { EVENTS } = require('../packages/engine/dist/content/registry.js');
 
-const N = 1000;
-const layers = process.env.TB_MAP_LAYERS ?? '6';
+const N = Number(process.argv[2] ?? 300);
+const CHARS = ['vess', 'bram'];
+const highStakes = Object.values(EVENTS).some((e) => e.highStakes);
 
-function maxKindOnPath(map, kind) {
-  // DP over edges: best count of `kind` reachable ending at each node
-  const best = new Map();
-  const nodes = map.nodes;
-  const byLayer = [...nodes].sort((a, b) => a.layer - b.layer);
-  for (const n of byLayer) {
-    const self = n.kind === kind ? 1 : 0;
-    if (n.layer === 0) best.set(n.id, self);
-  }
-  for (const n of byLayer) {
-    const b = best.get(n.id);
-    if (b === undefined) continue;
-    for (const e of n.edges) {
-      const t = nodes.find((x) => x.id === e);
-      const val = b + (t.kind === kind ? 1 : 0);
-      if ((best.get(e) ?? -1) < val) best.set(e, val);
+let bad = 0;
+for (const [act, extra] of [[1, false], [2, false], [1, true], [2, true]]) {
+  const label = `act${act}${extra ? '+extraElite' : ''}`;
+  let violations = 0;
+  const tally = { elites: 0, shops: 0, treasures: 0, events: 0 };
+  for (let i = 0; i < N; i++) {
+    const { map } = generateActMap(90_000 + i * 13, act, extra, true, [], CHARS);
+    const c = measureAct(map);
+    tally.elites += c.eliteCount;
+    tally.shops += c.shops;
+    tally.treasures += c.treasures;
+    tally.events += map.nodes.filter((n) => n.kind === 'event').length;
+    const v = compositionViolations(c, extra ? 3 : 2, { charactersInRun: CHARS, highStakesContentExists: highStakes });
+    if (v.length) {
+      violations += v.length;
+      if (violations <= 3) console.error(`  ${label} seed ${90_000 + i * 13}: ${v.join(' | ')}`);
     }
   }
-  let max = 0;
-  for (const n of nodes) if (n.edges.length === 0) max = Math.max(max, best.get(n.id) ?? 0);
-  return max;
-}
-
-for (const act of [1, 2]) {
-  let ev = 0, evPath = 0, rests = 0, treas = 0, combats = 0, elites = 0, total = 0;
-  let rng = 42;
-  for (let i = 0; i < N; i++) {
-    const r = generateActMap(rng + i * 7919, act, false, false);
-    const m = r.map;
-    ev += m.nodes.filter((n) => n.kind === 'event').length;
-    rests += m.nodes.filter((n) => n.kind === 'rest').length;
-    treas += m.nodes.filter((n) => n.kind === 'treasure').length;
-    combats += m.nodes.filter((n) => n.kind === 'combat').length;
-    elites += m.nodes.filter((n) => n.kind === 'elite').length;
-    total += m.nodes.length;
-    evPath += maxKindOnPath(m, 'event');
-  }
   console.log(
-    `LAYERS=${layers} act ${act}: nodes/map ${(total / N).toFixed(1)} | events/map ${(ev / N).toFixed(2)} | ` +
-    `max events on one path ${(evPath / N).toFixed(2)} | rests/map ${(rests / N).toFixed(2)} | ` +
-    `treasure/map ${(treas / N).toFixed(2)} | combats/map ${(combats / N).toFixed(2)} | elites ${(elites / N).toFixed(1)}`
+    `${label}: ${violations === 0 ? 'PASS' : `FAIL (${violations} violations)`} — ` +
+    `avg elites ${(tally.elites / N).toFixed(1)}, shops ${(tally.shops / N).toFixed(2)}, ` +
+    `treasures ${(tally.treasures / N).toFixed(2)}, events ${(tally.events / N).toFixed(2)}`,
   );
+  if (violations > 0) bad++;
 }
+process.exit(bad > 0 ? 1 : 0);
