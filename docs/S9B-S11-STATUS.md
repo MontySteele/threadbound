@@ -214,14 +214,25 @@ crossing layer (S11.11-1) RATIFIED.** Wave B batteries unblocked.
   escalation ladder (crossing value rides the DP). The TB_KNOTWORK
   battery IS this policy's baseline.
 - S11.11-4 table **SIGNED OFF**; S11.11-1 (A3 extra crossing layer)
-  **RATIFIED** (both 2026-07-04). TB_KNOTWORK batteries + D6/D7
-  re-battery running; ladder/policy recalibration reads their output.
+  **RATIFIED** (both 2026-07-04). Batteries ran same day — ledger rows
+  above. Gate scoreboard: 1 (CI both flag states) ✓, 3 (D6/D7 vs B6:
+  improves on every measure) ✓, 4 (flag-off golden lock, never
+  regenerated) ✓, 5 (solo manual) rides the playtest. Gate 2 (win
+  rate ±6): mirrors read +22; probe decomposition says mostly
+  structural. **RULED (2026-07-04): the strand mix STANDS as design —
+  gate 2 DEFERS to re-anchor after the S12 card-economy sprint**
+  (docs/S12-CARD-ECONOMY-BRIEF.md — card rewards don't seem to
+  matter; the deep, systemic issue). TB_KNOTWORK stays default-off
+  until then (S11.11-5 answered by implication). Ladder/policy
+  recalibration (OQ#55) also rides S12: pricing reads 1.45 already,
+  and elites-pricing-deck-quality is an S12 lever.
 - Solo-on-strands manual pass: playtest-time (S11.10 gate 5).
 
 ## Remaining (next session)
 
-1. Wave B batteries + D6/D7 re-battery + ladder recalibration — on
-   the S11.11-4 sign-off.
+1. **S12 card-economy sprint** (designer packet; brief seeded at
+   docs/S12-CARD-ECONOMY-BRIEF.md). Gate 2 + escalation gate +
+   TB_KNOTWORK default all re-anchor after it.
 2. S11.5 deep RETROFITS of remaining events (later content sprint,
    per ruling 5).
 3. ~~A2 battery legs~~ — RAN 2026-07-04 (see ledger); first in-env A2

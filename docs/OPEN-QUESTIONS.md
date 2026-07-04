@@ -674,8 +674,13 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     same battery, no action needed: D6/D7 improves on every measure vs
     the B6 ledger (gate 3 PASS), and the escalation ratio reads 1.45
     with knot-pricing live (from 1.03) — the ladder/policy joint
-    recalibration has its instrument. **OPEN — designer (amend/battery
-    loop, or re-baseline the braid as its own mode).**
+    recalibration has its instrument. **RULED (2026-07-04): the
+    fights-vs-events-vs-treasure mix STANDS as a design choice — the
+    quota amendment is REJECTED; the deeper systemic issue (card
+    rewards don't seem to matter) becomes ITS OWN SPRINT.** Brief with
+    all evidence, levers, and instrument needs: docs/S12-CARD-ECONOMY-
+    BRIEF.md. S11.10 gate 2 defers to re-anchor after S12; TB_KNOTWORK
+    stays default-off meanwhile. **CLOSED into S12.**
     DESIGNER HYPOTHESIS (2026-07-04, supersedes the quota amendment as
     the first lever): the inflation may indict the CARD-REWARD economy,
     not the fight count — a pair that routes around combat should do
