@@ -137,11 +137,34 @@ long-run class; comfort-pass note applies).
 - OQ#14 stands: bot evidence understates human card value; magnitudes
   re-read at the next playtest.
 
-## Post-sprint (designer-ruled sequencing)
+## S13.6 — THE FLIP, made (D7 second half, designer-ruled follow-up)
 
-The difficulty re-evaluation runs on THESE batteries, not before: HP
-bands (act-1 loss has sat above the 16–22 watch band since S10a), the
-fight-price question (~27 pair HP/fight vs its reward bundle), and the
-braid's S11.10 gate 2 re-anchor. D7's second half is also pending: draft
-v2 flips default-on in one loud, recorded re-anchor after its first
-clean battery.
+Draft v2 is the DEFAULT as of commit `f9b1d59` — BotPolicy, sim
+harness, and the server's in-process solo partner (the surface note
+honored as a decision). TB_BOT_DRAFT_V2=0 is the v1 escape hatch,
+comparison-only. Sanity rows on the flipped build: v1 51.0 (vs 50.0
+pre-flip ✓ hatch intact); default-vb 49.5/50.0 across two seed sets.
+
+**Correction to this doc's §"Readings on record":** the +10 v1-vs-v2
+delta was a single-leg read. The flip re-anchor exposed the sim's
+cross-invocation noise floor (~±7–10 win-points per 100-run leg;
+61/99 same-seed runs flip outcome between invocations — the
+review-sweep jitter class, now measured). Pooled: v2-vb 159/299 =
+53.2% vs v1 101/200 = 50.5% — **the win-rate edge is +2.7, within
+noise.** The flip stands on D7's process and v2's measured behavior
+(dilution discipline, lever usage, take-rate shape, texture), not on
+a win-rate claim. Full accounting + the instrument rule proposal
+(pooled n≥200 for ±6-style gates): docs/S13-DIFFICULTY-REVIEW.md §0–1.
+
+## Post-sprint (designer-ruled sequencing) — NOW RUN
+
+The difficulty re-evaluation ran on these batteries as ruled:
+**docs/S13-DIFFICULTY-REVIEW.md** (S13.6). Verdicts in brief: HP band
+still 4–8 hot (pre-existing, unchanged by S13; band decision
+proposed); fight-price question ANSWERED — fights pay now (winners
+fight more in every leg; close it); S11.10 gate 2 re-anchored on the
+flipped build — the economy hypothesis CONFIRMED for vb (braid now
+reads −13.7: routing around combat finally costs), vv's inflation
+collapsed to the gate edge (+9.1), bb's persists (+24, 69% — the
+pair-asymmetry question, re-filed as the braid follow-up sprint).
+TB_KNOTWORK stays default-OFF.
