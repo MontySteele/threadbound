@@ -20,6 +20,7 @@ export type Phase =
   | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
   | 'rest'
   | 'shop' // M2-B4
+  | 'covet_treasure' // S11.7: the covet cache — one-of-two, flagged maps only
   | 'game_over'
   | 'victory';
 
@@ -161,6 +162,62 @@ export interface RiteDef {
   passives?: PassiveId[];
 }
 
+// ---------------------------------------------------------------------------
+// S9d — stateless growth (the tally). Growth is DERIVED at resolution and
+// preview time from state.tallies; no CardInstance field, no sync surface.
+// Echoes and Reclaims inherit correctness for free (S9d.0-3).
+// ---------------------------------------------------------------------------
+
+export type GrowthAxis =
+  | 'detonations'      // pair detonation events
+  | 'falls'            // either seat falls
+  | 'boundKills'       // enemies that die Bound to the HOLDER (per-seat)
+  | 'threadSpent'      // pair Thread spent
+  | 'kindledConsumed'  // pair Kindled converted to energy
+  | 'linksFired'       // pair links fired
+  | 'momentumSpent'    // pair Momentum cashed into Strikes
+  | 'resonances';      // pair Resonance ignitions
+
+export interface GrowthTier {
+  /** axis value at which this tier's additions apply (ascending; the last
+   *  tier is the terminal one — CI-required) */
+  at: number;
+  /** ops ADDED to base (never replacing — upgrades/mutations compose) */
+  addBase?: EffectOp[];
+  /** link replacement at this tier */
+  link?: CardDef['link'];
+}
+
+export interface GrowthDef {
+  axis: GrowthAxis;
+  /** linear grower: +amount to `appliesTo` per `per` of the axis */
+  per?: number;
+  amount?: number;
+  /** cap on the accumulated BONUS (CI-required for linear growers) */
+  cap?: number;
+  /** the op the linear bonus lands on (first matching op in base) */
+  appliesTo?: 'damage' | 'block' | 'momentum';
+  /** tiered grower (Votive/Descant shapes) */
+  tiers?: GrowthTier[];
+}
+
+/** S9d.2: run tallies — AUTHORITATIVE state (hashed; telemetry is not).
+ *  Present only when rites are on, so unflagged state shape and goldens
+ *  hold by construction. */
+export interface RunTallies {
+  detonations: number;
+  falls: number;
+  boundKills: Record<PlayerId, number>;
+  threadSpent: number;
+  kindledConsumed: number;
+  linksFired: number;
+  momentumSpent: number;
+  resonances: number;
+  /** highest growth step each rite card has RESOLVED at (defId → bonus or
+   *  tier count) — drives the once-per-step tally log line */
+  seenStep: Record<string, number>;
+}
+
 export interface CardDef {
   id: string;
   name: string;
@@ -176,6 +233,11 @@ export interface CardDef {
   /** S8.1: rite vestment card — same pool exclusion as starterOnly; enters
    *  play only via the death-rite pick */
   riteOnly?: boolean;
+  /** S9d: the grower spec (authored on the eight rite cards) */
+  growsWith?: GrowthDef;
+  /** S9d.3 display metadata — set by applyGrowth on the defs it returns
+   *  (linear: the bonus; tiered: tiers reached). NEVER authored. */
+  grownStep?: number;
   text: string;
   base: EffectOp[];
   link?: {
@@ -322,7 +384,40 @@ export type EventEffectOp =
    *  the actor's and partner's Tapestries server-side. The fragment table
    *  (content/truth.ts) picks variants consistent with the rolled truth. */
   | { op: 'fragments' }
+  /** S11.5 codex doors: ONE truth-consistent thread from the whole pool,
+   *  served through the bound-witness channel (S11.3's single supply
+   *  ledger) and pinned to the door's ACTOR. Without tracks there is no
+   *  Tapestry to pin to — the op is silently nothing, and consumes no rng
+   *  (rites-only streams stay whole). */
+  | { op: 'fragment' }
   | { op: 'nothing' };
+
+/** S11.4 (ruling 4): a state-keyed option's gate. Every clause must hold.
+ *  Codex-keyed options are the flywheel hook — meta-knowledge opening
+ *  in-run doors (state.codexProven, claimed at START_RUN). */
+export interface EventRequirement {
+  /** pair Thread pool >= n */
+  thread?: number;
+  /** pair gold >= n */
+  gold?: number;
+  /** subject HP <= n (the desperate door) */
+  hpAtMost?: number;
+  /** subject HP >= n */
+  hpAtLeast?: number;
+  /** subject deck carries >= n cards of this tag */
+  tagCount?: { tag: BroadTag; n: number };
+  /** this character stands somewhere in the run */
+  character?: CharacterId;
+  /** the profile codex has PROVEN this answer id */
+  codexProven?: string;
+}
+
+/** S11.4: a deeper stage of an event — press-on / walk-away structure,
+ *  max 3 stages (covenant-enforced), the pot visible throughout. */
+export interface EventStageDef {
+  prose: string;
+  options: EventOptionDef[];
+}
 
 export interface EventOptionDef {
   id: string;
@@ -330,6 +425,11 @@ export interface EventOptionDef {
   resultText: string;
   witness: string;
   effects: EventEffectOp[];
+  /** S11.4: choosing this leads DEEPER instead of ending the event */
+  next?: EventStageDef;
+  /** S11.4: gate on run state; unmet options never render (R6: doors you
+   *  cannot open are doors you do not see) */
+  requires?: EventRequirement;
 }
 
 export interface EventDef {
@@ -353,6 +453,10 @@ export interface EventDef {
    *  miss it entirely, which is the point. Never repeats within a run
    *  (rides the seenGatedEvents exclusion). */
   rare?: boolean;
+  /** S11.4: a deep event whose top-stage outcomes reach relic-or-HP-chunk
+   *  scale. The composition CI bounds these per act ([1, 3] once any
+   *  exist); every worst line stays run-survivable by construction. */
+  highStakes?: boolean;
   prose: string;
   options: EventOptionDef[];
 }
@@ -494,6 +598,20 @@ export interface MapNode {
   lane: number;
   encounterId?: string;
   eventId?: string;
+  /** S11.6 scouting: the relic this knot carries, pinned at generation from
+   *  a DERIVED stream (the live rng is never consumed). Flagged runs only —
+   *  absent on unflagged maps, so their shape/hash/goldens are untouched.
+   *  Victory rolls exactly as before and prefers the pin while unowned. */
+  scoutRelicId?: string;
+  /** S11.7 pacing-node variants (ruling 6), same derived-stream discipline
+   *  and the same flagged-only absence rule: 'toll' rests heal ONE seat by
+   *  vote-match; 'covet' treasures offer one-of-two, the other seizable
+   *  with a Covet charge. The breath-before-boss layer never varies. */
+  variant?: 'toll' | 'covet';
+  /** S11.8 (TB_KNOTWORK only): which warp strand this node rides. Absent
+   *  on knots (crossings belong to the weave), the shared breath layer,
+   *  the boss — and on every node of a non-braid map. */
+  strand?: 'truth' | 'power';
 }
 
 export interface MapState {
@@ -503,6 +621,9 @@ export interface MapState {
   position: number;
   picks: Record<PlayerId, number | null>; // M2-B3: both must pick the same node
   mismatchStreak: number; // Witness material (M2-B5)
+  /** S11.2: knots (elites) cut THIS act — each kill tightens the remaining
+   *  snarls (escalation ladder). Resets with the act map. */
+  knotsCut: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -584,6 +705,14 @@ export interface CombatState {
   /** S2.1: solo Witness chatter budget — capped per combat. Optional so
    *  pre-S1 persisted rooms restore cleanly. */
   witnessLines?: number;
+  /** S9c.3: the rite_reclaim pool fires at most once per combat. Optional
+   *  for persisted-room compatibility. */
+  riteReclaimSaid?: boolean;
+  /** S11.2 snarl escalation: the increment this combat carries (0 for
+   *  non-elite fights). Optional for persisted-room compatibility. */
+  escalation?: number;
+  /** S11.2 calibration instrument: pair HP lost THIS combat. */
+  hpLostThisCombat?: number;
   /** PT2/OQ#29: `holder:event` keys of oncePerTurn hooks already fired this
    *  turn. Optional for persisted-room compatibility. */
   hookOnceFired?: string[];
@@ -612,6 +741,16 @@ export interface EventPhaseState {
   subject: PlayerId;
   chosen: string | null;
   resultText?: string;
+  /** S11.4: option ids chosen so far on the way down (empty/absent = the
+   *  first stage; the grammar is backward-compatible — existing events are
+   *  1-stage and never set this) */
+  stagePath?: string[];
+  /** S11.4: the POT — every visible effect applied on the way down, shown
+   *  to both seats while the wager deepens */
+  pot?: EventEffectOp[];
+  /** S11.4: the delta line — one generated sentence of what actually
+   *  changed, rendered post-resolution (kills the oath-ring confusion) */
+  deltaLine?: string;
 }
 
 export type RestOption = 'rest' | 'barter' | 'rebraid' | 'upgrade' | 'wedding';
@@ -620,6 +759,10 @@ export interface RestState {
   chosen: Record<PlayerId, RestOption | null>;
   /** M2-B6: chosen 'upgrade' → must then UPGRADE_PICK */
   upgradePicked: Record<PlayerId, boolean>;
+  /** S11.7 toll-door rest: one seat heals (bigger), named by vote-match
+   *  like NODE_PICK — the negotiation is the point. Present only at toll
+   *  variant nodes (flagged maps); REST_CHOOSE is closed at the door. */
+  toll?: { votes: Record<PlayerId, PlayerId | null>; healed: PlayerId | null };
   /** §7 Wedding Knife: both pick a card, both confirm, decks swap permanently */
   wedding: null | {
     offers: Record<PlayerId, string | null>; // cardInstanceId
@@ -661,7 +804,7 @@ export type GameEvent =
   | { e: 'revived'; player: PlayerId }
   | { e: 'thread_severed'; turns: number } // Unraveled
   | { e: 'thread_reignited' }
-  | { e: 'resonance_ignite'; slot: number; tags: string[] }
+  | { e: 'resonance_ignite'; slot: number; tags: string[]; card?: string } // card: S9c.5 rung i (log line names the ignited card)
   | { e: 'relic'; player: PlayerId; relic: string }
   | { e: 'witness'; line: string }
   | { e: 'info'; detail: string };
@@ -700,11 +843,21 @@ export interface GameState {
    *  selection (witness-draw) — never rules. Absent — not 0 — when unset or
    *  zero, so pre-S8.7 serialized states stay byte-identical. */
   codexPct?: number;
+  /** S11.4 flywheel hook: answer ids the profile codex has PROVEN (claimed
+   *  at START_RUN, S4 union rule across seats) — codex-keyed event options
+   *  read this. Absent on runs that claim nothing. */
+  codexProven?: string[];
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
+  /** S11.8 (Wave B): the braid run flag (server reads TB_KNOTWORK, tracks
+   *  pattern — absent when unflagged, so flag-off state is byte-identical
+   *  and the current generator remains the unflagged path). */
+  knotwork?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
+  /** S9d.2 run tallies; present only when rites is set (grower rites) */
+  tallies?: RunTallies;
   /** S8.4 rare events (wrong-way) already visited — never re-offered, the
    *  clue-dedup rule. Rare events are neither clue nor character, so they
    *  get their own list; it is only ever created on flagged runs (rare
@@ -722,11 +875,27 @@ export interface GameState {
   event: EventPhaseState | null;
   rest: RestState | null;
   shop: ShopState | null;
+  /** S11.7 covet cache (flagged maps only — absent otherwise, so unflagged
+   *  shape/hash hold): the treasure rolled its spoils as usual, but the pair
+   *  takes ONE by vote-match; a Covet charge seizes the other. */
+  covetTreasure?: CovetTreasureState | null;
   advanceReady: Record<PlayerId, boolean>;
   concede: Record<PlayerId, boolean>;
   witnessSaid: string[];
   log: GameEvent[];
   telemetry: Telemetry;
+}
+
+/** S11.7: the covet cache's table state. Spoils use the plain treasure's
+ *  exact rolls (gold, relic, owner) — only the GRANT is negotiated. */
+export interface CovetTreasureState {
+  gold: number;
+  relicId: string;
+  /** the seat the relic goes to if taken/seized (the plain treasure's roll) */
+  owner: PlayerId;
+  votes: Record<PlayerId, 'gold' | 'relic' | null>;
+  taken: 'gold' | 'relic' | null;
+  seizedBy: PlayerId | null;
 }
 
 export interface ActStats {
@@ -749,6 +918,10 @@ export interface Telemetry {
   /** per-encounter difficulty attribution: pair HP lost + combat count,
    *  keyed by encounterId (comfort pass, pre-S10a battery gate 4) */
   encounterStats?: Record<string, { combats: number; hpLost: number }>;
+  /** S11.2 calibration gate: per elite fight, the kill ORDER it was fought
+   *  at (0 = first knot of the act) and the pair HP it cost. The gate wants
+   *  last-killed >= 2x first-killed across the battery. */
+  eliteFights?: Array<{ act: number; order: number; hpLost: number; won: boolean }>;
   resonanceTagCounts: Record<string, number>;
   /** damage attribution; 'HexScaling' bucket for hex-scaling Strike damage (M2-B1) */
   damageByTag: Record<string, number>;
@@ -794,6 +967,15 @@ export interface Telemetry {
     clueEventsOffered: number;
     clueEventsTaken: number;
     fragmentsByPlayer: Record<PlayerId, number>;
+    /** S11.3 fragment-supply keys (the stranger cohort's D2 instruments) */
+    boundWitnessFragments?: number;
+    distinctEliminations?: number;
+    /** OQ#57 instruments (written at run end): questions with <=1 answer
+     *  left standing (confident) and exactly 2 left (a narrowed gamble) —
+     *  the S11.3 target band's REAL measure, replacing the elimination
+     *  proxy. */
+    questionsConfident?: number;
+    questionsNarrowed?: number;
     /** T-key opens per act — is the board used? (client-reported) */
     boardOpensByAct: Record<number, number>;
     /** sheet-edit churn at the shrine (talk proxy) */
@@ -817,6 +999,13 @@ export interface Telemetry {
     characterEvents: Record<PlayerId, number>;
     /** where the birth pick landed — the data that arbitrates L7 vs L8 */
     birthTiming: Record<PlayerId, { act: number; layer: number } | null>;
+    /** S9d gate 3: max growth step each rite card reached this run
+     *  (defId → bonus or tier count) — "an axis nobody feeds is a dead
+     *  archetype" needs an instrument */
+    growth?: Record<string, number>;
+    /** OQ#57 instrument: rite-card PLAYS per seat (S9c gate 2's direction
+     *  read gets its real measure, replacing the realized-growth proxy) */
+    ritePlays?: Record<PlayerId, number>;
   };
 }
 
@@ -830,7 +1019,7 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; knotwork?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }
@@ -847,6 +1036,10 @@ export type Action =
   | { type: 'COVET_PICK'; player: PlayerId; pick: string | 'pass' }
   | { type: 'EVENT_CHOOSE'; player: PlayerId; optionId: string }
   | { type: 'REST_CHOOSE'; player: PlayerId; option: RestOption }
+  // S11.7 pacing-node variants (flagged maps only)
+  | { type: 'TOLL_PICK'; player: PlayerId; seat: PlayerId } // name who the door heals
+  | { type: 'TREASURE_PICK'; player: PlayerId; choice: 'gold' | 'relic' }
+  | { type: 'TREASURE_SEIZE'; player: PlayerId } // spend a Covet charge for the rest
   | { type: 'UPGRADE_PICK'; player: PlayerId; cardInstanceId: string } // M2-B6
   | { type: 'WEDDING_PICK'; player: PlayerId; cardInstanceId: string } // §7
   | { type: 'WEDDING_CONFIRM'; player: PlayerId }

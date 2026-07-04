@@ -4,7 +4,8 @@
 // Wedding Knife, acts + finale, Fallen/revival.
 
 import {
-  Action, CardDef, CardInstance, CharacterId, EnemyIntent, GameState, GoldSource, IllegalAction,
+  Action, CardDef, CardInstance, CharacterId, EnemyIntent, EventDef, EventEffectOp,
+  EventOptionDef, EventStageDef, GameState, GoldSource, IllegalAction,
   MapNode, PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
@@ -16,7 +17,7 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
-import { FRAGMENTS_BY_ID, rollTruth, serveFragments } from './content/truth';
+import { FRAGMENTS_BY_ID, rollTruth, serveBoundWitness, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
 import { RITES_BY_ID, unlockedRites } from './content/rites';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
@@ -64,7 +65,7 @@ export function initialState(seed: number, characters: Record<PlayerId, Characte
     rng: seed >>> 0,
     phase: 'lobby',
     ...(botSeat ? { botSeat } : {}),
-    map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0 },
+    map: { act: 1, nodes: [], position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 },
     gold: startGold(), // PT3 designer ruling: 40 too low for first-shop agency (was 40); env knob: sweep experiments
     removalsByPlayer: { p1: 0, p2: 0 },
     ascension: 0,
@@ -181,10 +182,18 @@ function apply(state: GameState, action: Action): void {
       {
         const codexPct = Math.max(0, Math.min(100, Math.floor(action.codexPct ?? 0)));
         if (codexPct > 0) state.codexPct = codexPct;
+        // S11.4 flywheel hook: proven answers open codex-keyed event doors
+        if (action.codexProven && action.codexProven.length > 0) {
+          state.codexProven = [...action.codexProven];
+        }
       }
+      // S11.8: the braid flag rides the tracks pattern — set BEFORE the map
+      // roll so both acts generate on the flagged path
+      if (action.knotwork) state.knotwork = true;
       const gen = generateActMap(
         state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
         action.rites ? [state.players.p1.character, state.players.p2.character] : [],
+        !!action.knotwork,
       );
       state.rng = gen.rng;
       state.map = gen.map;
@@ -246,11 +255,20 @@ function apply(state: GameState, action: Action): void {
           birthChoice: null,
           birthPicked: { p1: false, p2: false },
         };
+        // S9d.2: run tallies feed the grower rites. Authoritative (hashed)
+        // state, created ONLY on rites runs so unflagged shape and goldens
+        // hold by construction.
+        state.tallies = {
+          detonations: 0, falls: 0, boundKills: { p1: 0, p2: 0 },
+          threadSpent: 0, kindledConsumed: 0, linksFired: 0,
+          momentumSpent: 0, resonances: 0, seenStep: {},
+        };
         state.telemetry.rites = {
           deathPick: { p1: null, p2: null },
           birthPick: { p1: null, p2: null },
           characterEvents: { p1: 0, p2: 0 },
           birthTiming: { p1: null, p2: null },
+          growth: {},
         };
       }
       state.phase = action.rites ? 'rites' : 'map';
@@ -500,13 +518,30 @@ function apply(state: GameState, action: Action): void {
       assert(ev.chosen === null, 'already chosen');
       assert(action.player === ev.chooser, 'this choice is not yours to make');
       const def = EVENTS[ev.eventId];
-      const opt = def.options.find((o) => o.id === action.optionId);
+      // S11.4: the choice addresses the CURRENT stage (existing events are
+      // 1-stage; stagePath stays absent and nothing changes for them)
+      const stage = eventStageAt(def, ev.stagePath ?? []);
+      const opt = stage.options.find((o) => o.id === action.optionId);
       assert(opt, 'no such option');
-      ev.chosen = opt.id;
-      ev.resultText = opt.resultText;
+      assert(eventOptionAvailable(state, ev.subject, opt), 'that door is not open to you');
       const subject = state.players[ev.subject];
       for (const eff of opt.effects) applyEventEffect(state, subject, eff);
+      if (opt.effects.length > 0) {
+        (ev.pot ??= []).push(...opt.effects.filter((e) => e.op !== 'nothing'));
+      }
       state.log.push({ e: 'witness', line: opt.witness });
+      if (eventOptionDeepens(state, opt)) {
+        // press on: the event deepens; the pot stays visible; nobody has
+        // "chosen" until a terminal option ends it (max 3 stages, CI-held).
+        // Unflagged runs never take this branch (S11.5): the same option
+        // terminates below with its original effects and resultText.
+        (ev.stagePath ??= []).push(opt.id);
+        return;
+      }
+      ev.chosen = opt.id;
+      ev.resultText = opt.resultText;
+      // the delta line: exactly what changed, generated from applied ops
+      ev.deltaLine = eventDeltaLine(ev.pot ?? opt.effects);
       // S2.1: a crossed choice the bot made FOR the human gets its own gloat
       if (state.botSeat && def.crossed && action.player === state.botSeat) {
         sayWitness(state, 'crossed_choice_made');
@@ -519,6 +554,10 @@ function apply(state: GameState, action: Action): void {
         if (state.telemetry.rites) state.telemetry.rites.characterEvents[ev.subject]++;
         if (rs.progress[ev.subject] >= 2 && !rs.birthPicked[ev.subject] && rs.birthChoice === null) {
           rs.birthChoice = ev.subject;
+          // S9c.4 (D10-B): acknowledge that a choice exists and is theirs —
+          // zero explanation of stakes or economy. Single-line pool +
+          // no-repeat = once per run; rites-flagged runs only.
+          sayWitness(state, 'rite_birth_pick');
         }
       }
       return;
@@ -527,6 +566,8 @@ function apply(state: GameState, action: Action): void {
     case 'REST_CHOOSE': {
       assert(state.phase === 'rest' && state.rest, 'not at a rest site');
       const rest = state.rest!;
+      // S11.7: the toll door offers ONE mercy, not a menu
+      assert(!rest.toll, 'the toll-door grants one mercy — name who takes it');
       assert(rest.chosen[action.player] === null, 'already chosen');
       const p = state.players[action.player];
       const option: RestOption = action.option;
@@ -550,6 +591,86 @@ function apply(state: GameState, action: Action): void {
           throw new IllegalAction('the Wedding Knife is used via its own picks, not a rest choice');
       }
       rest.chosen[action.player] = option;
+      return;
+    }
+
+    case 'TOLL_PICK': {
+      // S11.7 toll door: both seats name who the door heals — vote-match
+      // like NODE_PICK, disagreement resets (the negotiation is the point)
+      assert(state.phase === 'rest' && state.rest?.toll, 'no toll-door here');
+      const toll = state.rest!.toll!;
+      assert(toll.healed === null, 'the toll is paid');
+      assert(action.seat === 'p1' || action.seat === 'p2', 'name a seat');
+      toll.votes[action.player] = action.seat;
+      // solo: the Witness follows the human's naming (S1.2 etiquette)
+      if (state.botSeat && action.player !== state.botSeat) {
+        toll.votes[state.botSeat] = action.seat;
+      }
+      const { p1, p2 } = toll.votes;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          // 1.5× a plain rest's heal, ONE seat (first-pass number — rides
+          // the same ascension knob a plain rest does)
+          const chosen = state.players[p1];
+          const heal = Math.floor(chosen.maxHp * ascensionMods(state.ascension).restHeal * 1.5);
+          chosen.hp = Math.min(chosen.maxHp, chosen.hp + heal);
+          toll.healed = p1;
+          state.rest!.chosen = { p1: 'rest', p2: 'rest' }; // the door is spent; Onward opens
+          state.log.push({ e: 'info', detail: `The toll-door opens for ${chosen.character} alone — ${heal} HP.` });
+          sayWitness(state, 'toll_door');
+        } else {
+          toll.votes = { p1: null, p2: null };
+        }
+      }
+      return;
+    }
+
+    case 'TREASURE_PICK': {
+      // S11.7 covet cache: the pair takes ONE of the two spoils, vote-match
+      assert(state.phase === 'covet_treasure' && state.covetTreasure, 'no cache to divide');
+      const ct = state.covetTreasure!;
+      assert(ct.taken === null, 'the cache is decided');
+      ct.votes[action.player] = action.choice;
+      // solo: the Witness follows the human's pick (S1.2 etiquette)
+      if (state.botSeat && action.player !== state.botSeat) {
+        ct.votes[state.botSeat] = action.choice;
+      }
+      const { p1, p2 } = ct.votes;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          ct.taken = p1;
+          if (p1 === 'gold') {
+            earnGold(state, ct.gold, 'treasure');
+            state.log.push({ e: 'info', detail: `The pair takes the coin — ${ct.gold} gold. The rest stays behind glass.` });
+          } else {
+            grantRelic(state, ct.owner, ct.relicId);
+          }
+        } else {
+          ct.votes = { p1: null, p2: null };
+        }
+      }
+      return;
+    }
+
+    case 'TREASURE_SEIZE': {
+      // S11.7: a Covet charge takes what the pair left — the existing Covet
+      // economy, spent on a cache instead of a partner's card set
+      assert(state.phase === 'covet_treasure' && state.covetTreasure, 'no cache here');
+      const ct = state.covetTreasure!;
+      assert(ct.taken !== null, 'divide the cache first');
+      assert(ct.seizedBy === null, 'the rest is already seized');
+      const p = state.players[action.player];
+      assert(p.covetCharges > 0, 'no Covet charges');
+      p.covetCharges--;
+      state.telemetry.covetsSpent[action.player]++;
+      if (ct.taken === 'gold') {
+        grantRelic(state, ct.owner, ct.relicId);
+      } else {
+        earnGold(state, ct.gold, 'treasure');
+        state.log.push({ e: 'info', detail: `${state.players[action.player].character} covets the coin too — ${ct.gold} gold.` });
+      }
+      ct.seizedBy = action.player;
+      sayWitness(state, 'covet_cache');
       return;
     }
 
@@ -711,7 +832,7 @@ function apply(state: GameState, action: Action): void {
       if (state.phase === 'event' && state.ritesState?.birthChoice === action.player) {
         throw new IllegalAction('the loom holds its breath — choose your rite');
       }
-      assert(['reward', 'event', 'rest', 'shop', 'loom'].includes(state.phase), 'cannot advance now');
+      assert(['reward', 'event', 'rest', 'shop', 'loom', 'covet_treasure'].includes(state.phase), 'cannot advance now');
       if (state.phase === 'loom') {
         assert(state.truth?.shrine?.verdict, 'the loom has not spoken yet');
         // solo: the bot follows the human out of the shrine
@@ -724,6 +845,8 @@ function apply(state: GameState, action: Action): void {
         assert(r.picked.p1 !== null && r.picked.p2 !== null, 'both players must pick first');
       }
       if (state.phase === 'event') assert(state.event!.chosen !== null, 'choose first');
+      // S11.7: the cache must be divided before anyone leaves it
+      if (state.phase === 'covet_treasure') assert(state.covetTreasure!.taken !== null, 'divide the cache first');
       if (state.phase === 'rest') {
         const rest = state.rest!;
         assert(rest.chosen[action.player] !== null, 'choose first');
@@ -743,6 +866,9 @@ function apply(state: GameState, action: Action): void {
         state.event = null;
         state.rest = null;
         state.shop = null;
+        // S11.7: DELETE, not null — the key only ever exists at a cache
+        // (flagged maps), so unflagged state shape stays byte-identical
+        delete state.covetTreasure;
         if (wasBoss) {
           advanceAct(state);
         } else {
@@ -794,8 +920,11 @@ function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
   }
 }
 
-function randomUnownedRelic(state: GameState): string | null {
+function randomUnownedRelic(state: GameState, exclude?: ReadonlySet<string>): string | null {
+  // S9b.1-1: `exclude` covers relics already stocked in the SAME shop —
+  // ownership alone let the second shop slot duplicate the first.
   const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
+  if (exclude) for (const id of exclude) owned.add(id);
   const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
   const weddable = ALL_RELICS.filter((r) => !owned.has(r.id));
   const usable = pool.length > 0 ? pool.concat(weddable.filter((r) => r.passives?.includes('wedding_knife'))) : weddable;
@@ -919,6 +1048,90 @@ function resolveLoomVerdict(state: GameState): void {
   }
 }
 
+/** S11.4: the stage an event currently stands at, derived by walking the
+ *  chosen-option path (backward-compatible: existing events are the single
+ *  stage at path []). */
+export function eventStageAt(def: EventDef, stagePath: readonly string[] = []): EventStageDef {
+  let stage: EventStageDef = { prose: def.prose, options: def.options };
+  for (const optId of stagePath) {
+    const opt = stage.options.find((o) => o.id === optId);
+    if (!opt?.next) break; // malformed path degrades to the last valid stage
+    stage = opt.next;
+  }
+  return stage;
+}
+
+/** S11.5: the deep grammar is LIVE only where a flag is. The stage data
+ *  ships on the defs (removing events from the unflagged pool would change
+ *  the plain shuffle's rng consumption — the deeper covenant), so the gate
+ *  is behavioral: unflagged runs neither render nor walk the deep doors. */
+export function deepEventsOpen(state: GameState): boolean {
+  return !!(state.tracks || state.rites);
+}
+
+/** S11.5: does choosing this option deepen the event HERE? An unflagged
+ *  'pay' terminates exactly as it did before its extension (same effects,
+ *  zero rng — the golden covenant's teeth). Shared by reducer, client,
+ *  bots, and the fuzz driver. */
+export function eventOptionDeepens(state: GameState, opt: EventOptionDef): boolean {
+  return !!opt.next && deepEventsOpen(state);
+}
+
+/** S11.4: is a state-keyed option open? Every clause of `requires` must
+ *  hold; optionless events pass trivially. Shared by the reducer's assert
+ *  and the client's render (unmet options never render — R6). */
+export function eventOptionAvailable(state: GameState, subjectId: PlayerId, opt: EventOptionDef): boolean {
+  const req = opt.requires;
+  if (!req) return true;
+  // S11.5: keyed doors are deep grammar — unflagged runs never see them,
+  // even when the clause itself would hold (codexProven can be claimed on
+  // any run; the DOOR only exists where the grammar is live)
+  if (!deepEventsOpen(state)) return false;
+  const subject = state.players[subjectId];
+  if (req.thread !== undefined && state.thread < req.thread) return false;
+  if (req.gold !== undefined && state.gold < req.gold) return false;
+  if (req.hpAtMost !== undefined && subject.hp > req.hpAtMost) return false;
+  if (req.hpAtLeast !== undefined && subject.hp < req.hpAtLeast) return false;
+  if (req.tagCount !== undefined) {
+    const n = subject.deck.filter((c) => CARDS[c.defId]?.tag === req.tagCount!.tag).length;
+    if (n < req.tagCount.n) return false;
+  }
+  if (req.character !== undefined
+    && state.players.p1.character !== req.character
+    && state.players.p2.character !== req.character) return false;
+  if (req.codexProven !== undefined && !(state.codexProven ?? []).includes(req.codexProven)) return false;
+  return true;
+}
+
+/** S11.4 delta line: one generated sentence of what changed, from the ops
+ *  that were APPLIED (pot + final stage). Secret riders are not ops, so
+ *  bundle secrecy holds by omission (R6). */
+export function eventDeltaLine(effects: readonly EventEffectOp[]): string {
+  const parts = effects.map(eventEffectClause).filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : 'Nothing changed hands.';
+}
+
+/** S11.4 effect stubs: the same generator renders option-button stubs
+ *  ("-2 HP · +10 gold") — never hand-authored. */
+export function eventEffectClause(eff: EventEffectOp): string {
+  switch (eff.op) {
+    case 'heal': return `+${eff.amount} HP`;
+    case 'loseHp': return `−${eff.amount} HP`;
+    case 'maxHp': return `${eff.amount >= 0 ? '+' : '−'}${Math.abs(eff.amount)} max HP`;
+    case 'gainCard': return `gain a ${eff.pool} card`;
+    case 'gainRelic': return 'gain a relic';
+    case 'gold': return `${eff.amount >= 0 ? '+' : '−'}${Math.abs(eff.amount)} gold`;
+    case 'covetCharge': return `+${eff.amount} Covet`;
+    case 'pendingFray': return 'Fray at the next fight';
+    case 'thread': return `+${eff.amount} Thread at the next fight`;
+    case 'upgradeRandom': return 'a card upgrades';
+    case 'removeRandomStarter': return 'a starter card removed';
+    case 'fragments': return 'threads for the Tapestries';
+    case 'fragment': return 'a thread for your Tapestry';
+    case 'nothing': return '';
+  }
+}
+
 function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: string; [k: string]: unknown }): void {
   switch (eff.op) {
     case 'heal':
@@ -990,7 +1203,10 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
       // elimination mapping stays inside content/truth.ts (§11 extension).
       if (!state.truth || !state.event) break;
       const actor = state.event.subject;
-      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng);
+      // S11.3 dedup rung 0: both boards' pins steer the pick toward fresh
+      // eliminations (one supply ledger, moved once)
+      const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+      const served = serveFragments(state.event.eventId, state.truth.tuple, state.rng, pinnedIds);
       state.rng = served.state;
       const pins: Array<[PlayerId, typeof served.a]> = [
         [actor, served.a],
@@ -1010,6 +1226,30 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
         if (tt) tt.fragmentsByPlayer[pid]++;
       }
       state.log.push({ e: 'info', detail: 'Threads pull loose and pin to your Tapestries.' });
+      break;
+    }
+    case 'fragment': {
+      // S11.5 codex doors: one thread, served from the WHOLE pool through
+      // the bound-witness channel (S11.3's single supply ledger — truth-
+      // consistent, dedup-preferred, never the same fragment twice), pinned
+      // to the door's ACTOR. Rites-only runs open the door for its other
+      // effects; with no truth there is nothing to serve and NO rng moves.
+      if (!state.truth || !state.event) break;
+      const actor = state.event.subject;
+      const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+      const served = serveBoundWitness(state.truth.tuple, state.rng, pinnedIds);
+      state.rng = served.state;
+      if (served.fragment) {
+        state.truth.boards[actor].push({
+          fragmentId: served.fragment.id,
+          eventId: served.fragment.eventId,
+          act: state.map.act,
+          questionId: served.fragment.bearsOn,
+          text: served.fragment.text,
+        });
+        if (state.telemetry.truth) state.telemetry.truth.fragmentsByPlayer[actor]++;
+        state.log.push({ e: 'info', detail: 'A thread pulls loose and pins to your Tapestry.' });
+      }
       break;
     }
     case 'nothing':
@@ -1122,6 +1362,11 @@ function enterNode(state: GameState): void {
     }
     case 'rest':
       state.rest = { chosen: { p1: null, p2: null }, upgradePicked: { p1: false, p2: false }, wedding: null };
+      // S11.7 toll door (only flagged maps carry the variant): one seat
+      // heals, named by vote-match — REST_CHOOSE is closed at this door
+      if (node.variant === 'toll') {
+        state.rest.toll = { votes: { p1: null, p2: null }, healed: null };
+      }
       state.phase = 'rest';
       sayWitness(state, 'rest_site');
       // nt-slice S6.5: the all-true completion boon — the full opening turn,
@@ -1141,15 +1386,27 @@ function enterNode(state: GameState): void {
       sayWitness(state, 'shop');
       return;
     case 'treasure': {
-      // instant spoils, shown on the reward screen with no card sets
+      // instant spoils, shown on the reward screen with no card sets.
+      // S11.7 covet cache: the SAME rolls in the SAME order (parity is a
+      // habit, not just a covenant) — only the GRANT is negotiated.
       const goldRoll = rngInt(state.rng, 21);
       state.rng = goldRoll.state;
       const gold = 30 + goldRoll.value;
-      earnGold(state, gold, 'treasure');
-      const relic = randomUnownedRelic(state);
+      const relicRolled = randomUnownedRelic(state);
       const ownerRoll = rngInt(state.rng, 2);
       state.rng = ownerRoll.state;
       const owner: PlayerId = ownerRoll.value === 0 ? 'p1' : 'p2';
+      if (node.variant === 'covet' && relicRolled) {
+        state.covetTreasure = {
+          gold, relicId: relicRolled, owner,
+          votes: { p1: null, p2: null }, taken: null, seizedBy: null,
+        };
+        state.phase = 'covet_treasure';
+        state.log.push({ e: 'info', detail: 'A cache behind old glass: coin, and something better guarded. The case opens ONCE.' });
+        return;
+      }
+      earnGold(state, gold, 'treasure');
+      const relic = relicRolled;
       if (relic) grantRelic(state, owner, relic);
       state.reward = {
         sets: { p1: [], p2: [] },
@@ -1181,6 +1438,7 @@ function advanceAct(state: GameState): void {
       state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
       [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? []), ...(state.seenRareEvents ?? [])],
       state.rites ? [state.players.p1.character, state.players.p2.character] : [],
+      !!state.knotwork, // S11.8: act 2 stays on the braid
     );
     state.rng = gen.rng;
     state.map = gen.map;
@@ -1194,6 +1452,7 @@ function advanceAct(state: GameState): void {
   } else {
     state.phase = 'victory';
     state.telemetry.goldResidual = state.gold; // S4.1
+    recordTruthProvability(state); // OQ#57 instrument
     sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
@@ -1233,6 +1492,53 @@ function afterResolution(state: GameState): void {
     earnGold(state, gold, node.kind as GoldSource);
 
     let relic: string | undefined;
+    if (node.kind === 'elite') {
+      // S11.2: the knot is cut — remaining snarls this act tighten. The
+      // calibration instrument records the kill ORDER and what the fight
+      // cost (comfort-pass per-encounter telemetry, keyed by order).
+      (state.telemetry.eliteFights ??= []).push({
+        act: state.map.act,
+        order: state.map.knotsCut ?? 0,
+        hpLost: state.combat?.hpLostThisCombat ?? 0,
+        won: true,
+      });
+      state.map.knotsCut = (state.map.knotsCut ?? 0) + 1;
+      // S11.3 bound witness: the knot pays a guaranteed fragment — combat
+      // paying narrative, on-lore (the Witness reads what the enemy was).
+      // Flagged runs only (truth exists), served through the standard
+      // channel machinery with dedup rung 0.
+      if (state.truth) {
+        const pinnedIds = [...state.truth.boards.p1, ...state.truth.boards.p2].map((b) => b.fragmentId);
+        const served = serveBoundWitness(state.truth.tuple, state.rng, pinnedIds);
+        state.rng = served.state;
+        if (served.fragment) {
+          const ownerRoll = rngInt(state.rng, 2);
+          state.rng = ownerRoll.state;
+          const owner: PlayerId = ownerRoll.value === 0 ? 'p1' : 'p2';
+          state.truth.boards[owner].push({
+            fragmentId: served.fragment.id,
+            eventId: served.fragment.eventId,
+            act: state.map.act,
+            questionId: served.fragment.bearsOn,
+            text: served.fragment.text,
+          });
+          const tt = state.telemetry.truth;
+          if (tt) {
+            tt.fragmentsByPlayer[owner]++;
+            tt.boundWitnessFragments = (tt.boundWitnessFragments ?? 0) + 1;
+            const all = new Set<string>();
+            for (const pid of ['p1', 'p2'] as PlayerId[]) {
+              for (const b of state.truth.boards[pid]) {
+                for (const a of FRAGMENTS_BY_ID[b.fragmentId]?.eliminates ?? []) all.add(a);
+              }
+            }
+            tt.distinctEliminations = all.size;
+          }
+          state.log.push({ e: 'info', detail: 'The Witness reads what the enemy was — a thread pins to the Tapestry.' });
+          sayWitness(state, 'bound_witness');
+        }
+      }
+    }
     if (node.kind === 'elite' || node.kind === 'boss') {
       for (const pid of ['p1', 'p2'] as PlayerId[]) {
         const p = state.players[pid];
@@ -1240,10 +1546,19 @@ function afterResolution(state: GameState): void {
       }
       const r = randomUnownedRelic(state);
       if (r) {
+        // S11.6: the scouted pin is the truth ("the cards never lie" applies
+        // to node faces too). The roll above is KEPT for byte-identical rng
+        // consumption; its value is used when the pin is absent (unflagged,
+        // boss nodes) or already owned by then (bought since — the one
+        // honest staleness, rare and fallback-covered).
+        const pin = node.kind === 'elite' && (state.tracks || state.rites) ? node.scoutRelicId : undefined;
+        const pinFree = pin !== undefined
+          && !state.players.p1.relics.includes(pin) && !state.players.p2.relics.includes(pin);
+        const granted = pinFree ? pin : r;
         const ownerRoll = rngInt(state.rng, 2);
         state.rng = ownerRoll.state;
-        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', r);
-        relic = r;
+        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', granted);
+        relic = granted;
       }
     }
 
@@ -1287,6 +1602,34 @@ function gameOver(state: GameState): void {
   endCombatCleanup(state);
   state.phase = 'game_over';
   state.telemetry.goldResidual = state.gold; // S4.1
+  recordTruthProvability(state); // OQ#57 instrument
+}
+
+/** OQ#57: the REAL "questions provable per run" measure, written at run end
+ *  (either end). A question is CONFIDENT when the pooled boards leave <=1
+ *  answer standing, a NARROWED GAMBLE at exactly 2 — the S11.3 target band
+ *  ("~1 confident + 1 narrowed at typical routing") reads these directly
+ *  instead of the distinct-eliminations proxy. */
+function recordTruthProvability(state: GameState): void {
+  const tt = state.telemetry.truth;
+  if (!tt || !state.truth) return;
+  const struck: Record<string, Set<string>> = {};
+  for (const holder of ['p1', 'p2'] as PlayerId[]) {
+    for (const pin of state.truth.boards[holder]) {
+      const def = FRAGMENTS_BY_ID[pin.fragmentId];
+      if (!def) continue;
+      for (const a of def.eliminates) (struck[def.bearsOn] ??= new Set()).add(a);
+    }
+  }
+  let confident = 0;
+  let narrowed = 0;
+  for (const q of QUESTIONS) {
+    const remaining = answersFor(q.id).length - (struck[q.id]?.size ?? 0);
+    if (remaining <= 1) confident++;
+    else if (remaining === 2) narrowed++;
+  }
+  tt.questionsConfident = confident;
+  tt.questionsNarrowed = narrowed;
 }
 
 /** §8: reward sets of 3 from your own pool; M2-B1 adds a neutral splash. */
@@ -1317,7 +1660,8 @@ function rollRewardSet(state: GameState, pid: PlayerId): string[] {
 // Shop (M2-B4)
 // ---------------------------------------------------------------------------
 
-function generateShop(state: GameState) {
+// exported for the S9b.1-1 seed-sweep test (distinct relic slots)
+export function generateShop(state: GameState) {
   const items: GameState['shop'] extends infer _ ? import('./types').ShopItem[] : never = [];
   let n = 0;
   const price = (base: number, spread: number): number => {
@@ -1339,9 +1683,13 @@ function generateShop(state: GameState) {
       });
     }
   }
+  const stocked = new Set<string>();
   for (let i = 0; i < 2; i++) {
-    const relic = randomUnownedRelic(state);
-    if (relic) items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+    const relic = randomUnownedRelic(state, stocked);
+    if (relic) {
+      stocked.add(relic);
+      items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+    }
   }
   // S4.2: the removal service never sells out — one always-present row per
   // player; the live price is removalPrice(state, player), shown per player

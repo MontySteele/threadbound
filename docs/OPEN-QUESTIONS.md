@@ -572,3 +572,125 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     plays from a fresh profile, else the host codex pulls the quiet/high
     registers (possibly the sacrament quote) into a first-timer's first
     run.
+
+## S9b sprint (2026-07-04, playtest response)
+
+49. **Thornward: the 19th restatement upgrade.** The S9b.2 parity gate's
+    seeding scan found 19 upgrades deep-equal to their base, not the 18
+    the S9b.3 table covers — thornward (V, C, 1: Gain 6 Block; Link (Hex):
+    apply 2 Hex to ALL) was missed by the doc's count. Per
+    enumerate→propose→sign-off it was NOT rewritten here; it sits alone on
+    the covenant exemption list (loud, burn-down-checked). Proposed row for
+    ruling, M2-B6 discipline (link deepened, non-Hex rider, no new Hex
+    amounts): *Link: apply 2 Hex to ALL enemies and gain 3 Block.*
+    **RULED (2026-07-04): proposed row accepted as written.** Landed with a
+    pinning test; exemption list now EMPTY — S9b gate 1 reads clean.
+
+50. **D8 → Branch A fired (T1): run length in band.** Baseline banked; the
+    re-centering commit stays unspent. Filed per the S9b.4 paperwork rule.
+    **CLOSED (fired branch, recorded).**
+
+51. **D5 → Branch A signal at T1** (cross-player Reclaims occur and are
+    articulated: "0-cost cards to start new links"). OQ#38 closes at T2 per
+    the tier gate, not before. Re-read after S9b.1-3 (the reclaim list now
+    shows arrival costs) in case cost-invisibility was steering target
+    selection toward "mostly 0-cost cards". **SIGNAL LOGGED — T2 closes.**
+
+52. **D9/D10 classification pending designer** (rite impact: duds vs
+    concept; birth-rite read: stall vs intrigue vs no-registration). The
+    fired EXECUTE joins the next sprint. NOTE: S9c pre-spends the likely
+    verdicts (D9-C identity frame + first-draw naming = D9 Branch C's
+    EXECUTE; D10-B pick line = D10 Branch B's EXECUTE) — if the designer
+    classification lands differently, S9c's presentation commits already
+    cover the stronger branch. **OPEN — designer.**
+
+53. **Linked Shields vs Immovable dominance evidence** filed to the §7
+    guard-suite item: 7/6 vs 12/8 at equal cost; the niche (Guard
+    self-trigger vs partner cross-play) exists but is illegible/underpriced.
+    No action in S9b. S9d.A2 adds Immovable's partnerHeal 3 link to the
+    same telemetry watch (same verb as Quiet Mending's A1 ritual, on the
+    card the playtest already called strictly-better). **WATCH.**
+
+## S9c/S9d/S11 Wave A (2026-07-04, same branch)
+
+54. **S9d grower rates retuned on first battery** (Knell per 2→3,
+    Pyre-Brand 4→6, Mourner's 10→15) — the signed table read vb +8 /
+    vv +11 vs post-S9c, outside the ±6 gate; retuned reads +7/+6/+4.
+    Original rows in docs/threadbound_sprint_S9d.md §S9d.1; evidence in
+    docs/S9B-S11-STATUS.md. **RULED (2026-07-04): retune RATIFIED**
+    (vb's +7 read accepted as band-edge, pooled with escalation landing).
+    Votive's tier shape (S9d.0-4) stands by the same ruling's default.
+
+55. **S11.2 escalation calibration gate UNMET at ladder ×1** (last/first
+    pair-HP ratio 1.07–1.27 vs the ≥2 gate). Recommendation: hold ×1 and
+    treat the gate as open until S11.9 gives bots knot-pricing, then
+    calibrate ladder and policy together (a steepened ladder against
+    price-blind bots measures the wrong thing). PROBE DATA: a clean
+    TB_ELITE_ESCALATION=2 battery (ladder 20/60/120, vb A0 ×200) reads
+    ratio ~1.32–1.60 pooled ~1.44 — even doubling falls short of 2×,
+    confirming the bottleneck is structural, not a constant.
+    **RULED (2026-07-04): hold ladder ×1; the ≥2× calibration gate stays
+    OPEN, to be calibrated together with S11.9 bot knot-pricing.** The
+    open item moves to the S11.9 work queue, not this list.
+
+56. **Battery environment offset**: this container reads the recorded
+    S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
+    All session gates were judged against same-environment baselines.
+    Until the cause is found (cores/timing → bot concurrency?), treat
+    cross-machine win-rate comparisons as unreliable; deltas within one
+    environment hold. **OPEN — infra.**
+
+57. **Instrument gaps named**: "questions provable/run" (S11.3 target
+    band) has no harness calculation — distinctEliminations is the proxy;
+    "rite-card play rate" (S9c gate 2 direction read) is proxied by
+    realized growth > 0. **CLOSED (2026-07-04): both real instruments
+    landed** — questionsConfident/questionsNarrowed at run end, ritePlays
+    per seat at the play site, sim readouts for both. Next battery reads
+    the stated measures.
+
+58. **Post-S11.5 win-rate drift ruled floor-demanded (gate 2 exception
+    named).** Battery read vb 36 (pooled 600) / vv 26 / bb 34 — vb +11
+    vs the S9d stage, outside ±6. Probe battery with deep stages
+    DISABLED read vb 36 identically: the signed S11.5 stakes contribute
+    ~zero; the drift is entirely the high-stakes [1,3] composition
+    floor guaranteeing Broken Carillon + Drowned Hymnal (whose SHALLOW
+    faces pay relic / rare card) on every flagged act-2 map, where
+    queue weights previously buried plain events near-completely.
+    **RULED (2026-07-04): re-baseline — the floor stays, the drift is
+    named to it.** The post-S11.5 ledger row is the Wave A baseline
+    for S11.6/S11.7 batteries. Human pricing of the gambles is a
+    playtest read (bots are price-blind until S11.9). **CLOSED.**
+
+59. **TB_KNOTWORK first battery: mirrors read +22 (S11.10 gate 2 UNMET).**
+    vb 33 (−4 ✓) / vv 48 / bb 60 vs the Wave A baseline. Cause is
+    structural, not per-fight: a strand-runner fights ~1 less per run
+    (truth strand carries ≤2 combats incl. the opener) while taking more
+    reward events; HP/combat is unchanged. PROPOSED quota amendment to
+    the just-signed S11.11-4 table (one-line data changes,
+    content/strand-targets.ts): truth combats ≥2 with events at exactly
+    ≥3 (drop the 4th event slot for a mid combat); power combats ≥3
+    (treasure moves to truth-only; the weave-wide ≥1 floor holds).
+    Strand-runner fights return to ~5–6/act. Positive co-reads from the
+    same battery, no action needed: D6/D7 improves on every measure vs
+    the B6 ledger (gate 3 PASS), and the escalation ratio reads 1.45
+    with knot-pricing live (from 1.03) — the ladder/policy joint
+    recalibration has its instrument. **RULED (2026-07-04): the
+    fights-vs-events-vs-treasure mix STANDS as a design choice — the
+    quota amendment is REJECTED; the deeper systemic issue (card
+    rewards don't seem to matter) becomes ITS OWN SPRINT.** Brief with
+    all evidence, levers, and instrument needs: docs/S12-CARD-ECONOMY-
+    BRIEF.md. S11.10 gate 2 defers to re-anchor after S12; TB_KNOTWORK
+    stays default-off meanwhile. **CLOSED into S12.**
+    DESIGNER HYPOTHESIS (2026-07-04, supersedes the quota amendment as
+    the first lever): the inflation may indict the CARD-REWARD economy,
+    not the fight count — a pair that routes around combat should do
+    WORSE at the knots (their deck never grew), and instead they fight
+    exactly as well (HP/combat 29.7 braid vs 29.6 Wave A — the single
+    strongest datum). Card rewards may be too weak relative to relics
+    (the S11.5 probe already showed one relic-bearing event/map = +11
+    alone). Decomposition probe running: braid WITHOUT event-seeking
+    (if mirrors stay hot → fight scarcity; if they cool → relic/event
+    take), plus new economy instruments (relics + deck size per run,
+    wins vs losses split). Bot-meta caveat applies (OQ#14): bots draft
+    junk, so card value reads LOW on bot evidence — a card-economy
+    rebalance should be sized against playtest reads too.

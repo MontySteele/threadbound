@@ -89,6 +89,19 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
+/* S11.8 (TB_KNOTWORK): the two warp strands read as textures, not labels —
+   a cool cast on the truth strand, an ember cast on the power strand.
+   PROVISIONAL palette pending the string/lore pass. */
+.mapnode.strand-truth { border-color: color-mix(in srgb, #7d9bd6 55%, var(--panel)); }
+.mapnode.strand-power { border-color: color-mix(in srgb, #d69b62 55%, var(--panel)); }
+/* S11.6 asymmetric scouting: your seat's face for a node — a whispered
+   sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
+   you"). Italic + dim: it reads as knowledge, not as the node's name. */
+.map-scout {
+  display: block; font-size: 10.5px; font-style: italic; line-height: 1.25;
+  color: color-mix(in srgb, var(--thread) 70%, var(--text));
+  max-width: 150px; margin-top: 2px;
+}
 
 /* ---- enemies (B5) ---- */
 .enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }
@@ -279,6 +292,30 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .card.upgraded .cardtop { border-bottom: 1px solid color-mix(in srgb, var(--kindled) 45%, transparent); padding-bottom: 2px; }
 .card.mutated .ctag { color: var(--hex); }
 .card.mutated { box-shadow: 0 0 8px color-mix(in srgb, var(--hex) 30%, transparent); }
+/* S9c.2 (D9-C): rite cards read as VESTMENTS everywhere they render — a
+   doubled funerary frame in the Witness's lavender, plus a fleuron mark.
+   Presentation only; the marker is the def's riteOnly flag. */
+.card.rite-card {
+  border-color: var(--witness);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--witness) 55%, transparent),
+    0 0 10px color-mix(in srgb, var(--witness) 25%, transparent);
+}
+.card.rite-card .cname { color: var(--witness); }
+.card.rite-card::after {
+  content: '❧'; position: absolute; bottom: 3px; right: 6px;
+  color: color-mix(in srgb, var(--witness) 70%, transparent); font-size: 0.9em;
+  pointer-events: none;
+}
+/* S11.4 event grammar v2: generated effect stubs, the visible pot, and the
+   post-resolution delta line */
+.event-option .stub { color: var(--muted, #999); font-size: 0.85em; font-weight: normal; }
+.event .pot { border: 1px dashed var(--line); border-radius: 6px; padding: 4px 10px; display: inline-block; }
+.event .delta { color: var(--ignite); font-weight: bold; }
+
+/* S9d.3: the tally chip (grown rites) — Machine bookkeeping, not Witness
+   voice; left corner so the momentum badge keeps the right */
+.card-badge.tally-chip { left: -5px; right: auto; color: var(--witness); border-color: var(--witness); }
+.rite-axis { margin-top: 4px; font-size: 0.85em; }
 
 /* rest-site upgrade picker: before → after, click the pair (playtest 1) */
 .upgrade-pair {

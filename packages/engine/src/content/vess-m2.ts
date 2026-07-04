@@ -103,8 +103,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 6, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Guard): gain 4 Block.',
-      link: { condition: 'Guard', text: 'Gain 4 Block.', effects: [{ op: 'block', amount: 4 }] },
+      // S9b.3 row 5
+      text: 'Deal 6. Link (Guard): gain 6 Block.',
+      link: { condition: 'Guard', text: 'Gain 6 Block.', effects: [{ op: 'block', amount: 6 }] },
     },
   },
   {
@@ -163,12 +164,17 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 8, primary: true }, { op: 'taunt' }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 8 Block. Bind the target enemy to you. Link (Hex): apply 2 Hex to it.',
-      link: { condition: 'Hex', text: 'Apply 2 Hex to it.', effects: [{ op: 'hex', amount: 2 }] },
+      // S9b.3 row 6: binding-architect lean
+      text: 'Gain 8 Block. Bind the target enemy to you. Link (Hex): apply 2 Hex to it and gain 3 Block.',
+      link: { condition: 'Hex', text: 'Apply 2 Hex to it and gain 3 Block.', effects: [{ op: 'hex', amount: 2 }, { op: 'block', amount: 3 }] },
     },
   },
   {
     id: 'quiet_mending', name: 'Quiet Mending', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
+    // S9d.A1 (ruled option a): the pool's only repeatable heal becomes a
+    // once-per-combat co-op ritual — it exhausts, and the S7.6 interaction
+    // (partner Reclaims it from the exhaust pile as an Echo) is INTENDED.
+    exhaust: true,
     text: 'Gain 6 Block.',
     base: [{ op: 'block', amount: 6, primary: true }],
     link: { condition: 'Surge', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] }, // §4: widened from Rite
@@ -178,8 +184,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Surge): heal 3.',
-      link: { condition: 'Surge', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] },
+      // S9b.3 row 7 per S9d.A1: soul-thread texture, still exhausting
+      text: 'Gain 6 Block. Link (Surge): heal 3. Your partner heals 2.',
+      link: { condition: 'Surge', text: 'Heal 3. Your partner heals 2.', effects: [{ op: 'heal', amount: 3 }, { op: 'partnerHeal', amount: 2 }] },
     },
   },
   {
@@ -207,8 +214,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
-      text: 'Draw 1. Gain Kindled 1. Link (Hex): draw 2 instead.',
-      link: { condition: 'Hex', text: 'Draw 2 instead.', effects: [{ op: 'draw', amount: 2 }, { op: 'kindled', amount: 1 }], replace: true },
+      // S9b.3 row 8 — full replace list preserved (draw + kindled + the rider)
+      text: 'Draw 1. Gain Kindled 1. Link (Hex): draw 2 and gain 1 Momentum instead.',
+      link: { condition: 'Hex', text: 'Draw 2 and gain 1 Momentum instead.', effects: [{ op: 'draw', amount: 2 }, { op: 'kindled', amount: 1 }, { op: 'momentum', amount: 1 }], replace: true },
     },
   },
   {
@@ -256,8 +264,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'hex', amount: 3, primary: true }, { op: 'momentum', amount: 3 }],
     },
     upgrade: {
-      text: 'Apply 5 Hex. Link (Guard): apply 2 Weak.',
-      link: { condition: 'Guard', text: 'Apply 2 Weak.', effects: [{ op: 'weak', amount: 2 }] },
+      // S9b.3 row 9
+      text: 'Apply 5 Hex. Link (Guard): apply 3 Weak.',
+      link: { condition: 'Guard', text: 'Apply 3 Weak.', effects: [{ op: 'weak', amount: 3 }] },
     },
   },
   {
@@ -316,6 +325,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'detonate', max: 3 }],
     },
     upgrade: {
+      // S9b.3 row 10 (S9b.0-3 ruling): the flexible detonator cheapens —
+      // battery watches Hex damage share (§14.10 band 25–45%)
+      cost: 1,
       text: 'Apply 3 Hex, then detonate up to 3 Hexes on the target. Link (Strike): detonate ALL Hexes on the target instead.',
       link: { condition: 'Strike', text: 'Detonate ALL Hexes on the target instead.', effects: [{ op: 'hex', amount: 3, primary: true }, { op: 'detonate' }], replace: true },
     },
@@ -332,8 +344,9 @@ export const VESS_M2_CARDS: CardDef[] = [
       link: { condition: 'Hex', text: 'Detonate all Hexes on the target.', effects: [{ op: 'detonate' }] },
     },
     upgrade: {
-      text: 'Deal 8. Link (Hex): detonate all Hexes on the target.',
-      link: { condition: 'Hex', text: 'Detonate all Hexes on the target.', effects: [{ op: 'detonate' }] },
+      // S9b.3 row 11 — mirrors rendcall's authored upgrade
+      text: 'Deal 8. Link (Hex): detonate all Hexes on the target and gain 2 Momentum.',
+      link: { condition: 'Hex', text: 'Detonate all Hexes on the target and gain 2 Momentum.', effects: [{ op: 'detonate' }, { op: 'momentum', amount: 2 }] },
     },
   },
   {
@@ -347,8 +360,10 @@ export const VESS_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 7, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Rite): deal 6 again.',
-      link: { condition: 'Rite', text: 'Deal 6 again.', effects: [{ op: 'damage', amount: 6 }] },
+      // S9b.3 row 12: base touched — the link IS this card's whole story
+      base: [{ op: 'damage', amount: 7, primary: true }],
+      text: 'Deal 7. Link (Rite): deal 7 again.',
+      link: { condition: 'Rite', text: 'Deal 7 again.', effects: [{ op: 'damage', amount: 7 }] },
     },
   },
   {
@@ -533,7 +548,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   // Commons
   needlework: {
     upgrade: {
-      text: 'Apply 3 Hex. Link (Strike): apply 2 additional Hex per link fired earlier this Chain.',
+      // S9b.1-2: base has been 4 Hex since M2-B1; the overlay text still said 3
+      text: 'Apply 4 Hex. Link (Strike): apply 2 additional Hex per link fired earlier this Chain.',
       link: { condition: 'Strike', text: 'Apply 2 additional Hex per link fired earlier this Chain.', effects: [{ op: 'hexPerLinkFired', per: 2 }] },
     },
   },
@@ -543,14 +559,16 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'hex', amount: 1, primary: true }, { op: 'damage', amount: 3 }],
     },
     upgrade: {
-      text: 'Apply 2 Hex. Link (Strike): apply 4 instead.',
-      link: { condition: 'Strike', text: 'Apply 4 instead.', effects: [{ op: 'hex', amount: 4, primary: true }], replace: true },
+      // S9b.3 row 1: non-Hex rider on the replace link (no new Hex amounts)
+      text: 'Apply 3 Hex. Link (Strike): apply 4 and draw 1 instead.',
+      link: { condition: 'Strike', text: 'Apply 4 and draw 1 instead.', effects: [{ op: 'hex', amount: 4, primary: true }, { op: 'draw', amount: 1 }], replace: true },
     },
   },
   withering: {
     upgrade: {
-      text: 'Apply 2 Hex to ALL enemies. Link (Guard): also apply 1 Weak to all.',
-      link: { condition: 'Guard', text: 'Also apply 1 Weak to all.', effects: [{ op: 'weakAll', amount: 1 }] },
+      // S9b.3 row 2: Weak growth, not Hex
+      text: 'Apply 3 Hex to ALL enemies. Link (Guard): also apply 2 Weak to all.',
+      link: { condition: 'Guard', text: 'Also apply 2 Weak to all.', effects: [{ op: 'weakAll', amount: 2 }] },
     },
   },
   patient_knife: {
@@ -569,8 +587,9 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 6, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 5. Link (Hex): apply 3 Hex.',
-      link: { condition: 'Hex', text: 'Apply 3 Hex.', effects: [{ op: 'hex', amount: 3 }] },
+      // S9b.3 row 3
+      text: 'Deal 5. Link (Hex): apply 3 Hex. Draw 1.',
+      link: { condition: 'Hex', text: 'Apply 3 Hex. Draw 1.', effects: [{ op: 'hex', amount: 3 }, { op: 'draw', amount: 1 }] },
     },
   },
   thornward: {
@@ -579,8 +598,10 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 6, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Hex): apply 2 Hex to ALL enemies.',
-      link: { condition: 'Hex', text: 'Apply 2 Hex to ALL enemies.', effects: [{ op: 'hexAll', amount: 2 }] },
+      // OQ#49 ruling (2026-07-04): the 19th restatement, M2-B6 discipline —
+      // link deepened with a non-Hex rider, no new Hex amounts.
+      text: 'Gain 6 Block. Link (Hex): apply 2 Hex to ALL enemies and gain 3 Block.',
+      link: { condition: 'Hex', text: 'Apply 2 Hex to ALL enemies and gain 3 Block.', effects: [{ op: 'hexAll', amount: 2 }, { op: 'block', amount: 3 }] },
     },
   },
   wardknot: {
@@ -600,8 +621,9 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Draw 1. Link (Strike): draw 2 instead.',
-      link: { condition: 'Strike', text: 'Draw 2 instead.', effects: [{ op: 'draw', amount: 2 }], replace: true },
+      // S9b.3 row 4 (battery flag: 0-cost draw) — replace list preserved
+      text: 'Draw 1. Link (Strike): draw 3 instead.',
+      link: { condition: 'Strike', text: 'Draw 3 instead.', effects: [{ op: 'draw', amount: 3 }], replace: true },
     },
   },
   quickening: {

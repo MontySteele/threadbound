@@ -96,6 +96,9 @@ export const PT1_ENEMY_DMG_SCALE = envScale('TB_ENEMY_DMG_SCALE', 1.3);
 // env-knob pattern as the enemy scales; active values ride in telemetry.
 export const MAP_LAYERS = Math.round(envScale('TB_MAP_LAYERS', 7));
 export const MAP_EVENT_PCT = Math.round(envScale('TB_MAP_EVENT_PCT', 32));
+// S11.2: scales the snarl-escalation increment ladder (1 = the signed
+// first-pass numbers; battery-tuned via the calibration gate)
+export const ELITE_ESCALATION_SCALE = envScale('TB_ELITE_ESCALATION', 1);
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
 for (const def of Object.values(ENEMIES)) {

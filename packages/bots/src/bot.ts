@@ -13,6 +13,10 @@ export interface RunResult {
   combatsWon: number;
   /** S3.1 run header: seat → character, so per-seat splits stay interpretable */
   characters: Record<PlayerId, CharacterId>;
+  /** OQ#59 economy instruments: end-of-run relic count and deck size
+   *  (pair totals) — reads whether wins ride relics or card growth */
+  relicsEnd: number;
+  deckEnd: number;
   telemetry: Telemetry;
 }
 
@@ -133,6 +137,8 @@ export class Bot {
         act: view.map.act,
         combatsWon: this.policy.combatsWon,
         characters: { p1: view.players.p1.character, p2: view.players.p2.character },
+        relicsEnd: view.players.p1.relics.length + view.players.p2.relics.length,
+        deckEnd: view.players.p1.deck.length + view.players.p2.deck.length,
         telemetry: view.telemetry,
       });
       this.ws.close();

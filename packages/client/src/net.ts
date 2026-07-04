@@ -20,6 +20,9 @@ export interface ClientState extends Omit<GameState, 'truth'> {
   you: PlayerId;
   counts: Record<PlayerId, { hand: number; draw: number }>;
   truth?: ClientTruthView;
+  /** S11.6 asymmetric scouting: YOUR seat's node faces (node id → rendered
+   *  line). The partner's lines never reach this socket — ask them. */
+  scout?: Record<number, string>;
 }
 
 /** S6.2/S6.3: server lifecycle status, sent once per connection. */

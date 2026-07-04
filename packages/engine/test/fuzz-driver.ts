@@ -6,6 +6,7 @@ import { Action, GameState, PlayerId } from '../src/types';
 import { effectiveDef, findInstance } from '../src/combat';
 import { pickableNodes } from '../src/map';
 import { EVENTS } from '../src/content/registry';
+import { eventStageAt } from '../src/reducer';
 import { QUESTIONS, answersFor } from '../src/content/questions';
 import { ritesFor } from '../src/content/rites';
 import { nextRng, rngInt } from '../src/rng';
@@ -101,13 +102,26 @@ export function randomAction(state: GameState, die: Die): Action | null {
       }
       const ev = state.event!;
       if (ev.chosen === null) {
-        const options = EVENTS[ev.eventId].options.map((o) => o.id);
+        // S11.5: address the CURRENT stage (unflagged runs never deepen, so
+        // stagePath stays absent and this is the same array — die
+        // consumption is byte-identical there). Keyed options may still be
+        // picked and must throw: the fuzzer pokes that guard on purpose.
+        const options = eventStageAt(EVENTS[ev.eventId], ev.stagePath ?? []).options.map((o) => o.id);
         return { type: 'EVENT_CHOOSE', player: die.chance(0.9) ? ev.chooser : pid, optionId: die.pick(options) };
       }
       return { type: 'ADVANCE', player: pid };
     }
     case 'rest': {
       const rest = state.rest!;
+      // S11.7 toll door (flagged maps only — this branch never fires
+      // unflagged, so unflagged die consumption is untouched). Random seat
+      // votes: mismatches exercise the reset; matches pay the toll.
+      if (rest.toll) {
+        if (rest.toll.healed === null) {
+          return { type: 'TOLL_PICK', player: pid, seat: die.pick(['p1', 'p2'] as const) };
+        }
+        return { type: 'ADVANCE', player: pid };
+      }
       if (rest.chosen[pid] === null) {
         return { type: 'REST_CHOOSE', player: pid, option: die.pick(['rest', 'barter', 'rebraid', 'upgrade'] as const) };
       }
@@ -119,6 +133,18 @@ export function randomAction(state: GameState, die: Die): Action | null {
         return { type: 'WEDDING_PICK', player: pid, cardInstanceId: die.pick(p.deck).instanceId };
       }
       if (state.rest!.wedding && die.chance(0.3)) return { type: 'WEDDING_CONFIRM', player: pid };
+      return { type: 'ADVANCE', player: pid };
+    }
+    case 'covet_treasure': {
+      // S11.7 covet cache (flagged maps only): vote, occasionally poke the
+      // seize guard (no-charge seizes must throw), advance once divided
+      const ct = state.covetTreasure!;
+      if (ct.taken === null) {
+        return { type: 'TREASURE_PICK', player: pid, choice: die.pick(['gold', 'relic'] as const) };
+      }
+      if (ct.seizedBy === null && die.chance(0.4)) {
+        return { type: 'TREASURE_SEIZE', player: pid };
+      }
       return { type: 'ADVANCE', player: pid };
     }
     case 'shop': {

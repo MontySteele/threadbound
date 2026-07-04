@@ -6,7 +6,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CARDS, EVENTS, ENEMIES, RELICS_BY_ID, POWERS, witnessPoolLines, CardDef, CardInstance, GameEvent, MapNode, PlayerId,
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
-  computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef, hasPassive, removalPrice,
+  applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef,
+  eventEffectClause, eventOptionAvailable, eventOptionDeepens, eventStageAt,
+  hasPassive, reclaimEchoShape, removalPrice,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
@@ -45,7 +47,9 @@ function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | u
 
 function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   const i = inst(state, owner, id);
-  return i ? effectiveDef(i) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
+  // S9d: growers render their grown numbers everywhere (applyGrowth is a
+  // pass-through for non-growers and unflagged runs)
+  return i ? applyGrowth(effectiveDef(i), state.tallies, owner) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
 }
 
 /** Display name for an enemy instance. When the same enemy NAME appears more
@@ -750,6 +754,8 @@ function Phase({ state, net, partnerOn, hpOffsets }: {
       return <EventView state={state} net={net} />;
     case 'rest':
       return <Rest state={state} net={net} />;
+    case 'covet_treasure':
+      return <CovetTreasure state={state} net={net} />;
     case 'shop':
       return <Shop state={state} net={net} />;
     case 'loom':
@@ -786,9 +792,17 @@ function Phase({ state, net, partnerOn, hpOffsets }: {
 // Map
 // ---------------------------------------------------------------------------
 
+/** S11.7: variant nodes wear their own names — the price is visible from
+ *  the map (both seats see the same face; scouting is the asymmetric layer) */
+function nodeName(n: MapNode): string {
+  if (n.variant === 'toll') return 'toll-door';
+  if (n.variant === 'covet') return 'covet cache';
+  return NODE_NAME[n.kind] ?? n.kind;
+}
+
 function nodeLabel(map: ClientState['map'], id: number): string {
   const n = map.nodes.find((x) => x.id === id);
-  return n ? `${NODE_ICON[n.kind]} ${NODE_NAME[n.kind] ?? n.kind}` : '?';
+  return n ? `${NODE_ICON[n.kind]} ${nodeName(n)}` : '?';
 }
 
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
@@ -863,7 +877,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             <button
               key={n.id}
               data-gp="MAP"
-              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''}`}
+              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
               style={{
                 left: x, top: y,
                 ...(myPick ? { outlineColor: PCOLOR[you] } : {}),
@@ -872,7 +886,12 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               disabled={!can}
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id }); }}
             >
-              {NODE_ICON[n.kind]} {NODE_NAME[n.kind] ?? n.kind}
+              {NODE_ICON[n.kind]} {nodeName(n)}
+              {/* S11.6 asymmetric scouting: YOUR seat's face for this node —
+                  the partner sees their own (or nothing). Say it out loud. */}
+              {!cleared && state.scout?.[n.id] && (
+                <span className="map-scout">{state.scout[n.id]}</span>
+              )}
               {(myPick || theirPick) && (
                 <span className="pick-tags">
                   {myPick && <span className="pick-tag" style={{ background: PCOLOR[you] }}>you</span>}
@@ -936,7 +955,11 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
     try { return computeForcedLinks(state, combat.chain, fired); } catch { return combat.chain.map(() => false); }
   }, [state, combat.chain, fired]);
   const firedAll = useMemo(() => fired.map((f, i) => f || forced[i]), [fired, forced]);
-  const resonance = useMemo(() => computeResonanceSlots(combat.chain, firedAll), [combat.chain, firedAll]);
+  // S9c.6: same def resolver as engine resolution — preview == reality
+  const resonance = useMemo(
+    () => computeResonanceSlots(combat.chain, firedAll, (slot) => defFor(state, slot.owner, slot.cardInstanceId)),
+    [combat.chain, firedAll, state],
+  );
   const plannedBlock = useMemo(() => {
     try { return computePlannedBlock(state); } catch { return { p1: 0, p2: 0 } as Record<PlayerId, number>; }
   }, [state]);
@@ -1144,15 +1167,22 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
               // PT2: Reclaim copies — the original stays listed, so a card
               // already being reclaimed this turn must read as taken
               const claimed = combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id);
+              // S9b.1-3: show what the card will BE on arrival — its
+              // post-mutation cost, and Quickening's upgrade marker. The
+              // shape comes from the same helper the reducer builds the
+              // echo from, so this preview cannot drift from reality.
+              const srcDefId = inst(state, partner, id)!.defId;
+              const shape = reclaimEchoShape(state.players[you], srcDefId);
+              const arrival = effectiveDef({ instanceId: 'preview', ...shape });
               return (
                 <button key={id} className="chip" data-gp={claimed ? undefined : 'THREAD'} disabled={claimed}
-                  data-inspect={`card:${inst(state, partner, id)!.defId}:mprev`}
+                  data-inspect={`card:${srcDefId}:mprev`}
                   onClick={() => {
                     if (claimed) return;
                     net.act({ type: 'DECLARE_THREAD', kind: 'reclaim', targetId: id });
                     setReclaimOpen(false);
                   }}>
-                  {defFor(state, partner, id).name}{CARDS[inst(state, partner, id)!.defId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
+                  <span className="cost">{arrival.cost}</span> {defFor(state, partner, id).name}{shape.upgraded && !shape.mutated ? ` ${GLYPH.upgraded}` : ''}{CARDS[srcDefId].mutation ? ' ◈' : ''}{claimed ? ' (reclaiming)' : ''}
                 </button>
               );
             })}
@@ -1368,11 +1398,16 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
                   {forced[i] ? '⊕ forced' : lit ? '⚡ fires' : `link: ${def.link.condition}`}
                 </div>
               )}
-              {resonance.has(i) && (
-                <div className="resonance" data-inspect="kw:resonance">
-                  ✦ RESONANCE {scales ? '+50%' : '· streak only'}
-                </div>
-              )}
+              {resonance.has(i) && (() => {
+                // S9c.5 rung i: the multiplier renders explicitly — base
+                // ×1.5 → result (per hit) instead of an abstract "+50%"
+                const prim = resolvedEffects.find((e) => (e as { primary?: boolean }).primary && 'amount' in e) as { amount: number } | undefined;
+                return (
+                  <div className="resonance" data-inspect="kw:resonance">
+                    {prim && scales ? `✦ ${prim.amount} ×1.5 → ${Math.ceil(prim.amount * 1.5)}` : '✦ RESONANCE · streak only'}
+                  </div>
+                );
+              })()}
               {mine && !pendingPulse && (
                 <div className="reorder">
                   <button data-gp-reorder="left" onClick={() => net.act({ type: 'REORDER', cardInstanceId: slot.cardInstanceId, slot: Math.max(0, i - 1) })}>◀</button>
@@ -1409,11 +1444,15 @@ export function Card({ def, onClick, small, selected, disabled, echo, upgraded, 
 }): JSX.Element {
   return (
     <div
-      className={`card tag-${def.tag} r-${def.rarity ?? 'common'} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''} ${upgraded ? 'upgraded' : ''} ${mutated ? 'mutated' : ''}`}
+      className={`card tag-${def.tag} r-${def.rarity ?? 'common'} ${small ? 'small' : ''} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${echo ? 'echo' : ''} ${upgraded ? 'upgraded' : ''} ${mutated ? 'mutated' : ''} ${def.riteOnly ? 'rite-card' : ''}`}
       data-gp={!disabled && onClick ? gpZone : undefined}
       data-inspect={inspect ?? `card:${def.id}`}
       onClick={onClick}>
       {badge && <div className="card-badge" data-inspect="kw:momentum">{badge}</div>}
+      {/* S9d.3: the tally chip — the Machine's bookkeeping made visible */}
+      {(def.grownStep ?? 0) > 0 && (
+        <div className="card-badge tally-chip">{def.growsWith?.tiers ? `▲${'·'.repeat(def.grownStep!)}` : `▲+${def.grownStep}`}</div>
+      )}
       <div className="cardtop"><span className="cost">{def.cost}</span> <span className="cname">{upgraded ? `${GLYPH.upgraded} ` : ''}{def.name}</span></div>
       <div className="ctag">{GLYPH[def.tag]} {def.tag}{def.keep ? ' · Keep' : ''}{def.exhaust ? ' · Exhaust' : ''}{echo ? ` · ${GLYPH.echo} Echo` : ''}{mutated ? ` · ${GLYPH.mutated} Mutated` : ''}</div>
       {/* upgrade texts restate the link clause inline; the ⚡ line below is
@@ -1516,6 +1555,13 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   const ev = state.event!;
   const def = EVENTS[ev.eventId];
   const youChoose = ev.chooser === you;
+  // S11.4: the current stage (existing events are 1-stage at path [])
+  const stage = eventStageAt(def, ev.stagePath ?? []);
+  const deepened = (ev.stagePath ?? []).length > 0;
+  // unmet keyed options never render (R6: unseen doors); stubs are GENERATED
+  const options = stage.options.filter((o) => eventOptionAvailable(state as never, ev.subject, o));
+  const stub = (effects: readonly { op: string }[]): string =>
+    effects.map((e) => eventEffectClause(e as never)).filter(Boolean).join(' · ');
   // S7.4: the mirror sacrament arrives HERE, at the event result — the engine
   // gates the owed seat's ADVANCE, so the trio stands where Onward would be
   const owedYou = state.ritesState?.birthChoice === you;
@@ -1523,7 +1569,11 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
   return (
     <div className="center event">
       <h2>{def.name}</h2>
-      <p className="prose" data-inspect={`scan:${def.prose}`}>{def.prose}</p>
+      <p className="prose" data-inspect={`scan:${stage.prose}`}>{stage.prose}</p>
+      {/* S11.4: the POT — visible while the wager deepens */}
+      {deepened && ev.chosen === null && (ev.pot?.length ?? 0) > 0 && (
+        <p className="muted pot">In the pot: {stub(ev.pot!)}</p>
+      )}
       {def.crossed && (
         <p className="crossed">
           Crossed choice: <b style={{ color: PCOLOR[ev.chooser] }}>{state.players[ev.chooser].character}</b> decides
@@ -1533,10 +1583,17 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       )}
       {ev.chosen === null ? (
         youChoose ? (
-          def.options.map((o) => (
-            <button key={o.id} className="big" data-gp="META" data-inspect={`scan:${o.label}`}
+          options.map((o) => (
+            <button key={o.id} className="big event-option" data-gp="META" data-inspect={`scan:${o.label}`}
               onClick={() => net.act({ type: 'EVENT_CHOOSE', optionId: o.id })}>
               {o.label}
+              {/* S11.4 effect stub: generated from the effects array, never
+                  hand-authored; secret riders are not ops, so omission IS
+                  the secrecy (R6) */}
+              {stub(o.effects) && <span className="stub"> — {stub(o.effects)}</span>}
+              {/* S11.5: the depth marker only where the door actually opens
+                  (unflagged runs resolve this option terminal — no tease) */}
+              {eventOptionDeepens(state as never, o) && <span className="stub"> …it goes deeper</span>}
             </button>
           ))
         ) : (
@@ -1545,6 +1602,8 @@ function EventView({ state, net }: { state: ClientState; net: Net }): JSX.Elemen
       ) : (
         <>
           <p className="prose" data-inspect={`scan:${ev.resultText}`}>{ev.resultText}</p>
+          {/* S11.4 delta line: exactly what changed, generated */}
+          {ev.deltaLine && <p className="delta" data-inspect="scan:delta">Δ {ev.deltaLine}</p>}
           <Log log={state.log} state={state} />
           {owedYou ? (
             <BirthRiteTrio state={state} net={net} />
@@ -1572,6 +1631,46 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const chosen = rest.chosen[you];
   const hasKnife = state.players.p1.relics.includes('wedding_knife') || state.players.p2.relics.includes('wedding_knife');
   const needUpgradePick = chosen === 'upgrade' && !rest.upgradePicked[you];
+  // S11.7 toll door: one seat heals (1.5× a plain rest), named by vote-match
+  if (rest.toll) {
+    const toll = rest.toll;
+    const healPct = Math.round(ascensionMods(state.ascension ?? 0).restHeal * 1.5 * 100);
+    return (
+      <div className="center">
+        <h2>Toll-Door Rest</h2>
+        <p className="prose">
+          The door grants ONE mercy — a deeper rest ({healPct}% HP) for a single traveler.
+          Name who takes it. You must both name the same seat.
+        </p>
+        <Log log={state.log} state={state} />
+        {toll.healed === null ? (
+          <>
+            {(['p1', 'p2'] as PlayerId[]).map((pid) => (
+              <button key={pid} className="big" data-gp="META"
+                style={toll.votes[you] === pid ? { outlineColor: PCOLOR[pid], outlineStyle: 'solid' } : {}}
+                onClick={() => net.act({ type: 'TOLL_PICK', seat: pid })}>
+                <span style={{ color: PCOLOR[pid] }}>{state.players[pid].character}</span>
+                {' '}takes it ({state.players[pid].hp}/{state.players[pid].maxHp} HP)
+              </button>
+            ))}
+            <p className="muted">
+              You: <b>{toll.votes[you] ? state.players[toll.votes[you]!].character : 'naming…'}</b>
+              {' · '}
+              {state.players[partner].character}: <b>{toll.votes[partner] ? 'has named' : 'naming…'}</b>
+              {' '}(disagreement resets both)
+            </p>
+          </>
+        ) : (
+          <>
+            <p>The door opened for <b style={{ color: PCOLOR[toll.healed] }}>{state.players[toll.healed].character}</b> alone.</p>
+            <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+              {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="center">
       <h2>Rest Site</h2>
@@ -1627,6 +1726,60 @@ function Rest({ state, net }: { state: ClientState; net: Net }): JSX.Element {
         </>
       )}
       {hasKnife && chosen !== null && !needUpgradePick && <Wedding state={state} net={net} />}
+    </div>
+  );
+}
+
+/** S11.7 covet cache: the treasure rolled its usual spoils, but the pair
+ *  takes ONE by vote-match — and a Covet charge seizes the other. */
+function CovetTreasure({ state, net }: { state: ClientState; net: Net }): JSX.Element {
+  const you = state.you;
+  const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
+  const ct = state.covetTreasure!;
+  const relic = RELICS_BY_ID[ct.relicId];
+  const me = state.players[you];
+  return (
+    <div className="center">
+      <h2>Covet Cache</h2>
+      <p className="prose">
+        Coin and a keepsake behind old glass. The case opens ONCE — take one, leave the other.
+        You must both name the same prize.
+      </p>
+      <Log log={state.log} state={state} />
+      {ct.taken === null ? (
+        <>
+          <button className="big" data-gp="META"
+            style={ct.votes[you] === 'gold' ? { outlineStyle: 'solid' } : {}}
+            onClick={() => net.act({ type: 'TREASURE_PICK', choice: 'gold' })}>
+            The coin — {ct.gold} gold
+          </button>
+          <button className="big" data-gp="META" data-inspect={`relic:${ct.relicId}`}
+            style={ct.votes[you] === 'relic' ? { outlineStyle: 'solid' } : {}}
+            onClick={() => net.act({ type: 'TREASURE_PICK', choice: 'relic' })}>
+            {relic?.name ?? ct.relicId} — to <span style={{ color: PCOLOR[ct.owner] }}>{state.players[ct.owner].character}</span>
+          </button>
+          <p className="muted">
+            You: <b>{ct.votes[you] ?? 'naming…'}</b> · {state.players[partner].character}: <b>{ct.votes[partner] ? 'has named' : 'naming…'}</b>
+            {' '}(disagreement resets both)
+          </p>
+        </>
+      ) : (
+        <>
+          <p>Taken: <b>{ct.taken === 'gold' ? `${ct.gold} gold` : relic?.name ?? ct.relicId}</b>.</p>
+          {ct.seizedBy === null ? (
+            <button className="big" data-gp="META" data-inspect="kw:covet" disabled={me.covetCharges < 1}
+              onClick={() => net.act({ type: 'TREASURE_SEIZE' })}>
+              Covet the rest ({ct.taken === 'gold' ? relic?.name ?? ct.relicId : `${ct.gold} gold`}) — 1 charge
+              {me.covetCharges < 1 ? ' (none left)' : ''}
+            </button>
+          ) : (
+            <p className="crossed">{state.players[ct.seizedBy].character} coveted the rest. The case stands empty.</p>
+          )}
+          <button className="big" data-gp="META" disabled={state.advanceReady[you]} onClick={() => net.act({ type: 'ADVANCE' })}>
+            {state.advanceReady[you] ? 'waiting for partner…' : 'Onward'}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -1784,7 +1937,8 @@ function renderEvent(e: GameEvent, state: ClientState): string {
     case 'thread_reignited': return 'THE THREAD REIGNITES at full strength.';
     case 'thread_action': return `${pname(e.player)} uses ${e.kind}.`;
     case 'fray': return 'The Thread FRAYS — you both pay for it.';
-    case 'resonance_ignite': return `✦ RESONANCE — [${e.tags.join(' → ')}]`;
+    // S9c.5 rung i: the log line names the streak length and the ignited card
+    case 'resonance_ignite': return `✦ RESONANCE — ${e.card ? `${e.card} ignites off ` : ''}a ${e.tags.length}-card streak [${e.tags.join(' → ')}]`;
     case 'relic': return `${pname(e.player)} claims a relic: ${RELICS_BY_ID[e.relic]?.name ?? e.relic}.`;
     case 'info': return subj(e.detail);
     default: return JSON.stringify(e);

@@ -7,11 +7,16 @@ export * from './types';
 export * from './rng';
 export * from './hash';
 export { reduce, initialState, emptyTelemetry, removalPrice, STARTING_HP } from './reducer';
+// S11.4 event grammar v2: shared by the reducer's gate and the client's render
+// (S11.5 adds the flag gate — deep doors only open where a flag is)
+export { eventStageAt, eventOptionAvailable, eventDeltaLine, eventEffectClause, deepEventsOpen, eventOptionDeepens } from './reducer';
 export { ascensionMods, scaleIntent, ASCENSION_MAX, ASCENSION_RUNGS } from './ascension';
 export type { AscensionMods } from './ascension';
 export {
-  effectiveDef, otherPlayer, findInstance, hasPassive, targetableEnemies,
+  effectiveDef, otherPlayer, findInstance, hasPassive, reclaimEchoShape, targetableEnemies,
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
+  // S9d: stateless growth (the tally)
+  applyGrowth, grownDef, growthStep, tallyAxisValue, opClause, primaryMagnitude,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // nt-slice §11 extension: the truth surface meant for clients is the
@@ -20,6 +25,9 @@ export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // deliberately NOT re-exported; only the reducer touches it.
 export { clientTruthView } from './truth-view';
 export type { ClientTruthView, ClientShrineView, TruthStub } from './truth-view';
+// S11.6 asymmetric scouting: per-seat node faces, rendered server-side at
+// projection time (text never crosses screens — ruling 5)
+export { scoutView } from './scout';
 export { QUESTIONS, ANSWERS, QUESTIONS_BY_ID, ANSWERS_BY_ID, answersFor } from './content/questions';
 export {
   CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, LOCKED_CARDS, eventsForAct,

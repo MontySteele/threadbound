@@ -15,6 +15,7 @@ import { rngInt } from './rng';
 import { WITNESS_LINES as M1_LINES, S8_WITNESS, WITNESS_REGISTERS } from './content/witness';
 import { M2_WITNESS } from './content/m2-world';
 import { SOLO_WITNESS } from './content/witness-solo';
+import { S9C_WITNESS } from './content/witness-s9c';
 
 export interface WitnessRegister {
   /** lowest codex fill % (0–100) at which this register speaks */
@@ -39,6 +40,7 @@ for (const [ctx, lines] of Object.entries(M1_LINES)) mergeLines(ctx, lines);
 for (const [ctx, lines] of Object.entries(M2_WITNESS)) mergeLines(ctx, lines);
 for (const [ctx, lines] of Object.entries(SOLO_WITNESS)) mergeLines(ctx, lines);
 for (const [ctx, lines] of Object.entries(S8_WITNESS)) mergeLines(ctx, lines);
+for (const [ctx, lines] of Object.entries(S9C_WITNESS)) mergeLines(ctx, lines);
 for (const [ctx, registers] of Object.entries(WITNESS_REGISTERS)) {
   const existing = WITNESS_POOLS[ctx];
   const base = existing === undefined ? [] : Array.isArray(existing) ? existing : existing.base;

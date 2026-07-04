@@ -16,8 +16,8 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
-import { computeResonanceSlots } from './combat';
-import { removalPrice } from './reducer';
+import { applyGrowth, computeResonanceSlots, escalationFactor } from './combat';
+import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
 /** What a bot actually sees: the REDACTED per-seat view. In particular
@@ -54,11 +54,14 @@ function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
     p.deck.find((c) => c.instanceId === instanceId) ??
     p.combatCards.find((c) => c.instanceId === instanceId);
   const def = CARDS[inst!.defId];
-  if (inst!.mutated && def.mutation) return { ...def, base: def.mutation.base, link: def.mutation.link };
+  // S9d: growers show the bot their grown numbers — first-pass policy
+  // simply values the number in front of it (routing toward axes is
+  // S11.9's problem, explicitly out of scope here)
+  if (inst!.mutated && def.mutation) return applyGrowth({ ...def, base: def.mutation.base, link: def.mutation.link }, view.tallies, owner);
   if (inst!.upgraded && def.upgrade) {
-    return { ...def, cost: def.upgrade.cost ?? def.cost, base: def.upgrade.base ?? def.base, link: def.upgrade.link !== undefined ? def.upgrade.link : def.link };
+    return applyGrowth({ ...def, cost: def.upgrade.cost ?? def.cost, base: def.upgrade.base ?? def.base, link: def.upgrade.link !== undefined ? def.upgrade.link : def.link }, view.tallies, owner);
   }
-  return def;
+  return applyGrowth(def, view.tallies, owner);
 }
 
 function hash32(str: string): number {
@@ -148,6 +151,11 @@ export class BotPolicy {
         if (view.map.picks[you] === null) {
           const options = this.pickable(view);
           if (options.length > 0) {
+            // S11.9 strand routing: braid maps ONLY — the non-braid policy
+            // below is byte-identical, so every Wave A baseline holds
+            if (view.knotwork && view.map.nodes.some((n) => n.strand)) {
+              return { type: 'NODE_PICK', player: you, nodeId: this.pickBraidNode(view, options) };
+            }
             // S7.7 TB_BOT_SEEK_EVENTS (sim-only): reachable EVENT nodes win;
             // among events, lowest id — both seats still agree instantly
             if (this.seekEvents) {
@@ -177,6 +185,8 @@ export class BotPolicy {
         return this.playEvent(view);
       case 'rest':
         return this.playRest(view);
+      case 'covet_treasure':
+        return this.playCovetTreasure(view);
       case 'shop':
         return this.playShop(view);
       case 'loom': {
@@ -386,7 +396,10 @@ export class BotPolicy {
     );
     const targetable = combat.enemies.filter((e) => e.hp > 0 && !e.untargetable);
     const bigPile = targetable.some((e) => e.hex >= 4);
-    const resonancesAt = (f: boolean[]): number => computeResonanceSlots(chain, f).size;
+    // S9c.6: same def resolver as resolution — the bot prices the streaks
+    // the engine will actually ignite
+    const resonancesAt = (f: boolean[]): number =>
+      computeResonanceSlots(chain, f, (slot) => defs[chain.indexOf(slot)]).size;
     const baseRes = resonancesAt(fired);
     let best: { id: string; score: number } | null = null;
     for (let i = 0; i < chain.length; i++) {
@@ -518,7 +531,12 @@ export class BotPolicy {
     const ev = view.event!;
     if (ev.chosen === null) {
       if (ev.chooser !== you) return null;
-      const options = EVENTS[ev.eventId].options;
+      // S11.5: the CURRENT stage's OPEN doors (deep events; unflagged views
+      // see stage 1 and no keyed options — same list as before). First-pass
+      // policy: deep options are valued by their immediate effects only;
+      // pot-aware pressing is S11.9's routing problem, out of scope here.
+      const options = eventStageAt(EVENTS[ev.eventId], ev.stagePath ?? []).options
+        .filter((o) => eventOptionAvailable(view as never, ev.subject, o));
       let opt: EventOptionDef;
       if (this.mode === 'solo') {
         const minRisk = Math.min(...options.map((o) => this.optionRisk(o)));
@@ -566,6 +584,19 @@ export class BotPolicy {
     const me = view.players[you];
     const wedding = this.weddingMove(view);
     if (wedding) return wedding;
+    // S11.7 toll door: name the hurt seat (both seats compute the same
+    // fraction → instant vote-match; solo mirrors the human anyway)
+    if (rest.toll) {
+      if (rest.toll.healed === null) {
+        if (this.mode === 'solo') return null; // the human names it
+        if (rest.toll.votes[you] !== null) return null; // voted; wait
+        const frac = (pid: PlayerId): number => view.players[pid].hp / view.players[pid].maxHp;
+        const seat: PlayerId = frac('p1') <= frac('p2') ? 'p1' : 'p2';
+        return { type: 'TOLL_PICK', player: you, seat };
+      }
+      if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+      return null;
+    }
     if (rest.chosen[you] === null) {
       // heal when hurt, otherwise upgrade; sprinkle barter/rebraid
       const hurt = me.hp < me.maxHp * 0.6;
@@ -591,6 +622,82 @@ export class BotPolicy {
       if (candidates.length > 0) {
         return { type: 'UPGRADE_PICK', player: you, cardInstanceId: candidates[0].instanceId };
       }
+    }
+    if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
+    return null;
+  }
+
+  /** S11.9 (Wave B): strand routing on braid maps. A pick is valued by its
+   *  best-path summed node utility through the act — a deterministic DP
+   *  over the DAG. Knot pricing: the elite's own utility pays the S11.3
+   *  reward table MINUS the escalation ladder's current price, while the
+   *  crossing's value rides the DP naturally (a knot's forward max spans
+   *  BOTH strands; a bypass sees only its own). Seat-symmetric inputs and
+   *  a lowest-id tie-break: both seats name the same node instantly, so
+   *  the NODE_PICK vote never thrashes. Non-braid maps never reach this —
+   *  every Wave A baseline holds byte-identically. */
+  private pickBraidNode(view: BotView, options: number[]): number {
+    const byId = new Map(view.map.nodes.map((n) => [n.id, n]));
+    // seat-SYMMETRIC on purpose: both seats must compute identical values
+    const worstHp = Math.min(
+      view.players.p1.hp / view.players.p1.maxHp,
+      view.players.p2.hp / view.players.p2.maxHp,
+    );
+    const cut = view.map.knotsCut ?? 0;
+    const kindValue = (n: { kind: string }): number => {
+      switch (n.kind) {
+        case 'event': return this.seekEvents ? 3 : 1.25;
+        case 'shop': return view.gold >= 150 ? 1.5 : 0.75;
+        case 'treasure': return 1.5;
+        case 'rest': return worstHp < 0.5 ? 2 : 1;
+        // the knot: gold + relic + bound witness + the crossing, priced by
+        // the ladder (+10/+30/+60 → the third knot this act is near-free
+        // to skip). First-pass constants; the ladder gate recalibrates
+        // against THIS policy (OQ#55's ruling: calibrate them together).
+        case 'elite': return 3 - escalationFactor(cut) * 5;
+        case 'combat': return 0.5;
+        default: return 0;
+      }
+    };
+    const memo = new Map<number, number>();
+    const best = (id: number): number => {
+      const seen = memo.get(id);
+      if (seen !== undefined) return seen;
+      const n = byId.get(id)!;
+      memo.set(id, 0); // DAG — the guard only protects against bad data
+      const forward = n.edges.length > 0 ? Math.max(...n.edges.map(best)) : 0;
+      const v = kindValue(n) + forward;
+      memo.set(id, v);
+      return v;
+    };
+    let bestId = options[0];
+    let bestVal = -Infinity;
+    for (const id of [...options].sort((a, b) => a - b)) {
+      const v = best(id);
+      if (v > bestVal + 1e-9) {
+        bestVal = v;
+        bestId = id;
+      }
+    }
+    return bestId;
+  }
+
+  /** S11.7 covet cache: vote the relic (both seats agree instantly by the
+   *  same rule); the richer-in-charges seat seizes the coin after (tie →
+   *  p1, so the pair never double-attempts). Solo: the human drives. */
+  private playCovetTreasure(view: BotView): Action | null {
+    const you = view.you;
+    const ct = view.covetTreasure!;
+    if (ct.taken === null) {
+      if (this.mode === 'solo') return null;
+      if (ct.votes[you] !== null) return null;
+      return { type: 'TREASURE_PICK', player: you, choice: 'relic' };
+    }
+    if (ct.seizedBy === null && this.mode !== 'solo') {
+      const mine = view.players[you].covetCharges;
+      const theirs = view.players[otherOf(you)].covetCharges;
+      const seizer: PlayerId = theirs > mine ? otherOf(you) : mine > theirs ? you : 'p1';
+      if (seizer === you && mine > 0) return { type: 'TREASURE_SEIZE', player: you };
     }
     if (!view.advanceReady[you]) return { type: 'ADVANCE', player: you };
     return null;

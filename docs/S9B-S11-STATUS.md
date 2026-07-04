@@ -1,0 +1,257 @@
+# S9b → S9c → S9d → S11 Wave A — implementation status (2026-07-04)
+
+One session, one branch (`claude/design-docs-review-kiesjw`), sequenced per
+the packet: S9b (playtest response) → S9c (feel slice, as amended by
+S9d.A) → S9d (the tally) → S11 Wave A (knotwork on current topology).
+Suite: **284 tests green**; goldens regenerated twice, both loudly and
+in-commit (S11.1 map repairs; the map shape changes were the design).
+
+## ⚠ The battery environment does not reproduce the recorded matrix
+
+This 4-core container reads the S9a/S10a baseline (vb 29 / vv 34 / bb 39)
+as **vb 21 / vv 22 / bb 13** on identical code and seeds. Every gate below
+is therefore judged against SAME-ENVIRONMENT baselines run this session.
+All win-rate numbers are 200-run pooled shards, TB_RITES=1
+TB_BOT_SEEK_EVENTS=1, A0, unless noted. Absolute levels here are not
+comparable to numbers in older status docs; deltas are.
+
+## Battery ledger (in-environment)
+
+| Stage | vb | vv | bb | Notes |
+|---|---|---|---|---|
+| pre-S9b (1e5e076) | 21 | 22 | 13 | in-env baseline |
+| post-S9b | 19 | 24 | 17 | all Δ within ±6 ✓ (gate 2 PASS) |
+| post-S9c | 18 | 18 | 25* | bb pooled 600 runs/side: +5.0, inside ±6 (first 200-run read was +9; two confirm rounds pulled it in). vv −6 at band edge — watch. |
+| post-S9d (signed rates) | 26 | 29 | 29 | vb +8 / vv +11 — OUTSIDE ±6 → rate retune per the "provisional pending battery" clause |
+| post-S9d (retuned) + S11.2 escalation | 25 | 24 | 29 | vb +7 / vv +6 / bb +4 vs post-S9c. vb still a point over; see sign-off row 2. |
+| post-S11.5 (deep events + hs floor) | 36* | 26 | 34 | *vb pooled 600 runs (37/32/38). vb +11 / vv +2 / bb +5 vs prior stage — OUTSIDE ±6. PROBE: deep stages OFF reads vb 36 = the drift is 100% the [1,3] floor guaranteeing Carillon+Hymnal (their SHALLOW faces: relic, rare card) on every act-2 map, not the signed stakes. **RULED (2026-07-04): re-baseline; the floor demanded the drift and stays.** This row is the Wave A baseline for S11.6/S11.7 comparisons. |
+| post-S11.6+S11.7 (scouting + pacing variants) | 37 | 26 | 38 | +1 / 0 / +4 vs the re-baselined row — all inside ±6 ✓. **Wave A gate 2 CLOSED.** (bb shard-0 lost one run to a timeout; pooled 199.) |
+| **TB_KNOTWORK** (braid + routing, first battery) | 33 | 48 | 60 | vb −4 ✓ / vv **+22** / bb **+22** vs the Wave A row — mirrors FAR outside ±6 (S11.10 gate 2 UNMET). Fewer fights per walked strand (~1 less/run) + richer event take (char events 2.84/run) at unchanged per-fight cost (HP/combat 29.7) = the braid as signed is easier. D6/D7 vs the B6 ledger: char events 2.84/run (was 1.48), birth picks 38%/50% (was 10%/20%), arrival act 2 L3 (was L5) — IMPROVEMENTS, gate 3 PASS (bb-leg readout; rerun will confirm all pairs). Escalation ratio 1.45 with knot-pricing live (was 1.03) — the policy works, gate still <2. Quota amendment proposed (OQ#59). |
+| TB_KNOTWORK, **event-seeking OFF** (OQ#59 probe) | — | 45 | 50 | vv −3 / bb −10 vs the seek-on braid row — the mirrors STAY HOT without the event take. Verdict: the inflation is mostly STRUCTURAL (the braid's walked path fights less), with the relic/event take adding ~3–10 on top. Economy split (new instruments): winners end ~9 relics / ~45 cards / 9 fights; losses truncate on early death, so the wins-vs-losses split is run-length-confounded — the per-fight instrument (HP/combat flat at 29.7) remains the clean card-economy datum. |
+| post-S11.7 at **A2** | 18 | 15 | 11 | The S9d gate's A2 legs, run at last. NO in-env A2 baseline exists (the legs never ran pre-S9d), so no delta gate is computable — recorded as the FIRST in-env A2 row and judged directionally: A2 sits well under A0 at every pair, no degenerate reads. Named, not gated. |
+
+Act-1 HP loss runs 25–29 across all stages — ABOVE the 16–22 watch band,
+as it already was post-S10a (23.6–25.8 documented). Pre-existing, not
+introduced here; S9d.A1's "must not sag below 16" holds everywhere.
+Hex share (vb): 40.9 → 44.8 (post-S9b, top edge — Pale Unmaking) →
+38–40.6 (post-S9d; Knell's damage growth displaces Hex share). In band
+throughout.
+
+## S9b — landed in full
+
+- **S9b.1** bugfixes, each with a pinning test: needlework+/spark+ stale
+  texts; shop duplicate relic (exclusion set; rng consumption unchanged);
+  reclaim list shows arrival cost via `reclaimEchoShape` — the same
+  constructor the reducer builds the echo from (preview cannot drift).
+- **S9b.2** upgrade-parity covenant gate: restatement check + number lint
+  (prose numerals AND link-line text understood). Exemption list burned
+  down to EMPTY: **thornward** — the 19th restatement the S9b.3 table
+  missed — landed 2026-07-04 with the OQ#49-ruled row.
+- **S9b.3** all 18 rows as signed, incl. Pummel 4×4=16 (S9b.0-2), Pale
+  Unmaking cost 2→1 (S9b.0-3), and row 7 per **S9d.A1** (Quiet Mending
+  exhausts; upgrade = 6 Block, link heal 3 + partner heals 2).
+- **S9b.4** OQ#49–53 filed (D8→A banked, D5→A signal logged, D9/D10
+  pending designer, Linked Shields + Immovable watch).
+
+## S9c — landed as amended by S9d.A3
+
+- Death-rite magnitude rows STRUCK (superseded by S9d growers). Birth
+  rows landed: First-Breath heal 2 (oncePerCombat-fenced), Cradle-Warden
+  +2.
+- D9-C identity: rite cards wear a lavender funerary frame + fleuron;
+  the Witness NAMES each rite card on first draw (8 authored lines,
+  PROVISIONAL). S9c.3 rite_reclaim pool (4 doc-verbatim lines, once per
+  combat). S9c.4 D10-B birth-pick line (doc-verbatim).
+- Resonance rung i: the ignited slot renders explicit math (base ×1.5 →
+  result); log + theater name the ignited card and streak length.
+- Rung ii SHIPPED (S9c.0-3 recommended): the streak's LARGEST primary
+  (amount × times) ignites; ties latest. Def resolver is a required
+  param of computeResonanceSlots — resolution, previews, bots, client
+  share one truth. bb drifted +9 on the first read; pooled 600v600 runs
+  settled at +5.0 (inside band) — **rung ii stays**, the pre-ruled
+  revert (its own commit) remains available.
+
+## S9d — landed with a first-battery rate retune
+
+Engine: growth DERIVED from `state.tallies` (hashed authoritative state,
+created only on rites runs — unflagged shape and goldens hold). Axes
+wired at 8 sites; Vigil per-seat (S9d.0-2); Echoes/Reclaims inherit via
+statelessness (S9d.0-3). Auto-rendered grower text (a grown card can
+never lie) + covenant CI (caps required, no Hex ops, render-parity sweep
+over tally states). Tally chip + axis-at-the-death-pick presentation.
+
+**Sign-off row 1 (S9d.0-1 — rates).** The signed table read vb +8 /
+vv +11. Retuned in-commit: Knell per 2→**3**, Pyre-Brand per 4→**6**,
+Mourner's per 10→**15** (Shroud/Vigil/Toll/Votive/Descant untouched).
+Post-retune: +7/+6/+4. Overrule or amend freely — one data row each.
+
+Direction gates all PASS: realized growth > 0 at every rite, every pair
+(Shroud lowest at 0.3–1.1 — the falls axis is self-balancing by design);
+death-pick distribution 10–36%, inside the 5–40 band. Votive's tier
+shape (S9d.0-4 designer flag) realized 1.9–2.0 tiers/pick — it functions;
+the shape question stands.
+
+## S11 Wave A — S11.1–S11.6 landed; S11.7 in progress (same day)
+
+Post-ruling landings (2026-07-04, after the sign-off round):
+- **S11.5** all four deep events authored as tabled; flag-gated
+  behaviorally (`deepEventsOpen`: stages ship on defs, unflagged runs
+  terminate at stage 1 with original effects and zero extra rng — the
+  flag-off golden passed UNREGENERATED). New `fragment` op (one
+  bound-witness thread through the S11.3 supply ledger). High-stakes
+  guarantee pass + SWAP repair rung in the generator (rng-free).
+  Battery + drift ruling: see the ledger row above.
+- **S11.6** asymmetric scouting: per-seat node faces through the
+  ruling-5 projection (Vess reads clue bearings, Bram reads knot
+  relics — pinned at generation from a DERIVED stream, live rng
+  untouched; victory keeps its exact roll and grants the pin while
+  unowned). Character scenes name themselves to their own seat.
+
+- **S11.1** composition CI landed **hard on every assertion** (no staged
+  list): exact elites, ≥1 shop, ≥1 treasure, ≥2 distinct approach
+  compositions per knot, ≥2 character-event opportunities per seat per
+  act, high-stakes [1,3] armed when content exists. Generator repairs
+  are all rng-FREE post-passes (consumption byte-identical): treasure
+  guarantee fixed; approach-diversity repair ladder (pacing flips →
+  event RELOCATION — character scenes always survive, clue slots
+  sacrificed last); character-opportunity guarantee (ratio-aware retag
+  preserving the S8.4 clue:normal contract; combats convert before
+  pacing nodes; rare-then-clue steals only on dense maps). Standalone
+  runner: `node scripts/map-composition.js`. **This materially helps
+  D6/D7** (≥2 char-event nodes per seat per act now guaranteed at
+  generation); the full re-battery vs the B6 ledger stays scheduled
+  with Wave B as ruled.
+- **S11.2** snarl escalation: +10/+30/+60% HP+DMG cumulative per knot
+  cut this act (TB_ELITE_ESCALATION scales), knotsCut on MapState,
+  rides ascension's scaling paths (A0 identity at factor 0).
+  **Sign-off row 2 (S11.11-2 — ladder numbers).** The calibration gate
+  (last-killed ≥ 2× first-killed pair-HP) reads **1.27 / 1.07 / 1.25**
+  (vb/vv/bb) at ladder ×1 — UNMET. A ×2 probe battery ran (see
+  wave-a-battery2 results in the session log). Two honest caveats:
+  (a) bots don't yet price knot-taking (that's S11.9), so they walk
+  into escalated elites at unchanged rates — the ratio may be
+  bot-limited rather than ladder-limited; (b) at ×2 the DMG side
+  reaches +120% on a third kill, which likely blows the A3 read.
+  Recommendation: hold ladder ×1 for the merge, treat the calibration
+  gate as OPEN until S11.9 lands routing that prices escalation, then
+  calibrate ladder and policy together. Overrule if you want the
+  steepening now.
+- **S11.3** bound witness + tapestry dedup rung 0, one supply ledger:
+  elites pay a guaranteed fragment (dedup-preferred, never the same
+  fragment twice); serveFragments prefers fresh eliminations
+  (second channel counts the first's). Telemetry: boundWitnessFragments,
+  distinctEliminations + sim readout. The "~1 confident + 1 narrowed
+  gamble" target band needs a provability calculation the harness
+  doesn't have yet — distinctEliminations is the proxy instrument;
+  named as an instrument gap.
+- **S11.4** event grammar v2 in full (ruling 4): stages (max 3,
+  covenant-held), visible pot, generated effect stubs (secrecy by
+  omission — R6), generated delta line, requires over
+  thread/gold/HP/tag-counts/character/**codexProven** (claims cross at
+  START_RUN, S4 union). No shipped event uses stages or keys yet
+  (CI-proven) — flag-off parity holds by construction.
+- (S11.6/S11.7 status: see the post-ruling section above.)
+
+## S11.5 deep-event proposal table (enumerate→propose→SIGN-OFF)
+
+Per ruling 5: 2 per act, first pass. All four are EXTENSIONS of existing
+events (no new events needed yet). Stage trees stay within the 3-stage
+covenant; every worst line is run-survivable by construction (loseHp
+never kills — M2-A3 holds engine-wide).
+
+| # | Event (act) | Stage tree | Stake ladder | Worst line | Codex key |
+|---|---|---|---|---|---|
+| 1 | The Ossuary Toll (A1) | pay → **count the alms** → (take back double / leave it) | 15g → −25g or +40g + relic-tier | −40g total, 0 HP — survivable (gold-only; "never gold" applies to enemy pricing, not wagers) | codexProven: the toll-keeper's answer opens "name the dead instead" (free pass + fragment) |
+| 2 | The Wax Garden (A1) | tend → **wait out the bloom** → (harvest all / pinch one) | −3 HP → −8 HP total or uncommon+rare card | −8 HP, no card — survivable | tagCount ≥4 Hex opens "read the veins" (+1 confident fragment) |
+| 3 | The Broken Carillon (A2) | cut → **climb into the frame** → (ring it once / wedge it silent) | −4 HP → −10 HP total or relic + 15g | −10 HP — survivable | codexProven: the bell answer opens "ring the TRUE peal" (relic + fragment, no HP) |
+| 4 | The Drowned Hymnal (A2) | retrieve → **dive for the spine** → (wring it out / leave with pages) | −5 HP + pendingFray → relic-or-HP-chunk (−12 HP total) | −12 HP + Fray at next fight — survivable, scary | hpAtLeast 20 gates the dive (the desperate can't) |
+
+High-stakes flags land on rows 3 and 4 (one per act, inside the [1,3]
+CI bound). **RULED (2026-07-04): all four rows approved as proposed** —
+authoring proceeds this session.
+
+## S11.11-4 strand composition targets (enumerate→propose→SIGN-OFF)
+
+Per-strand, per-act quotas over the strand's ~7 layers (knot/crossing
+layers excluded from strand quotas — the knot belongs to the weave).
+DATA, not code: the generator reads this table; amendments are one-line.
+
+A strand is 7 nodes (layer-0 opener + 5 mid layers + 1 widened slot);
+quotas count a strand's OWN nodes — knots belong to the weave. The
+arithmetic that rules the row: a strand-runner's fights = strand
+combats + knots taken + boss, so combat quotas stay low and the knots
+carry the danger (escalation makes them the price).
+
+| Target | Truth strand | Power strand | Weave-wide (act) |
+|---|---|---|---|
+| combats | ≤ 2 (incl. the layer-0 opener) | ≥ 2 (incl. opener) | strand-runner sees ~4–5 fights + boss (R4 band) |
+| events | ≥ 3 (clue queue-weight ×2 here; typically 4–5) | ≤ 2 (the character doors) | high-stakes [1,3] per act; the floor deals into TRUTH |
+| shop | — | ≥ 1 | ≥ 1 per act |
+| treasure | ≥ 1 | ≥ 1 | ≥ 2 per act |
+| rest | ≥ 1 | ≥ 1 | breath layer stays shared + plain |
+| character events | 1 door per seat | 1 door per seat | 2 per seat per act (B6 floor unchanged, split-proof) |
+| knots | 2 fixed crossing layers per act | (same — crossings are shared) | A3: **extra crossing layer** (S11.11-1 rec, implemented, pending ruling) |
+
+Pacing-variant mix (S11.7) rides both strands unchanged; scouting
+(S11.6) is strand-agnostic. The generator + 11 structure tests landed
+against exactly this table (content/strand-targets.ts).
+**RULED (2026-07-04): table SIGNED OFF as implemented; A3's extra
+crossing layer (S11.11-1) RATIFIED.** Wave B batteries unblocked.
+
+## Wave B status (2026-07-04, same day)
+
+- **S11.8 braid generator LANDED** behind TB_KNOTWORK: two
+  currency-keyed strands, knots as the only crossings, first pick =
+  strand commitment, character doors on both strands, hs floor deals
+  into truth, A3's third knot on its OWN layer (S11.11-1 rec, pending
+  ruling). Composition as data (content/strand-targets.ts). 11
+  structure tests + invariant fuzz smoke. Unflagged path untouched —
+  the flag-off golden held UNREGENERATED through every landing today
+  (S11.10 gate 4 reads green already).
+- **S11.9 strand routing LANDED**, braid maps only (Wave A baselines
+  byte-identical, seek-events tests pin the old path): best-path DP,
+  seat-symmetric instant agreement, knot pricing = reward minus the
+  escalation ladder (crossing value rides the DP). The TB_KNOTWORK
+  battery IS this policy's baseline.
+- S11.11-4 table **SIGNED OFF**; S11.11-1 (A3 extra crossing layer)
+  **RATIFIED** (both 2026-07-04). Batteries ran same day — ledger rows
+  above. Gate scoreboard: 1 (CI both flag states) ✓, 3 (D6/D7 vs B6:
+  improves on every measure) ✓, 4 (flag-off golden lock, never
+  regenerated) ✓, 5 (solo manual) rides the playtest. Gate 2 (win
+  rate ±6): mirrors read +22; probe decomposition says mostly
+  structural. **RULED (2026-07-04): the strand mix STANDS as design —
+  gate 2 DEFERS to re-anchor after the S12 card-economy sprint**
+  (docs/S12-CARD-ECONOMY-BRIEF.md — card rewards don't seem to
+  matter; the deep, systemic issue). TB_KNOTWORK stays default-off
+  until then (S11.11-5 answered by implication). Ladder/policy
+  recalibration (OQ#55) also rides S12: pricing reads 1.45 already,
+  and elites-pricing-deck-quality is an S12 lever.
+- Solo-on-strands manual pass: playtest-time (S11.10 gate 5).
+
+## Remaining (next session)
+
+1. **S12 card-economy sprint** (designer packet; brief seeded at
+   docs/S12-CARD-ECONOMY-BRIEF.md). Gate 2 + escalation gate +
+   TB_KNOTWORK default all re-anchor after it.
+2. S11.5 deep RETROFITS of remaining events (later content sprint,
+   per ruling 5).
+3. ~~A2 battery legs~~ — RAN 2026-07-04 (see ledger); first in-env A2
+   row banked, judged directionally (no pre-S9d A2 baseline exists).
+   First OQ#57 instrument reading, same battery: rite-card play rate
+   26.7 plays/run (4.29 per combat won) — rite cards are PLAYED, the
+   S9c gate-2 direction read is healthy.
+4. ~~Witness-string designer read~~ — **APPROVED as written
+   2026-07-04** (all 18 lines; S9c gate 4 CLOSED). Public build
+   unblocked on this axis.
+
+## Open designer rows — ALL RULED (2026-07-04, same day)
+
+1. Thornward upgrade row (OQ#49): **proposed row accepted** — landed,
+   exemption list empty.
+2. S9d rates (sign-off row 1): **retune RATIFIED** (+7 read accepted as
+   band-edge).
+3. Escalation ladder (sign-off row 2): **hold ×1**; the ≥2× calibration
+   gate stays OPEN and moves to the S11.9 work queue.
+4. S11.5 table: **approved, all four rows as proposed** — authoring
+   proceeds; high-stakes flags on Broken Carillon + Drowned Hymnal.
+5. Votive tier shape (S9d.0-4): **stands** (default taken).

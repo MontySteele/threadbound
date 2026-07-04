@@ -5,10 +5,23 @@
 // throughout: names, flavor, text — no explanation copy.
 
 import React from 'react';
-import { CARDS, RITES_BY_ID, PlayerId, RiteDef, unlockedRites } from '@threadbound/engine';
+import { CARDS, GrowthAxis, RITES_BY_ID, PlayerId, RiteDef, unlockedRites } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { Card, Log } from './App';
 import { CHAR_NAME } from './chars';
+
+/** S9d.3: plain-language axis names for the death pick ("grows with
+ *  detonations") — visible mechanics, zero narrative economy. */
+const AXIS_PHRASE: Record<GrowthAxis, string> = {
+  detonations: 'grows with detonations',
+  falls: 'grows each time either of you falls',
+  boundKills: 'grows as enemies die Bound to you',
+  threadSpent: 'grows as the pair spends Thread',
+  kindledConsumed: 'grows with Kindled burned',
+  linksFired: 'grows with links fired',
+  momentumSpent: 'grows with Momentum spent',
+  resonances: 'grows with Resonance ignitions',
+};
 
 /** The seat's picked death rite, if any (their choice is not secret). */
 function deathRiteOf(state: ClientState, pid: PlayerId): RiteDef | undefined {
@@ -51,6 +64,10 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
                   <div className="rite-card">
                     <Card def={card} />
                   </div>
+                  {/* S9d.3: the archetype declaration must be legible at the
+                      moment of declaration — the axis is visible mechanics,
+                      not narrative economy (held reveal unaffected) */}
+                  {card.growsWith && <p className="muted rite-axis">▲ {AXIS_PHRASE[card.growsWith.axis]}</p>}
                   <button className="big" data-gp="META"
                     onClick={() => net.act({ type: 'RITE_PICK', riteId: rite.id })}>
                     Don the vestment

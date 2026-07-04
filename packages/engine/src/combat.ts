@@ -4,18 +4,21 @@
 // is of the working copy only.
 
 import { CARDS } from './content/cards';
-import { ENEMIES } from './content/registry';
+import { ELITE_ESCALATION_SCALE, ENEMIES } from './content/registry';
 import { POWERS } from './content/powers';
-import { RITES_BY_ID } from './content/rites';
+import { RITES_BY_ID, RITE_CARDS } from './content/rites';
 import { RELICS_BY_ID } from './content/registry';
 import {
-  ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, HookEvent, HookOp,
-  PassiveId, PlayerId, PlayerState,
+  ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, GrowthAxis,
+  HookEvent, HookOp, PassiveId, PlayerId, PlayerState, RunTallies,
 } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { FACE_BY_ANSWER, mechanicFireTurns } from './content/faces';
 import { ascensionMods, scaleIntent } from './ascension';
 import { maybeSaySolo, sayWitness } from './witness-draw';
+
+/** OQ#57: rite-card ids, for the play-rate instrument. */
+const RITE_CARD_IDS = new Set(RITE_CARDS.map((c) => c.id));
 
 /** S4.1: ActStats grew gold columns — one initializer for every site. */
 export function emptyActStats(): ActStats {
@@ -55,6 +58,146 @@ export function effectiveDef(inst: CardInstance): CardDef {
     };
   }
   return def;
+}
+
+// ---------------------------------------------------------------------------
+// S9d — the tally (stateless growth). Effective amounts are DERIVED from
+// state.tallies at resolution and preview time; Echoes/Reclaims inherit
+// correctness because nothing is stored on the instance.
+// ---------------------------------------------------------------------------
+
+/** Axis reader. `holder` matters only for the per-seat axis (boundKills —
+ *  "enemies that die Bound to YOU" reads on the seat holding the card). */
+export function tallyAxisValue(t: RunTallies, axis: GrowthAxis, holder: PlayerId): number {
+  switch (axis) {
+    case 'detonations': return t.detonations;
+    case 'falls': return t.falls;
+    case 'boundKills': return t.boundKills[holder];
+    case 'threadSpent': return t.threadSpent;
+    case 'kindledConsumed': return t.kindledConsumed;
+    case 'linksFired': return t.linksFired;
+    case 'momentumSpent': return t.momentumSpent;
+    case 'resonances': return t.resonances;
+  }
+}
+
+/** The growth step a def sits at: linear growers report the BONUS, tiered
+ *  growers the count of tiers reached. 0 = ungrown. */
+export function growthStep(state: GameState, def: CardDef, holder: PlayerId): number {
+  const g = def.growsWith;
+  if (!g || !state.tallies) return 0;
+  const v = tallyAxisValue(state.tallies, g.axis, holder);
+  if (g.tiers) return g.tiers.filter((t) => v >= t.at).length;
+  return Math.min(g.cap ?? 0, Math.floor(v / (g.per ?? 1)) * (g.amount ?? 0));
+}
+
+/** S9d.3 auto-render: one clause per effect op. Growers regenerate their
+ *  whole card text from effective ops — a grown card can never lie. */
+export function opClause(e: EffectOp): string {
+  switch (e.op) {
+    case 'damage': return `Deal ${e.amount}${(e.times ?? 1) > 1 ? ` ${e.times === 2 ? 'twice' : `${e.times} times`}` : ''}.`;
+    case 'damageAll': return `Deal ${e.amount} to ALL enemies.`;
+    case 'block': return `Gain ${e.amount} Block.`;
+    case 'partnerBlock': return `Your partner gains ${e.amount} Block.`;
+    case 'momentum': return `Gain ${e.amount} Momentum.`;
+    case 'thread': return `Gain ${e.amount} Thread.`;
+    case 'draw': return `Draw ${e.amount}.`;
+    case 'partnerDraw': return `Your partner draws ${e.amount}.`;
+    case 'heal': return `Heal ${e.amount}.`;
+    case 'partnerHeal': return `Your partner heals ${e.amount}.`;
+    case 'kindled': return `Gain Kindled ${e.amount}.`;
+    case 'partnerKindled': return `Your partner gains Kindled ${e.amount}.`;
+    case 'taunt': return 'Bind the target to you.';
+    case 'detonate': return 'max' in e && e.max !== undefined ? `Detonate up to ${e.max} Hexes on the target.` : 'Detonate.';
+    case 'hex': return `Apply ${e.amount} Hex.`;
+    case 'hexAll': return `Apply ${e.amount} Hex to ALL enemies.`;
+    case 'weak': return `Apply ${e.amount} Weak.`;
+    case 'weakAll': return `Apply ${e.amount} Weak to all.`;
+    default: return '';
+  }
+}
+
+/** Render base-op clauses, merging same-op amount pairs first so a tier's
+ *  added `draw 1` over a base `draw 1` reads "Draw 2." (mechanics stay two
+ *  ops — the merge is display-only and value-exact). */
+function renderBase(ops: EffectOp[]): string {
+  const merged: EffectOp[] = [];
+  for (const e of ops) {
+    const prior = merged.find((m) => m.op === e.op && 'amount' in m && 'amount' in e
+      && (m as { times?: number }).times === (e as { times?: number }).times);
+    if (prior && 'amount' in prior && 'amount' in e) {
+      (prior as { amount: number }).amount += e.amount as number;
+    } else {
+      merged.push(JSON.parse(JSON.stringify(e)));
+    }
+  }
+  return merged.map(opClause).filter(Boolean).join(' ');
+}
+
+/** S9d.2: the def a grower resolves and renders with — effectiveDef plus the
+ *  tally. Linear growers patch the first `appliesTo` base op and regenerate
+ *  text; tiered growers append their added ops and swap links. Non-growers
+ *  (and tally-less unflagged runs, where growers cannot exist) pass through
+ *  untouched. */
+export function grownDef(state: GameState, inst: CardInstance, holder: PlayerId): CardDef {
+  return applyGrowth(effectiveDef(inst), state.tallies, holder);
+}
+
+/** The growth application itself, shared by grownDef, the bot's defOf, and
+ *  the client's card rendering. */
+export function applyGrowth(def: CardDef, tallies: RunTallies | undefined, holder: PlayerId): CardDef {
+  const g = def.growsWith;
+  if (!g || !tallies) return def;
+  const v = tallyAxisValue(tallies, g.axis, holder);
+  if (g.tiers) {
+    let base = def.base;
+    let link = def.link;
+    for (const t of g.tiers) {
+      if (v < t.at) break; // ascending
+      if (t.addBase) base = [...base, ...t.addBase];
+      if (t.link !== undefined) link = t.link;
+    }
+    if (base === def.base && link === def.link) return def;
+    const text = `${renderBase(base)}${link ? ` Link (${link.condition}): ${link.text}` : ''}`;
+    return { ...def, base, link, text, grownStep: g.tiers!.filter((t) => v >= t.at).length };
+  }
+  const bonus = Math.min(g.cap ?? 0, Math.floor(v / (g.per ?? 1)) * (g.amount ?? 0));
+  if (bonus <= 0) return def;
+  let patched = false;
+  const base = def.base.map((e) => {
+    if (!patched && e.op === g.appliesTo && 'amount' in e) {
+      patched = true;
+      return { ...e, amount: (e.amount as number) + bonus };
+    }
+    return e;
+  });
+  if (!patched) return def;
+  const text = `${renderBase(base)}${def.link ? ` Link (${def.link.condition}): ${def.link.text}` : ''}`;
+  return { ...def, base, text, grownStep: bonus };
+}
+
+/** Tally increment — a no-op on unflagged runs (tallies absent), so every
+ *  call site is parity-safe by construction. */
+export function bumpTally(state: GameState, axis: Exclude<GrowthAxis, 'boundKills'>, n = 1): void {
+  if (!state.tallies || n <= 0) return;
+  state.tallies[axis] += n;
+}
+
+/** S9b.1-3: the shape a Reclaimed card ARRIVES in — one source of truth for
+ *  the reducer's echo construction and the client's reclaim-list preview
+ *  (arrival cost, Quickening marker). Mutation precedence over the upgrade
+ *  overlay lives in effectiveDef, not here. */
+export function reclaimEchoShape(
+  actor: PlayerState, defId: string,
+): Pick<CardInstance, 'defId' | 'echo' | 'mutated' | 'upgraded'> {
+  const def = CARDS[defId];
+  return {
+    defId,
+    echo: true,
+    mutated: !!def.mutation,
+    // S8.1 Quickening: what returns through you comes back more alive
+    ...(hasPassive(actor, 'reclaimUpgraded') && def.upgrade ? { upgraded: true } : {}),
+  };
 }
 
 export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
@@ -159,7 +302,34 @@ export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean
   return fired;
 }
 
-export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set<number> {
+/** S9c.6: the size of the PRIMARY effect a slot will resolve with (link
+ *  replacement respected) — the "note" Resonance rung ii compares. Multi-hit
+ *  primaries count their total (amount × times); primaries without a flat
+ *  amount (e.g. damagePerHex) read 0 and defer to the tie-break. */
+export function primaryMagnitude(def: CardDef, fired: boolean): number {
+  const effects: EffectOp[] =
+    fired && def.link
+      ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
+      : def.base;
+  let best = 0;
+  for (const e of effects) {
+    if ((e as { primary?: boolean }).primary && 'amount' in e) {
+      const v = (e.amount as number) * ((e as { times?: number }).times ?? 1);
+      if (v > best) best = v;
+    }
+  }
+  return best;
+}
+
+/** S9c.6 rung ii ("the loudest note carries"): a qualifying streak ignites
+ *  its LARGEST primary effect, not its last slot; ties go to the latest
+ *  slot among the tied (which also reproduces the old last-slot behavior
+ *  when nothing in the streak scales). `defAt` resolves a slot's effective
+ *  card — resolution, previews, bots, and the client MUST pass the same
+ *  resolver so preview==reality holds by construction. */
+export function computeResonanceSlots(
+  chain: ChainSlot[], fired: boolean[], defAt: (slot: ChainSlot) => CardDef,
+): Set<number> {
   const out = new Set<number>();
   let i = 0;
   while (i < chain.length) {
@@ -171,7 +341,17 @@ export function computeResonanceSlots(chain: ChainSlot[], fired: boolean[]): Set
       const owners = new Set<PlayerId>();
       // i can be 0 when slot 0's link was Pulse-forced (§14.12)
       for (let k = Math.max(0, i - 1); k <= j; k++) owners.add(chain[k].owner);
-      if (owners.size === 2) out.add(j); // solo streaks never ignite (§2.3)
+      if (owners.size === 2) { // solo streaks never ignite (§2.3)
+        let pick = j;
+        let best = -1;
+        // candidates are the FIRED slots (ignition sits on a fired link,
+        // as before); >= walks ascending, so ties land on the latest
+        for (let k = i; k <= j; k++) {
+          const v = primaryMagnitude(defAt(chain[k]), fired[k]);
+          if (v >= best) { best = v; pick = k; }
+        }
+        out.add(pick);
+      }
     }
     i = j + 1;
   }
@@ -207,10 +387,10 @@ export function computePlannedBlock(state: GameState): Record<PlayerId, number> 
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired);
+  const resonance = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
-    const def = effectiveDef(mustFind(state, slot));
+    const def = grownDef(state, mustFind(state, slot), slot.owner); // S9d: tally included
     const effects: EffectOp[] =
       fired[i] && def.link
         ? def.link.replace ? def.link.effects : [...def.base, ...def.link.effects]
@@ -243,7 +423,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
   const natural = computeLinksFired(state, chain);
   const forced = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forced[i]);
-  const resonance = computeResonanceSlots(chain, fired);
+  const resonance = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
 
   // working copies — forecasting must not mutate authoritative state
   const enemies = combat.enemies.map((e) => ({
@@ -280,7 +460,7 @@ export function computePlannedDamage(state: GameState): Record<string, number> {
   for (let i = 0; i < chain.length; i++) {
     const slot = chain[i];
     const owner = slot.owner;
-    const def = effectiveDef(mustFind(state, slot));
+    const def = grownDef(state, mustFind(state, slot), slot.owner); // S9d: tally included
     const res = resonance.has(i);
     const sc = (amt: number, primary?: boolean): number => (primary && res ? Math.ceil(amt * 1.5) : amt);
     const effects: EffectOp[] =
@@ -443,6 +623,8 @@ function applyEnemyHpLoss(state: GameState, enemy: EnemyState, hpLoss: number, _
 
 /** S10a death hooks — fire exactly once, on the hit that crosses to 0. */
 function onEnemyDeath(state: GameState, enemy: EnemyState): void {
+  // S9d: Vigil's axis — dying Bound to a seat is that SEAT's tally
+  if (state.tallies && enemy.boundTo) state.tallies.boundKills[enemy.boundTo]++;
   const def = ENEMIES[enemy.defId];
   // Tithe-Taker: a Thread-economy fight with a payoff
   if (def.threadOnDeath) {
@@ -514,6 +696,7 @@ function detonate(state: GameState, enemy: EnemyState, maxStacks?: number, by?: 
   state.telemetry.damageByTag.Hex = (state.telemetry.damageByTag.Hex ?? 0) + dmg;
   state.telemetry.detonatedStacks += stacks;
   state.telemetry.detonationEvents = (state.telemetry.detonationEvents ?? 0) + 1;
+  bumpTally(state, 'detonations'); // S9d: Knell's axis
   if (by) state.telemetry.damageByPlayer[by] += dmg;
   turnDamage += dmg;
   runHooks(state, 'p1', 'detonate');
@@ -560,7 +743,15 @@ function drawCards(state: GameState, player: PlayerState, n: number): void {
       player.draw = r.value;
       player.discard = [];
     }
-    player.hand.push(player.draw.shift()!);
+    const drawnId = player.draw.shift()!;
+    player.hand.push(drawnId);
+    // S9c.2: the Witness NAMES a rite card the first time it is drawn each
+    // run (existence-naming; the single-line pool's no-repeat IS the fence).
+    // Rite cards exist only in rites-flagged runs — unflagged rng untouched.
+    const drawnInst = findInstance(player, drawnId);
+    if (drawnInst && CARDS[drawnInst.defId]?.riteOnly) {
+      sayWitness(state, `rite_first_draw_${drawnInst.defId}`);
+    }
   }
 }
 
@@ -601,15 +792,17 @@ function dmgTelemetry(state: GameState, tag: string, dealt: number, player?: Pla
 /** accumulator for the biggest-single-turn stat; reset/flushed by resolveTurn */
 let turnDamage = 0;
 
-function applyMomentum(ctx: CardContext, amt: number, hitIndex: number): number {
+function applyMomentum(state: GameState, ctx: CardContext, amt: number, hitIndex: number): number {
   const { owner, def } = ctx;
   if (def.tag !== 'Strike' || owner.momentum <= 0) return amt;
   if (ctx.momentumPerHit) {
+    if (!ctx.momentumSpent) bumpTally(state, 'momentumSpent', owner.momentum); // S9d: Mourner's axis (once per card)
     ctx.momentumSpent = true;
     return amt + owner.momentum; // M2-A4 rare design space
   }
   if (hitIndex === 0 && !ctx.momentumSpent) {
     ctx.momentumSpent = true;
+    bumpTally(state, 'momentumSpent', owner.momentum); // S9d: Mourner's axis
     return amt + owner.momentum; // OQ#3: once, on the first hit
   }
   return amt;
@@ -626,7 +819,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
       for (let t = 0; t < times; t++) {
         const target = retarget(state, first.id);
         if (!target) return;
-        const amt = applyMomentum(ctx, scale(ctx, eff.amount, eff.primary), t);
+        const amt = applyMomentum(state, ctx, scale(ctx, eff.amount, eff.primary), t);
         dmgTelemetry(state, tag, hitEnemy(state, owner, target, amt), owner.id);
       }
       break;
@@ -642,13 +835,14 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
         }
         dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, amt), owner.id);
       }
+      if (used && !ctx.momentumSpent) bumpTally(state, 'momentumSpent', ctx.owner.momentum); // S9d
       if (used) ctx.momentumSpent = true;
       break;
     }
     case 'damagePerHex': {
       const enemy = retarget(state, ctx.targetId);
       if (!enemy) return;
-      const amt = applyMomentum(ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
+      const amt = applyMomentum(state, ctx, Math.min(scale(ctx, eff.base + eff.perHex * enemy.hex, eff.primary), eff.max ?? Infinity), 0);
       // M2-B1: hex-scaling damage gets its own attribution bucket
       dmgTelemetry(state, 'HexScaling', hitEnemy(state, owner, enemy, amt), owner.id);
       break;
@@ -658,6 +852,7 @@ function applyEffect(state: GameState, ctx: CardContext, eff: EffectOp): void {
       if (!enemy) return;
       dmgTelemetry(state, tag, hitEnemy(state, owner, enemy, owner.momentum * eff.mult), owner.id);
       if (eff.keepMomentum) ctx.keepMomentum = true;
+      if (!ctx.momentumSpent) bumpTally(state, 'momentumSpent', owner.momentum); // S9d
       ctx.momentumSpent = true;
       break;
     }
@@ -825,17 +1020,18 @@ export function resolveTurn(state: GameState): void {
         // the discard — everything downstream (echo, mutation, hooks) is
         // source-blind on purpose.
         if (!src || !(partner.discard.includes(ta.targetId!) || partner.exhaust.includes(ta.targetId!))) break;
-        const def = CARDS[src.defId];
         const echo: CardInstance = {
           instanceId: `echo_${src.instanceId}_t${combat.turn}_${actor.combatCards.length}`,
-          defId: src.defId,
-          echo: true,
-          mutated: !!def.mutation,
-          // S8.1 Quickening: what returns through you comes back more alive
-          ...(hasPassive(actor, 'reclaimUpgraded') && def.upgrade ? { upgraded: true } : {}),
+          ...reclaimEchoShape(actor, src.defId),
         };
         actor.combatCards.push(echo);
         if (actor.hand.length < 10) actor.hand.push(echo.instanceId);
+        // S9c.3: the rite_reclaim pool — a rite passed hand to hand. At most
+        // once per combat; rite cards exist only in rites-flagged runs.
+        if (CARDS[src.defId]?.riteOnly && !combat.riteReclaimSaid) {
+          combat.riteReclaimSaid = true;
+          sayWitness(state, 'rite_reclaim');
+        }
         // S8.1 Dowry-Bound: reclaiming a partner's card feeds the engine
         runHooks(state, ta.player, 'reclaim');
         break;
@@ -864,6 +1060,7 @@ export function resolveTurn(state: GameState): void {
     // S3.1 thread economy: spend mix by action type (cost reflects any
     // Ring discount applied above)
     state.telemetry.threadSpent += cost;
+    bumpTally(state, 'threadSpent', cost); // S9d: Votive's axis
     state.telemetry.threadSpendByKind[ta.kind]++;
     if (ta.kind !== 'pulse') state.log.push({ e: 'thread_action', player: ta.player, kind: ta.kind });
   }
@@ -874,7 +1071,7 @@ export function resolveTurn(state: GameState): void {
   const natural = computeLinksFired(state, chain);
   const forcedSlots = computeForcedLinks(state, chain, natural);
   const fired = natural.map((f, i) => f || forcedSlots[i]);
-  const resonanceSlots = computeResonanceSlots(chain, fired);
+  const resonanceSlots = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
   combat.lastSoloRun = longestSoloRun(chain);
   const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
 
@@ -884,11 +1081,27 @@ export function resolveTurn(state: GameState): void {
     const owner = state.players[slot.owner];
     const partner = state.players[otherPlayer(slot.owner)];
     const inst = mustFind(state, slot);
-    const def = effectiveDef(inst);
+    const def = grownDef(state, inst, slot.owner); // S9d: the tally applies
     const resonance = resonanceSlots.has(i);
+    // S9d.3: one log line when a rite crosses a growth step — the Machine's
+    // bookkeeping, not the Witness's voice
+    if (def.growsWith && state.tallies) {
+      const step = growthStep(state, def, slot.owner);
+      if (step > (state.tallies.seenStep[def.id] ?? 0)) {
+        state.tallies.seenStep[def.id] = step;
+        if (state.telemetry.rites) {
+          (state.telemetry.rites.growth ??= {})[def.id] = step;
+        }
+        state.log.push({
+          e: 'info',
+          detail: `The Machine keeps its tally: ${def.name} ${def.growsWith.tiers ? `reaches its ${step === 1 ? 'first' : step === 2 ? 'second' : `${step}th`} mark` : `+${step}`}.`,
+        });
+      }
+    }
 
-    // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +1 to the
-    // linked effect (never Hex ops: the OQ#28/OQ#43 caps are load-bearing)
+    // S8.1 Cradle-Warden: the partner's link fired off YOUR card — +2 to the
+    // linked effect (S9c.1 table: +1 → +2; never Hex ops: the OQ#28/OQ#43
+    // caps are load-bearing)
     const wardenBoost =
       fired[i] && def.link && i > 0
       && chain[i - 1].owner !== slot.owner
@@ -897,7 +1110,7 @@ export function resolveTurn(state: GameState): void {
       'kindled', 'partnerKindled', 'momentum', 'thread', 'heal', 'partnerHeal']);
     const bump = (ops: EffectOp[], by: number): EffectOp[] => ops.map((e) =>
       BUMPABLE.has(e.op) && 'amount' in e ? { ...e, amount: (e.amount as number) + by } : e);
-    const linkEffects = def.link ? (wardenBoost ? bump(def.link.effects, 1) : def.link.effects) : [];
+    const linkEffects = def.link ? (wardenBoost ? bump(def.link.effects, 2) : def.link.effects) : [];
     let effects: EffectOp[] =
       fired[i] && def.link
         ? def.link.replace
@@ -926,15 +1139,20 @@ export function resolveTurn(state: GameState): void {
     if (resonance) {
       let start = i;
       while (start > 0 && fired[start]) start--;
-      const streakTags = chain.slice(start, i + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
+      // S9c.6: the ignited slot can sit MID-streak now ("the loudest note
+      // carries") — walk forward too so the logged streak is whole
+      let end = i;
+      while (end + 1 < chain.length && fired[end + 1]) end++;
+      const streakTags = chain.slice(start, end + 1).map((s) => effectiveDef(mustFind(state, s)).tag);
       // S3.1: did this streak need a Pulse to exist?
-      for (let k = start; k <= i; k++) {
+      for (let k = start; k <= end; k++) {
         if (forcedSlots[k]) { state.telemetry.resonancesForced++; break; }
       }
-      state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags });
+      state.log.push({ e: 'resonance_ignite', slot: i, tags: streakTags, card: def.name });
       // S2.1: in solo the streak includes HIM — the closest he comes to joy
       sayWitness(state, state.botSeat ? 'resonance_together' : 'resonance');
       state.telemetry.resonances++;
+      bumpTally(state, 'resonances'); // S9d: Descant's axis
       for (const t of streakTags) {
         state.telemetry.resonanceTagCounts[t] = (state.telemetry.resonanceTagCounts[t] ?? 0) + 1;
       }
@@ -971,8 +1189,14 @@ export function resolveTurn(state: GameState): void {
 
     state.telemetry.cardsPlayed++;
     actStats.cardsPlayed++;
+    // OQ#57 instrument: rite-card play rate, the real measure (rites
+    // telemetry exists only on flagged runs — zero unflagged footprint)
+    if (state.telemetry.rites && RITE_CARD_IDS.has(inst.defId)) {
+      (state.telemetry.rites.ritePlays ??= { p1: 0, p2: 0 })[slot.owner]++;
+    }
     if (fired[i]) {
       state.telemetry.linksFired++;
+      bumpTally(state, 'linksFired'); // S9d: Toll's axis
       state.telemetry.linkFiresByPlayer[slot.owner]++;
       if (forcedSlots[i]) state.telemetry.forcedLinkFires++; // §14.12
       actStats.linksFired++;
@@ -1102,7 +1326,7 @@ export function resolveTurn(state: GameState): void {
     enemy.scriptIndex = (enemy.scriptIndex + 1) % def.script.length;
     // S4.4 A2: intents are stored scaled, so every displayed number is the
     // truth the hit will use (same contract as the §14.8 registry scales)
-    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale);
+    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
     // nt-slice S6.5: the face's live mechanics override the script on their
     // fixed turns; hidden ones whisper one turn before their first firing
     applyBossMechanicIntent(state, enemy, combat.turn + 1);
@@ -1123,7 +1347,7 @@ function applyBossMechanicIntent(state: GameState, enemy: EnemyState, upcomingTu
     const { first, period } = mechanicFireTurns(slot);
     if (upcomingTurn < first || (upcomingTurn - first) % period !== 0) return;
     const mech = face.mechanicPool.find((m) => m.id === mechId)!;
-    enemy.intent = scaleIntent(mech.intent, ascensionMods(state.ascension).dmgScale);
+    enemy.intent = scaleIntent(mech.intent, ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
     const revealed = slot === 0 ? state.truth!.reveals.bossFace : state.truth!.reveals.bossMechanic;
     if (upcomingTurn === first && !revealed) {
       enemy.telegraph = mech.telegraphLine;
@@ -1256,6 +1480,7 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
   player.hp = Math.max(0, player.hp - hpLoss);
   if (hpLoss > 0) {
     state.log.push({ e: 'player_hit', player: player.id, hpLoss, blocked });
+    if (state.combat) state.combat.hpLostThisCombat = (state.combat.hpLostThisCombat ?? 0) + hpLoss;
     const act = state.map.act;
     const actStats = state.telemetry.actStats[act] ?? (state.telemetry.actStats[act] = emptyActStats());
     actStats.hpLost += hpLoss;
@@ -1294,6 +1519,7 @@ function fall(state: GameState, player: PlayerState): void {
     }
   }
   state.telemetry.fallsByPlayer[player.id]++;
+  bumpTally(state, 'falls'); // S9d: Shroud's axis
   state.log.push({ e: 'fallen', player: player.id });
   if (rebound > 0) {
     // say it out loud (playtest 1): the silent rebind undid a player's Sever
@@ -1345,6 +1571,7 @@ export function startTurn(state: GameState): void {
     }
     p.block = 0;
     p.energy = p.energyMax + p.kindled; // M2-A2
+    bumpTally(state, 'kindledConsumed', p.kindled); // S9d: Pyre-Brand's axis
     p.kindled = 0;
     p.ready = false;
     p.statuses.frayed = 0;
@@ -1371,12 +1598,27 @@ export function startTurn(state: GameState): void {
 // Combat setup
 // ---------------------------------------------------------------------------
 
+/** S11.2 snarl escalation (ruling 2, STEEP): after each knot cut this act,
+ *  the remaining knots tighten — cumulative +10% / +30% / +60% HP and DMG,
+ *  scaled by TB_ELITE_ESCALATION. Cutting a snarl pulls the weave tighter
+ *  everywhere else. */
+export function escalationFactor(knotsCut: number): number {
+  const LADDER = [0, 0.10, 0.30, 0.60];
+  return LADDER[Math.min(knotsCut, LADDER.length - 1)] * ELITE_ESCALATION_SCALE;
+}
+
 export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const enemies: EnemyState[] = [];
   // S4.4 A1/A2: ascension rungs stack multiplicatively on the §14.8 anchor.
   // Identity at A0 by construction (scale 1 short-circuits) — same rng draws,
   // same numbers, byte-equal combats.
   const mods = ascensionMods(state.ascension);
+  // S11.2: elite fights carry the act's current escalation. No extra rolls;
+  // factor 0 keeps the integer HP path (byte-equal non-elite combats).
+  const esc = enemyDefIds.some((id) => ENEMIES[id]?.elite)
+    ? escalationFactor(state.map?.knotsCut ?? 0) : 0;
+  const hpScale = mods.hpScale * (1 + esc);
+  const dmgScale = mods.dmgScale * (1 + esc);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;
   const chorusIds = enemyDefIds.filter((id) => ENEMIES[id]?.chorus);
@@ -1385,7 +1627,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     const def = ENEMIES[defId];
     const roll = rngInt(state.rng, def.hp[1] - def.hp[0] + 1);
     state.rng = roll.state;
-    const hp = mods.hpScale === 1 ? def.hp[0] + roll.value : Math.round((def.hp[0] + roll.value) * mods.hpScale);
+    const hp = hpScale === 1 ? def.hp[0] + roll.value : Math.round((def.hp[0] + roll.value) * hpScale);
     const start = rngInt(state.rng, def.script.length);
     state.rng = start.state;
     // Choristers (§6): exactly one body starts unbound + untargetable
@@ -1398,7 +1640,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       boundTo: isChorusOdd ? null : (i + first.value) % 2 === 0 ? 'p1' : 'p2',
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
-      intent: scaleIntent(def.script[start.value], mods.dmgScale),
+      intent: scaleIntent(def.script[start.value], dmgScale),
     });
   });
 
@@ -1447,6 +1689,8 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     severTriggered: false,
     witnessLines: 0,
     hookOnceFired: [],
+    // S11.2: carried so per-turn intent rescaling keeps the tightened DMG
+    ...(esc > 0 ? { escalation: esc } : {}),
   };
   state.thread = 6; // §5
   state.phase = 'combat';

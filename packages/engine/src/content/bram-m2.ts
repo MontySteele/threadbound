@@ -154,8 +154,9 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'hexAll', amount: 2, primary: true }, { op: 'weakAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 2 Hex to ALL enemies. Link (Surge): apply 3 to all instead.',
-      link: { condition: 'Surge', text: 'Apply 3 to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }], replace: true },
+      // S9b.3 row 15 — Hex amounts untouched; Weak rides the replace link
+      text: 'Apply 2 Hex to ALL enemies. Link (Surge): apply 3 to all and 1 Weak to all instead.',
+      link: { condition: 'Surge', text: 'Apply 3 to all and 1 Weak to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }, { op: 'weakAll', amount: 1 }], replace: true },
     },
   },
   {
@@ -212,7 +213,9 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Gain Kindled 1. Gain 2 Block. Link (Strike): gain 1 Thread.',
+      // S9b.3 row 16: base Block 2 → 4; Thread economy untouched
+      base: [{ op: 'kindled', amount: 1 }, { op: 'block', amount: 4, primary: true }],
+      text: 'Gain Kindled 1. Gain 4 Block. Link (Strike): gain 1 Thread.',
       link: { condition: 'Strike', text: 'Gain 1 Thread.', effects: [{ op: 'thread', amount: 1 }] },
     },
   },
@@ -262,8 +265,10 @@ export const BRAM_M2_CARDS: CardDef[] = [
       base: [{ op: 'damage', amount: 3, times: 2, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 3 twice. Link (Surge): deal 3 four times instead.',
-      link: { condition: 'Surge', text: 'Deal 3 four times instead.', effects: [{ op: 'damage', amount: 3, times: 4, primary: true }], replace: true },
+      // S9b.3 row 17 (S9b.0-2 ruling: 4×4=16, not 3×5) — replace preserved
+      base: [{ op: 'damage', amount: 4, times: 2, primary: true }],
+      text: 'Deal 4 twice. Link (Surge): deal 4 four times instead.',
+      link: { condition: 'Surge', text: 'Deal 4 four times instead.', effects: [{ op: 'damage', amount: 4, times: 4, primary: true }], replace: true },
     },
   },
   {
@@ -543,8 +548,9 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Strike): gain 3 Momentum.',
-      link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
+      // S9b.3 row 13: Momentum-floor consolidation
+      text: 'Gain 6 Block. Link (Strike): gain 5 Momentum.',
+      link: { condition: 'Strike', text: 'Gain 5 Momentum.', effects: [{ op: 'momentum', amount: 5 }] },
     },
   },
   bellows: {
@@ -553,8 +559,9 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'hex', amount: 2, primary: true }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 2 Momentum. Draw 1. Link (Guard): also gain 3 Block.',
-      link: { condition: 'Guard', text: 'Also gain 3 Block.', effects: [{ op: 'block', amount: 3 }] },
+      // S9b.3 row 14
+      text: 'Gain 2 Momentum. Draw 1. Link (Guard): also gain 5 Block.',
+      link: { condition: 'Guard', text: 'Also gain 5 Block.', effects: [{ op: 'block', amount: 5 }] },
     },
   },
   second_wind: {
@@ -585,7 +592,9 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       link: { condition: 'Strike', text: 'Apply 1 more Hex.', effects: [{ op: 'hex', amount: 1 }] },
     },
     upgrade: {
-      text: 'Apply 2 Hex. Link (Strike): deal 5.',
+      // S9b.1-2: base has been 3 Hex since M2-B1; the stale 2 hid the real
+      // link improvement (Deal 3 → 5) behind a lie
+      text: 'Apply 3 Hex. Link (Strike): deal 5.',
       link: { condition: 'Strike', text: 'Deal 5.', effects: [{ op: 'damage', amount: 5 }] },
     },
   },

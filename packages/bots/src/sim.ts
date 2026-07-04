@@ -301,6 +301,86 @@ async function main(): Promise<void> {
     );
     console.log(`character events taken/run: ${(charEvents / riteRuns.length).toFixed(2)}`);
     console.log(`Reclaim attempts (threadSpendByKind.reclaim): ${spendMix.reclaim ?? 0}`);
+    // S9d gate 3 instrument: mean realized growth per rite across the runs
+    // where it was PICKED (an axis nobody feeds is a dead archetype).
+    const growthSum: Record<string, number> = {};
+    const growthRuns: Record<string, number> = {};
+    for (const r of riteRuns) {
+      const t = r.telemetry.rites!;
+      for (const pid of ['p1', 'p2'] as PlayerId[]) {
+        const death = t.deathPick[pid];
+        if (!death) continue;
+        const cardId = death.replace(/^dr_/, 'rite_');
+        growthRuns[cardId] = (growthRuns[cardId] ?? 0) + 1;
+        growthSum[cardId] = (growthSum[cardId] ?? 0) + (t.growth?.[cardId] ?? 0);
+      }
+    }
+    const growthLine = Object.entries(growthRuns)
+      .sort()
+      .map(([id, n]) => `${id} ${(growthSum[id] / n).toFixed(1)} (n=${n})`)
+      .join(', ');
+    console.log(`S9d mean realized growth/pick: ${growthLine || 'none'}`);
+  }
+  // S11.3 fragment-supply readout (D2 instruments): distinct eliminations
+  // and bound-witness fragments per flagged run
+  const truthRuns = results.filter((r) => r.telemetry.truth);
+  if (truthRuns.length > 0) {
+    const mean = (f: (t: NonNullable<RunResult['telemetry']['truth']>) => number): string =>
+      (truthRuns.reduce((a, r) => a + f(r.telemetry.truth!), 0) / truthRuns.length).toFixed(2);
+    console.log(
+      `S11.3 fragment supply: distinct eliminations/run ${mean((t) => t.distinctEliminations ?? 0)}, ` +
+      `bound-witness fragments/run ${mean((t) => t.boundWitnessFragments ?? 0)}, ` +
+      `fragments/run ${mean((t) => t.fragmentsByPlayer.p1 + t.fragmentsByPlayer.p2)}`,
+    );
+    // OQ#57: the real provability instrument (target ~1 confident + 1
+    // narrowed gamble at typical routing)
+    console.log(
+      `S11.3 questions provable/run: confident ${mean((t) => t.questionsConfident ?? 0)}, ` +
+      `narrowed gambles ${mean((t) => t.questionsNarrowed ?? 0)}`,
+    );
+  }
+  // OQ#59 economy instruments: do wins ride relics or card growth? Split by
+  // outcome so the winning build's shape is visible directly.
+  {
+    const wins = results.filter((r) => r.outcome === 'victory');
+    const losses = results.filter((r) => r.outcome !== 'victory');
+    const m = (rs: typeof results, f: (r: RunResult) => number): string =>
+      rs.length > 0 ? (rs.reduce((a, r) => a + f(r), 0) / rs.length).toFixed(1) : 'n/a';
+    console.log(
+      `OQ#59 economy: relics/run wins ${m(wins, (r) => r.relicsEnd ?? 0)} vs losses ${m(losses, (r) => r.relicsEnd ?? 0)}` +
+      ` | deck/run wins ${m(wins, (r) => r.deckEnd ?? 0)} vs losses ${m(losses, (r) => r.deckEnd ?? 0)}` +
+      ` | combats/run wins ${m(wins, (r) => r.combatsWon)} vs losses ${m(losses, (r) => r.combatsWon)}`,
+    );
+  }
+  // OQ#57: rite-card play rate, the real S9c gate-2 measure
+  const ritePlayRuns = results.filter((r) => r.telemetry.rites?.ritePlays);
+  if (ritePlayRuns.length > 0) {
+    const plays = ritePlayRuns.reduce(
+      (a, r) => a + r.telemetry.rites!.ritePlays!.p1 + r.telemetry.rites!.ritePlays!.p2, 0);
+    const combats = ritePlayRuns.reduce((a, r) => a + r.combatsWon, 0);
+    console.log(
+      `S9c rite-card play rate: ${(plays / ritePlayRuns.length).toFixed(1)} plays/run` +
+      ` (${combats > 0 ? (plays / combats).toFixed(2) : 'n/a'} per combat won, n=${ritePlayRuns.length} runs)`,
+    );
+  }
+
+  // S11.2 calibration gate: pair HP cost per elite fight, keyed by kill
+  // order — the act's LAST-killed knot must cost >=2x its first-killed.
+  const byOrder: Record<number, { hp: number; n: number }> = {};
+  for (const r of results) {
+    for (const f of r.telemetry.eliteFights ?? []) {
+      (byOrder[f.order] ??= { hp: 0, n: 0 });
+      byOrder[f.order].hp += f.hpLost;
+      byOrder[f.order].n++;
+    }
+  }
+  const orders = Object.keys(byOrder).map(Number).sort((a, b) => a - b);
+  if (orders.length > 0) {
+    const line = orders.map((o) => `kill ${o + 1}: ${(byOrder[o].hp / byOrder[o].n).toFixed(1)} HP (n=${byOrder[o].n})`).join(' | ');
+    const first = byOrder[orders[0]];
+    const last = byOrder[orders[orders.length - 1]];
+    const ratio = (last.hp / last.n) / Math.max(1e-9, first.hp / first.n);
+    console.log(`S11.2 escalation calibration: ${line} — last/first ratio ${ratio.toFixed(2)} (gate >=2 needs steepening if unmet)`);
   }
   console.log('---------------- GATES ----------------');
   let allPass = true;
