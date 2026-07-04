@@ -206,6 +206,44 @@ raises the braid follow-up sprint's priority accordingly.
 5. **Adopt the n≥200 pooling rule for ±6-style gates** (§0). The M2
    header gates stay as archaeology or retire with rec 1.
 
+## 7. Ascension sweep on the shipped config (designer-requested)
+
+All planned rungs, game as played: braid maps (TB_KNOTWORK=1), v2
+default bots, PAIR=vb, 100-run legs, seeds 1000+. A0 is the banked
+flip-battery braid row.
+
+| Rung | adds (cumulative) | win % | act-1 HP/combat | act-3 arrivals | combats won/run |
+|---|---|---|---|---|---|
+| A0 | — | 36 | 32.8 | — | 5.4 |
+| A1 | +10% enemy HP | 32 | 38.6 | 33% | 4.9 |
+| A2 | +10% enemy dmg | 20 | 41.8 | 24% | 4.4 |
+| A3 | extra elite/act | 20 | 42.8 | 23% | 4.4 |
+| A4 | fray threshold 1 | 18 | 44.1 | 18% | 4.3 |
+| A5 | rest heal 20% | 13 | 41.9 | 15% | 4.1 |
+
+Reads (single legs — ±7–10 noise each; the TREND is the signal):
+
+- **Monotone difficulty: HOLDS with the smarter bots.** 36 → 32 → 20
+  → 20 → 18 → 13, no inversion anywhere — the S9a gate shape survives
+  both the draft-v2 uplift and the braid. Full-ladder spread is 23
+  points: the ladder still more than cancels the v2 improvement.
+- **A2 (the DMG rung) is the big tooth** (−12), consistent with the
+  comfort-pass ladder (DMG ≈ the sensitive knob, ~3× HP's slope). A1
+  (HP) −4, A4 (fray) −2, A5 (rest heal) −5.
+- **A3 (extra elite) reads flat (±0)** — the rung that "may not bite"
+  (S9a said it of bb) now doesn't bite for vb ON THE BRAID either.
+  Plausibly structural: the extra elite lands on a strand the pair
+  can route around — the same route-around shape as gate 2.
+  Transferred to the braid sprint as a named watch item.
+- Act-1 HP/combat climbs 38.6 → 44.1 across rungs (braid fights are
+  already fewer-and-bloodier at A0's 32.8); act-3 arrivals thin from
+  a third of runs to 15%. Nothing degenerate — losses distribute
+  across acts 1–2 rather than cliffing at one screen.
+- No ladder retune recommended: it does its job under the new
+  instrument. If rec 1's re-authored band lands (40–55 at A0
+  non-braid), the rung curve gives players ~5 meaningful steps below
+  it, with A5 near the old floor.
+
 ## Post-review pointers
 
 - Next playtest carries: solo manual pass (S13 gate 5, now on v2
