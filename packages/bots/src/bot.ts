@@ -50,7 +50,8 @@ export class Bot {
     /** S13.1a sim-only knobs: skip all card acquisition / deck-size ceiling */
     skipPicks?: boolean;
     pickCap?: number;
-    /** S13.1b: draft policy v2 (TB_BOT_DRAFT_V2, default off — D7) */
+    /** S13.1b: draft policy v2 — the DEFAULT since the S13.6 D7 flip;
+     *  false = v1, the instrumented comparison policy */
     draftV2?: boolean;
     /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
      *  matching profile (profiles are claims; the server clamps to them). */

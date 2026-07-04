@@ -18,10 +18,11 @@
 //                        cap is intentionally the dilution variable, not a pick
 //                        counter. Covets and shop card buys share the gate.
 //                        The constant 10 is STARTER_DECK_SIZE (pinned by test).
-// S13.1b — TB_BOT_DRAFT_V2=1: draftScore v2 (powers/engines +4, rare +3, a
-// dilution term past deck 16). Default OFF this sprint (D7) so historical
-// batteries stay comparable; flips default-on in one loud re-anchor after its
-// first clean battery.
+// S13.1b/S13.6 — draft policy v2 (powers/engines +4, rare +3, a dilution term
+// past deck 16) is the DEFAULT since the S13.6 D7 flip (its first clean
+// battery: post-content v2 60% vs v1 50%, S13-ECONOMY-STATUS.md).
+// TB_BOT_DRAFT_V2=0 restores v1 — the instrumented comparison policy for
+// load-bearing rows; pre-flip batteries were v1 unless marked DRAFT_V2.
 
 process.env.PORT = process.env.PORT ?? '0';
 process.env.PERSIST = ''; // sims never persist rooms
@@ -63,7 +64,7 @@ const SKIP_PICKS = process.env.TB_BOT_SKIP_PICKS === '1';
 const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT_PICK_CAP !== ''
   ? Math.max(0, Number(process.env.TB_BOT_PICK_CAP) || 0)
   : undefined;
-const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 === '1';
+const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 flip)
 
 function port(): number {
   const addr = server.address();
@@ -108,7 +109,7 @@ async function main(): Promise<void> {
     PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
     process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
     process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
-    DRAFT_V2 ? 'DRAFT_V2' : null,
+    DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
   ].filter(Boolean).join(' ');
   console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
 
