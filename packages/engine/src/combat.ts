@@ -6,7 +6,7 @@
 import { CARDS } from './content/cards';
 import { ELITE_ESCALATION_SCALE, ENEMIES } from './content/registry';
 import { POWERS } from './content/powers';
-import { RITES_BY_ID } from './content/rites';
+import { RITES_BY_ID, RITE_CARDS } from './content/rites';
 import { RELICS_BY_ID } from './content/registry';
 import {
   ActStats, CardDef, CardInstance, ChainSlot, EffectOp, EnemyState, GameState, GrowthAxis,
@@ -16,6 +16,9 @@ import { rngInt, rngShuffle } from './rng';
 import { FACE_BY_ANSWER, mechanicFireTurns } from './content/faces';
 import { ascensionMods, scaleIntent } from './ascension';
 import { maybeSaySolo, sayWitness } from './witness-draw';
+
+/** OQ#57: rite-card ids, for the play-rate instrument. */
+const RITE_CARD_IDS = new Set(RITE_CARDS.map((c) => c.id));
 
 /** S4.1: ActStats grew gold columns — one initializer for every site. */
 export function emptyActStats(): ActStats {
@@ -1186,6 +1189,11 @@ export function resolveTurn(state: GameState): void {
 
     state.telemetry.cardsPlayed++;
     actStats.cardsPlayed++;
+    // OQ#57 instrument: rite-card play rate, the real measure (rites
+    // telemetry exists only on flagged runs — zero unflagged footprint)
+    if (state.telemetry.rites && RITE_CARD_IDS.has(inst.defId)) {
+      (state.telemetry.rites.ritePlays ??= { p1: 0, p2: 0 })[slot.owner]++;
+    }
     if (fired[i]) {
       state.telemetry.linksFired++;
       bumpTally(state, 'linksFired'); // S9d: Toll's axis

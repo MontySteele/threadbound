@@ -332,6 +332,23 @@ async function main(): Promise<void> {
       `bound-witness fragments/run ${mean((t) => t.boundWitnessFragments ?? 0)}, ` +
       `fragments/run ${mean((t) => t.fragmentsByPlayer.p1 + t.fragmentsByPlayer.p2)}`,
     );
+    // OQ#57: the real provability instrument (target ~1 confident + 1
+    // narrowed gamble at typical routing)
+    console.log(
+      `S11.3 questions provable/run: confident ${mean((t) => t.questionsConfident ?? 0)}, ` +
+      `narrowed gambles ${mean((t) => t.questionsNarrowed ?? 0)}`,
+    );
+  }
+  // OQ#57: rite-card play rate, the real S9c gate-2 measure
+  const riteRuns = results.filter((r) => r.telemetry.rites?.ritePlays);
+  if (riteRuns.length > 0) {
+    const plays = riteRuns.reduce(
+      (a, r) => a + r.telemetry.rites!.ritePlays!.p1 + r.telemetry.rites!.ritePlays!.p2, 0);
+    const combats = riteRuns.reduce((a, r) => a + r.combatsWon, 0);
+    console.log(
+      `S9c rite-card play rate: ${(plays / riteRuns.length).toFixed(1)} plays/run` +
+      ` (${combats > 0 ? (plays / combats).toFixed(2) : 'n/a'} per combat won, n=${riteRuns.length} runs)`,
+    );
   }
 
   // S11.2 calibration gate: pair HP cost per elite fight, keyed by kill

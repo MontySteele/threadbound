@@ -1447,6 +1447,7 @@ function advanceAct(state: GameState): void {
   } else {
     state.phase = 'victory';
     state.telemetry.goldResidual = state.gold; // S4.1
+    recordTruthProvability(state); // OQ#57 instrument
     sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
@@ -1596,6 +1597,34 @@ function gameOver(state: GameState): void {
   endCombatCleanup(state);
   state.phase = 'game_over';
   state.telemetry.goldResidual = state.gold; // S4.1
+  recordTruthProvability(state); // OQ#57 instrument
+}
+
+/** OQ#57: the REAL "questions provable per run" measure, written at run end
+ *  (either end). A question is CONFIDENT when the pooled boards leave <=1
+ *  answer standing, a NARROWED GAMBLE at exactly 2 — the S11.3 target band
+ *  ("~1 confident + 1 narrowed at typical routing") reads these directly
+ *  instead of the distinct-eliminations proxy. */
+function recordTruthProvability(state: GameState): void {
+  const tt = state.telemetry.truth;
+  if (!tt || !state.truth) return;
+  const struck: Record<string, Set<string>> = {};
+  for (const holder of ['p1', 'p2'] as PlayerId[]) {
+    for (const pin of state.truth.boards[holder]) {
+      const def = FRAGMENTS_BY_ID[pin.fragmentId];
+      if (!def) continue;
+      for (const a of def.eliminates) (struck[def.bearsOn] ??= new Set()).add(a);
+    }
+  }
+  let confident = 0;
+  let narrowed = 0;
+  for (const q of QUESTIONS) {
+    const remaining = answersFor(q.id).length - (struck[q.id]?.size ?? 0);
+    if (remaining <= 1) confident++;
+    else if (remaining === 2) narrowed++;
+  }
+  tt.questionsConfident = confident;
+  tt.questionsNarrowed = narrowed;
 }
 
 /** §8: reward sets of 3 from your own pool; M2-B1 adds a neutral splash. */

@@ -962,6 +962,12 @@ export interface Telemetry {
     /** S11.3 fragment-supply keys (the stranger cohort's D2 instruments) */
     boundWitnessFragments?: number;
     distinctEliminations?: number;
+    /** OQ#57 instruments (written at run end): questions with <=1 answer
+     *  left standing (confident) and exactly 2 left (a narrowed gamble) —
+     *  the S11.3 target band's REAL measure, replacing the elimination
+     *  proxy. */
+    questionsConfident?: number;
+    questionsNarrowed?: number;
     /** T-key opens per act — is the board used? (client-reported) */
     boardOpensByAct: Record<number, number>;
     /** sheet-edit churn at the shrine (talk proxy) */
@@ -989,6 +995,9 @@ export interface Telemetry {
      *  (defId → bonus or tier count) — "an axis nobody feeds is a dead
      *  archetype" needs an instrument */
     growth?: Record<string, number>;
+    /** OQ#57 instrument: rite-card PLAYS per seat (S9c gate 2's direction
+     *  read gets its real measure, replacing the realized-growth proxy) */
+    ritePlays?: Record<PlayerId, number>;
   };
 }
 
