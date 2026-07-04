@@ -794,8 +794,11 @@ function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
   }
 }
 
-function randomUnownedRelic(state: GameState): string | null {
+function randomUnownedRelic(state: GameState, exclude?: ReadonlySet<string>): string | null {
+  // S9b.1-1: `exclude` covers relics already stocked in the SAME shop —
+  // ownership alone let the second shop slot duplicate the first.
   const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
+  if (exclude) for (const id of exclude) owned.add(id);
   const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
   const weddable = ALL_RELICS.filter((r) => !owned.has(r.id));
   const usable = pool.length > 0 ? pool.concat(weddable.filter((r) => r.passives?.includes('wedding_knife'))) : weddable;
@@ -1317,7 +1320,8 @@ function rollRewardSet(state: GameState, pid: PlayerId): string[] {
 // Shop (M2-B4)
 // ---------------------------------------------------------------------------
 
-function generateShop(state: GameState) {
+// exported for the S9b.1-1 seed-sweep test (distinct relic slots)
+export function generateShop(state: GameState) {
   const items: GameState['shop'] extends infer _ ? import('./types').ShopItem[] : never = [];
   let n = 0;
   const price = (base: number, spread: number): number => {
@@ -1339,9 +1343,13 @@ function generateShop(state: GameState) {
       });
     }
   }
+  const stocked = new Set<string>();
   for (let i = 0; i < 2; i++) {
-    const relic = randomUnownedRelic(state);
-    if (relic) items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+    const relic = randomUnownedRelic(state, stocked);
+    if (relic) {
+      stocked.add(relic);
+      items.push({ id: `item${n++}`, kind: 'relic', refId: relic, price: price(140, 41), sold: false });
+    }
   }
   // S4.2: the removal service never sells out — one always-present row per
   // player; the live price is removalPrice(state, player), shown per player
