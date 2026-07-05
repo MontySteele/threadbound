@@ -396,6 +396,11 @@ working as intended, not a missing-content bug.
     data. THE telemetry to read first: thread spent/combat, `regenWastedAtCap`,
     spend-mix. Explicitly a design-session call (OQ#26 family).
 
+    **OQ#39 RULED (2026-07-04): CLOSED — base regen stays +2.** The PT3
+    telemetry read stands (beta run: 101 spent ≈ regen, 9 wasted at cap,
+    29 Pulses — a live resource; a +1 nerf would have starved it).
+    Re-open only on a human run showing high waste AND low Pulse together.
+
 40. **Let players Sever an ACTIVE chain link, not just Pulse dead ones** —
     "control where Resonance lands" (designer, live). Today Pulse forces a
     dead link to fire (§14.12); there's no inverse (suppress a firing link to
@@ -420,6 +425,9 @@ working as intended, not a missing-content bug.
     buys is decline-but-stay-on-screen. Quick UI call for the session: drop
     the button (rely on Onward's auto-pass) or keep it as an explicit decline.
     Trivial either way once decided — left as a judgment call, not a bug.
+
+    **OQ#42 RULED (2026-07-04): drop the button** — Onward's auto-pass is
+    the decline. Rides S14.3 (docs/threadbound_sprint_S14_instruments_reanchor.md).
 
 43. **Hex >> Momentum, "especially since you can repeatedly double it"**
     (designer, live). Echoes OQ#28 (the vess-mirror hex engine: Saturate's
@@ -603,6 +611,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     EXECUTE; D10-B pick line = D10 Branch B's EXECUTE) — if the designer
     classification lands differently, S9c's presentation commits already
     cover the stronger branch. **OPEN — designer.**
+    **RULED (2026-07-04): D9 = Branch C** (identity communication failure;
+    C's EXECUTE shipped in S9c, and S9d's grower redesign superseded the
+    mechanical half) — CLOSED, no new work. **D10 classification DEFERRED:**
+    the live read was "not impactful, not understood" (Branch-C class), but
+    both halves were buffed after the observation (growers; braid arrival
+    38–50% at act-2 L3) — re-observe at the next playtest (debrief question
+    2 verbatim, unnamed). The D10-C EXECUTE (full-screen shrine treatment
+    for the pick) stays UNFIRED pending that read.
 
 53. **Linked Shields vs Immovable dominance evidence** filed to the §7
     guard-suite item: 7/6 vs 12/8 at equal cost; the niche (Guard
@@ -639,6 +655,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     Until the cause is found (cores/timing → bot concurrency?), treat
     cross-machine win-rate comparisons as unreliable; deltas within one
     environment hold. **OPEN — infra.**
+    **RULED (2026-07-04): CLOSED-AS-MANAGED.** Absolute win rates are
+    environment-local by standing policy; every gate is a same-environment
+    pooled delta (n≥200 per S14-R5, which also banked the measured
+    cross-invocation floor: ±7–10 pts/100-run leg, 61/99 same-seed flips).
+    The real fix — a socket-free sim path (BotViews built from engine state,
+    lockstep policy calls; per-run reproducibility) — is filed as a named
+    backlog item, to land immediately before the first post-S15 sprint so
+    its forced re-anchor is free.
 
 57. **Instrument gaps named**: "questions provable/run" (S11.3 target
     band) has no harness calculation — distinctEliminations is the proxy;
