@@ -50,7 +50,10 @@ enc({ id: 'a2_elite_unstrung', enemies: ['the_unstrung'], tier: 'elite' });
 // so this is the "eligible for knot encounters" half of the ruling. The
 // braid's fewer-bloodier fights include the guard check either way.
 enc({ id: 'a2_ripper_eater', enemies: ['seamripper', 'psalm_eater'], tier: 'normal' });
-enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper'], tier: 'elite' });
+// Battery-1 sizing (S15 status doc): at x2 the knot read 28-36 hp/combat —
+// mid-low pack, no guard check at all (bb paid LESS there than vb). x3 puts
+// it in named-elite territory; the def's own numbers stay as ruled.
+enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper', 'seamripper'], tier: 'elite' });
 
 // ---- Finale: The Last Braid ----------------------------------------------------
 enc({ id: 'finale_boss', enemies: ['the_unraveled'], tier: 'boss' });
