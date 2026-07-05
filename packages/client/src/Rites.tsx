@@ -80,7 +80,8 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
       ) : (
         <>
           <p>
-            You wear <b>{mine.name}</b>.
+            {/* S14.3 (B20): the worn vestment re-reads on demand */}
+            You wear <b data-gp="META" data-inspect={`rite:${mine.id}`}>{mine.name}</b>.
           </p>
           <p className="muted rite-flavor">{mine.flavor}</p>
           {mine.cardId && CARDS[mine.cardId] && (
@@ -112,7 +113,10 @@ export function RitePips({ state, pid }: { state: ClientState; pid: PlayerId }):
   const born = (state.players[pid].rites ?? [])
     .map((id) => RITES_BY_ID[id])
     .find((r) => r?.kind === 'birth');
-  if (born) return <span className="rite-pips rite-born" title={born.name}>✳</span>;
+  // S14.3 (B20): the worn mark is inspectable and pad-reachable (RELICS
+  // zone, the relic-chip pattern) — recall isn't reveal; the held-reveal
+  // ruling covers the unpicked trio only
+  if (born) return <span className="rite-pips rite-born" title={born.name} data-gp="RELICS" data-inspect={`rite:${born.id}`}>✳</span>;
   const n = Math.min(rs.progress[pid] ?? 0, 2);
   return (
     <span className="rite-pips" title={`${n}/2`}>
