@@ -1521,13 +1521,21 @@ function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw
   let amt = raw + enemy.strength;
   if (enemy.weak > 0) amt = Math.floor(amt * 0.75);
   if (player.statuses.vulnerable > 0) amt = Math.floor(amt * 1.5);
-  if (player.statuses.frayed > 0) amt = Math.floor(amt * (1 + 0.25 * player.statuses.frayed));
   if (amt < 0) amt = 0;
+  // S15.2B (B5 option B, D2 ruled C): the Fray damage bonus stays a pre-block
+  // multiplier below A4 (byte-identical arithmetic), but at A4 it lands PAST
+  // Block — the rung's teeth against turtles. frayBonus is the bypassing part.
+  let frayBonus = 0;
+  if (player.statuses.frayed > 0) {
+    const withFray = Math.floor(amt * (1 + 0.25 * player.statuses.frayed));
+    if (ascensionMods(state.ascension).frayPierces) frayBonus = withFray - amt;
+    else amt = withFray;
+  }
   // S15.2A (B5): a pierce skips the block absorption — every modifier above
   // still applies (Weak IS the counterplay), but nothing banked answers it
   const blocked = pierce ? 0 : Math.min(player.block, amt);
   player.block -= blocked;
-  const hpLoss = amt - blocked;
+  const hpLoss = amt - blocked + frayBonus;
   player.hp = Math.max(0, player.hp - hpLoss);
   if (hpLoss > 0) {
     state.log.push({ e: 'player_hit', player: player.id, hpLoss, blocked });
