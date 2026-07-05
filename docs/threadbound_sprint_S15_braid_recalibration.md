@@ -33,6 +33,21 @@ regens only when forced, loudly.
 Sequencing status: S14 D0–D2 RULED (2026-07-04); this doc's gates
 inherit R1/R2-as-amended/R5 in their recorded forms.
 
+**RULED (2026-07-05), this doc's own D-list:**
+- **D0 RULED:** S15 numbering ratified; work continues in the same
+  session on `claude/sprint-14-15-design-review-6fxjef` (supersedes
+  the `s15-braid-recalibration` branch name above, same precedent as
+  S14). S14-first dependency satisfied — S14 banked at `922bddc`.
+- **D1 RULED:** the Part-1 gate set ratified as written (spread ≤15,
+  bb-vs-vb ±8 headline; non-braid demotes to comparison instrument).
+- **D2 RULED:** option **C, A-first** — after a design analysis of the
+  ramp-scaling alternative (recorded in the S15 status doc): pre-block
+  scaling taxes weak-guard pairs first and is the already-run A2/A4
+  experiment bb read FLAT to; the accepted levers relocate damage
+  past Block instead of resizing it.
+- D3, this doc's D4, and D5 remain open by design — they stall at
+  their battery/sign-off checkpoints.
+
 Companion evidence: docs/S13-DIFFICULTY-REVIEW.md §4–§7,
 docs/REVIEW-SWEEP.md B5, docs/OPEN-QUESTIONS.md #55/#59,
 docs/S9B-S11-STATUS.md (knotwork ledger), and S14's status doc
