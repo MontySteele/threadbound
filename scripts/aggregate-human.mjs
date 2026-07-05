@@ -125,7 +125,10 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   // data mixes pairs, so its Hex share reads as telemetry, not a gate.
   const hexGated = wantPair === 'bv';
   const gates = [
-    { name: 'full-run bot win rate ≤ 40%', value: `${winRate.toFixed(0)}%`, pass: winRate <= 40 },
+    // S14-R1: the 40–55 band is a BOT instrument (vb, A0, default topology);
+    // human win rates are reported, never banded — human data RULES the
+    // bands (OQ#14), not the reverse. The old ≤40% M2 gate retired with R1.
+    { name: 'win rate (human — reported, not banded; S14-R1)', value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {

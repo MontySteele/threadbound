@@ -1,12 +1,14 @@
 // Bot simulation + M2 telemetry gates (M2 Part C): paired bots play full runs
 // through the real server/WS protocol. Usage: node dist/sim.js [runs]
 //
-// Sign-off gates (50-run sim, greedy policy):
-//   - full-run bot win rate ≤ 40%
+// Sign-off gates:
+//   - vb win rate 40–55% at A0, default topology (S14-R1; the M2 ≤40% header
+//     gate retired with that ruling — it was calibrated to draft-v1 bots).
+//     Mirrors and braid rows REPORTED, not banded.
 //   - avg player HP lost per Act 1 combat ≥ 8
 //   - link-fire rate: Act 1 ≥ 30%, Act 2 within 40–60%
 //   - no single tag > 50% of resonance-streak cards
-//   - Hex damage share (incl. HexScaling) 20–30%
+//   - Hex damage share (incl. HexScaling) 25–45% (vb only, S5 gate-4)
 //
 // S13.1a — permanent sim knobs (the OQ#59 decomposition probes, kept). ALL
 // SIM-ONLY: no production surface reads them.
@@ -172,8 +174,16 @@ async function main(): Promise<void> {
   const totalResTags = Object.values(resonanceTags).reduce((a, b) => a + b, 0);
   const maxResTagShare = totalResTags ? Math.max(...Object.values(resonanceTags)) / totalResTags : 0;
 
+  // S14-R1: the win-rate band binds vb at A0 on the DEFAULT topology only —
+  // the 25–35/≤40 bands were calibrated to draft-v1 bots that no longer
+  // exist. Mirrors and braid rows are reported, not banded; human data
+  // rules at the next playtest (OQ#14).
+  const KNOT = process.env.TB_KNOTWORK === '1';
+  const r1Banded = PAIR === 'vb' && ASCEND === 0 && !KNOT;
   const gates: Gate[] = [
-    { name: 'full-run bot win rate ≤ 40%', value: `${winRate.toFixed(0)}%`, pass: winRate <= 40 },
+    r1Banded
+      ? { name: 'vb win rate 40–55% at A0 default topology (S14-R1)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 40 && winRate <= 55 }
+      : { name: `win rate (reported, not banded — S14-R1: ${PAIR}${KNOT ? ' braid' : ''} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
