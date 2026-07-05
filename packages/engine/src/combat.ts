@@ -1322,8 +1322,15 @@ export function resolveTurn(state: GameState): void {
     // Playtest-1 (§14.8): elites and bosses re-tether on their own every 3rd
     // turn — parking one player on guard-soak duty stops being a solved fight.
     // Deterministic cadence: learnable, no hidden rolls.
+    // S14.2 (B13, per R7): enemies whose OWN script moves tethers (a sever
+    // intent — today the Warden of the Crossing and the Bellkeeper) are
+    // exempt: the cadence exists to un-park fights these enemies already
+    // un-park, and the two cancelling in one enemy phase read as a bug
+    // (seed-1007 log). Accepted knowingly as a small behavior change: on
+    // turns where the two did NOT coincide, these enemies now re-tether less.
     const selfDef = ENEMIES[enemy.defId];
-    if ((selfDef.elite || selfDef.boss) && combat.turn % 3 === 0 && enemy.boundTo !== null) {
+    const movesOwnTether = selfDef.script.some((i) => i.kind === 'sever');
+    if ((selfDef.elite || selfDef.boss) && !movesOwnTether && combat.turn % 3 === 0 && enemy.boundTo !== null) {
       const other = otherPlayer(enemy.boundTo);
       if (!state.players[other].fallen) {
         enemy.boundTo = other;
