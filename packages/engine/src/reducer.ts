@@ -1109,17 +1109,16 @@ function resolveLoomVerdict(state: GameState): void {
         }
         state.log.push({ e: 'info', detail: 'The loom mends what it recognizes — both heal 6.' });
         break;
-      case 'covetEach':
-        // S8.2 PROVISIONAL — DESIGNER QUESTION: q_came named true → each
-        // player gains 1 Covet charge (motive-flavored: the loom answers the
-        // reason you came by sharpening what you may claim on the way down).
-        // Cap-respecting via covetMax. Alternatives for the S8.8 sign-off:
-        // flat gold, a stake-rarity nudge, or a motive-keyed relic pool.
-        for (const pid of ['p1', 'p2'] as PlayerId[]) {
-          const p = state.players[pid];
-          p.covetCharges = Math.min(covetMax(p), p.covetCharges + 1);
-        }
-        state.log.push({ e: 'info', detail: 'The loom knows why you came — and leans the shrine’s hunger toward you. Each of you gains a Covet charge.' });
+      case 'pendingThread':
+        // S14.3 (B4, RULED 2026-07-04 as S14-R8): q_came named true → the
+        // loom leans toward you — +2 Thread when the finale begins
+        // (pendingThread is consumed at the next combat start, and the
+        // shrine sits after the run's last reward screen, so the next
+        // combat IS the finale). Replaces the S8.2 covetEach payoff, which
+        // was unspendable where it landed. Line states the real gain
+        // (Witness-never-lies fence); PROVISIONAL until the witness read.
+        state.pendingThread += 2;
+        state.log.push({ e: 'info', detail: 'The loom knows why you came — and leans toward you. The Thread arrives 2 deeper at the last fight.' });
         break;
     }
   }

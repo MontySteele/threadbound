@@ -16,9 +16,11 @@ import { AnswerDef, QuestionDef } from '../types';
 
 export const QUESTIONS: QuestionDef[] = [
   { id: 'q_who', text: 'Who are you?', kind: 'self', payoff: 'healEach' },
-  // S8.2: q_came's payoff is PROVISIONAL (designer question) — a true naming
-  // leans the shrine's hunger toward the pair: +1 Covet charge each.
-  { id: 'q_came', text: 'Why did you come?', kind: 'self', payoff: 'covetEach' },
+  // S14.3 (B4, RULED 2026-07-04 as S14-R8): a true naming leans the loom
+  // toward the pair — +2 Thread for the finale (pendingThread). The S8.2
+  // covetEach payoff was unspendable where it landed: the shrine sits after
+  // the run's last reward screen (loom → rest → shop → boss).
+  { id: 'q_came', text: 'Why did you come?', kind: 'self', payoff: 'pendingThread' },
   { id: 'q_what', text: 'What happened here?', kind: 'world', payoff: 'bossFace' },
   { id: 'q_why', text: 'Why did it happen?', kind: 'world', payoff: 'bossMechanic' },
 ];

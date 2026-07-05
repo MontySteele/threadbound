@@ -484,7 +484,10 @@ export interface QuestionDef {
    *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
    *  healEach (provisional heal 6 each). S8.2 adds covetEach (q_came true →
    *  +1 Covet charge each, cap-respecting — PROVISIONAL, designer question). */
-  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'covetEach';
+  /** S14.3 (B4, per R8): q_came re-keyed covetEach → pendingThread — the
+   *  Covet charge was unspendable where it landed (the shrine sits after
+   *  the run's last reward screen). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'pendingThread';
 }
 
 export interface AnswerDef {

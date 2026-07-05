@@ -32,7 +32,7 @@ describe('truth content covenant (S8.2 scope)', () => {
     expect(QUESTIONS_BY_ID.q_what.payoff).toBe('bossFace');
     expect(QUESTIONS_BY_ID.q_why.payoff).toBe('bossMechanic');
     expect(QUESTIONS_BY_ID.q_who.payoff).toBe('healEach');
-    expect(QUESTIONS_BY_ID.q_came.payoff).toBe('covetEach');
+    expect(QUESTIONS_BY_ID.q_came.payoff).toBe('pendingThread'); // S14.3 (B4, R8)
   });
 
   it('every answer carries sheet text and a codex entry', () => {
@@ -456,7 +456,7 @@ describe("the Loom's Eye (S6.4)", () => {
     const tuple = state.truth!.tuple;
     state.players.p1.hp = 30;
     state.players.p2.hp = 30;
-    const covetBefore = { p1: state.players.p1.covetCharges, p2: state.players.p2.covetCharges };
+    const pendingBefore = state.pendingThread;
     let s = state;
     for (const q of ['q_who', 'q_came', 'q_what', 'q_why']) {
       s = reduce(s, { type: 'LOOM_SHEET_SET', player: 'p1', questionId: q, answerId: tuple[q] });
@@ -469,9 +469,9 @@ describe("the Loom's Eye (S6.4)", () => {
     expect(s.truth!.reveals).toEqual({ bossFace: true, bossMechanic: true, openingIntent: true });
     expect(s.players.p1.hp).toBe(36); // healEach payoff
     expect(s.players.p2.hp).toBe(36);
-    // S8.2 provisional covetEach payoff: +1 Covet charge each, cap-respecting
-    expect(s.players.p1.covetCharges).toBe(Math.min(2, covetBefore.p1 + 1));
-    expect(s.players.p2.covetCharges).toBe(Math.min(2, covetBefore.p2 + 1));
+    // S14.3 (B4, R8): q_came true → the loom leans toward you, +2 Thread
+    // banked for the finale (consumed at the next combat start)
+    expect(s.pendingThread).toBe(pendingBefore + 2);
     expect([...s.players.p1.relics, ...s.players.p2.relics]).toContain(shrine.stakeRelicId!);
   });
 
