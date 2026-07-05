@@ -278,28 +278,44 @@ export function applyHookOp(state: GameState, p: PlayerState, eff: HookOp): void
 // Static link / Resonance computation (§2.3)
 // ---------------------------------------------------------------------------
 
-export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
-  const severed = (state.combat?.severedTurns ?? 0) > 0; // Unraveled (§6)
-  const fired = chain.map((slot, i) => {
-    if (i === 0) return false;
-    const def = effectiveDef(mustFind(state, slot));
-    if (!def.link) return false;
-    const prev = chain[i - 1];
+/** S14.2 (B14): the ONE link computation, pure over aligned defs/owners —
+ *  resolution, the client preview, and bot planning all call this (the
+ *  three hand-rolled copies in bot-policy drifted: Choir Silence
+ *  blindness was the bug the duplication caused). */
+export function computeLinksFiredFrom(
+  defs: readonly CardDef[], owners: readonly PlayerId[], severed: boolean, silenceFirst: boolean,
+): boolean[] {
+  const fired = defs.map((def, i) => {
+    if (i === 0 || !def.link) return false;
     // a severed Thread carries no links between the two of you (§6)
-    if (severed && prev.owner !== slot.owner) return false;
-    if (def.link.condition === 'partner') return prev.owner !== slot.owner;
+    if (severed && owners[i - 1] !== owners[i]) return false;
+    if (def.link.condition === 'partner') return owners[i - 1] !== owners[i];
     if (def.link.condition === 'any') return true;
-    const prevDef = effectiveDef(mustFind(state, prev));
-    return prevDef.tag === def.link.condition;
+    return defs[i - 1].tag === def.link.condition;
   });
   // S10a Choir Silence: while it stands, the FIRST link each turn doesn't
-  // fire (a held pause). Computed here so the planning UI shows the truth;
+  // fire (a held pause). Computed here so every caller shows the truth;
   // a Pulse still punches through (forcing happens downstream of this).
-  if (state.combat?.enemies.some((e) => e.hp > 0 && ENEMIES[e.defId]?.silencesFirstLink)) {
+  if (silenceFirst) {
     const first = fired.findIndex(Boolean);
     if (first >= 0) fired[first] = false;
   }
   return fired;
+}
+
+/** S14.2 (B14): does a standing enemy hold the first link? Shared by the
+ *  engine path and bot planning (bots read the same redacted enemy list). */
+export function silencesFirstLinkActive(enemies: readonly { hp: number; defId: string }[] | undefined): boolean {
+  return !!enemies?.some((e) => e.hp > 0 && ENEMIES[e.defId]?.silencesFirstLink);
+}
+
+export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
+  return computeLinksFiredFrom(
+    chain.map((slot) => effectiveDef(mustFind(state, slot))),
+    chain.map((slot) => slot.owner),
+    (state.combat?.severedTurns ?? 0) > 0, // Unraveled (§6)
+    silencesFirstLinkActive(state.combat?.enemies),
+  );
 }
 
 /** S9c.6: the size of the PRIMARY effect a slot will resolve with (link

@@ -16,7 +16,7 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
-import { applyGrowth, computeResonanceSlots, escalationFactor } from './combat';
+import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, silencesFirstLinkActive } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -73,6 +73,14 @@ export interface BotPolicyOptions {
 /** S13.1a: the true starter size the pick-cap gate anchors on. Pinned by
  *  test so a starter-deck change can't silently skew the deck-size sweep. */
 export const STARTER_DECK_SIZE = 10;
+
+/** S14.2 (B14): bot link-planning shares the engine's link computation —
+ *  the drift bug this kills is Choir Silence blindness (bots staged into
+ *  the held link and could never Pulse it). */
+function linksFiredIn(view: BotView, defs: readonly CardDef[], owners: readonly PlayerId[]): boolean[] {
+  const combat = view.combat!;
+  return computeLinksFiredFrom(defs, owners, combat.severedTurns > 0, silencesFirstLinkActive(combat.enemies));
+}
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
   const p = view.players[owner];
@@ -335,15 +343,11 @@ export class BotPolicy {
       return { type: 'SET_READY', player: you, ready: true };
     }
 
-    // The same link bookkeeping the human UI previews: where would links fire?
+    // The same link bookkeeping the human UI previews — the engine's own
+    // computation (S14.2 B14), so the suppression is planned around too
     const chainDefs = combat.chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const satisfies = (def: CardDef, prevDef: CardDef | null, prevOwner: PlayerId | null, owner: PlayerId): boolean => {
-      if (!def.link || !prevDef || prevOwner === null) return false;
-      if (severed && prevOwner !== owner) return false;
-      if (def.link.condition === 'partner') return prevOwner !== owner;
-      if (def.link.condition === 'any') return true;
-      return prevDef.tag === def.link.condition;
-    };
+    const chainOwners = combat.chain.map((s) => s.owner);
+    const baseFired = linksFiredIn(view, chainDefs, chainOwners);
 
     // pick best (card, position): fire own link, enable the next card's link,
     // never break a link that currently fires
@@ -351,15 +355,14 @@ export class BotPolicy {
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
-        const prevDef = pos > 0 ? chainDefs[pos - 1] : null;
-        const prevOwner = pos > 0 ? combat.chain[pos - 1].owner : null;
-        const fires = satisfies(card.def, prevDef, prevOwner, you) ? 2 : 0;
+        const defsWith = [...chainDefs.slice(0, pos), card.def, ...chainDefs.slice(pos)];
+        const ownersWith = [...chainOwners.slice(0, pos), you, ...chainOwners.slice(pos)];
+        const firedWith = linksFiredIn(view, defsWith, ownersWith);
+        const fires = firedWith[pos] ? 2 : 0;
         let next = 0;
         if (pos < combat.chain.length) {
-          const nextSlot = combat.chain[pos];
-          const nextDef = chainDefs[pos];
-          const firedBefore = satisfies(nextDef, prevDef, prevOwner, nextSlot.owner);
-          const firesAfter = satisfies(nextDef, card.def, you, nextSlot.owner);
+          const firedBefore = baseFired[pos];
+          const firesAfter = firedWith[pos + 1];
           if (firedBefore && !firesAfter) next = -3; // never break a firing link
           else if (!firedBefore && firesAfter) next = 1.5; // enable the next card
         }
@@ -420,16 +423,10 @@ export class BotPolicy {
     const chain = combat.chain;
     if (chain.length < 2) return null;
     if (!this.maySpend(view, 2, 'pulse')) return null;
-    const severed = combat.severedTurns > 0;
     const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const fired = chain.map((slot, i) => {
-      const def = defs[i];
-      if (i === 0 || !def.link) return false;
-      if (severed && chain[i - 1].owner !== slot.owner) return false;
-      if (def.link.condition === 'partner') return chain[i - 1].owner !== slot.owner;
-      if (def.link.condition === 'any') return true;
-      return defs[i - 1].tag === def.link.condition;
-    });
+    // S14.2 (B14): the engine's computation — a Choir-Silence-held link now
+    // reads unfired here, which makes it exactly what Pulse exists to force
+    const fired = linksFiredIn(view, defs, chain.map((s) => s.owner));
     const pulsed = new Set(
       combat.threadActions.filter((t) => t.kind === 'pulse').map((t) => t.targetId),
     );
@@ -463,23 +460,11 @@ export class BotPolicy {
     const combat = view.combat!;
     const chain = combat.chain;
     if (chain.length < 2) return null;
-    const severed = combat.severedTurns > 0;
     const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const firesAt = (order: number[]): number => {
-      let n = 0;
-      for (let i = 1; i < order.length; i++) {
-        const def = defs[order[i]];
-        const prev = chain[order[i - 1]];
-        const prevDef = defs[order[i - 1]];
-        const owner = chain[order[i]].owner;
-        if (!def.link) continue;
-        if (severed && prev.owner !== owner) continue;
-        if (def.link.condition === 'partner' ? prev.owner !== owner
-          : def.link.condition === 'any' ? true
-          : prevDef.tag === def.link.condition) n++;
-      }
-      return n;
-    };
+    // S14.2 (B14): permuted orders priced by the engine's computation
+    const firesAt = (order: number[]): number =>
+      linksFiredIn(view, order.map((i) => defs[i]), order.map((i) => chain[i].owner))
+        .filter(Boolean).length;
     const identity = chain.map((_, i) => i);
     const baseline = firesAt(identity);
     let best: { from: number; to: number; gain: number } | null = null;
