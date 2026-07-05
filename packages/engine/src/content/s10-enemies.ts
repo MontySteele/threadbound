@@ -101,7 +101,8 @@ export const S10_ENEMIES: EnemyDef[] = [
       { kind: 'attack', amount: 10 },
     ],
     exhaustsDiscardEvery: 3,
-    mechanicLine: 'every 3rd turn it feeds on the unburied — the top of its bound one’s discard is exhausted',
+    // S14.3 (B8) trim, PROVISIONAL until the D4 sign-off
+    mechanicLine: 'every 3rd turn it eats the top of its bound one’s discard',
     flavor: 'The other sexton buried what stayed dead. This one keeps what was left lying out.',
   },
 
@@ -150,7 +151,8 @@ export const S10_ENEMIES: EnemyDef[] = [
     ],
     silencesFirstLink: true,
     // punisher, normal-tier exception — watch it in the battery (gate 4)
-    mechanicLine: 'while it stands, the first link each turn does not fire (a Pulse still forces one)',
+    // S14.3 (B8) trim, PROVISIONAL until the D4 sign-off
+    mechanicLine: 'the first link each turn is held — a Pulse still forces it',
     flavor: 'The held breath between verses, standing up and refusing to sit back down.',
   },
 
@@ -168,7 +170,8 @@ export const S10_ENEMIES: EnemyDef[] = [
       { kind: 'block', amount: 12 },
       { kind: 'read_chain', amount: 8, fray: 1 },
     ],
-    mechanicLine: 'it reads the Chain — Resonate and the Thread Frays; hold the harmony back and it strikes twice',
+    // S14.3 (B8) trim — the intent restates the dilemma; PROVISIONAL until the D4 sign-off
+    mechanicLine: 'Resonate and the Thread Frays; hold back and it strikes twice',
     flavor: 'It had a thread once. It listens for yours the way the deaf watch mouths.',
   },
 ];

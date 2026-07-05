@@ -74,6 +74,8 @@ export const ENEMIES: Record<string, EnemyDef> = {
     elite: true,
     hp: [70, 78],
     mournerMechanic: { strengthPerTrigger: 2 }, // §6: punishes 4+ same-player runs
+    // S14.3 (B9) backfill, PROVISIONAL until the D4 sign-off
+    mechanicLine: 'a Chain run of 4+ from one hand feeds it — +2 Strength that turn',
     script: [
       { kind: 'attack', amount: 8 },
       { kind: 'debuff_weak', amount: 2 },
