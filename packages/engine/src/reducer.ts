@@ -1011,11 +1011,14 @@ function grantRelic(state: GameState, pid: PlayerId, relicId: string, source: Re
 function randomUnownedRelic(state: GameState, exclude?: ReadonlySet<string>): string | null {
   // S9b.1-1: `exclude` covers relics already stocked in the SAME shop —
   // ownership alone let the second shop slot duplicate the first.
+  // S14.2 (B16, per R6): the knife drops normally — RATIFIED. The old
+  // "exclusion" filtered it out and then concatenated it straight back
+  // (self-cancelling dead logic); this plain pool is distribution-identical
+  // but not rng-stream-identical, riding the S14.2 regen window. The
+  // shrine's stakeRelic exclusion is real and stays.
   const owned = new Set([...state.players.p1.relics, ...state.players.p2.relics]);
   if (exclude) for (const id of exclude) owned.add(id);
-  const pool = ALL_RELICS.filter((r) => !owned.has(r.id) && !r.passives?.includes('wedding_knife'));
-  const weddable = ALL_RELICS.filter((r) => !owned.has(r.id));
-  const usable = pool.length > 0 ? pool.concat(weddable.filter((r) => r.passives?.includes('wedding_knife'))) : weddable;
+  const usable = ALL_RELICS.filter((r) => !owned.has(r.id));
   if (usable.length === 0) return null;
   // PT2/OQ#29: rare relics carry 1/3 weight (non-rares entered thrice)
   const weighted = usable.flatMap((rel) => (rel.rare ? [rel] : [rel, rel, rel]));
