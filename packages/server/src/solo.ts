@@ -17,6 +17,13 @@ export class SoloBotDriver {
 
   constructor(
     public seat: PlayerId,
+    /** S14.2 (B15): the room's TRUE seed, server-side out-of-band — the
+     *  driver used to read view.seed, which redactFor masks to 0 while the
+     *  run is live (§11), so every solo run's partner played identical
+     *  seeded choices at identical contexts (and delayFor's jitter was
+     *  constant). The redaction and the wire are untouched: the driver is
+     *  server-side and may know what the server knows. */
+    private getSeed: () => number,
     private getSpeed: () => BotSpeed,
     private submit: (action: Action) => void,
   ) {
@@ -51,9 +58,10 @@ export class SoloBotDriver {
   private schedule(view: BotView): void {
     if (this.stopped) return;
     if (this.pending) clearTimeout(this.pending);
-    // policy seed derives from the run seed: decisions are reproducible across
-    // reconnects and server restarts without persisting driver state
-    this.policy.seed = (view.seed ^ 0x501f) >>> 0;
+    // policy seed derives from the run seed (the TRUE one, B15): decisions
+    // are reproducible across reconnects and server restarts without
+    // persisting driver state — and now actually vary run to run
+    this.policy.seed = (this.getSeed() ^ 0x501f) >>> 0;
     const action = this.policy.decide(view);
     if (!action) {
       this.pending = null;
@@ -71,8 +79,9 @@ export class SoloBotDriver {
    *  everything else lands fast enough to plan around. */
   private delayFor(view: BotView, action: Action): number {
     if (this.getSpeed() === 'instant') return 0;
-    if (action.type === 'SET_READY') return 1700 + (view.seed % 500);
-    if (view.phase === 'combat') return 550 + ((view.seed >> 3) % 350);
-    return 700 + ((view.seed >> 5) % 400);
+    const seed = this.getSeed(); // B15: view.seed was masked 0 — constant jitter
+    if (action.type === 'SET_READY') return 1700 + (seed % 500);
+    if (view.phase === 'combat') return 550 + ((seed >> 3) % 350);
+    return 700 + ((seed >> 5) % 400);
   }
 }
