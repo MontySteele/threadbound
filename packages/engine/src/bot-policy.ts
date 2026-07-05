@@ -326,6 +326,12 @@ export class BotPolicy {
           return pulse;
         }
       }
+      // S14.2 (B24): Steady, considered only after Pulse has passed — the
+      // "no higher-scoring Thread action exists" clause is this ordering
+      if (!anyFallen && !severed) {
+        const steady = this.trySteady(view);
+        if (steady) return steady;
+      }
       // S7.8 gate-5 sim accommodation: with thread to spare, sometimes pull a
       // partner card across (state-pure roll — deterministic per situation)
       if (this.reclaimNudge && !anyFallen && !severed && this.reclaimedTurn !== combat.turn
@@ -412,6 +418,28 @@ export class BotPolicy {
         return a + raw + e.strength;
       }, 0);
     return me.hp - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+  }
+
+  /** S14.2 (B24, SIM-ONLY): Steady had literally never been spent by a bot —
+   *  every battery on record read a structural zero, so the stat measured
+   *  nothing. Minimal deterministic heuristic, considered only after Pulse
+   *  (the higher-scoring action) has passed: scrub active Fray stacks, or
+   *  pre-bank the shield when the pool is scraping bottom (remaining ≤ 1
+   *  after declared spends — the next overdraft would Fray). Never fires in
+   *  solo mode: no production surface changes. */
+  private trySteady(view: BotView): Action | null {
+    if (this.mode !== 'sim') return null;
+    const combat = view.combat!;
+    if (combat.threadActions.some((t) => t.kind === 'steady')) return null; // one is enough
+    const declared = combat.threadActions.reduce(
+      (a, t) => a + (t.kind === 'sever' ? 3 : t.kind === 'steady' ? 1 : 2), 0);
+    const remaining = view.thread - declared;
+    const frayLine = view.ascension >= 4 ? 1 : 0; // S4.4: A4 raises the Fray line
+    if (remaining - 1 < frayLine) return null; // paying would itself Fray
+    const frayedNow = view.players.p1.statuses.frayed > 0 || view.players.p2.statuses.frayed > 0;
+    const scrapingBottom = remaining <= 1 && combat.steadyShield === 0;
+    if (!frayedNow && !scrapingBottom) return null;
+    return { type: 'DECLARE_THREAD', player: view.you, kind: 'steady' };
   }
 
   /** §14.12: score each staged card whose Link won't fire — link payoff value
