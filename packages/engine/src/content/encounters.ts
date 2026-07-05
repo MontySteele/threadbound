@@ -50,10 +50,13 @@ enc({ id: 'a2_elite_unstrung', enemies: ['the_unstrung'], tier: 'elite' });
 // so this is the "eligible for knot encounters" half of the ruling. The
 // braid's fewer-bloodier fights include the guard check either way.
 enc({ id: 'a2_ripper_eater', enemies: ['seamripper', 'psalm_eater'], tier: 'normal' });
-// Battery-1 sizing (S15 status doc): at x2 the knot read 28-36 hp/combat —
-// mid-low pack, no guard check at all (bb paid LESS there than vb). x3 puts
-// it in named-elite territory; the def's own numbers stay as ruled.
-enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper', 'seamripper'], tier: 'elite' });
+// Sizing history (S15 status doc, battery checkpoints): x2 read 28-36
+// hp/combat — no guard check; x3 read 56-69 (hottest elite in the game)
+// and broke the R1 band on vb default via the shared classic elite pool.
+// Settled: x2 bodies with the def's damage MIX shifted pierce-ward — the
+// differential (unpreventable) share is what checks guard pairs; the
+// absolute total is what bled everyone at x3.
+enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper'], tier: 'elite' });
 
 // ---- Finale: The Last Braid ----------------------------------------------------
 enc({ id: 'finale_boss', enemies: ['the_unraveled'], tier: 'boss' });

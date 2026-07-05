@@ -19,11 +19,15 @@ export const S15_ENEMIES: EnemyDef[] = [
     name: 'The Seamripper',
     act: 2,
     hp: [42, 48],
+    // Battery-2 checkpoint re-mix: pierce 6→7, plain 11→9 — the loop's
+    // unpreventable share rises (12+11 → 14+9) while total heat stays in
+    // the normal-tier range. The differential is the lever; the total is
+    // the collateral (x3 battery taught this the expensive way).
     script: [
-      { kind: 'attack_pierce', amount: 6 },
+      { kind: 'attack_pierce', amount: 7 },
       { kind: 'block', amount: 8 },
-      { kind: 'attack', amount: 11 },
-      { kind: 'attack_pierce', amount: 6 },
+      { kind: 'attack', amount: 9 },
+      { kind: 'attack_pierce', amount: 7 },
     ],
     mechanicLine: 'its needle passes under Block — banked guard will not stop it',
     flavor: 'It has never met a seam it respected, and it does not consider your guard a special case.',
