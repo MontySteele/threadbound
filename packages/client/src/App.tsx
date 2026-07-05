@@ -926,6 +926,8 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 const TELEGRAPH: Record<string, string> = {
   attack: 'tel-attack', attack_all: 'tel-attack', attack_momentum: 'tel-attack',
   attack_drain: 'tel-attack', attack_fray: 'tel-attack',
+  // S15.2A: the one way through Block gets its own tint (design law)
+  attack_pierce: 'tel-pierce',
   // S10a The Unstrung: the dilemma read is an attack-or-Fray fork — it wears
   // the attack tint so the one intent that most wants attention has one
   read_chain: 'tel-attack',
@@ -1502,6 +1504,8 @@ function intentText(intent: any, strength: number, weak = 0): string {
     case 'attack_momentum': return `⚔ ${s(intent.base)} + 2×your Momentum${w}`;
     case 'attack_drain': return `⚔ ${s(intent.amount)} & drains ${intent.threadDrain} Thread${w}`;
     case 'attack_fray': return `⚔ ${s(intent.amount)} & FRAYS${w}`;
+    // S15.2A: the telegraph states the whole mechanic — Block won't answer it
+    case 'attack_pierce': return `⚔ ${s(intent.amount)} PIERCES — Block won't stop it${w}`;
     case 'block': return `🛡 ${intent.amount}`;
     case 'block_all': return `🛡 ${intent.amount} ALL`;
     case 'buff_strength': return `${GLYPH.strength} Str ${intent.amount}`;

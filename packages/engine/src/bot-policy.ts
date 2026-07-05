@@ -358,6 +358,15 @@ export class BotPolicy {
     // pick best (card, position): fire own link, enable the next card's link,
     // never break a link that currently fires
     const lowHp = me.hp < me.maxHp * 0.55;
+    // S15.2A (B5): read the pierce telegraph — Block resets each turn, so a
+    // Guard card banked into a turn where EVERY incoming hit pierces is a
+    // wasted play. The low-HP guard preference inverts to a small malus.
+    // (attack_all threatens this seat regardless of binding; read_chain is a
+    // fork, left out — its no-Resonance branch is still blockable.)
+    const threats = combat.enemies.filter((e) =>
+      e.hp > 0 && e.intent.kind.startsWith('attack')
+      && (e.boundTo === you || e.intent.kind === 'attack_all'));
+    const pierceOnly = threats.length > 0 && threats.every((e) => e.intent.kind === 'attack_pierce');
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
@@ -372,7 +381,7 @@ export class BotPolicy {
           if (firedBefore && !firesAfter) next = -3; // never break a firing link
           else if (!firedBefore && firesAfter) next = 1.5; // enable the next card
         }
-        const guardBonus = lowHp && card.def.tag === 'Guard' ? 2.5 : 0;
+        const guardBonus = card.def.tag === 'Guard' ? (pierceOnly ? -1.5 : lowHp ? 2.5 : 0) : 0;
         // keep the Hex→detonate axis alive even when other links outshine it
         const cardText = JSON.stringify(card.def.base) + JSON.stringify(card.def.link?.effects ?? []);
         const isVess = view.players[you].character === 'vess';
@@ -408,16 +417,19 @@ export class BotPolicy {
     if (this.mode !== 'solo' || view.thread - cost >= 5) return true;
     if (kind === 'pulse') return false;
     const me = view.players[view.you];
-    const incoming = view.combat!.enemies
+    // S15.2A: pierce damage bypasses block — split it out of the mitigated sum
+    let incoming = 0;
+    let pierceIncoming = 0;
+    for (const e of view.combat!.enemies) {
       // S10a read_chain counts as a threat (its no-resonance branch is ×2 —
       // read conservatively as one hit here, same as `times` elsewhere)
-      .filter((e) => e.hp > 0 && e.boundTo === view.you
-        && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))
-      .reduce((a, e) => {
-        const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
-        return a + raw + e.strength;
-      }, 0);
-    return me.hp - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+      if (!(e.hp > 0 && e.boundTo === view.you
+        && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))) continue;
+      const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
+      if (e.intent.kind === 'attack_pierce') pierceIncoming += raw + e.strength;
+      else incoming += raw + e.strength;
+    }
+    return me.hp - pierceIncoming - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
   }
 
   /** S14.2 (B24, SIM-ONLY): Steady had literally never been spent by a bot —

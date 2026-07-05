@@ -1368,6 +1368,9 @@ function enterNode(state: GameState): void {
         state.pendingThread = 0;
       }
       if (enc.id === 'a1_elite_mourner') sayWitness(state, 'elite_mourner_intro');
+      // S15.2A: the pierce telegraph in the Witness's voice — pool exhausts
+      // after 3 meetings (no-repeat-within-run), then falls silent
+      else if (enc.enemies.includes('seamripper')) sayWitness(state, 'seamripper_intro');
       else if (node.kind !== 'combat') sayWitness(state, 'combat_start');
       // solo profile is chattier (S2.1); co-op keeps the sparse 25%
       else maybeSayWitness(state, 'combat_start', state.botSeat ? 40 : 25);

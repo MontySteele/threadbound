@@ -290,6 +290,10 @@ export type EnemyIntent =
   | { kind: 'attack_momentum'; base: number; perMomentum: number }
   | { kind: 'attack_drain'; amount: number; threadDrain: number }
   | { kind: 'attack_fray'; amount: number } // hits and inflicts Fray on both (§6 Unraveled kit)
+  /** S15.2A (sweep B5, D2 ruled C/A-first): post-block damage — the roster's
+   *  ONE way through Block. Attacker/target modifiers (Strength, Weak,
+   *  Vulnerable, Fray) still apply; only the block absorption is skipped. */
+  | { kind: 'attack_pierce'; amount: number }
   | { kind: 'block'; amount: number }
   | { kind: 'block_all'; amount: number } // blocks self AND allies
   | { kind: 'buff_strength'; amount: number }

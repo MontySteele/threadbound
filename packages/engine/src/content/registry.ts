@@ -12,6 +12,7 @@ import { VESS_S13_RARES, BRAM_S13_RARES } from './s13-rares';
 import { NEUTRAL_CARDS, RELICS } from './neutral-relics-m2';
 import { M2_ENEMIES, M2_EVENTS } from './m2-world';
 import { S10_ENEMIES } from './s10-enemies';
+import { S15_ENEMIES } from './s15-enemies';
 import { CLUE_EVENTS } from './clue-events';
 import { RITE_CARDS } from './rites';
 import { CHARACTER_EVENTS } from './character-events';
@@ -46,7 +47,7 @@ export const LOCKED_CARDS: Set<string> = new Set();
 // ---- enemies ----------------------------------------------------------------
 
 export const ENEMIES: Record<string, EnemyDef> = { ...M1_ENEMIES };
-for (const e of [...M2_ENEMIES, ...S10_ENEMIES]) {
+for (const e of [...M2_ENEMIES, ...S10_ENEMIES, ...S15_ENEMIES]) {
   if (ENEMIES[e.id]) throw new Error(`duplicate enemy id ${e.id}`);
   ENEMIES[e.id] = e;
 }

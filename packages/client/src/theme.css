@@ -34,6 +34,9 @@
   --thread-gold: var(--thread); /* the Witness channel on the Tapestry (nt slice, ruling 8) */
   --witness: #b9a8d4;      /* the Witness's voice (lavender; gold is its Tapestry channel) */
   --enemy-warm: #e0a060;   /* enemy intents / targets / crossed choices */
+  --pierce: #f0e6da;       /* S15.2A: the pierce telegraph — bone-bright,
+                              deliberately outside every faction hue (and off
+                              the seat cyans; the B7 palette question stands) */
 
   /* type: serif for names/Witness, system workhorse for UI */
   --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;

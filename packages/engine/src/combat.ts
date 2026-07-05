@@ -1455,6 +1455,12 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       state.thread = Math.max(0, state.thread - intent.threadDrain);
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} and drains ${intent.threadDrain} Thread` });
       break;
+    case 'attack_pierce':
+      // S15.2A (sweep B5, D2 ruled C/A-first): the roster's one way through
+      // Block — the hit lands past the guard; Weak/kill-priority answer it
+      hitPlayer(state, enemy, bound, intent.amount, true);
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `strikes PAST ${bound.id}'s guard for ${intent.amount}` });
+      break;
     case 'attack_fray':
       hitPlayer(state, enemy, bound, intent.amount);
       // OQ#46: enemy-applied Fray takes hold at the start of the players' next
@@ -1510,14 +1516,16 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
   }
 }
 
-function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw: number): void {
+function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw: number, pierce = false): void {
   if (player.fallen) return;
   let amt = raw + enemy.strength;
   if (enemy.weak > 0) amt = Math.floor(amt * 0.75);
   if (player.statuses.vulnerable > 0) amt = Math.floor(amt * 1.5);
   if (player.statuses.frayed > 0) amt = Math.floor(amt * (1 + 0.25 * player.statuses.frayed));
   if (amt < 0) amt = 0;
-  const blocked = Math.min(player.block, amt);
+  // S15.2A (B5): a pierce skips the block absorption — every modifier above
+  // still applies (Weak IS the counterplay), but nothing banked answers it
+  const blocked = pierce ? 0 : Math.min(player.block, amt);
   player.block -= blocked;
   const hpLoss = amt - blocked;
   player.hp = Math.max(0, player.hp - hpLoss);

@@ -126,6 +126,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .enemy.untargetable { opacity: 0.55; border-style: dotted; cursor: default; }
 .enemy.targetable { cursor: crosshair; box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 40%, transparent); }
 .enemy.tel-attack { box-shadow: inset 0 -3px 0 var(--strike); }
+/* S15.2A: pierce wears its OWN tint (design law: telegraphed, legible) */
+.enemy.tel-pierce { box-shadow: inset 0 -3px 0 var(--pierce); }
 .enemy.tel-guard { box-shadow: inset 0 -3px 0 var(--guard); }
 .enemy.tel-buff { box-shadow: inset 0 -3px 0 var(--rite); }
 .enemy.tel-debuff { box-shadow: inset 0 -3px 0 var(--hex); }
