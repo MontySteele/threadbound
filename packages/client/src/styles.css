@@ -560,7 +560,10 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 
 /* nt-slice S6.5: boss mechanic reveals (shrine-earned) + hidden-mechanic
    telegraph whisper on the enemy panel */
-.mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); }
+/* S14.3 (B8): mechanic text must not blow out the enemy frame — the longest
+   S10a lines ran ~94 chars against a ~178px frame standard. The cap binds
+   the TEXT, not the frame; the three longest lines also trimmed (D4 table). */
+.mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); max-width: 26ch; margin-left: auto; margin-right: auto; }
 .mech-telegraph { margin-top: 3px; font-size: 0.82em; font-style: italic; color: var(--text-dim); animation: telegraph-pulse 1.6s ease-in-out infinite; }
 @keyframes telegraph-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 

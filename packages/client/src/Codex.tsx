@@ -43,7 +43,9 @@ export function CodexScreen({ onClose }: { onClose: () => void }): JSX.Element {
                 truths.has(a.id) ? (
                   <div key={a.id} className="codex-entry codex-truth">✦ {a.codexTruthEntry}</div>
                 ) : elims.has(a.id) ? (
-                  <div key={a.id} className="codex-entry codex-elim">✕ Never this: <s>{a.text}</s></div>
+                  // S14.3 (B18): per-descent phrasing — truths vary run to
+                  // run, so a later descent could prove a "never" true
+                  <div key={a.id} className="codex-entry codex-elim">✕ Not that descent: <s>{a.text}</s></div>
                 ) : (
                   // an unproven answer: the slot is visible, the content is not
                   <div key={a.id} className="codex-entry codex-slot">▢ ·····</div>
