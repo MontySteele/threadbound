@@ -1035,6 +1035,7 @@ function describeIntent(it: EnemyIntent): string {
     case 'attack_momentum': return `${it.base}+ damage, growing with Momentum`;
     case 'attack_drain': return `${it.amount} damage and a drain of ${it.threadDrain} Thread`;
     case 'attack_fray': return `${it.amount} damage and Fray on you both`;
+    case 'attack_pierce': return `${it.amount} damage straight past your guard`; // S15.2A
     case 'block': return `${it.amount} Block`;
     case 'block_all': return `${it.amount} Block across its line`;
     case 'buff_strength': return `+${it.amount} Strength`;
