@@ -30,7 +30,9 @@ export default defineConfig({
       // §11 extension (nt-slice): the engine's secret narrative content must
       // not ship in the browser bundle — swap it for the throwing stub. The
       // bundle-secrecy test enforces this stays effective.
-      { find: /^\.{1,2}\/content\/(truth|faces)(\.js)?$/, replacement: path.resolve(__dirname, 'src/engine-secret-stub.ts') },
+      // S14.3 (B10): content/witness joins — the 70%-gated held-reveal
+      // registers were datamine-able via this import channel.
+      { find: /^\.{1,2}\/content\/(truth|faces|witness)(\.js)?$/, replacement: path.resolve(__dirname, 'src/engine-secret-stub.ts') },
     ],
   },
   server: {

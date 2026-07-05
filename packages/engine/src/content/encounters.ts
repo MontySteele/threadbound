@@ -45,6 +45,18 @@ enc({ id: 'a2_mote_pair', enemies: ['descant_mote', 'descant_mote'], tier: 'easy
 enc({ id: 'a2_silence_wretch', enemies: ['choir_silence', 'lectern_wretch', 'psalm_eater'], tier: 'normal' });
 enc({ id: 'a2_cracked_mote_husk', enemies: ['bell_wretch_cracked', 'descant_mote', 'bell_husk'], tier: 'normal' });
 enc({ id: 'a2_elite_unstrung', enemies: ['the_unstrung'], tier: 'elite' });
+// S15.2A (sweep B5, D2 ruled C/A-first): the pierce enemy rides the act-2
+// normal pool AND an elite composition — the elite pool is what knots draw,
+// so this is the "eligible for knot encounters" half of the ruling. The
+// braid's fewer-bloodier fights include the guard check either way.
+enc({ id: 'a2_ripper_eater', enemies: ['seamripper', 'psalm_eater'], tier: 'normal' });
+// Sizing history (S15 status doc, battery checkpoints): x2 read 28-36
+// hp/combat — no guard check; x3 read 56-69 (hottest elite in the game)
+// and broke the R1 band on vb default via the shared classic elite pool.
+// Settled: x2 bodies with the def's damage MIX shifted pierce-ward — the
+// differential (unpreventable) share is what checks guard pairs; the
+// absolute total is what bled everyone at x3.
+enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper'], tier: 'elite' });
 
 // ---- Finale: The Last Braid ----------------------------------------------------
 enc({ id: 'finale_boss', enemies: ['the_unraveled'], tier: 'boss' });
@@ -62,8 +74,10 @@ export const ENCOUNTER_POOLS: Record<1 | 2, { easy: string[]; normal: string[]; 
   },
   2: {
     easy: ['a2_psalm_pair', 'a2_bell_wretch', 'a2_cracked_eater', 'a2_mote_pair'],
-    normal: ['a2_choristers', 'a2_bell_pair', 'a2_wretch_eater', 'a2_silence_wretch', 'a2_cracked_mote_husk'],
-    elite: ['a2_elite_cantor', 'a2_elite_bellkeeper', 'a2_elite_unstrung'],
+    // S15.2A: +1 normal comp, +1 elite (knot-eligible) comp — pool-size
+    // changes shift every act-2 draw → GOLDEN REGEN, loud, in-commit
+    normal: ['a2_choristers', 'a2_bell_pair', 'a2_wretch_eater', 'a2_silence_wretch', 'a2_cracked_mote_husk', 'a2_ripper_eater'],
+    elite: ['a2_elite_cantor', 'a2_elite_bellkeeper', 'a2_elite_unstrung', 'a2_knot_rippers'],
     boss: 'a2_boss',
   },
 };

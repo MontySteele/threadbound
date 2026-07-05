@@ -1,12 +1,14 @@
 // Bot simulation + M2 telemetry gates (M2 Part C): paired bots play full runs
 // through the real server/WS protocol. Usage: node dist/sim.js [runs]
 //
-// Sign-off gates (50-run sim, greedy policy):
-//   - full-run bot win rate ≤ 40%
+// Sign-off gates:
+//   - vb win rate 40–55% at A0, default topology (S14-R1; the M2 ≤40% header
+//     gate retired with that ruling — it was calibrated to draft-v1 bots).
+//     Mirrors and braid rows REPORTED, not banded.
 //   - avg player HP lost per Act 1 combat ≥ 8
 //   - link-fire rate: Act 1 ≥ 30%, Act 2 within 40–60%
 //   - no single tag > 50% of resonance-streak cards
-//   - Hex damage share (incl. HexScaling) 20–30%
+//   - Hex damage share (incl. HexScaling) 25–45% (vb only, S5 gate-4)
 //
 // S13.1a — permanent sim knobs (the OQ#59 decomposition probes, kept). ALL
 // SIM-ONLY: no production surface reads them.
@@ -18,6 +20,9 @@
 //                        cap is intentionally the dilution variable, not a pick
 //                        counter. Covets and shop card buys share the gate.
 //                        The constant 10 is STARTER_DECK_SIZE (pinned by test).
+// S15.3 — the elite-excess routing probe (OQ#55 calibration):
+//   TB_BOT_ALL_KNOTS=1   bots take every reachable knot, ladder price ignored;
+//                        the ≥2 last/first pair-HP gate is read on this leg
 // S13.1b/S13.6 — draft policy v2 (powers/engines +4, rare +3, a dilution term
 // past deck 16) is the DEFAULT since the S13.6 D7 flip (its first clean
 // battery: post-content v2 60% vs v1 50%, S13-ECONOMY-STATUS.md).
@@ -31,7 +36,7 @@ process.env.PERSIST = ''; // sims never persist rooms
 process.env.TB_ROOM_RATE = process.env.TB_ROOM_RATE ?? '100000';
 
 import { server } from '@threadbound/server';
-import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId } from '@threadbound/engine';
+import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId, CARDS, ALL_RELICS } from '@threadbound/engine';
 import { Bot, RunResult } from './bot';
 
 const RUNS = Number(process.argv[2] ?? 50);
@@ -65,6 +70,7 @@ const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT
   ? Math.max(0, Number(process.env.TB_BOT_PICK_CAP) || 0)
   : undefined;
 const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 flip)
+const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 
 function port(): number {
   const addr = server.address();
@@ -74,7 +80,7 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, draftV2: DRAFT_V2 };
+  const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, allKnots: ALL_KNOTS, draftV2: DRAFT_V2 };
   const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
   await new Promise((r) => setTimeout(r, 150));
   const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
@@ -109,6 +115,7 @@ async function main(): Promise<void> {
     PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
     process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
     process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
+    ALL_KNOTS ? 'ALL_KNOTS' : null, // S15.3 probe leg — loud on record
     DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
   ].filter(Boolean).join(' ');
   console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
@@ -172,8 +179,16 @@ async function main(): Promise<void> {
   const totalResTags = Object.values(resonanceTags).reduce((a, b) => a + b, 0);
   const maxResTagShare = totalResTags ? Math.max(...Object.values(resonanceTags)) / totalResTags : 0;
 
+  // S14-R1: the win-rate band binds vb at A0 on the DEFAULT topology only —
+  // the 25–35/≤40 bands were calibrated to draft-v1 bots that no longer
+  // exist. Mirrors and braid rows are reported, not banded; human data
+  // rules at the next playtest (OQ#14).
+  const KNOT = process.env.TB_KNOTWORK === '1';
+  const r1Banded = PAIR === 'vb' && ASCEND === 0 && !KNOT;
   const gates: Gate[] = [
-    { name: 'full-run bot win rate ≤ 40%', value: `${winRate.toFixed(0)}%`, pass: winRate <= 40 },
+    r1Banded
+      ? { name: 'vb win rate 40–55% at A0 default topology (S14-R1)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 40 && winRate <= 55 }
+      : { name: `win rate (reported, not banded — S14-R1: ${PAIR}${KNOT ? ' braid' : ''} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -221,6 +236,51 @@ async function main(): Promise<void> {
       console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${flag}`);
     }
     if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
+  }
+  // ---- S14.1 (B23) per-card attribution ------------------------------------
+  // The "dead cards / never-bought relics" instrument: pooled play counts,
+  // picks, and winning-deck presence per card def (pair totals; per-seat kept
+  // in the raw telemetry), plus relic acquisition sources. Machine-greppable
+  // rows so shard logs pool without re-running.
+  {
+    const plays: Record<string, number> = {};
+    const picks: Record<string, number> = {};
+    const winDecks: Record<string, number> = {};
+    const relicSrc: Record<string, number> = {};
+    const relicSeen: Record<string, number> = {};
+    for (const r of results) {
+      const c = r.telemetry.cards;
+      for (const [id, cell] of Object.entries(c?.plays ?? {})) plays[id] = (plays[id] ?? 0) + cell.p1 + cell.p2;
+      for (const [id, cell] of Object.entries(c?.picks ?? {})) picks[id] = (picks[id] ?? 0) + cell.p1 + cell.p2;
+      for (const [id, cell] of Object.entries(c?.winningDeck ?? {})) winDecks[id] = (winDecks[id] ?? 0) + (cell.p1 + cell.p2 > 0 ? 1 : 0);
+      for (const [id, src] of Object.entries(r.telemetry.relicSources ?? {})) {
+        relicSrc[src] = (relicSrc[src] ?? 0) + 1;
+        relicSeen[id] = (relicSeen[id] ?? 0) + 1;
+      }
+    }
+    // every def with any activity gets one row (union: a picked-never-played
+    // card must still appear)
+    const ids = [...new Set([...Object.keys(plays), ...Object.keys(picks), ...Object.keys(winDecks)])]
+      .sort((a, b) => (plays[b] ?? 0) - (plays[a] ?? 0));
+    if (ids.length > 0) {
+      console.log('---------------- S14.1 PER-CARD ATTRIBUTION (B23) ----------------');
+      const brief = (xs: string[]) => xs.map((id) => `${id}(${plays[id] ?? 0})`).join(', ');
+      console.log(`top-10 by plays: ${brief(ids.slice(0, 10))}`);
+      console.log(`bottom-10 by plays: ${brief(ids.slice(-10))}`);
+      // the full pooled table, one row per def (grep '^  card ' to pool
+      // shard logs without re-running)
+      for (const id of ids) {
+        console.log(`  card ${id.padEnd(24)} plays ${String(plays[id] ?? 0).padStart(4)} picks ${String(picks[id] ?? 0).padStart(3)} winning-decks ${winDecks[id] ?? 0}`);
+      }
+      const acquirable = Object.values(CARDS).filter((c) => !c.starterOnly && !c.riteOnly);
+      const neverPicked = acquirable.filter((c) => !(picks[c.id] > 0)).map((c) => c.id);
+      console.log(`never-picked cards (${neverPicked.length}/${acquirable.length} of the acquirable pool): ${neverPicked.join(', ') || 'none'}`);
+      const pickedNeverPlayed = Object.keys(picks).filter((id) => !(plays[id] > 0));
+      console.log(`picked-but-never-played: ${pickedNeverPlayed.join(', ') || 'none'}`);
+      console.log(`relic acquisition sources: ${JSON.stringify(relicSrc)}`);
+      const neverAcquired = ALL_RELICS.filter((rl) => !(relicSeen[rl.id] > 0)).map((rl) => rl.id);
+      console.log(`never-acquired relics (${neverAcquired.length}/${ALL_RELICS.length}): ${neverAcquired.join(', ') || 'none'}`);
+    }
   }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);

@@ -69,8 +69,9 @@ describe('S10a content registration', () => {
     expect(ENCOUNTER_POOLS[1].normal.length).toBe(6);
     expect(ENCOUNTER_POOLS[1].elite.length).toBe(3);
     expect(ENCOUNTER_POOLS[2].easy.length).toBe(4);
-    expect(ENCOUNTER_POOLS[2].normal.length).toBe(5);
-    expect(ENCOUNTER_POOLS[2].elite.length).toBe(3);
+    // S15.2A grows both act-2 pools by one (the pierce comps)
+    expect(ENCOUNTER_POOLS[2].normal.length).toBe(6);
+    expect(ENCOUNTER_POOLS[2].elite.length).toBe(4);
     for (const act of [1, 2] as const) {
       for (const pool of [...ENCOUNTER_POOLS[act].easy, ...ENCOUNTER_POOLS[act].normal, ...ENCOUNTER_POOLS[act].elite]) {
         expect(ENCOUNTERS[pool], pool).toBeTruthy();

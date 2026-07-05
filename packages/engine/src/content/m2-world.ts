@@ -64,6 +64,8 @@ export const M2_ENEMIES: EnemyDef[] = [
     act: 1,
     elite: true,
     hp: [78, 88],
+    // S14.3 (B9) backfill, RATIFIED 2026-07-05 (D4)
+    mechanicLine: 'it trades its binding between you — who holds it is its choice',
     script: [
       { kind: 'attack', amount: 11 },
       { kind: 'sever' },
@@ -144,6 +146,8 @@ export const M2_ENEMIES: EnemyDef[] = [
     act: 2,
     chorus: true,
     hp: [38, 38],
+    // S14.3 (B9) backfill (shared chorus line), RATIFIED 2026-07-05 (D4)
+    mechanicLine: 'three bodies, one wound — and one always stands unbound',
     script: [
       { kind: 'attack', amount: 13 },
       { kind: 'block_all', amount: 7 },
@@ -158,6 +162,7 @@ export const M2_ENEMIES: EnemyDef[] = [
     act: 2,
     chorus: true,
     hp: [38, 38],
+    mechanicLine: 'three bodies, one wound — and one always stands unbound',
     script: [
       { kind: 'buff_strength_all', amount: 1 },
       { kind: 'attack', amount: 10 },
@@ -173,6 +178,7 @@ export const M2_ENEMIES: EnemyDef[] = [
     act: 2,
     chorus: true,
     hp: [38, 38],
+    mechanicLine: 'three bodies, one wound — and one always stands unbound',
     script: [
       { kind: 'debuff_vulnerable', amount: 2 },
       { kind: 'attack_all', amount: 7 },
@@ -192,6 +198,8 @@ export const M2_ENEMIES: EnemyDef[] = [
     elite: true,
     hp: [102, 116],
     chainReader: { blockPerUnfiredLink: 4 },
+    // S14.3 (B9) backfill, RATIFIED 2026-07-05 (D4)
+    mechanicLine: 'every staged link that fails to fire armors it — +4 Block each',
     script: [
       { kind: 'attack', amount: 13 },
       { kind: 'debuff_weak', amount: 2 },
@@ -210,6 +218,8 @@ export const M2_ENEMIES: EnemyDef[] = [
     act: 2,
     elite: true,
     hp: [108, 122],
+    // S14.3 (B9) backfill, RATIFIED 2026-07-05 (D4)
+    mechanicLine: 'its binding tolls from one of you to the other — the bell decides',
     script: [
       { kind: 'attack', amount: 14 },
       { kind: 'sever' },
@@ -253,6 +263,9 @@ export const M2_ENEMIES: EnemyDef[] = [
     boss: true,
     hp: [200, 220],
     unraveled: { severTurns: 2 },
+    // S14.3 (B9) backfill, RATIFIED 2026-07-05 (D4). Kit-level
+    // line only — the face liveMechanics stay shrine-earned (S6.5).
+    mechanicLine: 'at half its blood it severs the Thread — two turns with nothing between you',
     script: [
       { kind: 'attack_drain', amount: 10, threadDrain: 2 },
       { kind: 'attack', amount: 16 },

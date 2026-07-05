@@ -261,6 +261,10 @@ export class GameServer {
     const seat = room.bot.seat;
     const driver = new SoloBotDriver(
       seat,
+      // S14.2 (B15): the room's true seed, out-of-band — redactFor masks
+      // view.seed to 0 on live runs, which had every solo partner playing
+      // one constant seed. Server-side only; wire and redaction untouched.
+      () => room.state.seed,
       () => room.bot?.speed ?? 'paced',
       (action) => {
         (action as { player?: PlayerId }).player = seat;

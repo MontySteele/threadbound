@@ -479,7 +479,8 @@ describe('world referential integrity (M2-B3/B5)', () => {
       for (const id of [...pools.easy, ...pools.normal, ...pools.elite, pools.boss]) {
         expect(ENCOUNTERS[id], id).toBeTruthy();
       }
-      expect(pools.elite.length).toBe(3); // 2 elites per act (M2-B3) + 1 (S10a)
+      // 2 elites per act (M2-B3) + 1 (S10a); act 2 +1 (S15.2A knot-eligible pierce comp)
+      expect(pools.elite.length).toBe(act === 2 ? 4 : 3);
     }
     expect(ENCOUNTERS.finale_boss).toBeTruthy();
     expect(ENEMIES.the_unraveled.unraveled?.severTurns).toBe(2);

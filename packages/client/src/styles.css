@@ -126,6 +126,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .enemy.untargetable { opacity: 0.55; border-style: dotted; cursor: default; }
 .enemy.targetable { cursor: crosshair; box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 40%, transparent); }
 .enemy.tel-attack { box-shadow: inset 0 -3px 0 var(--strike); }
+/* S15.2A: pierce wears its OWN tint (design law: telegraphed, legible) */
+.enemy.tel-pierce { box-shadow: inset 0 -3px 0 var(--pierce); }
 .enemy.tel-guard { box-shadow: inset 0 -3px 0 var(--guard); }
 .enemy.tel-buff { box-shadow: inset 0 -3px 0 var(--rite); }
 .enemy.tel-debuff { box-shadow: inset 0 -3px 0 var(--hex); }
@@ -560,7 +562,10 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 
 /* nt-slice S6.5: boss mechanic reveals (shrine-earned) + hidden-mechanic
    telegraph whisper on the enemy panel */
-.mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); }
+/* S14.3 (B8): mechanic text must not blow out the enemy frame — the longest
+   S10a lines ran ~94 chars against a ~178px frame standard. The cap binds
+   the TEXT, not the frame; the three longest lines also trimmed (D4 table). */
+.mech-reveal { margin-top: 3px; font-size: 0.82em; color: var(--thread-gold); max-width: 26ch; margin-left: auto; margin-right: auto; }
 .mech-telegraph { margin-top: 3px; font-size: 0.82em; font-style: italic; color: var(--text-dim); animation: telegraph-pulse 1.6s ease-in-out infinite; }
 @keyframes telegraph-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 

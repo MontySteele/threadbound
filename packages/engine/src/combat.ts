@@ -278,28 +278,44 @@ export function applyHookOp(state: GameState, p: PlayerState, eff: HookOp): void
 // Static link / Resonance computation (§2.3)
 // ---------------------------------------------------------------------------
 
-export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
-  const severed = (state.combat?.severedTurns ?? 0) > 0; // Unraveled (§6)
-  const fired = chain.map((slot, i) => {
-    if (i === 0) return false;
-    const def = effectiveDef(mustFind(state, slot));
-    if (!def.link) return false;
-    const prev = chain[i - 1];
+/** S14.2 (B14): the ONE link computation, pure over aligned defs/owners —
+ *  resolution, the client preview, and bot planning all call this (the
+ *  three hand-rolled copies in bot-policy drifted: Choir Silence
+ *  blindness was the bug the duplication caused). */
+export function computeLinksFiredFrom(
+  defs: readonly CardDef[], owners: readonly PlayerId[], severed: boolean, silenceFirst: boolean,
+): boolean[] {
+  const fired = defs.map((def, i) => {
+    if (i === 0 || !def.link) return false;
     // a severed Thread carries no links between the two of you (§6)
-    if (severed && prev.owner !== slot.owner) return false;
-    if (def.link.condition === 'partner') return prev.owner !== slot.owner;
+    if (severed && owners[i - 1] !== owners[i]) return false;
+    if (def.link.condition === 'partner') return owners[i - 1] !== owners[i];
     if (def.link.condition === 'any') return true;
-    const prevDef = effectiveDef(mustFind(state, prev));
-    return prevDef.tag === def.link.condition;
+    return defs[i - 1].tag === def.link.condition;
   });
   // S10a Choir Silence: while it stands, the FIRST link each turn doesn't
-  // fire (a held pause). Computed here so the planning UI shows the truth;
+  // fire (a held pause). Computed here so every caller shows the truth;
   // a Pulse still punches through (forcing happens downstream of this).
-  if (state.combat?.enemies.some((e) => e.hp > 0 && ENEMIES[e.defId]?.silencesFirstLink)) {
+  if (silenceFirst) {
     const first = fired.findIndex(Boolean);
     if (first >= 0) fired[first] = false;
   }
   return fired;
+}
+
+/** S14.2 (B14): does a standing enemy hold the first link? Shared by the
+ *  engine path and bot planning (bots read the same redacted enemy list). */
+export function silencesFirstLinkActive(enemies: readonly { hp: number; defId: string }[] | undefined): boolean {
+  return !!enemies?.some((e) => e.hp > 0 && ENEMIES[e.defId]?.silencesFirstLink);
+}
+
+export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
+  return computeLinksFiredFrom(
+    chain.map((slot) => effectiveDef(mustFind(state, slot))),
+    chain.map((slot) => slot.owner),
+    (state.combat?.severedTurns ?? 0) > 0, // Unraveled (§6)
+    silencesFirstLinkActive(state.combat?.enemies),
+  );
 }
 
 /** S9c.6: the size of the PRIMARY effect a slot will resolve with (link
@@ -1194,6 +1210,11 @@ export function resolveTurn(state: GameState): void {
 
     state.telemetry.cardsPlayed++;
     actStats.cardsPlayed++;
+    // S14.1 (B23): per-card play attribution, starters included
+    {
+      const cell = (state.telemetry.cards.plays[inst.defId] ??= { p1: 0, p2: 0 });
+      cell[slot.owner]++;
+    }
     // OQ#57 instrument: rite-card play rate, the real measure (rites
     // telemetry exists only on flagged runs — zero unflagged footprint)
     if (state.telemetry.rites && RITE_CARD_IDS.has(inst.defId)) {
@@ -1301,8 +1322,15 @@ export function resolveTurn(state: GameState): void {
     // Playtest-1 (§14.8): elites and bosses re-tether on their own every 3rd
     // turn — parking one player on guard-soak duty stops being a solved fight.
     // Deterministic cadence: learnable, no hidden rolls.
+    // S14.2 (B13, per R7): enemies whose OWN script moves tethers (a sever
+    // intent — today the Warden of the Crossing and the Bellkeeper) are
+    // exempt: the cadence exists to un-park fights these enemies already
+    // un-park, and the two cancelling in one enemy phase read as a bug
+    // (seed-1007 log). Accepted knowingly as a small behavior change: on
+    // turns where the two did NOT coincide, these enemies now re-tether less.
     const selfDef = ENEMIES[enemy.defId];
-    if ((selfDef.elite || selfDef.boss) && combat.turn % 3 === 0 && enemy.boundTo !== null) {
+    const movesOwnTether = selfDef.script.some((i) => i.kind === 'sever');
+    if ((selfDef.elite || selfDef.boss) && !movesOwnTether && combat.turn % 3 === 0 && enemy.boundTo !== null) {
       const other = otherPlayer(enemy.boundTo);
       if (!state.players[other].fallen) {
         enemy.boundTo = other;
@@ -1427,6 +1455,12 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       state.thread = Math.max(0, state.thread - intent.threadDrain);
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `attacks ${bound.id} for ${intent.amount} and drains ${intent.threadDrain} Thread` });
       break;
+    case 'attack_pierce':
+      // S15.2A (sweep B5, D2 ruled C/A-first): the roster's one way through
+      // Block — the hit lands past the guard; Weak/kill-priority answer it
+      hitPlayer(state, enemy, bound, intent.amount, true);
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `strikes PAST ${bound.id}'s guard for ${intent.amount}` });
+      break;
     case 'attack_fray':
       hitPlayer(state, enemy, bound, intent.amount);
       // OQ#46: enemy-applied Fray takes hold at the start of the players' next
@@ -1482,16 +1516,26 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
   }
 }
 
-function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw: number): void {
+function hitPlayer(state: GameState, enemy: EnemyState, player: PlayerState, raw: number, pierce = false): void {
   if (player.fallen) return;
   let amt = raw + enemy.strength;
   if (enemy.weak > 0) amt = Math.floor(amt * 0.75);
   if (player.statuses.vulnerable > 0) amt = Math.floor(amt * 1.5);
-  if (player.statuses.frayed > 0) amt = Math.floor(amt * (1 + 0.25 * player.statuses.frayed));
   if (amt < 0) amt = 0;
-  const blocked = Math.min(player.block, amt);
+  // S15.2B (B5 option B, D2 ruled C): the Fray damage bonus stays a pre-block
+  // multiplier below A4 (byte-identical arithmetic), but at A4 it lands PAST
+  // Block — the rung's teeth against turtles. frayBonus is the bypassing part.
+  let frayBonus = 0;
+  if (player.statuses.frayed > 0) {
+    const withFray = Math.floor(amt * (1 + 0.25 * player.statuses.frayed));
+    if (ascensionMods(state.ascension).frayPierces) frayBonus = withFray - amt;
+    else amt = withFray;
+  }
+  // S15.2A (B5): a pierce skips the block absorption — every modifier above
+  // still applies (Weak IS the counterplay), but nothing banked answers it
+  const blocked = pierce ? 0 : Math.min(player.block, amt);
   player.block -= blocked;
-  const hpLoss = amt - blocked;
+  const hpLoss = amt - blocked + frayBonus;
   player.hp = Math.max(0, player.hp - hpLoss);
   if (hpLoss > 0) {
     state.log.push({ e: 'player_hit', player: player.id, hpLoss, blocked });
@@ -1630,7 +1674,12 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const mods = ascensionMods(state.ascension);
   // S11.2: elite fights carry the act's current escalation. No extra rolls;
   // factor 0 keeps the integer HP path (byte-equal non-elite combats).
-  const esc = enemyDefIds.some((id) => ENEMIES[id]?.elite)
+  // S15.2A rider: keyed on def-elite OR the node kind — a2_knot_rippers
+  // carries two normal-tier defs but IS the knot, and the ladder must
+  // tighten it (Part 3's probe calibrates against exactly this). Union so
+  // def-keyed test harnesses (no positioned node) hold byte-identically.
+  const node = state.map?.nodes?.find((n) => n.id === state.map.position);
+  const esc = (enemyDefIds.some((id) => ENEMIES[id]?.elite) || node?.kind === 'elite')
     ? escalationFactor(state.map?.knotsCut ?? 0) : 0;
   const hpScale = mods.hpScale * (1 + esc);
   const dmgScale = mods.dmgScale * (1 + esc);

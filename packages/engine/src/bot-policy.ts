@@ -16,7 +16,7 @@
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { unlockedRites } from './content/rites';
-import { applyGrowth, computeResonanceSlots, escalationFactor } from './combat';
+import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, silencesFirstLinkActive } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -55,6 +55,11 @@ export interface BotPolicyOptions {
    *  slots back up (intentionally the dilution variable, not a pick counter);
    *  covets and shop card buys share the gate. Never set in production/solo. */
   pickCap?: number;
+  /** S15.3 SIM-ONLY (TB_BOT_ALL_KNOTS): the elite-excess routing probe
+   *  (S13.1a pattern) — whenever a knot is reachable, take it, ladder price
+   *  ignored. OQ#55's calibration gate (last/first pair-HP ≥2) is measured
+   *  against THIS probe. Never set in production/solo. */
+  allKnots?: boolean;
   /** S13.1b (TB_BOT_DRAFT_V2): draftScore v2. Learns (i) powers/engines +4,
    *  (ii) rare +3 (was +1), (iii) a dilution term (score − max(0, deckSize −
    *  16) × 0.4). ONE policy, no v1/v2 fork.
@@ -73,6 +78,14 @@ export interface BotPolicyOptions {
 /** S13.1a: the true starter size the pick-cap gate anchors on. Pinned by
  *  test so a starter-deck change can't silently skew the deck-size sweep. */
 export const STARTER_DECK_SIZE = 10;
+
+/** S14.2 (B14): bot link-planning shares the engine's link computation —
+ *  the drift bug this kills is Choir Silence blindness (bots staged into
+ *  the held link and could never Pulse it). */
+function linksFiredIn(view: BotView, defs: readonly CardDef[], owners: readonly PlayerId[]): boolean[] {
+  const combat = view.combat!;
+  return computeLinksFiredFrom(defs, owners, combat.severedTurns > 0, silencesFirstLinkActive(combat.enemies));
+}
 
 function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
   const p = view.players[owner];
@@ -110,6 +123,7 @@ export class BotPolicy {
   private reclaimNudge: boolean;
   private skipPicks: boolean;
   private pickCap: number | undefined;
+  private allKnots: boolean;
   private draftV2: boolean;
   private reclaimedTurn = -1;
   private pulsedTurn = -1;
@@ -128,6 +142,7 @@ export class BotPolicy {
     this.reclaimNudge = opts.reclaimNudge ?? false;
     this.skipPicks = opts.skipPicks ?? false;
     this.pickCap = opts.pickCap;
+    this.allKnots = opts.allKnots ?? false;
     this.draftV2 = opts.draftV2 ?? true; // S13.6: v2 IS the policy (D7 flip)
   }
 
@@ -318,6 +333,12 @@ export class BotPolicy {
           return pulse;
         }
       }
+      // S14.2 (B24): Steady, considered only after Pulse has passed — the
+      // "no higher-scoring Thread action exists" clause is this ordering
+      if (!anyFallen && !severed) {
+        const steady = this.trySteady(view);
+        if (steady) return steady;
+      }
       // S7.8 gate-5 sim accommodation: with thread to spare, sometimes pull a
       // partner card across (state-pure roll — deterministic per situation)
       if (this.reclaimNudge && !anyFallen && !severed && this.reclaimedTurn !== combat.turn
@@ -335,35 +356,39 @@ export class BotPolicy {
       return { type: 'SET_READY', player: you, ready: true };
     }
 
-    // The same link bookkeeping the human UI previews: where would links fire?
+    // The same link bookkeeping the human UI previews — the engine's own
+    // computation (S14.2 B14), so the suppression is planned around too
     const chainDefs = combat.chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const satisfies = (def: CardDef, prevDef: CardDef | null, prevOwner: PlayerId | null, owner: PlayerId): boolean => {
-      if (!def.link || !prevDef || prevOwner === null) return false;
-      if (severed && prevOwner !== owner) return false;
-      if (def.link.condition === 'partner') return prevOwner !== owner;
-      if (def.link.condition === 'any') return true;
-      return prevDef.tag === def.link.condition;
-    };
+    const chainOwners = combat.chain.map((s) => s.owner);
+    const baseFired = linksFiredIn(view, chainDefs, chainOwners);
 
     // pick best (card, position): fire own link, enable the next card's link,
     // never break a link that currently fires
     const lowHp = me.hp < me.maxHp * 0.55;
+    // S15.2A (B5): read the pierce telegraph — Block resets each turn, so a
+    // Guard card banked into a turn where EVERY incoming hit pierces is a
+    // wasted play. The low-HP guard preference inverts to a small malus.
+    // (attack_all threatens this seat regardless of binding; read_chain is a
+    // fork, left out — its no-Resonance branch is still blockable.)
+    const threats = combat.enemies.filter((e) =>
+      e.hp > 0 && e.intent.kind.startsWith('attack')
+      && (e.boundTo === you || e.intent.kind === 'attack_all'));
+    const pierceOnly = threats.length > 0 && threats.every((e) => e.intent.kind === 'attack_pierce');
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
-        const prevDef = pos > 0 ? chainDefs[pos - 1] : null;
-        const prevOwner = pos > 0 ? combat.chain[pos - 1].owner : null;
-        const fires = satisfies(card.def, prevDef, prevOwner, you) ? 2 : 0;
+        const defsWith = [...chainDefs.slice(0, pos), card.def, ...chainDefs.slice(pos)];
+        const ownersWith = [...chainOwners.slice(0, pos), you, ...chainOwners.slice(pos)];
+        const firedWith = linksFiredIn(view, defsWith, ownersWith);
+        const fires = firedWith[pos] ? 2 : 0;
         let next = 0;
         if (pos < combat.chain.length) {
-          const nextSlot = combat.chain[pos];
-          const nextDef = chainDefs[pos];
-          const firedBefore = satisfies(nextDef, prevDef, prevOwner, nextSlot.owner);
-          const firesAfter = satisfies(nextDef, card.def, you, nextSlot.owner);
+          const firedBefore = baseFired[pos];
+          const firesAfter = firedWith[pos + 1];
           if (firedBefore && !firesAfter) next = -3; // never break a firing link
           else if (!firedBefore && firesAfter) next = 1.5; // enable the next card
         }
-        const guardBonus = lowHp && card.def.tag === 'Guard' ? 2.5 : 0;
+        const guardBonus = card.def.tag === 'Guard' ? (pierceOnly ? -1.5 : lowHp ? 2.5 : 0) : 0;
         // keep the Hex→detonate axis alive even when other links outshine it
         const cardText = JSON.stringify(card.def.base) + JSON.stringify(card.def.link?.effects ?? []);
         const isVess = view.players[you].character === 'vess';
@@ -399,16 +424,41 @@ export class BotPolicy {
     if (this.mode !== 'solo' || view.thread - cost >= 5) return true;
     if (kind === 'pulse') return false;
     const me = view.players[view.you];
-    const incoming = view.combat!.enemies
+    // S15.2A: pierce damage bypasses block — split it out of the mitigated sum
+    let incoming = 0;
+    let pierceIncoming = 0;
+    for (const e of view.combat!.enemies) {
       // S10a read_chain counts as a threat (its no-resonance branch is ×2 —
       // read conservatively as one hit here, same as `times` elsewhere)
-      .filter((e) => e.hp > 0 && e.boundTo === view.you
-        && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))
-      .reduce((a, e) => {
-        const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
-        return a + raw + e.strength;
-      }, 0);
-    return me.hp - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+      if (!(e.hp > 0 && e.boundTo === view.you
+        && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))) continue;
+      const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
+      if (e.intent.kind === 'attack_pierce') pierceIncoming += raw + e.strength;
+      else incoming += raw + e.strength;
+    }
+    return me.hp - pierceIncoming - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+  }
+
+  /** S14.2 (B24, SIM-ONLY): Steady had literally never been spent by a bot —
+   *  every battery on record read a structural zero, so the stat measured
+   *  nothing. Minimal deterministic heuristic, considered only after Pulse
+   *  (the higher-scoring action) has passed: scrub active Fray stacks, or
+   *  pre-bank the shield when the pool is scraping bottom (remaining ≤ 1
+   *  after declared spends — the next overdraft would Fray). Never fires in
+   *  solo mode: no production surface changes. */
+  private trySteady(view: BotView): Action | null {
+    if (this.mode !== 'sim') return null;
+    const combat = view.combat!;
+    if (combat.threadActions.some((t) => t.kind === 'steady')) return null; // one is enough
+    const declared = combat.threadActions.reduce(
+      (a, t) => a + (t.kind === 'sever' ? 3 : t.kind === 'steady' ? 1 : 2), 0);
+    const remaining = view.thread - declared;
+    const frayLine = view.ascension >= 4 ? 1 : 0; // S4.4: A4 raises the Fray line
+    if (remaining - 1 < frayLine) return null; // paying would itself Fray
+    const frayedNow = view.players.p1.statuses.frayed > 0 || view.players.p2.statuses.frayed > 0;
+    const scrapingBottom = remaining <= 1 && combat.steadyShield === 0;
+    if (!frayedNow && !scrapingBottom) return null;
+    return { type: 'DECLARE_THREAD', player: view.you, kind: 'steady' };
   }
 
   /** §14.12: score each staged card whose Link won't fire — link payoff value
@@ -420,16 +470,10 @@ export class BotPolicy {
     const chain = combat.chain;
     if (chain.length < 2) return null;
     if (!this.maySpend(view, 2, 'pulse')) return null;
-    const severed = combat.severedTurns > 0;
     const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const fired = chain.map((slot, i) => {
-      const def = defs[i];
-      if (i === 0 || !def.link) return false;
-      if (severed && chain[i - 1].owner !== slot.owner) return false;
-      if (def.link.condition === 'partner') return chain[i - 1].owner !== slot.owner;
-      if (def.link.condition === 'any') return true;
-      return defs[i - 1].tag === def.link.condition;
-    });
+    // S14.2 (B14): the engine's computation — a Choir-Silence-held link now
+    // reads unfired here, which makes it exactly what Pulse exists to force
+    const fired = linksFiredIn(view, defs, chain.map((s) => s.owner));
     const pulsed = new Set(
       combat.threadActions.filter((t) => t.kind === 'pulse').map((t) => t.targetId),
     );
@@ -463,23 +507,11 @@ export class BotPolicy {
     const combat = view.combat!;
     const chain = combat.chain;
     if (chain.length < 2) return null;
-    const severed = combat.severedTurns > 0;
     const defs = chain.map((s) => defOf(view, s.owner, s.cardInstanceId));
-    const firesAt = (order: number[]): number => {
-      let n = 0;
-      for (let i = 1; i < order.length; i++) {
-        const def = defs[order[i]];
-        const prev = chain[order[i - 1]];
-        const prevDef = defs[order[i - 1]];
-        const owner = chain[order[i]].owner;
-        if (!def.link) continue;
-        if (severed && prev.owner !== owner) continue;
-        if (def.link.condition === 'partner' ? prev.owner !== owner
-          : def.link.condition === 'any' ? true
-          : prevDef.tag === def.link.condition) n++;
-      }
-      return n;
-    };
+    // S14.2 (B14): permuted orders priced by the engine's computation
+    const firesAt = (order: number[]): number =>
+      linksFiredIn(view, order.map((i) => defs[i]), order.map((i) => chain[i].owner))
+        .filter(Boolean).length;
     const identity = chain.map((_, i) => i);
     const baseline = firesAt(identity);
     let best: { from: number; to: number; gain: number } | null = null;
@@ -706,6 +738,13 @@ export class BotPolicy {
    *  every Wave A baseline holds byte-identically. */
   private pickBraidNode(view: BotView, options: number[]): number {
     const byId = new Map(view.map.nodes.map((n) => [n.id, n]));
+    // S15.3 (TB_BOT_ALL_KNOTS, SIM-ONLY): the elite-excess routing probe —
+    // a reachable knot is taken unconditionally, ladder price ignored.
+    // Lowest-id among elite options: seat-symmetric, vote never thrashes.
+    if (this.allKnots) {
+      const knots = options.filter((id) => byId.get(id)?.kind === 'elite').sort((a, b) => a - b);
+      if (knots.length > 0) return knots[0];
+    }
     // seat-SYMMETRIC on purpose: both seats must compute identical values
     const worstHp = Math.min(
       view.players.p1.hp / view.players.p1.maxHp,

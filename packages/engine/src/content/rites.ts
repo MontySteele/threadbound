@@ -218,7 +218,9 @@ export const RITES: RiteDef[] = [
   // Bram, birth
   { id: 'br_hearth_keeper', role: 'bram', kind: 'birth', name: 'Hearth-Keeper',
     flavor: 'A kept fire owes nothing to the night.',
-    text: 'Momentum no longer decays at end of turn (carries up to 3).',
+    // S14.3 (B17): retext to the shipped S7 interpretation — there is no
+    // end-of-turn decay; the halving-on-spend IS the decay (S8.1, combat.ts)
+    text: 'When spending Momentum halves it, keep up to 3.',
     passives: ['momentumCarry3'] },
   { id: 'br_dowry_bound', role: 'bram', kind: 'birth', name: 'Dowry-Bound',
     flavor: 'What the other hand gives, the whole body keeps.',

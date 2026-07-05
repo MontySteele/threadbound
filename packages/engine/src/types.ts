@@ -290,6 +290,10 @@ export type EnemyIntent =
   | { kind: 'attack_momentum'; base: number; perMomentum: number }
   | { kind: 'attack_drain'; amount: number; threadDrain: number }
   | { kind: 'attack_fray'; amount: number } // hits and inflicts Fray on both (§6 Unraveled kit)
+  /** S15.2A (sweep B5, D2 ruled C/A-first): post-block damage — the roster's
+   *  ONE way through Block. Attacker/target modifiers (Strength, Weak,
+   *  Vulnerable, Fray) still apply; only the block absorption is skipped. */
+  | { kind: 'attack_pierce'; amount: number }
   | { kind: 'block'; amount: number }
   | { kind: 'block_all'; amount: number } // blocks self AND allies
   | { kind: 'buff_strength'; amount: number }
@@ -484,7 +488,10 @@ export interface QuestionDef {
    *  Slice: bossFace (real name + mechanic 1) · bossMechanic (mechanic 2) ·
    *  healEach (provisional heal 6 each). S8.2 adds covetEach (q_came true →
    *  +1 Covet charge each, cap-respecting — PROVISIONAL, designer question). */
-  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'covetEach';
+  /** S14.3 (B4, per R8): q_came re-keyed covetEach → pendingThread — the
+   *  Covet charge was unspendable where it landed (the shrine sits after
+   *  the run's last reward screen). */
+  payoff: 'bossFace' | 'bossMechanic' | 'healEach' | 'pendingThread';
 }
 
 export interface AnswerDef {
@@ -925,6 +932,10 @@ export interface ActStats {
 /** S4.1: where gold comes from. */
 export type GoldSource = 'combat' | 'elite' | 'boss' | 'event' | 'treasure';
 
+/** S14.1 (sweep B23): where a relic came from. 'drop' = the elite
+ *  after-combat roll; 'boss' = the same roll on a boss node. */
+export type RelicSource = 'drop' | 'boss' | 'shop' | 'treasure' | 'event' | 'shrine';
+
 export interface Telemetry {
   cardsPlayed: number;
   linksFired: number;
@@ -991,6 +1002,21 @@ export interface Telemetry {
     /** cards removed per act per seat (shop service, events, S13.3 lever) */
     deckRemovalsByAct: Record<number, Record<PlayerId, number>>;
   };
+  /** S14.1 (sweep B23) per-card attribution — the "dead cards /
+   *  never-bought relics" instrument the content-audit lens was blind
+   *  without. picks counts every deck join per card def per seat (any
+   *  channel — the addCardToDeck choke point); plays counts resolutions
+   *  (starters included); winningDeck is written ONCE at victory (copies
+   *  of each def in each seat's final deck). Observational only —
+   *  telemetry is hash-excluded by design. */
+  cards: {
+    picks: Record<string, Record<PlayerId, number>>;
+    plays: Record<string, Record<PlayerId, number>>;
+    winningDeck: Record<string, Record<PlayerId, number>>;
+  };
+  /** S14.1 (sweep B23): each acquired relic's channel (relicId → source;
+   *  relics are pair-unique, so one entry per relic per run) */
+  relicSources: Record<string, RelicSource>;
   /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
    *  is judged on this). Present only on flagged runs. */
   truth?: {

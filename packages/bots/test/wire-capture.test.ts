@@ -27,6 +27,7 @@ import WebSocket from 'ws';
 import { Bot } from '../src/bot';
 import { FRAGMENTS } from '../../engine/src/content/truth';
 import { FACES } from '../../engine/src/content/faces';
+import { WITNESS_REGISTERS } from '../../engine/src/content/witness';
 import { generateFinaleMap } from '../../engine/src/map';
 
 process.env.PORT = '0';
@@ -74,6 +75,18 @@ function assertNoSecrets(cap: Capture, ownTexts: Set<string>, label: string): vo
   for (const face of FACES) {
     for (const m of face.mechanicPool) {
       expect(wire.includes(m.id), `${label}: mechanic id ${m.id} crossed`).toBe(false);
+    }
+  }
+  // S14.3 (B10): the held-reveal registers stay unearned on these fresh
+  // profiles (codexPct 0) — no register line, in any substituted form, may
+  // cross. Template vars ({rite}) are stripped; long chunks asserted absent.
+  for (const registers of Object.values(WITNESS_REGISTERS)) {
+    for (const reg of registers) {
+      for (const line of reg.lines) {
+        for (const chunk of line.split(/\{[^}]+\}/).filter((c) => c.length >= 20)) {
+          expect(wire.includes(chunk), `${label}: held-reveal register chunk crossed: ${chunk.slice(0, 40)}…`).toBe(false);
+        }
+      }
     }
   }
   // seed/rng masked on every live frame (end screens may carry the seed)

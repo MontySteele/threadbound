@@ -20,6 +20,10 @@ export interface AscensionMods {
   /** A4: Fray fires when the pool drops below this (0 normally; 1 = spending
    *  the last point already frays) */
   frayThreshold: number;
+  /** S15.2B (sweep B5 option B, D2 ruled C): at A4 the Fray damage bonus
+   *  lands PAST Block — the rung finally has teeth against turtles. Below
+   *  A4, Fray stays a pre-block multiplier (byte-identical arithmetic). */
+  frayPierces: boolean;
   /** A5: rest-site heal fraction (30% → 20%) */
   restHeal: number;
 }
@@ -31,6 +35,7 @@ export function ascensionMods(level: number): AscensionMods {
     dmgScale: n >= 2 ? 1.1 : 1,
     extraElite: n >= 3,
     frayThreshold: n >= 4 ? 1 : 0,
+    frayPierces: n >= 4, // S15.2B
     restHeal: n >= 5 ? 0.2 : 0.3,
   };
 }
@@ -40,7 +45,8 @@ export const ASCENSION_RUNGS: Record<number, string> = {
   1: 'enemies have +10% HP',
   2: 'enemies hit +10% harder',
   3: 'one more elite per act',
-  4: 'the Thread frays on its last point',
+  // S15.2B: copy PROVISIONAL (D5 sign-off table) — the rung's new teeth stated
+  4: 'the Thread frays on its last point — and Fray bites past Block',
   5: 'rest sites heal 20% instead of 30%',
 };
 
@@ -54,6 +60,7 @@ export function scaleIntent(intent: EnemyIntent, scale: number): EnemyIntent {
     case 'attack_all': return { ...intent, amount: s(intent.amount) };
     case 'attack_drain': return { ...intent, amount: s(intent.amount) };
     case 'attack_fray': return { ...intent, amount: s(intent.amount) };
+    case 'attack_pierce': return { ...intent, amount: s(intent.amount) }; // S15.2A
     case 'attack_momentum': return { ...intent, base: s(intent.base) };
     case 'read_chain': return { ...intent, amount: s(intent.amount) }; // S10a
     default: return intent;

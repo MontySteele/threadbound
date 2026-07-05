@@ -50,6 +50,8 @@ export class Bot {
     /** S13.1a sim-only knobs: skip all card acquisition / deck-size ceiling */
     skipPicks?: boolean;
     pickCap?: number;
+    /** S15.3 sim-only knob (TB_BOT_ALL_KNOTS): the elite-excess routing probe */
+    allKnots?: boolean;
     /** S13.1b: draft policy v2 — the DEFAULT since the S13.6 D7 flip;
      *  false = v1, the instrumented comparison policy */
     draftV2?: boolean;
@@ -59,7 +61,7 @@ export class Bot {
   }) {
     this.policy = new BotPolicy({
       seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents, reclaimNudge: opts.reclaimNudge,
-      skipPicks: opts.skipPicks, pickCap: opts.pickCap, draftV2: opts.draftV2,
+      skipPicks: opts.skipPicks, pickCap: opts.pickCap, allKnots: opts.allKnots, draftV2: opts.draftV2,
     });
     this.done = new Promise((res) => (this.resolve = res));
     this.ws = new WebSocket(url);

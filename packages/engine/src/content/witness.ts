@@ -16,6 +16,9 @@ export type WitnessContext =
   | 'resonance'
   | 'fray'
   | 'elite_mourner_intro'
+  // S15.2A (D5, PROVISIONAL): the pierce enemy's telegraph in the Witness's
+  // voice — same pattern as the Mourner intro, keyed on its encounters
+  | 'seamripper_intro'
   // §14.11 starter payoffs: one line each, first occurrence per run (solo + pair)
   | 'worn_knife_first'
   | 'knuckle_crack_first';
@@ -85,6 +88,13 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'The Mourner. It feeds on loneliness. You two should be perfectly safe. Probably.',
     'It grieves for those who fight alone. Give it nothing to mourn.',
     'Ah, the Mourner. Play selfishly and it will love you to death.',
+  ],
+  // S15.2A (D5, PROVISIONAL until the sign-off table): never-lies audit —
+  // no biography, no falsehood; the mechanic stated straight, sardonically
+  seamripper_intro: [
+    'The Seamripper. Your guard is a seam like any other. It knows the way through.',
+    'Block it all you like. The needle was never aiming at the wall.',
+    'It took the choir apart one stitch at a time. Do keep it off its rhythm.',
   ],
   worn_knife_first: [
     'The Worn Knife. It does not break a curse — it reads one. Sharper for every stitch she leaves in.',

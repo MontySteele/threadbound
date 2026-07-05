@@ -25,6 +25,15 @@ export const FACE_BY_ANSWER: Record<string, never> = {};
 export const rollLiveMechanics = serverOnly;
 export const mechanicFireTurns = serverOnly;
 
+// content/witness surface (S14.3 B10): the 70%-gated held-reveal registers
+// (the sacrament fall-rebind quote, the procession-direction hint) must not
+// be datamine-able from the bundle — same channel class as the Vigil/
+// Half-Carried leaks already treated as bugs. The client renders Witness
+// lines from the wire only, so the whole pool module ships empty.
+export const WITNESS_LINES: Record<string, string[]> = {};
+export const S8_WITNESS: Record<string, string[]> = {};
+export const WITNESS_REGISTERS: Record<string, { minPct: number; lines: string[] }[]> = {};
+
 // content/truth re-exports the public ontology; anything bundled should be
 // importing it from content/questions (kept in the bundle), but satisfy the
 // export surface just in case.

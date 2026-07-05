@@ -152,7 +152,7 @@ describe('S4.4 ascension skeleton', () => {
     const s = startedRun();
     expect(s.ascension).toBe(0);
     const mods = ascensionMods(0);
-    expect(mods).toEqual({ hpScale: 1, dmgScale: 1, extraElite: false, frayThreshold: 0, restHeal: 0.3 });
+    expect(mods).toEqual({ hpScale: 1, dmgScale: 1, extraElite: false, frayThreshold: 0, frayPierces: false, restHeal: 0.3 });
     const intent = { kind: 'attack' as const, amount: 7 };
     expect(scaleIntent(intent, 1)).toBe(intent); // same object, no float trip
   });

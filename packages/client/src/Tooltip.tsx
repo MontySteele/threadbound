@@ -3,7 +3,7 @@
 // present on the element, plus upgrade/mutation previews where relevant.
 
 import React, { useEffect, useState } from 'react';
-import { CARDS, ENEMIES, RELICS_BY_ID, CardDef } from '@threadbound/engine';
+import { CARDS, ENEMIES, RELICS_BY_ID, RITES_BY_ID, CardDef } from '@threadbound/engine';
 import { KEYWORDS, KeywordDef, keywordsIn, linkBody } from './keywords';
 
 const WITNESS_ASIDES = [
@@ -86,6 +86,18 @@ export function resolveInspect(key: string): InspectContent | null {
         title: def.name,
         subtitle: def.coop ? 'relic · co-op' : 'relic',
         body: [def.text],
+        keywords: keywordsIn(def.text),
+      };
+    }
+    case 'rite': {
+      // S14.3 (B20): the worn rite is re-readable after the pick — recall
+      // isn't reveal; the held-reveal ruling covers the unpicked trio only
+      const def = RITES_BY_ID[id];
+      if (!def) return null;
+      return {
+        title: def.name,
+        subtitle: `${def.kind} rite · ${def.role}`,
+        body: [def.flavor, def.text],
         keywords: keywordsIn(def.text),
       };
     }

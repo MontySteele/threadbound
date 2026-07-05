@@ -125,7 +125,10 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   // data mixes pairs, so its Hex share reads as telemetry, not a gate.
   const hexGated = wantPair === 'bv';
   const gates = [
-    { name: 'full-run bot win rate ≤ 40%', value: `${winRate.toFixed(0)}%`, pass: winRate <= 40 },
+    // S14-R1: the 40–55 band is a BOT instrument (vb, A0, default topology);
+    // human win rates are reported, never banded — human data RULES the
+    // bands (OQ#14), not the reverse. The old ≤40% M2 gate retired with R1.
+    { name: 'win rate (human — reported, not banded; S14-R1)', value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -171,6 +174,37 @@ for (const [sha, results] of [...groups.entries()].sort()) {
         console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${outlier}`);
       }
       if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
+    }
+  }
+  // ---- S14.1 (B23) per-card attribution (mirrored from sim.ts; prints only
+  // when files carry telemetry.cards, so pre-S14 files keep their exact
+  // summary). No CARDS/ALL_RELICS registry here (the engine isn't imported),
+  // so the never-lists are sim-only — human files read out activity rows.
+  {
+    const plays = {};
+    const picks = {};
+    const winDecks = {};
+    const relicSrc = {};
+    for (const r of results) {
+      const c = t(r).cards;
+      for (const [id, cell] of Object.entries(c?.plays ?? {})) plays[id] = (plays[id] ?? 0) + (cell.p1 ?? 0) + (cell.p2 ?? 0);
+      for (const [id, cell] of Object.entries(c?.picks ?? {})) picks[id] = (picks[id] ?? 0) + (cell.p1 ?? 0) + (cell.p2 ?? 0);
+      for (const [id, cell] of Object.entries(c?.winningDeck ?? {})) winDecks[id] = (winDecks[id] ?? 0) + ((cell.p1 ?? 0) + (cell.p2 ?? 0) > 0 ? 1 : 0);
+      for (const src of Object.values(t(r).relicSources ?? {})) relicSrc[src] = (relicSrc[src] ?? 0) + 1;
+    }
+    const ids = [...new Set([...Object.keys(plays), ...Object.keys(picks), ...Object.keys(winDecks)])]
+      .sort((a, b) => (plays[b] ?? 0) - (plays[a] ?? 0));
+    if (ids.length > 0) {
+      console.log('---------------- S14.1 PER-CARD ATTRIBUTION (B23) ----------------');
+      const brief = (xs) => xs.map((id) => `${id}(${plays[id] ?? 0})`).join(', ');
+      console.log(`top-10 by plays: ${brief(ids.slice(0, 10))}`);
+      console.log(`bottom-10 by plays: ${brief(ids.slice(-10))}`);
+      for (const id of ids) {
+        console.log(`  card ${id.padEnd(24)} plays ${String(plays[id] ?? 0).padStart(4)} picks ${String(picks[id] ?? 0).padStart(3)} winning-decks ${winDecks[id] ?? 0}`);
+      }
+      const pickedNeverPlayed = Object.keys(picks).filter((id) => !(plays[id] > 0));
+      console.log(`picked-but-never-played: ${pickedNeverPlayed.join(', ') || 'none'}`);
+      console.log(`relic acquisition sources: ${JSON.stringify(relicSrc)}`);
     }
   }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);

@@ -65,4 +65,10 @@ describe('S11.9 strand routing', () => {
     const spent = new BotPolicy({ mode: 'sim', seed: 7 }).decide(crossingView(3));
     expect(spent).toEqual({ type: 'NODE_PICK', player: 'p1', nodeId: 11 }); // the bypass
   });
+
+  // S15.3: the elite-excess routing probe — OQ#55's ≥2 gate is read on this leg
+  it('TB_BOT_ALL_KNOTS: even the thrice-escalated knot is taken on the probe', () => {
+    const probed = new BotPolicy({ mode: 'sim', seed: 7, allKnots: true }).decide(crossingView(3));
+    expect(probed).toEqual({ type: 'NODE_PICK', player: 'p1', nodeId: 12 });
+  });
 });

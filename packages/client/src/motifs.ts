@@ -56,4 +56,7 @@ export const MOTIFS: Record<string, Motif> = {
   descant_mote: { arch: 'swarm' }, // small voices, many
   choir_silence: { arch: 'figure', veil: true }, // a chorister with no note to hold
   the_unstrung: { arch: 'frayed' }, // pre-echo of the Unraveled; elite dress differentiates
+
+  // ---- S15.2A (PROVISIONAL — new row for the D5 sign-off table) -------------
+  seamripper: { arch: 'crawler', tool: true }, // a slider carrying a point — low, under the seams
 };
