@@ -5,7 +5,7 @@
 
 import {
   Action, CardDef, CardInstance, CharacterId, EnemyIntent, EventDef, EventEffectOp,
-  EventOptionDef, EventStageDef, GameState, GoldSource, IllegalAction,
+  EventOptionDef, EventStageDef, GameState, GoldSource, IllegalAction, RelicSource,
   MapNode, PlayerId, PlayerState, Rarity, RestOption, Telemetry,
 } from './types';
 import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from './content/registry';
@@ -126,7 +126,14 @@ export function emptyTelemetry(): Telemetry {
     goldResidual: 0,
     ringDiscountsFired: 0,
     economy: { picks: {}, relicsByAct: {}, deckAddsByAct: {}, deckRemovalsByAct: {} },
+    cards: { picks: {}, plays: {}, winningDeck: {} }, // S14.1 (B23)
+    relicSources: {},
   };
+}
+
+/** S14.1 (B23): sparse per-card per-seat cell, created on first touch. */
+function cardCell(table: Record<string, Record<PlayerId, number>>, defId: string): Record<PlayerId, number> {
+  return (table[defId] ??= { p1: 0, p2: 0 });
 }
 
 /** S13.1c: per-act per-seat economy cells, created on first touch so the
@@ -696,7 +703,7 @@ function apply(state: GameState, action: Action): void {
             earnGold(state, ct.gold, 'treasure');
             state.log.push({ e: 'info', detail: `The pair takes the coin — ${ct.gold} gold. The rest stays behind glass.` });
           } else {
-            grantRelic(state, ct.owner, ct.relicId);
+            grantRelic(state, ct.owner, ct.relicId, 'treasure');
           }
         } else {
           ct.votes = { p1: null, p2: null };
@@ -717,7 +724,7 @@ function apply(state: GameState, action: Action): void {
       p.covetCharges--;
       state.telemetry.covetsSpent[action.player]++;
       if (ct.taken === 'gold') {
-        grantRelic(state, ct.owner, ct.relicId);
+        grantRelic(state, ct.owner, ct.relicId, 'treasure');
       } else {
         earnGold(state, ct.gold, 'treasure');
         state.log.push({ e: 'info', detail: `${state.players[action.player].character} covets the coin too — ${ct.gold} gold.` });
@@ -799,7 +806,7 @@ function apply(state: GameState, action: Action): void {
       } else {
         const p = state.players[action.player];
         assert(!p.relics.includes(item.refId!) && !state.players[otherPlayer(action.player)].relics.includes(item.refId!), 'already owned');
-        grantRelic(state, action.player, item.refId!);
+        grantRelic(state, action.player, item.refId!, 'shop');
         spendGold(state, action.player, item.price, 'relics');
       }
       item.sold = true;
@@ -964,6 +971,7 @@ function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
   p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
   economyCount(state, state.telemetry.economy.deckAddsByAct, pid); // S13.1c
+  cardCell(state.telemetry.cards.picks, defId)[pid]++; // S14.1 (B23)
   // S13.4 (D5): the Witness NAMES a rare the first time it joins a deck —
   // any channel; single-line pool + no-repeat = once per run. Vestments are
   // named at first DRAW instead (S9c.2) and are riteOnly-excluded here.
@@ -974,13 +982,14 @@ function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   }
 }
 
-function grantRelic(state: GameState, pid: PlayerId, relicId: string): void {
+function grantRelic(state: GameState, pid: PlayerId, relicId: string, source: RelicSource): void {
   if (noRelics()) return; // S13.1a TB_NO_RELICS (sim-only decomposition leg)
   const p = state.players[pid];
   if (p.relics.includes(relicId)) return;
   p.relics.push(relicId);
   const eco = state.telemetry.economy; // S13.1c: per-act relic growth
   eco.relicsByAct[state.map.act] = (eco.relicsByAct[state.map.act] ?? 0) + 1;
+  state.telemetry.relicSources[relicId] = source; // S14.1 (B23)
   state.log.push({ e: 'relic', player: pid, relic: relicId });
   const def = RELICS_BY_ID[relicId];
   for (const eff of def?.onPickup ?? []) {
@@ -1118,7 +1127,7 @@ function resolveLoomVerdict(state: GameState): void {
   } else if (shrine.stakeRelicId) {
     const ownerRoll = rngInt(state.rng, 2);
     state.rng = ownerRoll.state;
-    grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', shrine.stakeRelicId);
+    grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', shrine.stakeRelicId, 'shrine');
   }
   if (Object.values(verdict).every((v) => v === 'true')) {
     truth.reveals.openingIntent = true;
@@ -1236,7 +1245,7 @@ function applyEventEffect(state: GameState, subject: PlayerState, eff: { op: str
     }
     case 'gainRelic': {
       const relic = randomUnownedRelic(state);
-      if (relic) grantRelic(state, subject.id, relic);
+      if (relic) grantRelic(state, subject.id, relic, 'event');
       break;
     }
     case 'gold': {
@@ -1487,7 +1496,7 @@ function enterNode(state: GameState): void {
       }
       earnGold(state, gold, 'treasure');
       const relic = relicRolled;
-      if (relic) grantRelic(state, owner, relic);
+      if (relic) grantRelic(state, owner, relic, 'treasure');
       state.reward = {
         sets: { p1: [], p2: [] },
         picked: { p1: 'skip', p2: 'skip' },
@@ -1533,6 +1542,14 @@ function advanceAct(state: GameState): void {
     state.phase = 'victory';
     state.telemetry.goldResidual = state.gold; // S4.1
     recordTruthProvability(state); // OQ#57 instrument
+    // S14.1 (B23): the winning deck, per card def per seat — written once,
+    // here, because only a victory has one (deck is the master list again
+    // after endCombatCleanup)
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      for (const inst of state.players[pid].deck) {
+        cardCell(state.telemetry.cards.winningDeck, inst.defId)[pid]++;
+      }
+    }
     sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
@@ -1637,7 +1654,7 @@ function afterResolution(state: GameState): void {
         const granted = pinFree ? pin : r;
         const ownerRoll = rngInt(state.rng, 2);
         state.rng = ownerRoll.state;
-        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', granted);
+        grantRelic(state, ownerRoll.value === 0 ? 'p1' : 'p2', granted, node.kind === 'boss' ? 'boss' : 'drop');
         relic = granted;
       }
     }

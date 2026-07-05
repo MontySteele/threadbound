@@ -925,6 +925,10 @@ export interface ActStats {
 /** S4.1: where gold comes from. */
 export type GoldSource = 'combat' | 'elite' | 'boss' | 'event' | 'treasure';
 
+/** S14.1 (sweep B23): where a relic came from. 'drop' = the elite
+ *  after-combat roll; 'boss' = the same roll on a boss node. */
+export type RelicSource = 'drop' | 'boss' | 'shop' | 'treasure' | 'event' | 'shrine';
+
 export interface Telemetry {
   cardsPlayed: number;
   linksFired: number;
@@ -991,6 +995,21 @@ export interface Telemetry {
     /** cards removed per act per seat (shop service, events, S13.3 lever) */
     deckRemovalsByAct: Record<number, Record<PlayerId, number>>;
   };
+  /** S14.1 (sweep B23) per-card attribution — the "dead cards /
+   *  never-bought relics" instrument the content-audit lens was blind
+   *  without. picks counts every deck join per card def per seat (any
+   *  channel — the addCardToDeck choke point); plays counts resolutions
+   *  (starters included); winningDeck is written ONCE at victory (copies
+   *  of each def in each seat's final deck). Observational only —
+   *  telemetry is hash-excluded by design. */
+  cards: {
+    picks: Record<string, Record<PlayerId, number>>;
+    plays: Record<string, Record<PlayerId, number>>;
+    winningDeck: Record<string, Record<PlayerId, number>>;
+  };
+  /** S14.1 (sweep B23): each acquired relic's channel (relicId → source;
+   *  relics are pair-unique, so one entry per relic per run) */
+  relicSources: Record<string, RelicSource>;
   /** nt-slice S6.8: the slice's behavioral instrumentation (spec pass/fail
    *  is judged on this). Present only on flagged runs. */
   truth?: {

@@ -173,6 +173,37 @@ for (const [sha, results] of [...groups.entries()].sort()) {
       if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
     }
   }
+  // ---- S14.1 (B23) per-card attribution (mirrored from sim.ts; prints only
+  // when files carry telemetry.cards, so pre-S14 files keep their exact
+  // summary). No CARDS/ALL_RELICS registry here (the engine isn't imported),
+  // so the never-lists are sim-only — human files read out activity rows.
+  {
+    const plays = {};
+    const picks = {};
+    const winDecks = {};
+    const relicSrc = {};
+    for (const r of results) {
+      const c = t(r).cards;
+      for (const [id, cell] of Object.entries(c?.plays ?? {})) plays[id] = (plays[id] ?? 0) + (cell.p1 ?? 0) + (cell.p2 ?? 0);
+      for (const [id, cell] of Object.entries(c?.picks ?? {})) picks[id] = (picks[id] ?? 0) + (cell.p1 ?? 0) + (cell.p2 ?? 0);
+      for (const [id, cell] of Object.entries(c?.winningDeck ?? {})) winDecks[id] = (winDecks[id] ?? 0) + ((cell.p1 ?? 0) + (cell.p2 ?? 0) > 0 ? 1 : 0);
+      for (const src of Object.values(t(r).relicSources ?? {})) relicSrc[src] = (relicSrc[src] ?? 0) + 1;
+    }
+    const ids = [...new Set([...Object.keys(plays), ...Object.keys(picks), ...Object.keys(winDecks)])]
+      .sort((a, b) => (plays[b] ?? 0) - (plays[a] ?? 0));
+    if (ids.length > 0) {
+      console.log('---------------- S14.1 PER-CARD ATTRIBUTION (B23) ----------------');
+      const brief = (xs) => xs.map((id) => `${id}(${plays[id] ?? 0})`).join(', ');
+      console.log(`top-10 by plays: ${brief(ids.slice(0, 10))}`);
+      console.log(`bottom-10 by plays: ${brief(ids.slice(-10))}`);
+      for (const id of ids) {
+        console.log(`  card ${id.padEnd(24)} plays ${String(plays[id] ?? 0).padStart(4)} picks ${String(picks[id] ?? 0).padStart(3)} winning-decks ${winDecks[id] ?? 0}`);
+      }
+      const pickedNeverPlayed = Object.keys(picks).filter((id) => !(plays[id] > 0));
+      console.log(`picked-but-never-played: ${pickedNeverPlayed.join(', ') || 'none'}`);
+      console.log(`relic acquisition sources: ${JSON.stringify(relicSrc)}`);
+    }
+  }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
   console.log(`detonations: ${detonations}  |  avg stacks per detonation: ${detonations ? (detonatedStacks / detonations).toFixed(2) : 'n/a'}`);

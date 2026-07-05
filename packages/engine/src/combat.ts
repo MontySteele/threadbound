@@ -1194,6 +1194,11 @@ export function resolveTurn(state: GameState): void {
 
     state.telemetry.cardsPlayed++;
     actStats.cardsPlayed++;
+    // S14.1 (B23): per-card play attribution, starters included
+    {
+      const cell = (state.telemetry.cards.plays[inst.defId] ??= { p1: 0, p2: 0 });
+      cell[slot.owner]++;
+    }
     // OQ#57 instrument: rite-card play rate, the real measure (rites
     // telemetry exists only on flagged runs — zero unflagged footprint)
     if (state.telemetry.rites && RITE_CARD_IDS.has(inst.defId)) {

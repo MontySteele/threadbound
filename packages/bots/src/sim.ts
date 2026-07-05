@@ -31,7 +31,7 @@ process.env.PERSIST = ''; // sims never persist rooms
 process.env.TB_ROOM_RATE = process.env.TB_ROOM_RATE ?? '100000';
 
 import { server } from '@threadbound/server';
-import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId } from '@threadbound/engine';
+import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId, CARDS, ALL_RELICS } from '@threadbound/engine';
 import { Bot, RunResult } from './bot';
 
 const RUNS = Number(process.argv[2] ?? 50);
@@ -221,6 +221,51 @@ async function main(): Promise<void> {
       console.log(`  ${r.id.padEnd(24)} n=${String(r.combats).padStart(3)}  hp/combat ${r.per.toFixed(1)}${flag}`);
     }
     if (mean > 0) console.log(`  (mean over n>=5 encounters: ${mean.toFixed(1)})`);
+  }
+  // ---- S14.1 (B23) per-card attribution ------------------------------------
+  // The "dead cards / never-bought relics" instrument: pooled play counts,
+  // picks, and winning-deck presence per card def (pair totals; per-seat kept
+  // in the raw telemetry), plus relic acquisition sources. Machine-greppable
+  // rows so shard logs pool without re-running.
+  {
+    const plays: Record<string, number> = {};
+    const picks: Record<string, number> = {};
+    const winDecks: Record<string, number> = {};
+    const relicSrc: Record<string, number> = {};
+    const relicSeen: Record<string, number> = {};
+    for (const r of results) {
+      const c = r.telemetry.cards;
+      for (const [id, cell] of Object.entries(c?.plays ?? {})) plays[id] = (plays[id] ?? 0) + cell.p1 + cell.p2;
+      for (const [id, cell] of Object.entries(c?.picks ?? {})) picks[id] = (picks[id] ?? 0) + cell.p1 + cell.p2;
+      for (const [id, cell] of Object.entries(c?.winningDeck ?? {})) winDecks[id] = (winDecks[id] ?? 0) + (cell.p1 + cell.p2 > 0 ? 1 : 0);
+      for (const [id, src] of Object.entries(r.telemetry.relicSources ?? {})) {
+        relicSrc[src] = (relicSrc[src] ?? 0) + 1;
+        relicSeen[id] = (relicSeen[id] ?? 0) + 1;
+      }
+    }
+    // every def with any activity gets one row (union: a picked-never-played
+    // card must still appear)
+    const ids = [...new Set([...Object.keys(plays), ...Object.keys(picks), ...Object.keys(winDecks)])]
+      .sort((a, b) => (plays[b] ?? 0) - (plays[a] ?? 0));
+    if (ids.length > 0) {
+      console.log('---------------- S14.1 PER-CARD ATTRIBUTION (B23) ----------------');
+      const brief = (xs: string[]) => xs.map((id) => `${id}(${plays[id] ?? 0})`).join(', ');
+      console.log(`top-10 by plays: ${brief(ids.slice(0, 10))}`);
+      console.log(`bottom-10 by plays: ${brief(ids.slice(-10))}`);
+      // the full pooled table, one row per def (grep '^  card ' to pool
+      // shard logs without re-running)
+      for (const id of ids) {
+        console.log(`  card ${id.padEnd(24)} plays ${String(plays[id] ?? 0).padStart(4)} picks ${String(picks[id] ?? 0).padStart(3)} winning-decks ${winDecks[id] ?? 0}`);
+      }
+      const acquirable = Object.values(CARDS).filter((c) => !c.starterOnly && !c.riteOnly);
+      const neverPicked = acquirable.filter((c) => !(picks[c.id] > 0)).map((c) => c.id);
+      console.log(`never-picked cards (${neverPicked.length}/${acquirable.length} of the acquirable pool): ${neverPicked.join(', ') || 'none'}`);
+      const pickedNeverPlayed = Object.keys(picks).filter((id) => !(plays[id] > 0));
+      console.log(`picked-but-never-played: ${pickedNeverPlayed.join(', ') || 'none'}`);
+      console.log(`relic acquisition sources: ${JSON.stringify(relicSrc)}`);
+      const neverAcquired = ALL_RELICS.filter((rl) => !(relicSeen[rl.id] > 0)).map((rl) => rl.id);
+      console.log(`never-acquired relics (${neverAcquired.length}/${ALL_RELICS.length}): ${neverAcquired.join(', ') || 'none'}`);
+    }
   }
   console.log(`Resonance ignitions: ${resonances}  |  streak tags: ${JSON.stringify(resonanceTags)}`);
   console.log(`damage by tag: ${JSON.stringify(damageByTag)}  |  Hex share: ${hexShare.toFixed(1)}%`);
