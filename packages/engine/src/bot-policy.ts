@@ -55,6 +55,11 @@ export interface BotPolicyOptions {
    *  slots back up (intentionally the dilution variable, not a pick counter);
    *  covets and shop card buys share the gate. Never set in production/solo. */
   pickCap?: number;
+  /** S15.3 SIM-ONLY (TB_BOT_ALL_KNOTS): the elite-excess routing probe
+   *  (S13.1a pattern) — whenever a knot is reachable, take it, ladder price
+   *  ignored. OQ#55's calibration gate (last/first pair-HP ≥2) is measured
+   *  against THIS probe. Never set in production/solo. */
+  allKnots?: boolean;
   /** S13.1b (TB_BOT_DRAFT_V2): draftScore v2. Learns (i) powers/engines +4,
    *  (ii) rare +3 (was +1), (iii) a dilution term (score − max(0, deckSize −
    *  16) × 0.4). ONE policy, no v1/v2 fork.
@@ -118,6 +123,7 @@ export class BotPolicy {
   private reclaimNudge: boolean;
   private skipPicks: boolean;
   private pickCap: number | undefined;
+  private allKnots: boolean;
   private draftV2: boolean;
   private reclaimedTurn = -1;
   private pulsedTurn = -1;
@@ -136,6 +142,7 @@ export class BotPolicy {
     this.reclaimNudge = opts.reclaimNudge ?? false;
     this.skipPicks = opts.skipPicks ?? false;
     this.pickCap = opts.pickCap;
+    this.allKnots = opts.allKnots ?? false;
     this.draftV2 = opts.draftV2 ?? true; // S13.6: v2 IS the policy (D7 flip)
   }
 
@@ -731,6 +738,13 @@ export class BotPolicy {
    *  every Wave A baseline holds byte-identically. */
   private pickBraidNode(view: BotView, options: number[]): number {
     const byId = new Map(view.map.nodes.map((n) => [n.id, n]));
+    // S15.3 (TB_BOT_ALL_KNOTS, SIM-ONLY): the elite-excess routing probe —
+    // a reachable knot is taken unconditionally, ladder price ignored.
+    // Lowest-id among elite options: seat-symmetric, vote never thrashes.
+    if (this.allKnots) {
+      const knots = options.filter((id) => byId.get(id)?.kind === 'elite').sort((a, b) => a - b);
+      if (knots.length > 0) return knots[0];
+    }
     // seat-SYMMETRIC on purpose: both seats must compute identical values
     const worstHp = Math.min(
       view.players.p1.hp / view.players.p1.maxHp,

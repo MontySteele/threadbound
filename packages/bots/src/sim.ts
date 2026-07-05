@@ -20,6 +20,9 @@
 //                        cap is intentionally the dilution variable, not a pick
 //                        counter. Covets and shop card buys share the gate.
 //                        The constant 10 is STARTER_DECK_SIZE (pinned by test).
+// S15.3 — the elite-excess routing probe (OQ#55 calibration):
+//   TB_BOT_ALL_KNOTS=1   bots take every reachable knot, ladder price ignored;
+//                        the ≥2 last/first pair-HP gate is read on this leg
 // S13.1b/S13.6 — draft policy v2 (powers/engines +4, rare +3, a dilution term
 // past deck 16) is the DEFAULT since the S13.6 D7 flip (its first clean
 // battery: post-content v2 60% vs v1 50%, S13-ECONOMY-STATUS.md).
@@ -67,6 +70,7 @@ const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT
   ? Math.max(0, Number(process.env.TB_BOT_PICK_CAP) || 0)
   : undefined;
 const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 flip)
+const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 
 function port(): number {
   const addr = server.address();
@@ -76,7 +80,7 @@ function port(): number {
 
 async function playRun(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
-  const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, draftV2: DRAFT_V2 };
+  const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, allKnots: ALL_KNOTS, draftV2: DRAFT_V2 };
   const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
   await new Promise((r) => setTimeout(r, 150));
   const b = new Bot(url, { joinCode: code, seed: runSeed * 3 + 2, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
@@ -111,6 +115,7 @@ async function main(): Promise<void> {
     PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
     process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
     process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
+    ALL_KNOTS ? 'ALL_KNOTS' : null, // S15.3 probe leg — loud on record
     DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
   ].filter(Boolean).join(' ');
   console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
