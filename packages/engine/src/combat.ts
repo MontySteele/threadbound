@@ -1674,7 +1674,12 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const mods = ascensionMods(state.ascension);
   // S11.2: elite fights carry the act's current escalation. No extra rolls;
   // factor 0 keeps the integer HP path (byte-equal non-elite combats).
-  const esc = enemyDefIds.some((id) => ENEMIES[id]?.elite)
+  // S15.2A rider: keyed on def-elite OR the node kind — a2_knot_rippers
+  // carries two normal-tier defs but IS the knot, and the ladder must
+  // tighten it (Part 3's probe calibrates against exactly this). Union so
+  // def-keyed test harnesses (no positioned node) hold byte-identically.
+  const node = state.map?.nodes?.find((n) => n.id === state.map.position);
+  const esc = (enemyDefIds.some((id) => ENEMIES[id]?.elite) || node?.kind === 'elite')
     ? escalationFactor(state.map?.knotsCut ?? 0) : 0;
   const hpScale = mods.hpScale * (1 + esc);
   const dmgScale = mods.dmgScale * (1 + esc);

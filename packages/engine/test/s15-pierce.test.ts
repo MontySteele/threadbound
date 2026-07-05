@@ -87,6 +87,24 @@ describe('S15.2A: the Seamripper is reachable where the ruling placed it', () =>
     });
   }
 
+  it('the knot comp escalates with the ladder even though its defs are normal-tier', () => {
+    const spawn = (knotsCut: number): GameState => {
+      const s0 = initialState(5, { p1: 'vess', p2: 'bram' });
+      const s: GameState = reduce(s0, { type: 'START_RUN', seed: 5 });
+      // stand the pair on an elite node so the node-kind half of the union keys
+      const elite = s.map.nodes.find((n) => n.kind === 'elite') ?? s.map.nodes[0];
+      elite.kind = 'elite';
+      s.map.position = elite.id;
+      s.map.knotsCut = knotsCut;
+      startCombat(s, ENCOUNTERS.a2_knot_rippers.enemies);
+      return s;
+    };
+    const base = spawn(0).combat!.enemies[0];
+    const tightened = spawn(1).combat!.enemies[0];
+    expect(tightened.maxHp).toBe(Math.round(base.maxHp * 1.1));
+    expect(spawn(1).combat!.escalation).toBeCloseTo(0.10);
+  });
+
   it('the Witness has its telegraph pool (D5, PROVISIONAL strings)', () => {
     const pool = WITNESS_POOLS['seamripper_intro'];
     expect(Array.isArray(pool) ? pool.length : 0).toBeGreaterThanOrEqual(3);
