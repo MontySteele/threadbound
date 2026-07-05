@@ -100,7 +100,15 @@ export function generateActMap(
   rng = eliteLayerRoll.state;
   const eliteLayers = [2 + eliteLayerRoll.value, 2 + ((eliteLayerRoll.value + 1) % 3)];
   if (extraElite) eliteLayers.push(2 + ((eliteLayerRoll.value + 2) % 3));
-  const eliteIds = [...pools.elite];
+  // S14.2 (sweep B1, ruled 2026-07-02): elite slots SAMPLE the pool —
+  // seeded shuffle, then positional draw from the shuffled order (=
+  // sample-without-replacement). The old positional [...pools.elite] made
+  // the third pool member (Mislaid Sexton / The Unstrung) unreachable
+  // below A3, ever. rng-consumption change → golden regen, loud, in this
+  // commit's window.
+  const eliteDraw = rngShuffle(rng, pools.elite);
+  rng = eliteDraw.state;
+  const eliteIds = eliteDraw.value;
   // guarantee ≥1 shop and ≥1 treasure in layers 1-4
   const shopLayerRoll = rngInt(rng, 4);
   rng = shopLayerRoll.state;
@@ -619,7 +627,11 @@ function generateBraidMap(
     });
   };
 
-  const eliteIds = [...pools.elite];
+  // S14.2 (sweep B1): knots sample the pool too — same
+  // sample-without-replacement as the classic path, same reasons.
+  const eliteDraw = rngShuffle(rng, pools.elite);
+  rng = eliteDraw.state;
+  const eliteIds = eliteDraw.value;
   for (let layer = 1; layer <= 5; layer++) {
     placeSlot('truth', layer, 0);
     if (widen.truth === layer) placeSlot('truth', layer, 1);
