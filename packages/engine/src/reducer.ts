@@ -1116,7 +1116,7 @@ function resolveLoomVerdict(state: GameState): void {
         // shrine sits after the run's last reward screen, so the next
         // combat IS the finale). Replaces the S8.2 covetEach payoff, which
         // was unspendable where it landed. Line states the real gain
-        // (Witness-never-lies fence); PROVISIONAL until the witness read.
+        // (Witness-never-lies fence); RATIFIED 2026-07-05 (D4 row 10).
         state.pendingThread += 2;
         state.log.push({ e: 'info', detail: 'The loom knows why you came — and leans toward you. The Thread arrives 2 deeper at the last fight.' });
         break;

@@ -140,7 +140,11 @@ Any a2-boss action stays a future sprint (S15 doc, Part 5.4).
   content stays a human-data question.
 - All 28 relics acquired at least once across the battery.
 
-## D4 sign-off table (strings PROVISIONAL until ruled)
+## D4 sign-off table — RATIFIED 2026-07-05 ("D4 lines look good")
+
+All ten rows are final; the PROVISIONAL markers on these strings in the
+content files and reducer are flipped to RATIFIED. The Choirmaster flag
+at the end of this section remains open (not covered by the ratification).
 
 B9 backfills (S10a diction standard):
 
