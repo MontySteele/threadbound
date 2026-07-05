@@ -9,6 +9,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FRAGMENTS, VALID_COMBOS } from '../../engine/src/content/truth';
 import { FACES } from '../../engine/src/content/faces';
+import { WITNESS_REGISTERS } from '../../engine/src/content/witness';
 
 const assetsDir = path.resolve(__dirname, '../dist/assets');
 
@@ -34,6 +35,19 @@ describe('bundle secrecy (§11 extension)', () => {
       for (const [q, a] of Object.entries(combo)) {
         for (const pat of [`${q}:"${a}"`, `${q}:'${a}'`, `${q}":"${a}"`]) {
           expect(js.includes(pat), `combo pair ${pat} leaked into the bundle`).toBe(false);
+        }
+      }
+    }
+    // S14.3 (B10): the held-reveal registers (the sacrament fall-rebind
+    // quote, the procession-direction hint, the 70% voice-arc lines) must
+    // not be datamine-able from the bundle — template vars ({rite}) are
+    // stripped and every remaining chunk asserted absent
+    for (const registers of Object.values(WITNESS_REGISTERS)) {
+      for (const reg of registers) {
+        for (const line of reg.lines) {
+          for (const chunk of line.split(/\{[^}]+\}/).filter((c) => c.length >= 20)) {
+            expect(js.includes(chunk), `held-reveal register chunk leaked: ${chunk.slice(0, 40)}…`).toBe(false);
+          }
         }
       }
     }
