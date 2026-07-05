@@ -1067,6 +1067,19 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
             !state.players[e.boundTo === 'p1' ? 'p2' : 'p1'].fallen
               ? (e.boundTo === 'p1' ? 'p2' : 'p1') as PlayerId
               : null;
+          // S14.3 (B12): the Pall Warden rebinds to the LAST hand in the
+          // Chain before it attacks — forecast it from the staged chain so
+          // the displayed target isn't a lie. Recomputes on every stage and
+          // reorder (same render path); deterministic, so the client may
+          // compute it (§11) — the same class as the retether forecast.
+          const lastOwner = combat.chain.length > 0
+            ? combat.chain[combat.chain.length - 1].owner
+            : combat.lastChainOwner ?? null;
+          const rebindTo =
+            e.hp > 0 && def.rebindsToLastPlayed && e.boundTo && lastOwner &&
+            !state.players[lastOwner].fallen && lastOwner !== e.boundTo
+              ? lastOwner
+              : null;
           // playback: while the theater narrates, show HP as of the last
           // played beat instead of the broadcast's final value
           const ehp = displayHp(hpOffsets, e.id, e.hp, e.maxHp);
@@ -1121,8 +1134,9 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
                 <div key={m} className="mech-reveal">{line}</div>
               ))}
               {e.hp > 0 && e.telegraph && <div className="mech-telegraph">{e.telegraph}</div>}
-              <div className="bound" style={{ color: retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
+              <div className="bound" style={{ color: rebindTo ? PCOLOR[rebindTo] : retetherTo ? PCOLOR[retetherTo] : e.boundTo ? PCOLOR[e.boundTo] : 'var(--text-dim)' }} data-inspect="kw:bound">
                 {e.untargetable ? 'unbound — untargetable'
+                  : rebindTo ? `bound to ${state.players[e.boundTo!].character} — follows the last hand → ${state.players[rebindTo].character}`
                   : retetherTo ? `bound to ${state.players[e.boundTo!].character} — re-tethers this turn → ${state.players[retetherTo].character}`
                   : e.boundTo ? `bound to ${state.players[e.boundTo].character}` : 'unbound'}
               </div>
