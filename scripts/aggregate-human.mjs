@@ -238,6 +238,19 @@ for (const [sha, results] of [...groups.entries()].sort()) {
     `regen wasted at cap/combat ${combats ? (regenWasted / combats).toFixed(2) : 'n/a'}`,
   );
   console.log(`forced links (Pulse): ${forced} (${links ? ((100 * forced) / links).toFixed(1) : 0}% of fires) | Resonances needing one: ${resForced}/${resonances}`);
+  // S16.0d (B22): the gate-3 Reclaim band's denominator — reclaims vs every
+  // card acquisition channel (telemetry.cards.picks counts them all since
+  // S14.1; pre-S14 files simply read 0 acquisitions → n/a, no back-guessing)
+  {
+    const acquisitions = results.reduce((a, r) => {
+      const cells = Object.values(t(r).cards?.picks ?? {});
+      return a + cells.reduce((s, cell) => s + (cell.p1 ?? 0) + (cell.p2 ?? 0), 0);
+    }, 0);
+    console.log(
+      `B22 reclaim ratio: ${spendMix.reclaim ?? 0} reclaims / ${acquisitions} card acquisitions = ` +
+      `${acquisitions ? ((100 * (spendMix.reclaim ?? 0)) / acquisitions).toFixed(1) : 'n/a'}% (gate-3 band: <25%)`,
+    );
+  }
 
   // ---- S4.1 gold economy --------------------------------------------------------
   const n = Math.max(1, results.length);

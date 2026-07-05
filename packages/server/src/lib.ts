@@ -10,7 +10,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import {
   Action, BotView, CharacterId, CONTENT_VERSION, GameState, IllegalAction, PlayerId,
   PT1_ENEMY_DMG_SCALE, PT1_ENEMY_HP_SCALE, RiteUnlocks,
-  clientTruthView, emptyTelemetry, initialState, reduce, hashState, scoutView,
+  emptyTelemetry, initialState, reduce, hashState, redactFor as redactView,
 } from '@threadbound/engine';
 import { buildSha } from './build';
 import { BotSpeed, SoloBotDriver } from './solo';
@@ -680,35 +680,12 @@ export class GameServer {
    *  piles stay redacted: their ORDER is the one true unknown.
    *  nt-slice (§11 extension): truth state is replaced wholesale by the
    *  per-viewer projection — tuple, eliminations, and partner fragment text
-   *  never cross the wire. */
+   *  never cross the wire.
+   *  S16.0a: the body now lives in the engine (redactFor) so the socket-free
+   *  sim path consumes the SAME projection with no wire — construction is
+   *  byte-identical (the wire hash digests this object). */
   private redactFor(state: GameState, viewer: PlayerId): unknown {
-    const clone: GameState = structuredClone(state);
-    const other: PlayerId = viewer === 'p1' ? 'p2' : 'p1';
-    const counts = {
-      [viewer]: { hand: clone.players[viewer].hand.length, draw: clone.players[viewer].draw.length },
-      [other]: { hand: clone.players[other].hand.length, draw: clone.players[other].draw.length },
-    };
-    clone.players.p1.draw = [];
-    clone.players.p2.draw = [];
-    // review-fix (§11 / §11 extension): the seed+rng pair IS the run's hidden
-    // future — draw-pile order, and on flagged runs the truth tuple and live
-    // mechanics are pure functions of it. Masked while the run is live; the
-    // seed returns on the end screens (Summary shows it for sharing/repro),
-    // and the lobby's placeholder seed predates the real roll at START_RUN.
-    if (clone.phase !== 'lobby' && clone.phase !== 'victory' && clone.phase !== 'game_over') {
-      clone.seed = 0;
-      clone.rng = 0;
-    }
-    const truth = clone.truth ? clientTruthView(clone.truth, viewer, clone.botSeat) : undefined;
-    // S11.6 asymmetric scouting: per-seat node faces, rendered HERE so the
-    // text never crosses screens (ruling 5) — each seat's lines ride only
-    // that seat's view. Empty (and absent) on unflagged runs.
-    const scout = scoutView(state, viewer);
-    return {
-      ...clone, ...(truth ? { truth } : {}),
-      ...(Object.keys(scout).length > 0 ? { scout } : {}),
-      counts, you: viewer,
-    };
+    return redactView(state, viewer);
   }
 
   private send(socket: WebSocket | null, msg: unknown): void {

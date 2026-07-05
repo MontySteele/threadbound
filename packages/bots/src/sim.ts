@@ -1,5 +1,24 @@
-// Bot simulation + M2 telemetry gates (M2 Part C): paired bots play full runs
-// through the real server/WS protocol. Usage: node dist/sim.js [runs]
+// Bot simulation + M2 telemetry gates (M2 Part C): paired bots play full runs.
+// Usage: node dist/sim.js [runs]
+//
+// S16.0 — TWO TRANSPORTS, one harness:
+//   default        SOCKET-FREE (S16.0a): each seat's BotView is built directly
+//                  from engine state in-process through the SAME pure redaction
+//                  the server sends over the wire (engine redactFor); lockstep
+//                  policy calls; no server, no socket, no sleeps. Deterministic
+//                  per seed by construction — same seed twice → byte-identical
+//                  telemetry (pinned, S16.0c). The S16-R1 instrument rule
+//                  (paired same-seed reads) exists because of this path.
+//   TB_SIM_SOCKET=1  the WS path (the pre-S16 instrument): real server + real
+//                  websockets in this process. REMAINS the protocol/covenant
+//                  instrument; the S14-R5 noise law (pooled n≥200; ±7–10
+//                  win-points cross-invocation jitter per 100-run leg) governs
+//                  every row read over the socket.
+//   TB_SIM_SHARDS=N  (S16.0b, default cores−1): partition the seed range
+//                  across forked worker processes; per-shard telemetry pools
+//                  into the identical summary format (canonical run order, so
+//                  N shards ≡ 1 shard byte-identically on the socket-free
+//                  path — pinned). Works on both transports.
 //
 // Sign-off gates:
 //   - vb win rate 40–55% at A0, default topology (S14-R1; the M2 ≤40% header
@@ -35,15 +54,46 @@ process.env.PERSIST = ''; // sims never persist rooms
 // than any human IP legitimately could — lift the harness's own limit
 process.env.TB_ROOM_RATE = process.env.TB_ROOM_RATE ?? '100000';
 
-import { server } from '@threadbound/server';
+import { fork } from 'node:child_process';
+import os from 'node:os';
 import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId, CARDS, ALL_RELICS } from '@threadbound/engine';
 import { Bot, RunResult } from './bot';
+import { playRunLocal } from './local';
 
 const RUNS = Number(process.argv[2] ?? 50);
 const BASE_SEED = Number(process.env.SEED ?? 1000); // fixed seed set → reproducible gates
+// S16.0b sharding: a forked child plays run indices OFFSET+1..OFFSET+RUNS of
+// the parent's battery — seeds stay BASE_SEED+index, so the pooled seed set
+// is identical to an unsharded battery's
+const RUN_OFFSET = Number(process.env.TB_SIM_RUN_OFFSET ?? 0) || 0;
+const SHARD_CHILD = process.env.TB_SIM_SHARD_CHILD; // set ⇒ emit machine rows, no summary
 // Comfort-pass checklist item 2: rites + L7 maps lengthen runs, and a timeout
 // mid-battery poisons the win-rate read — env-overridable for long batteries
+// (WS transport only: the socket-free path is deterministic and cannot hang
+// on scheduling; it stall-guards loudly instead).
 const RUN_TIMEOUT_MS = Math.max(10_000, Number(process.env.TB_RUN_TIMEOUT_MS ?? 300_000) || 300_000);
+
+// S16.0a transport switch: socket-free is the default instrument; the wire
+// is the escape hatch (protocol/covenant rows, the one-time parity bridge)
+const SOCKET = process.env.TB_SIM_SOCKET === '1';
+
+// S16.0b: shard count — default cores−1 (the doc's ruling); TB_SIM_SHARDS=1
+// keeps the battery in-process. Children never re-shard.
+const SHARDS = (() => {
+  if (SHARD_CHILD !== undefined) return 1;
+  const raw = process.env.TB_SIM_SHARDS;
+  const n = raw !== undefined && raw !== '' ? Number(raw) : Math.max(1, os.cpus().length - 1);
+  return Math.max(1, Math.min(Number.isFinite(n) ? Math.floor(n) : 1, Math.max(1, RUNS)));
+})();
+
+/** S16.0a: envFlag with the server's exact semantics (server/src/lib.ts) —
+ *  the socket-free path must not import the server (importing it binds a
+ *  port), but the flags that cross START_RUN must read identically. */
+function envFlag(name: string, def = false): boolean {
+  const v = process.env[name];
+  if (v === undefined) return def;
+  return !['', '0', 'false', 'off', 'no'].includes(v.trim().toLowerCase());
+}
 
 // S3.5 character-balance battery: PAIR=vb (default) | vv | bb
 const PAIR = (process.env.PAIR ?? 'vb').toLowerCase();
@@ -72,13 +122,31 @@ const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT
 const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 flip)
 const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 
-function port(): number {
-  const addr = server.address();
-  if (typeof addr === 'object' && addr) return addr.port;
-  throw new Error('server not listening');
+// the flags that cross START_RUN (server: envFlag; socket-free: same reader)
+const FLAGS = { tracks: envFlag('TB_TRACKS'), rites: envFlag('TB_RITES'), knotwork: envFlag('TB_KNOTWORK') };
+const KNOT = FLAGS.knotwork;
+
+/** one battery entry: run index (1-based over the whole battery) + result */
+interface Played {
+  run: number;
+  result: RunResult;
 }
 
-async function playRun(url: string, runSeed: number): Promise<RunResult> {
+const RESULT_MARK = '##TBRESULT##'; // shard child → parent machine row
+
+function runLine(p: Played): string {
+  const r = p.result;
+  return (
+    `run ${p.run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
+    `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WS transport (TB_SIM_SOCKET=1) — the pre-S16 instrument, kept verbatim
+// ---------------------------------------------------------------------------
+
+async function playRunWs(url: string, runSeed: number): Promise<RunResult> {
   let code = '';
   const knobs = { skipPicks: SKIP_PICKS, pickCap: PICK_CAP, allKnots: ALL_KNOTS, draftV2: DRAFT_V2 };
   const a = new Bot(url, { create: true, onCode: (c) => (code = c), seed: runSeed * 3 + 1, startSeed: runSeed, characters: PAIR_CHARS, ascension: ASCEND, seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE, ...knobs });
@@ -96,48 +164,33 @@ async function playRun(url: string, runSeed: number): Promise<RunResult> {
   }
 }
 
-interface Gate {
-  name: string;
-  value: string;
-  pass: boolean;
-}
-
-async function main(): Promise<void> {
+async function playAllWs(printLive: boolean): Promise<Played[]> {
+  // the server import BOOTS a listening server — deliberately confined to the
+  // WS transport (S16.0a: the socket-free path never touches it)
+  const { server } = await import('@threadbound/server');
   await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
-  const url = `ws://localhost:${port()}`;
-  console.log(`sim: bots connecting to ${url}, ${RUNS} runs, seed set ${BASE_SEED}+ (engine + policy seeded; socket timing still jitters slightly)`);
-  // S3.1 run header: a batch is uninterpretable without the difficulty on record
-  // S4.4: the rung joins the scales in the header — a batch is uninterpretable without both
-  console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
-  // S13.1a/b: a batch is uninterpretable without its economy knobs on record
-  const knobLine = [
-    SKIP_PICKS ? 'SKIP_PICKS' : null,
-    PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
-    process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
-    process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
-    ALL_KNOTS ? 'ALL_KNOTS' : null, // S15.3 probe leg — loud on record
-    DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
-  ].filter(Boolean).join(' ');
-  console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
+  const addr = server.address();
+  if (typeof addr !== 'object' || !addr) throw new Error('server not listening');
+  const url = `ws://localhost:${addr.port}`;
+  console.log(`sim: bots connecting to ${url} (engine + policy seeded; socket timing still jitters slightly — S14-R5 governs)`);
 
-  const results: RunResult[] = [];
+  const played: Played[] = [];
   // Comfort pass: bounded-concurrency pool (TB_SIM_CONC, default 8). Each run
   // is its own room + seeds, so runs are independent; aggregation is
-  // order-independent. Sequential behavior: TB_SIM_CONC=1.
+  // order-independent (results are pooled in canonical run order regardless).
   const CONC = Math.max(1, Number(process.env.TB_SIM_CONC ?? 8) || 8);
   let nextRun = 1;
   let failed = false;
   async function worker(): Promise<void> {
     while (!failed) {
-      const run = nextRun++;
-      if (run > RUNS) return;
+      const n = nextRun++;
+      if (n > RUNS) return;
+      const run = RUN_OFFSET + n;
       try {
-        const r = await playRun(url, BASE_SEED + run);
-        results.push(r);
-        console.log(
-          `run ${run}: ${r.outcome} in act ${r.act} — combats won ${r.combatsWon}, ` +
-          `turns ${r.telemetry.turns}, cards ${r.telemetry.cardsPlayed}, links ${r.telemetry.linksFired}`,
-        );
+        const result = await playRunWs(url, BASE_SEED + run);
+        const p = { run, result };
+        played.push(p);
+        if (printLive) console.log(runLine(p));
       } catch (err) {
         console.error(`run ${run}: FAILED — ${err}`);
         process.exitCode = 1;
@@ -146,7 +199,117 @@ async function main(): Promise<void> {
     }
   }
   await Promise.all(Array.from({ length: Math.min(CONC, RUNS) }, () => worker()));
+  server.close();
+  return played;
+}
 
+// ---------------------------------------------------------------------------
+// Socket-free transport (S16.0a) — deterministic, sequential in-process
+// ---------------------------------------------------------------------------
+
+function playAllLocal(printLive: boolean): Played[] {
+  const played: Played[] = [];
+  for (let n = 1; n <= RUNS; n++) {
+    const run = RUN_OFFSET + n;
+    try {
+      const result = playRunLocal({
+        seed: BASE_SEED + run,
+        characters: PAIR_CHARS,
+        ascension: ASCEND,
+        flags: FLAGS,
+        policy: {
+          seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE,
+          skipPicks: SKIP_PICKS, pickCap: PICK_CAP, allKnots: ALL_KNOTS, draftV2: DRAFT_V2,
+        },
+      });
+      const p = { run, result };
+      played.push(p);
+      if (printLive) console.log(runLine(p));
+    } catch (err) {
+      console.error(`run ${run}: FAILED — ${err}`);
+      process.exitCode = 1;
+      break; // deterministic instrument: fail fast and loudly
+    }
+  }
+  return played;
+}
+
+// ---------------------------------------------------------------------------
+// Sharding (S16.0b): fork this script per shard; pool machine rows
+// ---------------------------------------------------------------------------
+
+/** contiguous partition of RUNS across SHARDS: shard i plays `counts[i]`
+ *  runs starting at 1-based offset `offsets[i]` (exported-by-test shape) */
+export function shardPlan(runs: number, shards: number): { offset: number; count: number }[] {
+  const per = Math.floor(runs / shards);
+  const extra = runs % shards;
+  const plan: { offset: number; count: number }[] = [];
+  let at = 0;
+  for (let i = 0; i < shards; i++) {
+    const count = per + (i < extra ? 1 : 0);
+    plan.push({ offset: at, count });
+    at += count;
+  }
+  return plan;
+}
+
+async function playAllSharded(): Promise<Played[]> {
+  const plan = shardPlan(RUNS, SHARDS);
+  const pooled: Played[] = [];
+  let done = 0;
+  const jobs = plan.map((shard, i) => new Promise<void>((resolve, reject) => {
+    if (shard.count === 0) return resolve();
+    const child = fork(__filename, [String(shard.count)], {
+      env: {
+        ...process.env,
+        TB_SIM_SHARD_CHILD: String(i),
+        TB_SIM_RUN_OFFSET: String(RUN_OFFSET + shard.offset),
+        TB_SIM_SHARDS: '1',
+      },
+      stdio: ['ignore', 'pipe', 'inherit', 'ipc'],
+    });
+    let buf = '';
+    child.stdout!.on('data', (chunk: Buffer) => {
+      buf += chunk.toString();
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+        if (line.startsWith(RESULT_MARK)) {
+          pooled.push(JSON.parse(line.slice(RESULT_MARK.length)) as Played);
+          if (++done % 25 === 0) process.stderr.write(`sim: progress ${done}/${RUNS} runs pooled\n`);
+        }
+        // anything else a child prints on stdout is dropped — the parent owns
+        // the canonical output (run lines + summary in pooled run order)
+      }
+    });
+    child.on('exit', (code) => {
+      if (code !== 0) {
+        process.exitCode = 1;
+        reject(new Error(`shard ${i} exited ${code}`));
+      } else resolve();
+    });
+    child.on('error', reject);
+  }));
+  const settled = await Promise.allSettled(jobs);
+  for (const s of settled) {
+    if (s.status === 'rejected') console.error(String(s.reason));
+  }
+  return pooled;
+}
+
+// ---------------------------------------------------------------------------
+// Summary (M2 Part C) — one function over the pooled battery, transport- and
+// shard-agnostic: identical format everywhere (S16.0b's aggregation contract)
+// ---------------------------------------------------------------------------
+
+interface Gate {
+  name: string;
+  value: string;
+  pass: boolean;
+}
+
+export function printSummary(results: RunResult[]): void {
   const sum = (f: (r: RunResult) => number) => results.reduce((acc, r) => acc + f(r), 0);
   const victories = results.filter((r) => r.outcome === 'victory').length;
   const winRate = (100 * victories) / Math.max(1, results.length);
@@ -183,7 +346,6 @@ async function main(): Promise<void> {
   // the 25–35/≤40 bands were calibrated to draft-v1 bots that no longer
   // exist. Mirrors and braid rows are reported, not banded; human data
   // rules at the next playtest (OQ#14).
-  const KNOT = process.env.TB_KNOTWORK === '1';
   const r1Banded = PAIR === 'vb' && ASCEND === 0 && !KNOT;
   const gates: Gate[] = [
     r1Banded
@@ -242,6 +404,7 @@ async function main(): Promise<void> {
   // picks, and winning-deck presence per card def (pair totals; per-seat kept
   // in the raw telemetry), plus relic acquisition sources. Machine-greppable
   // rows so shard logs pool without re-running.
+  let acquisitions = 0; // S16.0d (B22): every addCardToDeck channel
   {
     const plays: Record<string, number> = {};
     const picks: Record<string, number> = {};
@@ -258,6 +421,7 @@ async function main(): Promise<void> {
         relicSeen[id] = (relicSeen[id] ?? 0) + 1;
       }
     }
+    acquisitions = Object.values(picks).reduce((a, b) => a + b, 0);
     // every def with any activity gets one row (union: a picked-never-played
     // card must still appear)
     const ids = [...new Set([...Object.keys(plays), ...Object.keys(picks), ...Object.keys(winDecks)])]
@@ -318,6 +482,13 @@ async function main(): Promise<void> {
     `regen wasted at cap/combat ${combats ? (regenWasted / combats).toFixed(2) : 'n/a'}`,
   );
   console.log(`forced links (Pulse): ${forced} (${links ? ((100 * forced) / links).toFixed(1) : 0}% of fires) | Resonances needing one: ${resForced}/${resonances}`);
+  // S16.0d (B22): the gate-3 Reclaim band's denominator, finally emitted —
+  // reclaims vs every card acquisition channel (reward picks, covets, shop
+  // buys, rite vestments: everything through addCardToDeck since S14.1)
+  console.log(
+    `B22 reclaim ratio: ${spendMix.reclaim ?? 0} reclaims / ${acquisitions} card acquisitions = ` +
+    `${acquisitions ? ((100 * (spendMix.reclaim ?? 0)) / acquisitions).toFixed(1) : 'n/a'}% (gate-3 band: <25%)`,
+  );
 
   // ---- S4.1 gold economy ------------------------------------------------------
   const n = Math.max(1, results.length);
@@ -507,11 +678,68 @@ async function main(): Promise<void> {
   }
   console.log(allPass ? 'ALL GATES PASS' : 'GATES PENDING PART A RECALIBRATION — do not tune off this number before the human-uplift bands exist (M3 Part A)');
   console.log('===============================================================');
-  server.close();
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main(): Promise<void> {
+  const child = SHARD_CHILD !== undefined;
+  if (!child) {
+    // S16.0a/b: the transport and the shard boundary are LOUD, always — a
+    // battery is uninterpretable without knowing which instrument ran it
+    console.log(SOCKET
+      ? 'sim: transport WEBSOCKET (TB_SIM_SOCKET=1) — the protocol/covenant instrument; S14-R5 noise law governs every row'
+      : 'sim: transport SOCKET-FREE (S16.0a) — deterministic per seed; TB_SIM_SOCKET=1 restores the wire');
+    console.log(`sim: ${RUNS} runs, seed set ${BASE_SEED + RUN_OFFSET + 1}..${BASE_SEED + RUN_OFFSET + RUNS}`);
+    console.log(SHARDS > 1
+      ? `sim: shards ${SHARDS} (TB_SIM_SHARDS; forked workers, contiguous seed partition, pooled in canonical run order)`
+      : 'sim: shards 1 (in-process)');
+    // S3.1 run header: a batch is uninterpretable without the difficulty on record
+    // S4.4: the rung joins the scales in the header — a batch is uninterpretable without both
+    console.log(`sim: enemy scales hp ${PT1_ENEMY_HP_SCALE} / dmg ${PT1_ENEMY_DMG_SCALE}  |  pair ${PAIR_CHARS.p1}/${PAIR_CHARS.p2}  |  ascension A${ASCEND}`);
+    // S13.1a/b: a batch is uninterpretable without its economy knobs on record
+    const knobLine = [
+      SKIP_PICKS ? 'SKIP_PICKS' : null,
+      PICK_CAP !== undefined ? `PICK_CAP=${PICK_CAP}` : null,
+      process.env.TB_NO_RELICS === '1' ? 'NO_RELICS' : null,
+      process.env.TB_UPGRADE_ALL === '1' ? 'UPGRADE_ALL' : null,
+      ALL_KNOTS ? 'ALL_KNOTS' : null, // S15.3 probe leg — loud on record
+      DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
+    ].filter(Boolean).join(' ');
+    console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
+  }
+
+  let played: Played[];
+  if (!child && SHARDS > 1) {
+    played = await playAllSharded();
+  } else if (SOCKET) {
+    played = await playAllWs(!child);
+  } else {
+    played = playAllLocal(!child);
+  }
+
+  if (child) {
+    // machine rows only — the parent owns the canonical battery output
+    for (const p of played.sort((a, b) => a.run - b.run)) {
+      process.stdout.write(`${RESULT_MARK}${JSON.stringify(p)}\n`);
+    }
+    process.exit(process.exitCode ?? 0);
+  }
+
+  // canonical pooled order: by run index — makes the pooled summary (and, on
+  // the socket-free path, the entire stdout) independent of shard count and
+  // completion timing (S16.0c: N shards ≡ 1 shard, pinned)
+  played.sort((a, b) => a.run - b.run);
+  if (SHARDS > 1) for (const p of played) console.log(runLine(p));
+  printSummary(played.map((p) => p.result));
   process.exit(process.exitCode ?? 0);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
