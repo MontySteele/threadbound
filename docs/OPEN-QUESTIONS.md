@@ -437,6 +437,11 @@ working as intended, not a missing-content bug.
     (docs/S16-STATUS.md, the D8 table — STALLS there until each string is
     signed). Effects untouched; OQ#41b (which relics become genuinely
     co-op) stays content-pass material, not this sprint.
+    **RE-RULED (2026-07-06): the stall resolved toward presentation, not
+    strings** — descriptions stay as written; the RelicBar now shows only
+    relics the viewer benefits from (own relics + the partner's `coop:
+    true` relics). The retext table is superseded, preserved for the
+    record in docs/S16-STATUS.md. CLOSED.
 
 42. **"Pass on Coveting" and "Onward" are redundant on the reward screen**
     (designer, live). True: ADVANCE auto-passes an undecided Covet in the

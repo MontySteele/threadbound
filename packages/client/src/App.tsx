@@ -422,8 +422,14 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
 }
 
 function RelicBar({ state }: { state: ClientState }): JSX.Element {
+  // OQ#41a ruling (2026-07-06): show only relics YOU benefit from — all of
+  // your own, plus the partner's co-op relics (shared systems: Thread, fray,
+  // Resonance, Covet). The partner's solo relics stay off your bar so their
+  // holder-scoped text can't read as if it applied to you.
   const relics = (['p1', 'p2'] as PlayerId[]).flatMap((pid) =>
-    state.players[pid].relics.map((r) => ({ pid, relic: RELICS_BY_ID[r] })),
+    state.players[pid].relics
+      .map((r) => ({ pid, relic: RELICS_BY_ID[r] }))
+      .filter(({ relic }) => pid === state.you || relic?.coop),
   );
   if (relics.length === 0) return <></>;
   return (

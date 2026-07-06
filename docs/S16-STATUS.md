@@ -245,8 +245,18 @@ Part 6.
    golden note there.
 6. **S15 paperwork: landed** — see its commit.
 
-### S16-D8 sign-off table (PROPOSED — STALLS HERE until each row is
-### ruled; effects untouched by construction)
+### S16-D8 sign-off table — SUPERSEDED at ruling (2026-07-06)
+
+**Designer's ruling on the stall:** the descriptions are fine as-is
+*provided the UI only shows relics you yourself benefit from*. So no
+retext rows land; the fix moved from strings to presentation. Landed:
+the RelicBar now renders **your own relics + the partner's `coop:
+true` relics only** — the partner's solo relics (the whole confusion
+class below) no longer appear on your bar, so their holder-scoped
+text can't read as if it applied to you. The co-op list was already a
+curated data flag (13 of 28, the M2-B2 "≥8 co-op relics" floor), so
+no design pass was needed. Effects untouched; strings untouched. The
+table is preserved for the record:
 
 Relics whose current text is silent about whose resource it grants
 (the OQ#41a confusion class — "Ember Coal only gave Vess Momentum").
@@ -382,8 +392,9 @@ separate batteries.
 
 - **D0** — satisfied: the session's designated branch, from main after
   PR #13 (S14/S15 precedent).
-- **D1 (relic retexts)** — table authored above; **STALLED at the
-  table**, as designed. No strings landed.
+- **D1 (relic retexts)** — table authored above; stalled as designed,
+  then **RULED 2026-07-06: superseded by the UI filter** (RelicBar
+  shows own + co-op only). No strings landed; none will.
 - **D2 (knot-reward copy)** — **EMPTY**, the doc's own anticipated
   case: the existing screen copy already reads correctly for two seats.
 - **D3 (ladder short of ≥2)** — the stop-and-report branch FIRED; the
