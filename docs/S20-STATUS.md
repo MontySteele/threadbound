@@ -341,5 +341,14 @@ parity instruments byte-identical after):
    skips independently. Verified live: 1720 DOM samples across a
    driven fight — theater+combat coexisted (the hold), theater+Spoils
    never did. Defeat and act-advance transitions get the same hold.
+7. **The Witness's location made uniform** (designer ruling). The
+   rail now mounts on EVERY screen between the lobby and the end
+   screens (rites, map, combat, reward, event, rest, covet, shop,
+   loom — `RAIL_PHASES`), and `Log` filters witness lines
+   unconditionally: the log is the mechanical record, the rail is the
+   voice, on every screen that has both. Two deliberate exceptions
+   stay inline as scene text: the lobby greeting (pre-run; the title
+   is never narrated per S20.2) and the Summary epitaph (post-run).
+   `reward-rail-desktop.jpg` joined the banked set as the reference.
 
 The banked screenshot set was retaken on the fixed build.

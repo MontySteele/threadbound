@@ -33,6 +33,11 @@ import { Hints, WitnessHints } from './Hints';
 
 type Character = 'vess' | 'bram';
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
+// S20.4 (designer 2026-07-06, uniform): every screen between the lobby and
+// the end screens mounts the Witness rail — the voice has ONE place mid-run.
+// The lobby greeting and the Summary epitaph stay inline (pre/post-run scene
+// text; the title is never narrated per S20.2).
+const RAIL_PHASES = ['rites', 'map', 'combat', 'reward', 'event', 'rest', 'covet_treasure', 'shop', 'loom'];
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
   combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦', loom: '◉',
@@ -281,7 +286,7 @@ export default function App(): JSX.Element {
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
       ) : (
-        <div className={`app ${['map', 'combat', 'rites'].includes((heldCombat ?? state).phase) ? 'rail-on' : ''}`}>
+        <div className={`app ${RAIL_PHASES.includes((heldCombat ?? state).phase) ? 'rail-on' : ''}`}>
           <header>
             <span className="title">THREADBOUND</span>
             <span className="header-mid">
@@ -336,9 +341,7 @@ export default function App(): JSX.Element {
             railSeen.current.add(text);
             setRail((r) => [...r.slice(-23), { text, kind: 'hint', at: Date.now() }]);
           }} />
-          {/* designer 2026-07-06: the vestry speaks through the rail too —
-              everywhere the Witness talks, one voice, one place */}
-          {['map', 'combat', 'rites'].includes((heldCombat ?? state).phase) && <WitnessRail rail={rail} />}
+          {RAIL_PHASES.includes((heldCombat ?? state).phase) && <WitnessRail rail={rail} />}
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
@@ -1310,7 +1313,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         })}
       </div>
       </div>
-      <Log log={state.log} state={state} muteWitness />
+      <Log log={state.log} state={state} />
     </div>
   );
 }
@@ -1658,7 +1661,7 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
         </span>
       </div>
 
-      <Log log={state.log} state={state} muteWitness />
+      <Log log={state.log} state={state} />
     </div>
   );
 }
@@ -2352,11 +2355,13 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
 // ---------------------------------------------------------------------------
 
-export function Log({ log, state, muteWitness }: { log: GameEvent[]; state: ClientState; muteWitness?: boolean }): JSX.Element {
-  // S20.4 (designer 2026-07-06): where the Witness rail is mounted (map,
-  // combat) the voice must not ALSO appear in the log — one voice, one place
-  const rows = muteWitness ? (log ?? []).filter((e) => e.e !== 'witness') : log;
-  if (!rows || rows.length === 0) return <></>;
+export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
+  // S20.4 (designer 2026-07-06, made uniform): the log is the MECHANICAL
+  // record — the Witness's voice lives in the rail, which mounts on every
+  // screen that renders a Log. Witness lines never appear here. (The lobby
+  // greeting and the Summary epitaph are scene text, not log renders.)
+  const rows = (log ?? []).filter((e) => e.e !== 'witness');
+  if (rows.length === 0) return <></>;
   return (
     <div className="log">
       {rows.map((e, i) => (

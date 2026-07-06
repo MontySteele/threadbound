@@ -171,8 +171,8 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
         </>
       )}
       {/* the Witness's acknowledgement lands in the rail (S20.4, designer
-          2026-07-06) — the log here keeps only the mechanical record */}
-      <Log log={state.log} state={state} muteWitness />
+          2026-07-06) — the log keeps only the mechanical record */}
+      <Log log={state.log} state={state} />
     </div>
   );
 }
