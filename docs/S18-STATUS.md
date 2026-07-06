@@ -55,3 +55,66 @@ Instrument facts re-verified on tip, on the record: the ALL_KNOTS
 probe leg ≡ the braid rows at A0, identically (n=100 vb, byte-diff
 modulo the knob header) — so the braid rows' knot-2/knot-1 column IS
 the gate-4 probe-leg read. No behavior change in this commit.
+
+## Part 2 — S18.2 the pairing packet (D2)
+
+Probe protocol executed as enumerated (paired S16-R1, same seeds
+20001–22000, braid A0; the S-2 dose rows both probed since D2-3 said
+the probe decides). bb is invariant under every row by construction
+(vess-only starter changes) — verified byte-identical on the S-1 leg,
+0 discordant, and skipped thereafter.
+
+| row (paired Δ, n=2000) | vv | vb | gate 2 (bb−vb, ±8) | vv act-1 deaths |
+|---|---|---|---|---|
+| anchor | 36.0 | 55.9 | +15.8 OUT | 38.0% |
+| S-1 (tenth slot: mendthread → 2nd pinprick) | 46.4 (+10.3, 578↑/372↓) | 63.6 (+7.8, 547↑/392↓) | +8.0 (edge) | 31.4% |
+| S-2a (patchwork 3 Block + 1 Hex) | 36.9 (+0.8) | 54.1 (−1.8) | +17.5 OUT | **40.8% — inverts the target** |
+| S-2b (patchwork 4 Block + 1 Hex) | 42.4 (+6.3) | 58.7 (+2.8) | +13.0 OUT | 35.2% |
+| **S-1 + S-2b (RATIFIED)** | **48.6** (+12.6) | **65.0** (+9.1) | **+6.7 IN** | **30.3%** |
+
+**Probe findings, on the record:**
+
+- **D2-3 was decided by the probe against the proposed primary dose.**
+  3 Block + 1 Hex trades away exactly the floor the lever exists to
+  raise: act-1 deaths *rose* on both vess-seated pairings (vv
+  38.0→40.8, vb 3.2→4.6). The −1 Block costs more early survival than
+  the +1 Hex buys setup. The 4 Block + 1 Hex dose row is the S-2 that
+  works, and it reads the predicted shape (vv double +6.3, vb half
+  +2.8).
+- **S-1 is the big lever, not the garnish** — +10.3 on the mirror by
+  itself, and it alone brings gate 2 to +8.0 (the letter of the band
+  with zero margin). The doc's "lean S-2 primary" did not survive
+  contact with the probe; the tenth-slot asymmetry was carrying more
+  of the gap than the Guard shape.
+- **S-3 not fired** — nothing read short.
+
+**Ratification (designer, 2026-07-06): D2-2 = S-1 + S-2b lands.**
+Gate 2 closes at **+6.7** with real margin; vv act-1 death rate
+30.3% (the 1c floor-watch anchor — tripwire now 35.3%); the S-2
+identity ("her defense turn IS her setup turn") ships at the dose
+that actually raises the floor. The vb-side cost of the frame, on
+the record per the M2-A5 note: vb rises to 65.0, so D3 starts from a
+higher shelf — priced in, D3 is sequenced after D2 for exactly this.
+D2-1 starter reshape ✓, D2-4 (c) vv identity-hard ✓ (gate 2 binds
+bb−vb only, Part 1c watch armed), D2-5 P1 subsumed ✓.
+
+### Part 7 strings — the D2 rows (RATIFIED with the D2 row, designer 2026-07-06)
+
+| # | string | text | status |
+|---|---|---|---|
+| St-1 | patchwork base | "Gain 4 Block. Apply 1 Hex." | RATIFIED (the D2-3 dose row) |
+| St-2 | patchwork upgrade | "Gain 5 Block. Apply 1 Hex. Link (Surge): gain 2 more." | RATIFIED — the rider survives the upgrade (upgrading must not strip the setup identity) |
+| St-3 | patchwork mutation | Riveted Patchwork UNCHANGED ("Gain 3 Block. Gain 1 Momentum.") | checked — the cross-thread form is bram-flavored by design; momentum mirrors the hex rider at equal weight |
+| St-4 | S-1 | no strings (card list edit only; mendthread stays draftable) | — |
+
+Witness copy: no line references either card (checked engine witness
+tables + client); nothing owed. Targeting note on the record: the
+rider is untargeted — the engine lands it on the first targetable
+enemy (`retarget`, combat.ts); Pinprick remains the aimed Hex. A
+Guard gains no aiming step.
+
+**Golden regen, loud:** the starter reshape moves every shuffle, so
+the random-walk covenant goldens moved — regenerated IN the balance
+commit per the fixture's own law (S16.3.5 precedent); the S18
+charter's "own commits" is satisfied by this commit carrying ONLY
+the ruled levers + their regen. Suite 429/429 green after regen.
