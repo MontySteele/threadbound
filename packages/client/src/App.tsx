@@ -97,6 +97,13 @@ export default function App(): JSX.Element {
   // playback HP: while the theater narrates, the bars show live hp + these
   // offsets so damage lands per-beat instead of snapping to the final state
   const [hpOffsets, setHpOffsets] = useState<Record<string, number> | null>(null);
+  // S20 (designer 2026-07-06): when a resolution ENDS the combat, the recap
+  // must play over the combat panel, not the next screen. This holds a
+  // synthetic combat view (last roster, enemies pinned to their final 0 HP
+  // so the per-beat offset animation works unchanged) until the theater
+  // reports done or this seat skips — per-player by construction.
+  const [heldCombat, setHeldCombat] = useState<ClientState | null>(null);
+  const prevStateRef = useRef<ClientState | null>(null);
   const [joined, setJoined] = useState<{ code: string; playerId: PlayerId; character: string } | null>(null);
   const [error, setError] = useState('');
   const [partnerOn, setPartnerOn] = useState(false);
@@ -127,6 +134,26 @@ export default function App(): JSX.Element {
     netRef.current = new Net({
       onState: (s) => {
         truthRef.current = !!s.truth;
+        const prev = prevStateRef.current;
+        prevStateRef.current = s;
+        if (s.phase === 'combat') {
+          setHeldCombat(null); // a new fight always releases any stale hold
+        } else if (prev?.phase === 'combat' && prev.combat && s.log?.length && isResolution(s.log)) {
+          // combat just ended mid-recap: keep the combat panel up under the
+          // theater. The view is the last combat state (chain, hands and
+          // counts still intact there — the reward broadcast wipes them),
+          // overridden with what playback needs: the recap log, final
+          // player HP for the offset math, and every enemy at its final 0.
+          setHeldCombat({
+            ...prev,
+            log: s.log,
+            players: {
+              p1: { ...prev.players.p1, hp: s.players.p1.hp },
+              p2: { ...prev.players.p2, hp: s.players.p2.hp },
+            },
+            combat: { ...prev.combat, enemies: prev.combat.enemies.map((e) => ({ ...e, hp: 0 })) },
+          });
+        }
         setState(s);
         if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
         // S20.4: harvest Witness lines into the rail as they cross the wire
@@ -254,7 +281,7 @@ export default function App(): JSX.Element {
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
       ) : (
-        <div className={`app ${state.phase === 'map' || state.phase === 'combat' || state.phase === 'rites' ? 'rail-on' : ''}`}>
+        <div className={`app ${['map', 'combat', 'rites'].includes((heldCombat ?? state).phase) ? 'rail-on' : ''}`}>
           <header>
             <span className="title">THREADBOUND</span>
             <span className="header-mid">
@@ -292,8 +319,15 @@ export default function App(): JSX.Element {
           </header>
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
-          <Phase state={state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
-          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
+          {/* while a combat-ending recap holds, the panel is display-only —
+              clicks belong to the theater (skip) and the real phase's
+              actions wait behind it */}
+          <div className={heldCombat ? 'recap-hold' : undefined}>
+            <Phase state={heldCombat ?? state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
+          </div>
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character}
+            ename={(id) => enemyName((heldCombat ?? state).combat, id)}
+            onOffsets={setHpOffsets} onDone={() => setHeldCombat(null)} />
           <Tutorial state={state} />
           <Hints state={state} />
           {/* S20.4: hint-family lines land in the rail, not a popup */}
@@ -304,7 +338,7 @@ export default function App(): JSX.Element {
           }} />
           {/* designer 2026-07-06: the vestry speaks through the rail too —
               everywhere the Witness talks, one voice, one place */}
-          {(state.phase === 'map' || state.phase === 'combat' || state.phase === 'rites') && <WitnessRail rail={rail} />}
+          {['map', 'combat', 'rites'].includes((heldCombat ?? state).phase) && <WitnessRail rail={rail} />}
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}

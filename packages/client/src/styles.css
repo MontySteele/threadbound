@@ -75,6 +75,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .relicbar { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0; }
 .relic { border: 1px solid; border-radius: var(--radius); padding: 1px 8px; font-size: 0.75em; background: var(--panel); cursor: help; }
 
+/* a combat-ending recap holds the combat panel on screen, display-only —
+   every click belongs to the theater's skip until it finishes (S20) */
+.recap-hold { pointer-events: none; }
+
 /* ---- focus ring (B1) ---- */
 .pad-active .gp-focus, .gp-focus {
   outline: 2px solid var(--focus) !important;

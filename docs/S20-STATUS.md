@@ -326,5 +326,20 @@ parity instruments byte-identical after):
    the vestry log takes `muteWitness` — the voice now has one place
    on every screen where it speaks mid-run (rites, map, combat). The
    vestry column is narrow, so no gutter is needed there.
+6. **The combat recap played over the reward screen** (pre-existing,
+   designer finding). When a resolution killed the last enemy, the
+   authoritative phase flipped to `reward` immediately and the recap
+   theater narrated over the Spoils screen. Fix (client-only,
+   per-player by construction): when a broadcast leaves `combat`
+   carrying a resolution log, the client holds a synthetic combat
+   view — the last combat state (chain/hands/counts intact) with the
+   recap log, final player HP, and every enemy pinned to its final
+   0 HP so the per-beat HP-offset animation works unchanged. The held
+   panel is display-only (`.recap-hold`, pointer-events none); the
+   theater gained an `onDone` callback (natural end after its 1.2s
+   linger, or skip-click) that releases the hold. Each seat holds and
+   skips independently. Verified live: 1720 DOM samples across a
+   driven fight — theater+combat coexisted (the hold), theater+Spoils
+   never did. Defeat and act-advance transitions get the same hold.
 
 The banked screenshot set was retaken on the fixed build.
