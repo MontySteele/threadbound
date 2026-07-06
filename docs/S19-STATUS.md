@@ -11,7 +11,7 @@ Fresh container note (instrument law): the canonical battery reproduced
 the S18 exit board EXACTLY on the tip in this container before any
 change landed — see Part 1.
 
-## Part 1 — S19.1 the parity instrument (D0), commits `cb0fc4d` + `4735dc3`
+## Part 1 — S19.1 the parity instrument (D0), commits `d74d837` + `5c7a8ab`
 
 1. **Pre-S19 parity BANKED in-branch**: S18-P2000 re-run on the tip
    (`0a8878a`) — vv 881 / vb 972 / bb 975 of 2000, the S18-STATUS
@@ -29,14 +29,14 @@ change landed — see Part 1.
    win%, thread verbs/run per seat, per-pool Witness line counts, and
    the turn each pool exhausts. Every row REPORTED, never banded
    (S14-R5 / the S16 jitter lesson).
-   - Instrument fix on the record (`4735dc3`): `state.log` is per-turn
+   - Instrument fix on the record (`5c7a8ab`): `state.log` is per-turn
      (resolveTurn clears it), so the first verb counter read only the
      final turn. Corrected to incremental counting. First corrected
      read: the solo partner already Pulses ~5–10/run — the pre-S19 gap
      was Reclaim-shaped, not verb-shaped.
 
 **Pre-sprint solo anchor** (n=100/pairing, seeds 30001–30100, braid,
-A0, run from a worktree pinned to the pre-behavior commit `4735dc3`):
+A0, run from a worktree pinned to the pre-behavior commit `5c7a8ab`):
 
 | leg | win% | bot pulse/run | bot reclaim/run | bot sever/run |
 |---|---|---|---|---|
@@ -61,7 +61,7 @@ against exactly this. **Finding for the designer, outside the ruled
 table:** `covet_solo` (not in the D5 table) also exhausts in half of
 runs by act 2 — logged here, no change without its own row.
 
-## Part 2 — S19.2 solo Reclaim (D1, row R-a as recommended), commit `be64d4c`
+## Part 2 — S19.2 solo Reclaim (D1, row R-a as recommended), commit `07e886d`
 
 Landed as ruled: articulable pulls only (tag fires a held link — exact
 tag; 'any'/'partner' excluded — or feeds the hex/detonate axis into a
@@ -84,14 +84,14 @@ moved vb 11→20 / vv 30→25 / bb 9→13 (WS transport, loose read — the
 S14-R5 noise law puts ±7–10 points on a 100-run leg; no direction
 claimed, the read is "nothing broke").
 
-## Part 3 — S19.3 tail-planning (D2, +1.2 as recommended), commit `79c0e21`
+## Part 3 — S19.3 tail-planning (D2, +1.2 as recommended), commit `8d0bd9a`
 
 One scoring term, solo-only: candidate at the chain TAIL + human's open
 hand holds a card whose link.condition equals the candidate's tag →
 +1.2 (below "fires own link" +2). No announce line —
 `human_linked_off_me` (18%) lands at the moment of proof.
 
-## Part 4 — S19.4 protective targeting (D3, row T-a as recommended), commit `79c0e21`
+## Part 4 — S19.4 protective targeting (D3, row T-a as recommended), commit `8d0bd9a`
 
 The lethal-adjacent read factored out of maySpend into a per-seat
 helper (same math — maySpend behavior unchanged, held by the fleet
@@ -110,14 +110,14 @@ etiquette can, rarely, hand an enemy to a lethal-adjacent human. If
 that reads as a problem, T-b's ruling should probably also SUPPRESS the
 spread-sever while the human is lethal-adjacent. Stalls for a ruling.
 
-## Part 5 — S19.5 resonance-streak term (D4, cut-line — LANDED), commit `2d09073`
+## Part 5 — S19.5 resonance-streak term (D4, cut-line — LANDED), commit `83d6f38`
 
 The day had room; the pre-approved cut was not spent. +0.5 solo-only
 staging bonus for placements that raise the chain's ignition count,
 priced by the engine's own computeResonanceSlots (the S9c.6 rule:
 preview==reality by shared resolver).
 
-## Part 6 — S19.6 Witness machinery (D5/D6), commits `d28cf4b` + sever-guard fix
+## Part 6 — S19.6 Witness machinery (D5/D6), commits `94144cd` + `aa84d9e` (sever guard)
 
 All triggers behind `state.botSeat`; every sayWitness call no-ops on an
 empty pool, so the machinery landed SILENT — nothing speaks until the
@@ -245,12 +245,63 @@ describe the shared pool, fray sharing, link order, binding movement,
 Reclaim's two-way price, and Pulse's price/effect — all as the engine
 has them. No line claims a grave, masters, or a life.
 
-## Part 8 — batteries & exit gates
+## Part 8 — batteries & exit gates (final build `9ee2d48`, strings landed)
 
-(To be run at exit, after the strings ruling: S18-P2000 byte-diff all
-three pairings vs the Part 1 bank; suite green + no golden regen; solo
-battery n=100 × 3 with R-row attribution and the exhaustion shape;
-no-balance audit; designer smoke run rides tonight's session.)
+1. **Sim parity — HARD GATE: PASS.** S18-P2000 re-run on the final
+   build, all three pairings, full-stdout `cmp` against the Part 1
+   bank: vv / vb / bb all BYTE-IDENTICAL. Every behavior change in the
+   sprint is invisible to the fleet, proven end to end.
+2. **Suite green: PASS** — 429/429 on every commit. **No golden regen:
+   PASS** — the branch diff touches no test or fixture file at all.
+3. **Solo battery (REPORTED, n=100 × vb/vv/bb, seeds 30001–30100):**
+   - **reclaims/run > 0 with R-row attribution: PASS** — vb **5.81** /
+     vv **4.79** / bb **5.61** (from 0 by construction), every pull
+     articulable by R-a's own trigger. Bot verbs/run (vb leg): pulse
+     8.87, reclaim 5.81, sever 0.20, steady 0 (structural — trySteady
+     is sim-only).
+   - **win% sanity (loose): PASS** — vb 11→19, vv 30→28, bb 9→16
+     against the pre-sprint anchor; all movement within the S14-R5
+     noise envelope for 100-run WS legs. Nothing broke.
+   - **Pool-exhaustion shape (the D5 acceptance): PARTIAL —
+     stop-and-report.** The grown chatter pools now hold: own_play
+     (12) exhausts in 14/100 runs at median act 2 turn 41 (was 81/100
+     at turn 26); human_linked_off_me (12) in 3/100 (was 56/100).
+     Two always-fire pools still exhaust early ON THE BOT BOARD:
+     - `resonance_together` (12): 97/100 at median act 1 turn 21 (was
+       100/100 at turn 11.5 — the doubling doubled the runway, and the
+       bot pair simply out-resonates it: ~29 ignitions/run, 43% of
+       them Pulse-forced. A human solo pair will not sustain that
+       rate; the smoke run is the human-shaped read. If it still
+       exhausts act 1 for humans, the fix is a designer row — either
+       a bigger pool or the per-combat cap extended to this pool —
+       NOT landed here.)
+     - `i_reclaimed_yours` (6): 58/100 by median act 2 turn 33 — the
+       count was ruled before R-a's realized frequency (~5–6/run) was
+       measurable. By exhaustion the verb has been announced six
+       times, which may be exactly enough teaching; designer's call.
+     - `covet_solo` (7, outside the ruled table): 72/100 by act 2
+       turn 28 — logged again, unchanged without a row.
+   - B22 context line: the co-op summary's reclaim-ratio band prints
+     on solo boards too (~27% vs the <25% co-op band) — that band was
+     derived for pair fleets; on the solo board it is context, not a
+     gate.
+4. **No-balance audit: PASS.** The content plane carries exactly the
+   proposed St-1..St-67 strings (PROVISIONAL) and nothing else; every
+   policy branch in the diff sits behind `mode === 'solo'`
+   (bot-policy) or `state.botSeat` (combat/reducer/client); the one
+   shared-code refactor (lethalAdjacent out of maySpend) is proven
+   same-math by gate 1; no balance number moved; the S18 board is
+   untouched by byte-diff.
+5. **Designer smoke run: OPEN — rides tonight's session** (the gate
+   was designed to). Checklist for it: the Witness speaks past act 1
+   (it now holds three fresh chatter pools plus five announce pools),
+   the Reclaim is seen and announced, hints fire once each in act 1
+   with the toggle ON, nothing reads as noise. **Strings ratification
+   rides the same session** — every St-row is PROVISIONAL until then.
+
+Committer-identity note: the branch was rebased once after review
+(`--reset-author`, content unchanged) — hashes in this doc are the
+final ones.
 
 ## Part 9 — D-list disposition
 
