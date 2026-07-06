@@ -254,7 +254,7 @@ export default function App(): JSX.Element {
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
       ) : (
-        <div className={`app ${state.phase === 'map' || state.phase === 'combat' ? 'rail-on' : ''}`}>
+        <div className={`app ${state.phase === 'map' || state.phase === 'combat' || state.phase === 'rites' ? 'rail-on' : ''}`}>
           <header>
             <span className="title">THREADBOUND</span>
             <span className="header-mid">
@@ -302,7 +302,9 @@ export default function App(): JSX.Element {
             railSeen.current.add(text);
             setRail((r) => [...r.slice(-23), { text, kind: 'hint', at: Date.now() }]);
           }} />
-          {(state.phase === 'map' || state.phase === 'combat') && <WitnessRail rail={rail} />}
+          {/* designer 2026-07-06: the vestry speaks through the rail too —
+              everywhere the Witness talks, one voice, one place */}
+          {(state.phase === 'map' || state.phase === 'combat' || state.phase === 'rites') && <WitnessRail rail={rail} />}
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}

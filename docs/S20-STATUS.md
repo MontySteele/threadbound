@@ -320,5 +320,11 @@ parity instruments byte-identical after):
    right gutter the rail's width, so content and rail can no longer
    share pixels at any scrollback height. Below 1100px the rail
    overlays as before (and collapses to one line ≤700px).
+5. **The vestry still spoke from the bottom log.** The rites phase
+   didn't mount the rail, so its Witness acknowledgements stayed in
+   the old bottom position. Fix: the rail mounts on `rites` too and
+   the vestry log takes `muteWitness` — the voice now has one place
+   on every screen where it speaks mid-run (rites, map, combat). The
+   vestry column is narrow, so no gutter is needed there.
 
 The banked screenshot set was retaken on the fixed build.
