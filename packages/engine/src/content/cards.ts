@@ -34,7 +34,7 @@ def({
   link: { condition: 'Strike', text: 'Apply 4 instead.', effects: [{ op: 'hex', amount: 4, primary: true }], replace: true },
 });
 def({
-  id: 'withering', name: 'Withering', character: 'vess', rarity: 'common', cost: 1, tag: 'Hex',
+  id: 'withering', name: 'Withering', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Hex',
   text: 'Apply 3 Hex to ALL enemies.',
   base: [{ op: 'hexAll', amount: 3, primary: true }], // M2-B1 lever 3 (2nd pass): 2 → 3
   link: { condition: 'Guard', text: 'Also apply 1 Weak to all.', effects: [{ op: 'weakAll', amount: 1 }] },
@@ -44,7 +44,7 @@ def({
   },
 });
 def({
-  id: 'patient_knife', name: 'Patient Knife', character: 'vess', rarity: 'common', cost: 2, tag: 'Strike',
+  id: 'patient_knife', name: 'Patient Knife', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 6.',
   base: [{ op: 'damage', amount: 6, primary: true }],
@@ -154,7 +154,7 @@ def({
   base: [{ op: 'detonateAllEnemies' }, { op: 'damagePerDetonated', per: 1 }],
 });
 def({
-  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
   text: 'Power: at the start of each turn, gain 1 Thread. Exhaust.',
   base: [{ op: 'power', power: 'unbroken_line' }],
 });
@@ -165,14 +165,14 @@ def({
 
 // Commons (10)
 def({
-  id: 'opener', name: 'Opener', character: 'bram', rarity: 'common', cost: 0, tag: 'Strike',
+  id: 'opener', name: 'Opener', character: 'bram', rarity: 'uncommon', cost: 0, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 4. Gain 2 Momentum.',
   base: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 2 }],
   link: { condition: 'Surge', text: 'Gain 4 Momentum instead.', effects: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 4 }], replace: true },
 });
 def({
-  id: 'rendcall', name: 'Rendcall', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
+  id: 'rendcall', name: 'Rendcall', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 8.',
   base: [{ op: 'damage', amount: 8, primary: true }],

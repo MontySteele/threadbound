@@ -57,7 +57,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'ember_jab', name: 'Ember Jab', character: 'bram', rarity: 'common', cost: 0, tag: 'Strike',
+    id: 'ember_jab', name: 'Ember Jab', character: 'bram', rarity: 'uncommon', cost: 0, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 3.',
     base: [{ op: 'damage', amount: 3, primary: true }],
@@ -508,7 +508,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: aftershock — on detonate: damageAll 3 (every detonation event cracks outward into all enemies)
   {
-    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
     text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'aftershock' }],
     upgrade: {

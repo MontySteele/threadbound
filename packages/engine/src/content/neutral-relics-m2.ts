@@ -54,7 +54,7 @@ export const NEUTRAL_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'tallow_mark', name: 'Tallow Mark', character: 'neutral', rarity: 'common', cost: 0, tag: 'Hex',
+    id: 'tallow_mark', name: 'Tallow Mark', character: 'neutral', rarity: 'uncommon', cost: 0, tag: 'Hex',
     needsTarget: true,
     text: 'Apply 2 Hex.',
     base: [{ op: 'hex', amount: 2, primary: true }],
@@ -278,14 +278,20 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'braided_censer', name: 'Braided Censer',
+    // S17 audit (ruled 2026-07-06): +5.0 count-stratified lift, 2.6x the
+    // next non-Resonance peer — drops at rare weight now, effect untouched
     text: 'Whenever Resonance ignites, you and your partner each heal 2.',
     coop: true,
+    rare: true,
     hooks: [{ on: 'resonance', effects: [{ op: 'heal', amount: 2 }, { op: 'partnerHeal', amount: 2 }] }],
   },
   {
     id: 'chord_of_the_choir', name: 'Chord of the Choir',
+    // S17 audit (ruled 2026-07-06): +4.1 count-stratified lift — rare weight,
+    // effect untouched (same ruling as Braided Censer)
     text: 'Whenever Resonance ignites, draw 1 and gain Kindled 1.',
     coop: true,
+    rare: true,
     hooks: [{ on: 'resonance', effects: [{ op: 'draw', amount: 1 }, { op: 'kindled', amount: 1 }] }],
   },
   {

@@ -109,7 +109,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'unpicking', name: 'Unpicking', character: 'vess', rarity: 'common', cost: 0, tag: 'Strike',
+    id: 'unpicking', name: 'Unpicking', character: 'vess', rarity: 'uncommon', cost: 0, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 3.',
     base: [{ op: 'damage', amount: 3, primary: true }],
@@ -315,7 +315,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'pale_unmaking', name: 'Pale Unmaking', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Hex',
+    id: 'pale_unmaking', name: 'Pale Unmaking', character: 'vess', rarity: 'rare', cost: 2, tag: 'Hex',
     needsTarget: true,
     text: 'Apply 3 Hex, then detonate up to 3 Hexes on the target.',
     base: [{ op: 'hex', amount: 3, primary: true }, { op: 'detonate', max: 3 }],
@@ -333,7 +333,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'rend_the_weave', name: 'Rend the Weave', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Strike',
+    id: 'rend_the_weave', name: 'Rend the Weave', character: 'vess', rarity: 'rare', cost: 2, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 8.',
     base: [{ op: 'damage', amount: 8, primary: true }],

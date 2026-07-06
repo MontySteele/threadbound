@@ -17,7 +17,7 @@ export const VESS_S13_RARES: CardDef[] = [
   {
     // the chain-position payoff: the selvage is the woven edge that keeps
     // the row from unraveling — closing the Chain seals it for BOTH seats
-    id: 'selvage', name: 'Selvage', character: 'vess', rarity: 'rare', cost: 2, tag: 'Rite',
+    id: 'selvage', name: 'Selvage', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite',
     exhaust: true,
     text: 'Power: when the resolved Chain closes on your card, you and your partner each gain 3 Block. Exhaust.',
     base: [{ op: 'power', power: 'selvage' }],
@@ -47,7 +47,7 @@ export const BRAM_S13_RARES: CardDef[] = [
   {
     // the Thread-spend payoff: the shared pool's price, paid back in fire —
     // either seat's spend stokes him (the pool is the pair's, so is the heat)
-    id: 'stokers_due', name: 'Stoker’s Due', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite',
+    id: 'stokers_due', name: 'Stoker’s Due', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite',
     exhaust: true,
     text: 'Power: the first time Thread is spent each turn, gain 2 Momentum and 3 Block. Exhaust.',
     base: [{ op: 'power', power: 'stokers_due' }],
