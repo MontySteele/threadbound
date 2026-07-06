@@ -14,15 +14,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   {
     id: 'cinderbreak', name: 'Cinderbreak', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
     needsTarget: true,
-    text: 'Deal 6.',
-    base: [{ op: 'damage', amount: 6, primary: true }],
+    text: 'Deal 5.',
+    base: [{ op: 'damage', amount: 5, primary: true }],
     link: { condition: 'Hex', text: 'Detonate up to 2 Hexes on the target.', effects: [{ op: 'detonate', max: 2 }] },
     mutation: {
       name: 'Stitched Cinderbreak', text: 'Deal 4. Apply 2 Hex.',
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Hex): detonate up to 4 Hexes on the target.',
+      text: 'Deal 5. Link (Hex): detonate up to 4 Hexes on the target.',
       link: { condition: 'Hex', text: 'Detonate up to 4 Hexes on the target.', effects: [{ op: 'detonate', max: 4 }] },
     },
   },
@@ -117,15 +117,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   {
     id: 'forearm_wall', name: 'Forearm Wall', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
-    text: 'Gain 6 Block.',
-    base: [{ op: 'block', amount: 6, primary: true }],
+    text: 'Gain 5 Block.',
+    base: [{ op: 'block', amount: 5, primary: true }],
     link: { condition: 'Strike', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Hexbound Forearm Wall', text: 'Gain 5 Block. Apply 1 Hex to ALL enemies.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hexAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Rite): gain Kindled 1 and 1 Thread.',
+      text: 'Gain 5 Block. Link (Rite): gain Kindled 1 and 1 Thread.',
       link: { condition: 'Strike', text: 'Gain Kindled 1 and 1 Thread.', effects: [{ op: 'kindled', amount: 1 }, { op: 'thread', amount: 1 }] },
     },
   },
@@ -162,15 +162,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   {
     id: 'brand', name: 'Brand', character: 'bram', rarity: 'common', cost: 1, tag: 'Hex',
     needsTarget: true,
-    text: 'Deal 3. Apply 2 Hex.',
-    base: [{ op: 'damage', amount: 3 }, { op: 'hex', amount: 2, primary: true }],
+    text: 'Deal 2. Apply 2 Hex.',
+    base: [{ op: 'damage', amount: 2 }, { op: 'hex', amount: 2, primary: true }],
     link: { condition: 'Guard', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] },
     mutation: {
       name: 'Stitched Brand', text: 'Apply 3 Hex. Apply 1 Weak.',
       base: [{ op: 'hex', amount: 3, primary: true }, { op: 'weak', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 3. Apply 2 Hex. Link (Guard): apply 2 more Hex and 1 Weak.',
+      text: 'Deal 2. Apply 2 Hex. Link (Guard): apply 2 more Hex and 1 Weak.',
       link: { condition: 'Guard', text: 'Apply 2 more Hex and 1 Weak.', effects: [{ op: 'hex', amount: 2 }, { op: 'weak', amount: 1 }] },
     },
   },
@@ -549,7 +549,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
     },
     upgrade: {
       // S9b.3 row 13: Momentum-floor consolidation
-      text: 'Gain 6 Block. Link (Strike): gain 5 Momentum.',
+      text: 'Gain 5 Block. Link (Strike): gain 5 Momentum.',
       link: { condition: 'Strike', text: 'Gain 5 Momentum.', effects: [{ op: 'momentum', amount: 5 }] },
     },
   },
@@ -625,7 +625,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Surge): apply 1 Weak and 1 Vulnerable.',
+      text: 'Deal 5. Link (Surge): apply 1 Weak and 1 Vulnerable.',
       link: { condition: 'Surge', text: 'Apply 1 Weak and 1 Vulnerable.', effects: [{ op: 'weak', amount: 1 }, { op: 'vulnerable', amount: 1 }] },
     },
   },

@@ -65,8 +65,8 @@ def({
 });
 def({
   id: 'wardknot', name: 'Wardknot', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
-  text: 'Gain 5 Block.',
-  base: [{ op: 'block', amount: 5, primary: true }],
+  text: 'Gain 6 Block.',
+  base: [{ op: 'block', amount: 6, primary: true }],
   link: { condition: 'Surge', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
 });
 def({
@@ -184,8 +184,8 @@ def({
 });
 def({
   id: 'crossguard', name: 'Crossguard', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
-  text: 'Gain 6 Block.',
-  base: [{ op: 'block', amount: 6, primary: true }],
+  text: 'Gain 5 Block.',
+  base: [{ op: 'block', amount: 5, primary: true }],
   link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
 });
 def({
@@ -215,7 +215,7 @@ def({
   needsTarget: true,
   text: 'Apply 3 Hex.',
   base: [{ op: 'hex', amount: 3, primary: true }], // M2-B1 lever 3: 2 → 3
-  link: { condition: 'Strike', text: 'Deal 3.', effects: [{ op: 'damage', amount: 3 }] },
+  link: { condition: 'Strike', text: 'Deal 2.', effects: [{ op: 'damage', amount: 2 }] },
 });
 def({
   id: 'brace', name: 'Brace', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
@@ -232,8 +232,8 @@ def({
 def({
   id: 'followthrough', name: 'Followthrough', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 6.',
-  base: [{ op: 'damage', amount: 6, primary: true }],
+  text: 'Deal 5.',
+  base: [{ op: 'damage', amount: 5, primary: true }],
   link: { condition: 'Surge', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] }, // S5.2: Hex → Surge (Table A)
 });
 
