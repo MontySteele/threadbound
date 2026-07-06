@@ -14,15 +14,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   {
     id: 'cinderbreak', name: 'Cinderbreak', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
     needsTarget: true,
-    text: 'Deal 6.',
-    base: [{ op: 'damage', amount: 6, primary: true }],
+    text: 'Deal 5.',
+    base: [{ op: 'damage', amount: 5, primary: true }],
     link: { condition: 'Hex', text: 'Detonate up to 2 Hexes on the target.', effects: [{ op: 'detonate', max: 2 }] },
     mutation: {
       name: 'Stitched Cinderbreak', text: 'Deal 4. Apply 2 Hex.',
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Hex): detonate up to 4 Hexes on the target.',
+      text: 'Deal 5. Link (Hex): detonate up to 4 Hexes on the target.',
       link: { condition: 'Hex', text: 'Detonate up to 4 Hexes on the target.', effects: [{ op: 'detonate', max: 4 }] },
     },
   },
@@ -57,7 +57,7 @@ export const BRAM_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'ember_jab', name: 'Ember Jab', character: 'bram', rarity: 'common', cost: 0, tag: 'Strike',
+    id: 'ember_jab', name: 'Ember Jab', character: 'bram', rarity: 'uncommon', cost: 0, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 3.',
     base: [{ op: 'damage', amount: 3, primary: true }],
@@ -117,15 +117,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   {
     id: 'forearm_wall', name: 'Forearm Wall', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
-    text: 'Gain 6 Block.',
-    base: [{ op: 'block', amount: 6, primary: true }],
+    text: 'Gain 5 Block.',
+    base: [{ op: 'block', amount: 5, primary: true }],
     link: { condition: 'Strike', text: 'Gain Kindled 1.', effects: [{ op: 'kindled', amount: 1 }] }, // §4: widened from Rite
     mutation: {
       name: 'Hexbound Forearm Wall', text: 'Gain 5 Block. Apply 1 Hex to ALL enemies.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'hexAll', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 6 Block. Link (Rite): gain Kindled 1 and 1 Thread.',
+      text: 'Gain 5 Block. Link (Rite): gain Kindled 1 and 1 Thread.',
       link: { condition: 'Strike', text: 'Gain Kindled 1 and 1 Thread.', effects: [{ op: 'kindled', amount: 1 }, { op: 'thread', amount: 1 }] },
     },
   },
@@ -146,31 +146,31 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   {
     id: 'ashfall', name: 'Ashfall', character: 'bram', rarity: 'common', cost: 1, tag: 'Hex',
-    text: 'Apply 2 Hex to ALL enemies.',
-    base: [{ op: 'hexAll', amount: 2, primary: true }],
-    link: { condition: 'Surge', text: 'Apply 3 to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }], replace: true },
+    text: 'Apply 3 Hex to ALL enemies.',
+    base: [{ op: 'hexAll', amount: 3, primary: true }],
+    link: { condition: 'Surge', text: 'Apply 4 to all instead.', effects: [{ op: 'hexAll', amount: 4, primary: true }], replace: true },
     mutation: {
       name: 'Hexbound Ashfall', text: 'Apply 2 Hex to ALL enemies. Apply 1 Weak to all.',
       base: [{ op: 'hexAll', amount: 2, primary: true }, { op: 'weakAll', amount: 1 }],
     },
     upgrade: {
       // S9b.3 row 15 — Hex amounts untouched; Weak rides the replace link
-      text: 'Apply 2 Hex to ALL enemies. Link (Surge): apply 3 to all and 1 Weak to all instead.',
-      link: { condition: 'Surge', text: 'Apply 3 to all and 1 Weak to all instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }, { op: 'weakAll', amount: 1 }], replace: true },
+      text: 'Apply 3 Hex to ALL enemies. Link (Surge): apply 4 to all and 1 Weak to all instead.',
+      link: { condition: 'Surge', text: 'Apply 4 to all and 1 Weak to all instead.', effects: [{ op: 'hexAll', amount: 4, primary: true }, { op: 'weakAll', amount: 1 }], replace: true },
     },
   },
   {
     id: 'brand', name: 'Brand', character: 'bram', rarity: 'common', cost: 1, tag: 'Hex',
     needsTarget: true,
-    text: 'Deal 3. Apply 2 Hex.',
-    base: [{ op: 'damage', amount: 3 }, { op: 'hex', amount: 2, primary: true }],
+    text: 'Deal 2. Apply 2 Hex.',
+    base: [{ op: 'damage', amount: 2 }, { op: 'hex', amount: 2, primary: true }],
     link: { condition: 'Guard', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] },
     mutation: {
       name: 'Stitched Brand', text: 'Apply 3 Hex. Apply 1 Weak.',
       base: [{ op: 'hex', amount: 3, primary: true }, { op: 'weak', amount: 1 }],
     },
     upgrade: {
-      text: 'Deal 3. Apply 2 Hex. Link (Guard): apply 2 more Hex and 1 Weak.',
+      text: 'Deal 2. Apply 2 Hex. Link (Guard): apply 2 more Hex and 1 Weak.',
       link: { condition: 'Guard', text: 'Apply 2 more Hex and 1 Weak.', effects: [{ op: 'hex', amount: 2 }, { op: 'weak', amount: 1 }] },
     },
   },
@@ -365,15 +365,15 @@ export const BRAM_M2_CARDS: CardDef[] = [
   {
     id: 'slow_burn', name: 'Slow Burn', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Hex',
     needsTarget: true,
-    text: 'Apply 4 Hex.',
-    base: [{ op: 'hex', amount: 4, primary: true }],
+    text: 'Apply 5 Hex.',
+    base: [{ op: 'hex', amount: 5, primary: true }],
     link: { condition: 'Rite', text: 'Apply 2 more and gain 1 Thread.', effects: [{ op: 'hex', amount: 2 }, { op: 'thread', amount: 1 }] },
     mutation: {
       name: 'Hexbound Slow Burn', text: 'Apply 5 Hex. Apply 1 Weak.',
       base: [{ op: 'hex', amount: 5, primary: true }, { op: 'weak', amount: 1 }],
     },
     upgrade: {
-      text: 'Apply 4 Hex. Link (Rite): apply 3 more and gain 1 Thread.',
+      text: 'Apply 5 Hex. Link (Rite): apply 3 more and gain 1 Thread.',
       link: { condition: 'Rite', text: 'Apply 3 more and gain 1 Thread.', effects: [{ op: 'hex', amount: 3 }, { op: 'thread', amount: 1 }] },
     },
   },
@@ -468,12 +468,12 @@ export const BRAM_M2_CARDS: CardDef[] = [
   {
     id: 'final_bell', name: 'Final Bell', character: 'bram', rarity: 'rare', cost: 2, tag: 'Strike',
     needsTarget: true,
-    text: 'Deal 10.',
-    base: [{ op: 'damage', amount: 10, primary: true }],
+    text: 'Deal 9.',
+    base: [{ op: 'damage', amount: 9, primary: true }],
     link: { condition: 'partner', text: 'Link (Partner’s card): Stun the target.', effects: [{ op: 'stun', amount: 1 }] },
     upgrade: {
-      text: 'Deal 13. Link (Partner’s card): Stun the target.',
-      base: [{ op: 'damage', amount: 13, primary: true }],
+      text: 'Deal 12. Link (Partner’s card): Stun the target.',
+      base: [{ op: 'damage', amount: 12, primary: true }],
     },
   },
   {
@@ -490,10 +490,10 @@ export const BRAM_M2_CARDS: CardDef[] = [
     id: 'ash_harvest', name: 'Ash Harvest', character: 'bram', rarity: 'rare', cost: 2, tag: 'Hex',
     text: 'Apply 3 Hex to ALL enemies.',
     base: [{ op: 'hexAll', amount: 3, primary: true }],
-    link: { condition: 'Strike', text: 'Deal 4 to ALL enemies.', effects: [{ op: 'damageAll', amount: 4 }] },
+    link: { condition: 'Strike', text: 'Deal 5 to ALL enemies.', effects: [{ op: 'damageAll', amount: 5 }] },
     upgrade: {
-      text: 'Apply 3 Hex to ALL enemies. Link (any): deal 5 to ALL enemies.',
-      link: { condition: 'any', text: 'Deal 5 to ALL enemies.', effects: [{ op: 'damageAll', amount: 5 }] },
+      text: 'Apply 3 Hex to ALL enemies. Link (any): deal 6 to ALL enemies.',
+      link: { condition: 'any', text: 'Deal 6 to ALL enemies.', effects: [{ op: 'damageAll', amount: 6 }] },
     },
   },
   {
@@ -508,9 +508,14 @@ export const BRAM_M2_CARDS: CardDef[] = [
   },
   // POWER NEEDED: aftershock — on detonate: damageAll 3 (every detonation event cracks outward into all enemies)
   {
-    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+    id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
     text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'aftershock' }],
+    mutation: {
+      // S17 8a (ratified 2026-07-06): the demotion's owed mutation
+      name: 'Faultline', text: 'Power: whenever Hexes detonate, deal 2 to ALL enemies. Draw 1 when played. Exhaust.',
+      base: [{ op: 'power', power: 'faultline' }, { op: 'draw', amount: 1 }],
+    },
     upgrade: {
       text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
       cost: 1,
@@ -538,7 +543,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
   },
   rendcall: {
     upgrade: {
-      text: 'Deal 8. Link (Hex): detonate all Hexes on the target and gain 2 Momentum.',
+      text: 'Deal 7. Link (Hex): detonate all Hexes on the target and gain 2 Momentum.',
       link: { condition: 'Hex', text: 'Detonate all Hexes on the target and gain 2 Momentum.', effects: [{ op: 'detonate' }, { op: 'momentum', amount: 2 }] },
     },
   },
@@ -549,7 +554,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
     },
     upgrade: {
       // S9b.3 row 13: Momentum-floor consolidation
-      text: 'Gain 6 Block. Link (Strike): gain 5 Momentum.',
+      text: 'Gain 5 Block. Link (Strike): gain 5 Momentum.',
       link: { condition: 'Strike', text: 'Gain 5 Momentum.', effects: [{ op: 'momentum', amount: 5 }] },
     },
   },
@@ -615,7 +620,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'thread', amount: 1 }, { op: 'hex', amount: 2, primary: true }],
     },
     upgrade: {
-      text: 'Gain 1 Thread. Gain 1 Momentum. Link (Strike): draw 1 and gain 1 more Momentum.',
+      text: 'Gain 1 Thread. Gain 2 Momentum. Link (Strike): draw 1 and gain 1 more Momentum.',
       link: { condition: 'Strike', text: 'Draw 1 and gain 1 more Momentum.', effects: [{ op: 'draw', amount: 1 }, { op: 'momentum', amount: 1 }] },
     },
   },
@@ -625,7 +630,7 @@ export const BRAM_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'damage', amount: 4, primary: true }, { op: 'hex', amount: 2 }],
     },
     upgrade: {
-      text: 'Deal 6. Link (Surge): apply 1 Weak and 1 Vulnerable.',
+      text: 'Deal 5. Link (Surge): apply 1 Weak and 1 Vulnerable.',
       link: { condition: 'Surge', text: 'Apply 1 Weak and 1 Vulnerable.', effects: [{ op: 'weak', amount: 1 }, { op: 'vulnerable', amount: 1 }] },
     },
   },

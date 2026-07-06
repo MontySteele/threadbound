@@ -85,11 +85,11 @@ describe('S9c.1 Cradle-Warden bumps the linked effect by 2', () => {
   }
 
   it('partner link fired off a warden’s card gains +2 (was +1)', () => {
-    // spark's link deals 3 without the rite…
-    expect(resolveSparkLink(false)).toContain(3);
-    // …and 5 with Cradle-Warden on the card it fired off (S9c.1: +2)
+    // spark's link deals 2 without the rite (S17 pass B: 3 → 2)…
+    expect(resolveSparkLink(false)).toContain(2);
+    // …and 4 with Cradle-Warden on the card it fired off (S9c.1: +2)
     const withWarden = resolveSparkLink(true);
-    expect(withWarden).toContain(5);
-    expect(withWarden).not.toContain(3);
+    expect(withWarden).toContain(4);
+    expect(withWarden).not.toContain(2);
   });
 });

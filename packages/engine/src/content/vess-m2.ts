@@ -39,14 +39,14 @@ export const VESS_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Apply 2 Hex. Apply 1 Weak.',
     base: [{ op: 'hex', amount: 2, primary: true }, { op: 'weak', amount: 1 }],
-    link: { condition: 'Guard', text: 'Apply 2 more Hex.', effects: [{ op: 'hex', amount: 2 }] },
+    link: { condition: 'Guard', text: 'Apply 1 more Hex.', effects: [{ op: 'hex', amount: 1 }] },
     mutation: {
       name: 'Forgerust', text: 'Apply 2 Hex. Deal 3.',
       base: [{ op: 'hex', amount: 2, primary: true }, { op: 'damage', amount: 3 }],
     },
     upgrade: {
-      text: 'Apply 2 Hex. Apply 1 Weak. Link (Guard): apply 2 more Hex and 1 more Weak.',
-      link: { condition: 'Guard', text: 'Apply 2 more Hex and 1 more Weak.', effects: [{ op: 'hex', amount: 2 }, { op: 'weak', amount: 1 }] },
+      text: 'Apply 2 Hex. Apply 1 Weak. Link (Guard): apply 1 more Hex and 1 more Weak.',
+      link: { condition: 'Guard', text: 'Apply 1 more Hex and 1 more Weak.', effects: [{ op: 'hex', amount: 1 }, { op: 'weak', amount: 1 }] },
     },
   },
   {
@@ -97,7 +97,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     needsTarget: true,
     text: 'Deal 6.',
     base: [{ op: 'damage', amount: 6, primary: true }],
-    link: { condition: 'Guard', text: 'Gain 4 Block.', effects: [{ op: 'block', amount: 4 }] },
+    link: { condition: 'Guard', text: 'Gain 5 Block.', effects: [{ op: 'block', amount: 5 }] },
     mutation: {
       name: 'Cinder Cinch', text: 'Deal 6. Gain 1 Momentum.',
       base: [{ op: 'damage', amount: 6, primary: true }, { op: 'momentum', amount: 1 }],
@@ -109,7 +109,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'unpicking', name: 'Unpicking', character: 'vess', rarity: 'common', cost: 0, tag: 'Strike',
+    id: 'unpicking', name: 'Unpicking', character: 'vess', rarity: 'uncommon', cost: 0, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 3.',
     base: [{ op: 'damage', amount: 3, primary: true }],
@@ -141,23 +141,23 @@ export const VESS_M2_CARDS: CardDef[] = [
   },
   {
     id: 'burr_shell', name: 'Burr-Shell', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
-    text: 'Gain 5 Block.',
-    base: [{ op: 'block', amount: 5, primary: true }],
+    text: 'Gain 6 Block.',
+    base: [{ op: 'block', amount: 6, primary: true }],
     link: { condition: 'Surge', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
     mutation: {
       name: 'Ember Shell', text: 'Gain 5 Block. Gain 1 Momentum.',
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
-      text: 'Gain 5 Block. Link (Surge): gain 2 more and draw 1.',
+      text: 'Gain 6 Block. Link (Surge): gain 2 more and draw 1.',
       link: { condition: 'Surge', text: 'Gain 2 more and draw 1.', effects: [{ op: 'block', amount: 2 }, { op: 'draw', amount: 1 }] },
     },
   },
   {
     id: 'needle_wall', name: 'Needle Wall', character: 'vess', rarity: 'common', cost: 2, tag: 'Guard',
     needsTarget: true,
-    text: 'Gain 8 Block. Bind the target enemy to you.',
-    base: [{ op: 'block', amount: 8, primary: true }, { op: 'taunt' }],
+    text: 'Gain 9 Block. Bind the target enemy to you.',
+    base: [{ op: 'block', amount: 9, primary: true }, { op: 'taunt' }],
     link: { condition: 'Hex', text: 'Apply 2 Hex to it.', effects: [{ op: 'hex', amount: 2 }] },
     mutation: {
       name: 'Brawler’s Wall', text: 'Gain 8 Block. Bind the target enemy to you. Gain 2 Momentum.',
@@ -165,7 +165,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
     upgrade: {
       // S9b.3 row 6: binding-architect lean
-      text: 'Gain 8 Block. Bind the target enemy to you. Link (Hex): apply 2 Hex to it and gain 3 Block.',
+      text: 'Gain 9 Block. Bind the target enemy to you. Link (Hex): apply 2 Hex to it and gain 3 Block.',
       link: { condition: 'Hex', text: 'Apply 2 Hex to it and gain 3 Block.', effects: [{ op: 'hex', amount: 2 }, { op: 'block', amount: 3 }] },
     },
   },
@@ -175,8 +175,8 @@ export const VESS_M2_CARDS: CardDef[] = [
     // once-per-combat co-op ritual — it exhausts, and the S7.6 interaction
     // (partner Reclaims it from the exhaust pile as an Echo) is INTENDED.
     exhaust: true,
-    text: 'Gain 6 Block.',
-    base: [{ op: 'block', amount: 6, primary: true }],
+    text: 'Gain 7 Block.',
+    base: [{ op: 'block', amount: 7, primary: true }],
     link: { condition: 'Surge', text: 'Heal 3.', effects: [{ op: 'heal', amount: 3 }] }, // §4: widened from Rite
     mutation: {
       // S8.6 (PROVISIONAL): birth-column rename, was 'Rough Comfort'
@@ -185,7 +185,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
     upgrade: {
       // S9b.3 row 7 per S9d.A1: soul-thread texture, still exhausting
-      text: 'Gain 6 Block. Link (Surge): heal 3. Your partner heals 2.',
+      text: 'Gain 7 Block. Link (Surge): heal 3. Your partner heals 2.',
       link: { condition: 'Surge', text: 'Heal 3. Your partner heals 2.', effects: [{ op: 'heal', amount: 3 }, { op: 'partnerHeal', amount: 2 }] },
     },
   },
@@ -315,7 +315,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'pale_unmaking', name: 'Pale Unmaking', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Hex',
+    id: 'pale_unmaking', name: 'Pale Unmaking', character: 'vess', rarity: 'rare', cost: 2, tag: 'Hex',
     needsTarget: true,
     text: 'Apply 3 Hex, then detonate up to 3 Hexes on the target.',
     base: [{ op: 'hex', amount: 3, primary: true }, { op: 'detonate', max: 3 }],
@@ -333,7 +333,7 @@ export const VESS_M2_CARDS: CardDef[] = [
     },
   },
   {
-    id: 'rend_the_weave', name: 'Rend the Weave', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Strike',
+    id: 'rend_the_weave', name: 'Rend the Weave', character: 'vess', rarity: 'rare', cost: 2, tag: 'Strike',
     needsTarget: true,
     text: 'Deal 8.',
     base: [{ op: 'damage', amount: 8, primary: true }],
@@ -352,18 +352,18 @@ export const VESS_M2_CARDS: CardDef[] = [
   {
     id: 'measured_cut', name: 'Measured Cut', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Strike',
     needsTarget: true,
-    text: 'Deal 6.',
-    base: [{ op: 'damage', amount: 6, primary: true }],
-    link: { condition: 'Rite', text: 'Deal 6 again.', effects: [{ op: 'damage', amount: 6 }] },
+    text: 'Deal 7.',
+    base: [{ op: 'damage', amount: 7, primary: true }],
+    link: { condition: 'Rite', text: 'Deal 7 again.', effects: [{ op: 'damage', amount: 7 }] },
     mutation: {
       name: 'Wild Cut', text: 'Deal 7. Gain 1 Momentum.',
       base: [{ op: 'damage', amount: 7, primary: true }, { op: 'momentum', amount: 1 }],
     },
     upgrade: {
       // S9b.3 row 12: base touched — the link IS this card's whole story
-      base: [{ op: 'damage', amount: 7, primary: true }],
-      text: 'Deal 7. Link (Rite): deal 7 again.',
-      link: { condition: 'Rite', text: 'Deal 7 again.', effects: [{ op: 'damage', amount: 7 }] },
+      base: [{ op: 'damage', amount: 8, primary: true }],
+      text: 'Deal 8. Link (Rite): deal 8 again.',
+      link: { condition: 'Rite', text: 'Deal 8 again.', effects: [{ op: 'damage', amount: 8 }] },
     },
   },
   {
@@ -442,8 +442,8 @@ export const VESS_M2_CARDS: CardDef[] = [
   },
   {
     id: 'votive_thread', name: 'Votive Thread', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Rite',
-    text: 'Gain 1 Thread. Gain 4 Block.',
-    base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 4, primary: true }],
+    text: 'Gain 1 Thread. Gain 5 Block.',
+    base: [{ op: 'thread', amount: 1 }, { op: 'block', amount: 5, primary: true }],
     link: { condition: 'Surge', text: 'Gain 1 Thread more.', effects: [{ op: 'thread', amount: 1 }] },
     mutation: {
       // S8.6 (PROVISIONAL): birth-column rename, was 'Votive Cinder' —
@@ -453,7 +453,7 @@ export const VESS_M2_CARDS: CardDef[] = [
       link: { condition: 'any', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] },
     },
     upgrade: {
-      text: 'Gain 1 Thread. Gain 4 Block. Link (Surge): gain 2 Thread more.',
+      text: 'Gain 1 Thread. Gain 5 Block. Link (Surge): gain 2 Thread more.',
       link: { condition: 'Surge', text: 'Gain 2 Thread more.', effects: [{ op: 'thread', amount: 2 }] },
     },
   },
@@ -465,12 +465,12 @@ export const VESS_M2_CARDS: CardDef[] = [
   {
     id: 'funeral_lace', name: 'Funeral Lace', character: 'vess', rarity: 'rare', cost: 3, tag: 'Hex',
     needsTarget: true,
-    text: 'Apply 4 Hex to ALL enemies, then detonate all Hexes on the target.',
-    base: [{ op: 'hexAll', amount: 4, primary: true }, { op: 'detonate' }],
-    link: { condition: 'partner', text: 'Link (Partner’s card): detonate ALL enemies’ Hexes instead.', effects: [{ op: 'hexAll', amount: 4, primary: true }, { op: 'detonateAllEnemies' }], replace: true },
+    text: 'Apply 3 Hex to ALL enemies, then detonate all Hexes on the target.',
+    base: [{ op: 'hexAll', amount: 3, primary: true }, { op: 'detonate' }],
+    link: { condition: 'partner', text: 'Link (Partner’s card): detonate ALL enemies’ Hexes instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }, { op: 'detonateAllEnemies' }], replace: true },
     upgrade: {
-      text: 'Apply 4 Hex to ALL enemies, then detonate all Hexes on the target. Link (any): detonate ALL enemies’ Hexes instead.',
-      link: { condition: 'any', text: 'Detonate ALL enemies’ Hexes instead.', effects: [{ op: 'hexAll', amount: 4, primary: true }, { op: 'detonateAllEnemies' }], replace: true },
+      text: 'Apply 3 Hex to ALL enemies, then detonate all Hexes on the target. Link (any): detonate ALL enemies’ Hexes instead.',
+      link: { condition: 'any', text: 'Detonate ALL enemies’ Hexes instead.', effects: [{ op: 'hexAll', amount: 3, primary: true }, { op: 'detonateAllEnemies' }], replace: true },
     },
   },
   {
@@ -498,11 +498,11 @@ export const VESS_M2_CARDS: CardDef[] = [
   {
     id: 'needles_verdict', name: 'Needle’s Verdict', character: 'vess', rarity: 'rare', cost: 2, tag: 'Strike',
     needsTarget: true,
-    text: 'Deal 5 + 3× target’s Hex (does not detonate).',
-    base: [{ op: 'damagePerHex', base: 5, perHex: 3, primary: true }],
+    text: 'Deal 5 + 2× target’s Hex (does not detonate).',
+    base: [{ op: 'damagePerHex', base: 5, perHex: 2, primary: true }],
     link: { condition: 'Hex', text: 'Stun the target.', effects: [{ op: 'stun', amount: 1 }] },
     upgrade: {
-      text: 'Deal 5 + 3× target’s Hex (does not detonate). Link (any): Stun the target.',
+      text: 'Deal 5 + 2× target’s Hex (does not detonate). Link (any): Stun the target.',
       link: { condition: 'any', text: 'Stun the target.', effects: [{ op: 'stun', amount: 1 }] },
     },
   },
@@ -529,11 +529,11 @@ export const VESS_M2_CARDS: CardDef[] = [
   // POWER NEEDED: loom_of_hours — on turnStart: kindled 1, block 2 (at the start of each turn, gain Kindled 1 and 2 Block)
   {
     id: 'loom_of_hours', name: 'Loom of Hours', character: 'vess', rarity: 'rare', cost: 3, tag: 'Rite', exhaust: true,
-    text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block. Exhaust.',
+    text: 'Power: at the start of each turn, gain Kindled 1 and 3 Block. Exhaust.',
     base: [{ op: 'power', power: 'loom_of_hours' }],
     upgrade: {
       cost: 2,
-      text: 'Power: at the start of each turn, gain Kindled 1 and 2 Block. Exhaust.',
+      text: 'Power: at the start of each turn, gain Kindled 1 and 3 Block. Exhaust.',
     },
   },
 ];
@@ -588,7 +588,7 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
     },
     upgrade: {
       // S9b.3 row 3
-      text: 'Deal 5. Link (Hex): apply 3 Hex. Draw 1.',
+      text: 'Deal 6. Link (Hex): apply 3 Hex. Draw 1.',
       link: { condition: 'Hex', text: 'Apply 3 Hex. Draw 1.', effects: [{ op: 'hex', amount: 3 }, { op: 'draw', amount: 1 }] },
     },
   },
@@ -610,7 +610,7 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'block', amount: 5, primary: true }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 5 Block. Link (Surge): gain 5 more.',
+      text: 'Gain 6 Block. Link (Surge): gain 5 more.',
       link: { condition: 'Surge', text: 'Gain 5 more.', effects: [{ op: 'block', amount: 5 }] },
     },
   },
@@ -643,8 +643,8 @@ export const VESS_M1_OVERLAYS: Record<string, Pick<CardDef, 'mutation' | 'upgrad
       base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2 }],
     },
     upgrade: {
-      text: 'Gain 1 Thread. Link (Guard): your partner gains 5 Block.',
-      link: { condition: 'Guard', text: 'Your partner gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
+      text: 'Gain 1 Thread. Link (Guard): your partner gains 6 Block.',
+      link: { condition: 'Guard', text: 'Your partner gains 6 Block.', effects: [{ op: 'partnerBlock', amount: 6 }] },
     },
   },
 

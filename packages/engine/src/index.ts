@@ -41,3 +41,6 @@ export { WITNESS_POOLS, poolLines, witnessPoolLines } from './witness-draw';
 export type { WitnessPool, WitnessRegister, RegisteredPool } from './witness-draw';
 export { BotPolicy, STARTER_DECK_SIZE } from './bot-policy';
 export type { BotView, BotPolicyOptions } from './bot-policy';
+// S16.0a: the per-seat §11 projection as a pure function — the server's wire
+// view and the socket-free sim path share this single code path
+export { redactFor } from './redact';

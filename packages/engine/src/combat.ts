@@ -214,7 +214,7 @@ export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
 
 export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): void {
   const p = state.players[holder];
-  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean; oncePerCombat?: boolean }[] }> = [
+  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean; oncePerCombat?: boolean; oddTurnsOnly?: boolean }[] }> = [
     ...p.relics.map((r) => RELICS_BY_ID[r]).filter(Boolean),
     // S7/S8.1: birth-rite hooks — hidden-relic semantics, never dormant
     ...(p.rites ?? []).map((r) => RITES_BY_ID[r]).filter(Boolean),
@@ -223,6 +223,9 @@ export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): 
   for (const src of sources) {
     for (const hook of src.hooks ?? []) {
       if (hook.on !== event) continue;
+      // S17 Frayed Line: odd-turn cadence — turns count from 1, so this
+      // fires on 1st/3rd/5th… turnStarts of the combat
+      if (hook.oddTurnsOnly && state.combat && state.combat.turn % 2 === 0) continue;
       // PT2/OQ#29 (Loom ruling): oncePerTurn hooks spend their charge here
       if (hook.oncePerTurn && state.combat) {
         const key = `${holder}:${src.id}:${hook.on}`;
@@ -1008,12 +1011,14 @@ export function resolveTurn(state: GameState): void {
         // §14.12: the forcing itself happens in the link computation below;
         // here we pay, and say which card so the spend is legible to both.
         // §14.13 (OQ#27) Pulsekeeper's Ring: the owner's run-persistent
-        // counter ticks on every Pulse they cast; each 3rd costs 1.
+        // counter ticks on every Pulse they cast; each 3rd is FREE (the
+        // pre-agreed (b) escalation, landed S17 relic uplift 2026-07-06 —
+        // the costs-1 form read near-dead on the audit).
         let discounted = false;
         if (actor.relics.includes('pulsekeepers_ring')) {
           actor.ringPulses = (actor.ringPulses ?? 0) + 1;
           if (actor.ringPulses % 3 === 0) {
-            cost = 1;
+            cost = 0;
             discounted = true;
             state.telemetry.ringDiscountsFired++;
           }
@@ -1024,7 +1029,7 @@ export function resolveTurn(state: GameState): void {
           const name = effectiveDef(mustFind(state, slot)).name;
           state.log.push({
             e: 'thread_action', player: ta.player, kind: 'pulse',
-            detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: 1 Thread)' : ''}`,
+            detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: free)' : ''}`,
           });
         }
         break;
@@ -1685,6 +1690,22 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const dmgScale = mods.dmgScale * (1 + esc);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;
+  // S16-D7 (OQ#45, ruled): single-enemy ELITE/BOSS fights were a pure
+  // per-combat coin flip with no memory, so a run could pile every elite
+  // onto one seat. Anti-streak: those fights bind toward whichever seat has
+  // been bound LESS this run (per-run counter, single-body elite/boss
+  // assignments only); a tie keeps the rolled coin. The `first` roll is
+  // consumed either way (parity habit) — the rng stream is byte-identical;
+  // multi-enemy split behavior is untouched.
+  const singleEliteBoss = enemyDefIds.length === 1
+    && (ENEMIES[enemyDefIds[0]]?.elite || ENEMIES[enemyDefIds[0]]?.boss);
+  let antiStreak: PlayerId | null = null;
+  if (singleEliteBoss) {
+    const binds = (state.bindsByPlayer ??= { p1: 0, p2: 0 });
+    const coin: PlayerId = first.value === 0 ? 'p1' : 'p2';
+    antiStreak = binds.p1 < binds.p2 ? 'p1' : binds.p2 < binds.p1 ? 'p2' : coin;
+    binds[antiStreak]++;
+  }
   const chorusIds = enemyDefIds.filter((id) => ENEMIES[id]?.chorus);
   let chorusSeen = 0;
   enemyDefIds.forEach((defId, i) => {
@@ -1701,7 +1722,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       defId,
       hp, maxHp: hp,
       block: 0, hex: 0, weak: 0, vulnerable: 0, stun: 0, strength: 0,
-      boundTo: isChorusOdd ? null : (i + first.value) % 2 === 0 ? 'p1' : 'p2',
+      boundTo: isChorusOdd ? null : antiStreak ?? ((i + first.value) % 2 === 0 ? 'p1' : 'p2'),
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
       intent: scaleIntent(def.script[start.value], dmgScale),

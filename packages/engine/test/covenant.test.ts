@@ -21,20 +21,27 @@ function isSelfSimilar(c: CardDef): boolean {
 describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   const all = Object.values(CARDS);
 
-  it('pool shape: 57 per character (25C/20U/12R) + 15 neutral (8/5/2), starters excluded', () => {
+  it('pool shape: 57 per character + 15 neutral, splits per the S17 bucket ruling', () => {
     // S13.2 (D3, loud edit): the rare identity pass adds +2 rares per
     // character — 55 (10R) → 57 (12R). Any further change is a sign-off row.
+    // S17 bucket moves (ruled 2026-07-06, docs/S17-POWER-AUDIT.md tables
+    // 6a/6b): vess 25/20/12 → 22/23/12, bram 25/20/12 → 22/25/10, neutral
+    // 8/5/2 → 7/6/2 (the tallow_mark row amends the M2 §9 covenant split).
+    const SPLITS: Record<CharacterId, [number, number, number]> = {
+      vess: [22, 23, 12],
+      bram: [22, 25, 10],
+    };
     for (const ch of CHARACTERS) {
       const pool = cardsForCharacter(ch);
       expect(pool.length, ch).toBe(57);
-      expect(pool.filter((c) => c.rarity === 'common').length, `${ch} commons`).toBe(25);
-      expect(pool.filter((c) => c.rarity === 'uncommon').length, `${ch} uncommons`).toBe(20);
-      expect(pool.filter((c) => c.rarity === 'rare').length, `${ch} rares`).toBe(12);
+      expect(pool.filter((c) => c.rarity === 'common').length, `${ch} commons`).toBe(SPLITS[ch][0]);
+      expect(pool.filter((c) => c.rarity === 'uncommon').length, `${ch} uncommons`).toBe(SPLITS[ch][1]);
+      expect(pool.filter((c) => c.rarity === 'rare').length, `${ch} rares`).toBe(SPLITS[ch][2]);
     }
     const n = neutralCards();
     expect(n.length).toBe(15);
-    expect(n.filter((c) => c.rarity === 'common').length).toBe(8);
-    expect(n.filter((c) => c.rarity === 'uncommon').length).toBe(5);
+    expect(n.filter((c) => c.rarity === 'common').length).toBe(7);
+    expect(n.filter((c) => c.rarity === 'uncommon').length).toBe(6);
     expect(n.filter((c) => c.rarity === 'rare').length).toBe(2);
   });
 
@@ -87,8 +94,12 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   });
 
   it('M2-B1: mutations on every common/uncommon; upgrades on every card', () => {
+    // S17: the demoted four's owed mutations landed with the 8a ratification
+    // (2026-07-06) — no exemptions remain.
     for (const c of all) {
-      if (c.rarity !== 'rare') expect(c.mutation, `${c.id} missing mutation`).toBeTruthy();
+      if (c.rarity !== 'rare') {
+        expect(c.mutation, `${c.id} missing mutation`).toBeTruthy();
+      }
       expect(c.upgrade ?? c.starterOnly, `${c.id} missing upgrade`).toBeTruthy();
       if (c.mutation) expect(c.mutation.base.length, c.id).toBeGreaterThan(0);
     }
@@ -380,10 +391,16 @@ describe('S13.2 rare identity covenant', () => {
   });
 
   it('the four new rares (D3) are exhaust powers, +2 per character, on the co-op texture briefs', () => {
+    // S17 bucket ruling (2026-07-06): selvage and stokers_due DEMOTED to
+    // uncommon on the audit read (+2.5 / +1.4 lift — glue value at rare
+    // price). Their D3 identity (exhaust power on the co-op brief) stands.
+    const S17_RARITY: Record<string, string> = {
+      selvage: 'uncommon', keepsake: 'rare', bellmetal: 'rare', stokers_due: 'uncommon',
+    };
     for (const id of ['selvage', 'keepsake', 'bellmetal', 'stokers_due']) {
       const c = CARDS[id];
       expect(c, id).toBeTruthy();
-      expect(c.rarity, id).toBe('rare');
+      expect(c.rarity, id).toBe(S17_RARITY[id]);
       expect(c.exhaust, id).toBe(true);
       expect(c.base).toEqual([{ op: 'power', power: id }]);
     }

@@ -105,7 +105,7 @@ describe('S15.2A: the Seamripper is reachable where the ruling placed it', () =>
     expect(spawn(1).combat!.escalation).toBeCloseTo(0.10);
   });
 
-  it('the Witness has its telegraph pool (D5, PROVISIONAL strings)', () => {
+  it('the Witness has its telegraph pool (D5 row 4, RATIFIED — S16-D1)', () => {
     const pool = WITNESS_POOLS['seamripper_intro'];
     expect(Array.isArray(pool) ? pool.length : 0).toBeGreaterThanOrEqual(3);
   });

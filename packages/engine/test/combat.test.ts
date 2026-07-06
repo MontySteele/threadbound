@@ -244,11 +244,11 @@ describe('Resonance (§2.3 + S9c.6 rung ii)', () => {
     s = ready(s);
     const ignite = s.log.find((e) => e.e === 'resonance_ignite');
     expect(ignite).toBeTruthy();
-    // rendcall's 8 is the streak's loudest note (opener holds 4): the
-    // ignition sits mid-streak and deals ceil(8 * 1.5) = 12 raw
+    // rendcall's 7 (S17 numbers pass: 8 → 7) is the streak's loudest note
+    // (opener holds 4): the ignition sits mid-streak, ceil(7 * 1.5) = 11 raw
     expect(ignite && ignite.e === 'resonance_ignite' ? ignite.card : '').toBe('Rendcall');
     const hits = s.log.filter((e) => e.e === 'damage');
-    expect(hits.some((h) => h.e === 'damage' && h.hpLoss + h.blocked === 12)).toBe(true);
+    expect(hits.some((h) => h.e === 'damage' && h.hpLoss + h.blocked === 11)).toBe(true);
     expect(s.telemetry.resonances).toBe(1);
   });
 });

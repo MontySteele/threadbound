@@ -382,6 +382,14 @@ working as intended, not a missing-content bug.
     client-held display value (presentation-only, no engine replay — stays
     §11-clean). Scoped as a feature, not a one-liner, hence logged.
 
+    **OQ#37 RULED (2026-07-05, S16-D9): theater HP bars animate per beat,
+    APPROVED as a presentation part.** Client-held display value walked
+    down per `damage`/`detonate` event; skip snaps to final. No engine
+    replay — §11-clean by construction. *Implementation record (S16):
+    verified ALREADY LIVE at `22a4061` (hpDelta/displayHp offsets, skip
+    snap, enemy bars + player stats both consume them) — the ledger had
+    never been closed; it is now. docs/S16-STATUS.md Part 4.1. CLOSED.*
+
 38. **Discard pile is often empty, so Reclaim has nothing to grab** (report).
     Fixed draw-of-5 (§14.7) keeps hands full and discards thin early in a
     turn, so the cross-player Reclaim engine is hard to even attempt. Design
@@ -408,6 +416,10 @@ working as intended, not a missing-content bug.
     a fix. Weigh against complexity: it inverts Pulse and adds a second
     chain-editing Thread action.
 
+    **OQ#40 RULED (2026-07-05, S16-D10): PARKED.** No second chain-editing
+    Thread verb lands mid-recalibration; revisit post-S16 with human
+    Pulse-rate data.
+
 41. **"All relics seem to only apply to Vess" / Ember Coal only gave Vess
     Momentum** (designer, live). Investigated: working as designed — relics
     are PER-HOLDER, and Ember Coal's `combatStart` Momentum (a self-resource)
@@ -418,6 +430,18 @@ working as intended, not a missing-content bug.
     grants; (b) decide which relics should be co-op (use `partnerX` ops or
     affect both) vs personal. If a relic literally failed to apply to a
     player who OWNED it, that IS a bug — needs a seed + the relic id.
+
+    **OQ#41a RULED (2026-07-05, S16-D8): relic text names whose resource it
+    grants**, adopted as a text CONVENTION. The affected relic retexts are
+    strings: enumerate→propose→sign-off table at implementation
+    (docs/S16-STATUS.md, the D8 table — STALLS there until each string is
+    signed). Effects untouched; OQ#41b (which relics become genuinely
+    co-op) stays content-pass material, not this sprint.
+    **RE-RULED (2026-07-06): the stall resolved toward presentation, not
+    strings** — descriptions stay as written; the RelicBar now shows only
+    relics the viewer benefits from (own relics + the partner's `coop:
+    true` relics). The retext table is superseded, preserved for the
+    record in docs/S16-STATUS.md. CLOSED.
 
 42. **"Pass on Coveting" and "Onward" are redundant on the reward screen**
     (designer, live). True: ADVANCE auto-passes an undecided Covet in the
@@ -473,6 +497,13 @@ luck across a short run. See OQ#45 for an optional fairness tweak.
     the report solo or co-op, and did the other seat have unlocks? (Solo
     already auto-matches the bot's vote, so solo picks apply immediately.)
 
+    **OQ#44 RULED (2026-07-05, S16-D6): ascension becomes a host-only lobby
+    setting**, clamped to the host's own unlock; the partner rides. The
+    both-confirm model is retired. (Solo already auto-matched; now co-op
+    matches the genre convention and kills the "nothing happened" read.)
+    *Landed in S16: the S7.7 host-only dial was the first half; the clamp
+    now reads the host's own unlock. CLOSED.*
+
 45. **Single-enemy binding is a pure coin flip → can streak onto one player**
     (from the #4 investigation). Multi-enemy fights self-balance, but elites
     and bosses (one body) bind p1/p2 50/50 each combat with no memory, so a
@@ -481,6 +512,15 @@ luck across a short run. See OQ#45 for an optional fairness tweak.
     toward whichever player has been bound LESS this run (anti-streak), the
     way some roguelikes de-randomize aggro. Cheap (a per-run bind counter);
     deferred as a design choice, not done unilaterally.
+
+    **OQ#45 RULED (2026-07-05, S16-D7): anti-streak single-enemy binding
+    APPROVED.** Single-enemy (elite/boss) fights bias binding toward
+    whichever player has been bound LESS this run (per-run bind counter).
+    Multi-enemy split behavior unchanged. If the implementation alters the
+    rng stream, the golden regen is forced, loud, and in its own commit —
+    it lands inside this sprint's already-open re-anchor window. *Landed
+    in S16: the rng stream is byte-identical (pinned); state hashes moved,
+    golden regen in-commit. CLOSED.*
 
 ## Playtest-3 telemetry read (2026-06-14, two human full-clears)
 
@@ -648,6 +688,9 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     **RULED (2026-07-04): hold ladder ×1; the ≥2× calibration gate stays
     OPEN, to be calibrated together with S11.9 bot knot-pricing.** The
     open item moves to the S11.9 work queue, not this list.
+    *S16 pointer: the composition lever (S16-D4, the knot sub-pool) landed —
+    probe-leg ladder 1.09 → ~1.26; the ≥2 gate's stop-and-report decision
+    packet is in docs/S16-STATUS.md.*
 
 56. **Battery environment offset**: this container reads the recorded
     S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
@@ -663,6 +706,12 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     lockstep policy calls; per-run reproducibility) — is filed as a named
     backlog item, to land immediately before the first post-S15 sprint so
     its forced re-anchor is free.
+    **Rider DISCHARGED (2026-07-06, S16 Part 1):** the socket-free path
+    landed (engine-pure redaction, lockstep policy calls, per-run
+    byte-reproducibility pinned), the re-anchor banked, and the offset's
+    MECHANISM was identified — event-loop contention makes bots act on
+    stale views, a one-directional misplay tax that scales with machine
+    load. docs/S16-STATUS.md carries the parity bridge.
 
 57. **Instrument gaps named**: "questions provable/run" (S11.3 target
     band) has no harness calculation — distinctEliminations is the proxy;

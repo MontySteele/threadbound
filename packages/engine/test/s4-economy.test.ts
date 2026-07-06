@@ -115,9 +115,10 @@ describe("S4.3 Pulsekeeper's Ring (OQ#27) — sign-off gate 4", () => {
     s = ready(s);
     expect(s.players.p1.ringPulses).toBe(3);
     expect(s.telemetry.ringDiscountsFired).toBe(1);
-    // 2 + 2 + 1 = 5 spent (the 3rd was the discounted one)
-    expect(s.telemetry.threadSpent).toBe(5);
-    expect(threadBefore - 5).toBeGreaterThanOrEqual(0); // no accidental fray in this fixture
+    // 2 + 2 + 0 = 4 spent — the 3rd is FREE (S17 relic uplift, the OQ#27
+    // pre-agreed (b) escalation; was costs-1 before 2026-07-06)
+    expect(s.telemetry.threadSpent).toBe(4);
+    expect(threadBefore - 4).toBeGreaterThanOrEqual(0); // no accidental fray in this fixture
 
     // combat boundary: counter persists on player run state
     for (const e of s.combat!.enemies) e.hp = 0;

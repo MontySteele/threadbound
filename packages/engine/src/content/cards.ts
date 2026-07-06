@@ -34,7 +34,7 @@ def({
   link: { condition: 'Strike', text: 'Apply 4 instead.', effects: [{ op: 'hex', amount: 4, primary: true }], replace: true },
 });
 def({
-  id: 'withering', name: 'Withering', character: 'vess', rarity: 'common', cost: 1, tag: 'Hex',
+  id: 'withering', name: 'Withering', character: 'vess', rarity: 'uncommon', cost: 1, tag: 'Hex',
   text: 'Apply 3 Hex to ALL enemies.',
   base: [{ op: 'hexAll', amount: 3, primary: true }], // M2-B1 lever 3 (2nd pass): 2 → 3
   link: { condition: 'Guard', text: 'Also apply 1 Weak to all.', effects: [{ op: 'weakAll', amount: 1 }] },
@@ -44,7 +44,7 @@ def({
   },
 });
 def({
-  id: 'patient_knife', name: 'Patient Knife', character: 'vess', rarity: 'common', cost: 2, tag: 'Strike',
+  id: 'patient_knife', name: 'Patient Knife', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 6.',
   base: [{ op: 'damage', amount: 6, primary: true }],
@@ -53,8 +53,8 @@ def({
 def({
   id: 'stitchblade', name: 'Stitchblade', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 5.',
-  base: [{ op: 'damage', amount: 5, primary: true }],
+  text: 'Deal 6.',
+  base: [{ op: 'damage', amount: 6, primary: true }],
   link: { condition: 'Hex', text: 'Apply 3 Hex.', effects: [{ op: 'hex', amount: 3 }] }, // lever 3 (2nd pass)
 });
 def({
@@ -65,8 +65,8 @@ def({
 });
 def({
   id: 'wardknot', name: 'Wardknot', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
-  text: 'Gain 5 Block.',
-  base: [{ op: 'block', amount: 5, primary: true }],
+  text: 'Gain 6 Block.',
+  base: [{ op: 'block', amount: 6, primary: true }],
   link: { condition: 'Surge', text: 'Gain 3 more.', effects: [{ op: 'block', amount: 3 }] },
 });
 def({
@@ -85,7 +85,7 @@ def({
   id: 'mendthread', name: 'Mendthread', character: 'vess', rarity: 'common', cost: 1, tag: 'Rite',
   text: 'Gain 1 Thread.',
   base: [{ op: 'thread', amount: 1 }],
-  link: { condition: 'Guard', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+  link: { condition: 'Guard', text: 'Your partner gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
 });
 
 // Uncommons (7) — self-similar allowed but scarce (§2.3): Inheritance only.
@@ -154,9 +154,15 @@ def({
   base: [{ op: 'detonateAllEnemies' }, { op: 'damagePerDetonated', per: 1 }],
 });
 def({
-  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
+  id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
   text: 'Power: at the start of each turn, gain 1 Thread. Exhaust.',
   base: [{ op: 'power', power: 'unbroken_line' }],
+  mutation: {
+    // S17 8a (ratified 2026-07-06, the row's pre-approved fallback wording —
+    // the double-clause draft was flagged muddy in the proposal itself)
+    name: 'Frayed Line', text: 'Power: at the start of each odd turn, gain 1 Thread. Exhaust.',
+    base: [{ op: 'power', power: 'frayed_line' }],
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -165,17 +171,17 @@ def({
 
 // Commons (10)
 def({
-  id: 'opener', name: 'Opener', character: 'bram', rarity: 'common', cost: 0, tag: 'Strike',
+  id: 'opener', name: 'Opener', character: 'bram', rarity: 'uncommon', cost: 0, tag: 'Strike',
   needsTarget: true,
   text: 'Deal 4. Gain 2 Momentum.',
   base: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 2 }],
   link: { condition: 'Surge', text: 'Gain 4 Momentum instead.', effects: [{ op: 'damage', amount: 4, primary: true }, { op: 'momentum', amount: 4 }], replace: true },
 });
 def({
-  id: 'rendcall', name: 'Rendcall', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
+  id: 'rendcall', name: 'Rendcall', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 8.',
-  base: [{ op: 'damage', amount: 8, primary: true }],
+  text: 'Deal 7.',
+  base: [{ op: 'damage', amount: 7, primary: true }],
   link: { condition: 'Hex', text: 'Detonate all Hexes on the target.', effects: [{ op: 'detonate' }] },
   mutation: {
     name: 'Stitched Rendcall', text: 'Deal 6. Apply 2 Hex.',
@@ -184,8 +190,8 @@ def({
 });
 def({
   id: 'crossguard', name: 'Crossguard', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
-  text: 'Gain 6 Block.',
-  base: [{ op: 'block', amount: 6, primary: true }],
+  text: 'Gain 5 Block.',
+  base: [{ op: 'block', amount: 5, primary: true }],
   link: { condition: 'Strike', text: 'Gain 3 Momentum.', effects: [{ op: 'momentum', amount: 3 }] },
 });
 def({
@@ -215,7 +221,7 @@ def({
   needsTarget: true,
   text: 'Apply 3 Hex.',
   base: [{ op: 'hex', amount: 3, primary: true }], // M2-B1 lever 3: 2 → 3
-  link: { condition: 'Strike', text: 'Deal 3.', effects: [{ op: 'damage', amount: 3 }] },
+  link: { condition: 'Strike', text: 'Deal 2.', effects: [{ op: 'damage', amount: 2 }] },
 });
 def({
   id: 'brace', name: 'Brace', character: 'bram', rarity: 'common', cost: 1, tag: 'Guard',
@@ -225,15 +231,15 @@ def({
 });
 def({
   id: 'kindle', name: 'Kindle', character: 'bram', rarity: 'common', cost: 1, tag: 'Rite',
-  text: 'Gain 1 Thread. Gain 1 Momentum.',
-  base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 1, primary: true }],
+  text: 'Gain 1 Thread. Gain 2 Momentum.',
+  base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2, primary: true }],
   link: { condition: 'Strike', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
 });
 def({
   id: 'followthrough', name: 'Followthrough', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 6.',
-  base: [{ op: 'damage', amount: 6, primary: true }],
+  text: 'Deal 5.',
+  base: [{ op: 'damage', amount: 5, primary: true }],
   link: { condition: 'Surge', text: 'Apply 1 Weak.', effects: [{ op: 'weak', amount: 1 }] }, // S5.2: Hex → Surge (Table A)
 });
 
@@ -287,9 +293,9 @@ def({
 def({
   id: 'avalanche', name: 'Avalanche', character: 'bram', rarity: 'rare', cost: 3, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 8 three times.',
-  base: [{ op: 'damage', amount: 8, times: 3, primary: true }],
-  link: { condition: 'partner', text: 'Link (Partner’s card): deal 8 five times instead.', effects: [{ op: 'damage', amount: 8, times: 5, primary: true }], replace: true },
+  text: 'Deal 7 three times.',
+  base: [{ op: 'damage', amount: 7, times: 3, primary: true }],
+  link: { condition: 'partner', text: 'Link (Partner’s card): deal 7 five times instead.', effects: [{ op: 'damage', amount: 7, times: 5, primary: true }], replace: true },
 });
 def({
   id: 'wildfire_heart', name: 'Wildfire Heart', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,

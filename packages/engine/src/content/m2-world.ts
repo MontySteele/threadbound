@@ -241,6 +241,11 @@ export const M2_ENEMIES: EnemyDef[] = [
     hp: [188, 206],
     mournerMechanic: { strengthPerTrigger: 2 },
     chainReader: { blockPerUnfiredLink: 3 },
+    // S16-D5 RATIFIED (2026-07-05): composition of the two mechanics it
+    // demonstrably carries (mournerMechanic + chainReader, both live above;
+    // both clauses state true rules — Witness-law check on record). S10a
+    // diction; trailing period normalized off per the D4-ratified six.
+    mechanicLine: 'it feeds as the Mourner feeds — and reads slack in your chain as the Cantor does',
     script: [
       { kind: 'attack', amount: 14 },
       { kind: 'attack_all', amount: 10 },

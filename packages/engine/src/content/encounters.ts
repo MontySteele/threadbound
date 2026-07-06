@@ -82,3 +82,16 @@ export const ENCOUNTER_POOLS: Record<1 | 2, { easy: string[]; normal: string[]; 
   },
 };
 
+// S16-D4 (ruled): the braid's second-and-later crossings draw from this
+// harder sub-pool — the guard-check comp plus the act's hottest named
+// elites; the FIRST crossing keeps the full pool (the gentle debut stands).
+// Act 2 composition is the ruling's own words (a2_knot_rippers +
+// Bellkeeper tier); act 1 is the same rule applied to the S16.0e heat
+// table (warden 26.7/27.6 > sexton 25.1/23.8 ≫ mourner 17.1/17.5).
+// DATA, not code — a membership change here is a sign-off row. Constants
+// stay [0,.10,.30,.60] as signed: last/first rises by composition.
+export const KNOT_SUBPOOLS: Record<1 | 2, string[]> = {
+  1: ['a1_elite_warden', 'a1_elite_sexton'],
+  2: ['a2_knot_rippers', 'a2_elite_bellkeeper'],
+};
+
