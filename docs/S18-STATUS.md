@@ -188,3 +188,40 @@ wants steeper knots it returns as its own sprint with its own thesis.
 |---|---|---|---|
 | St-5 | the_unraveled mechanicLine | "at half its blood it severs the Thread — two turns with nothing between you, and the cut frees both its hands" | RATIFIED — literally true (the double-act runs exactly while the sever holds) |
 | St-6 | enemy-phase log line | "the cut frees both its hands — it acts again" | RATIFIED — emitted only on the double-act |
+
+## Part 5 — S18.5 the law questions (D5, ruled as recommended)
+
+1. **gravebloom vs the S13.2 flat-hex-echo law: THE LAW HOLDS.** Hex
+   dominance was structural (OQ#28/#43 — the only engine archetype,
+   uncapped doubling); hookAll-hex past 2 is precisely what the law
+   was written to block, and bending it for one dead card licenses
+   every future floor-raise to petition. Post-D2 check the ruling
+   asked for: the reshape did NOT lift gravebloom for free (+5.2 →
+   +5.0 on this session's tool, same pooling both sides — flat, and
+   still bottom-tier for a vess rare). The different-axis enumeration,
+   stalled at sign-off per the ruling — **enumerated only, nothing
+   authors this sprint**: (g-a) a detonate-side rider (fires on the
+   detonate the partner's kit already wants, inside the ≤2 law);
+   (g-b) a draw hook on the existing partner-link trigger; (g-c) the
+   cost axis (2→1). Next audit/design session rules or discards.
+2. **braided_censer effect trim: PARKED with a named trigger.** The
+   S17 ruling already chose weight over trim; the +5.4 stratified
+   residual is a bot-resonance-rate artifact until proven otherwise
+   (fray/resonance items are where bot and human play diverge most).
+   Trigger, on the record: if the next human playtest reads the
+   censer as table-dominant, the pre-approved trim is **heal 2→1**,
+   no new session needed.
+3. **Laws outrank passes — RATIFIED as standing procedure.** A pass
+   that collides with a law stops and reports (as S17.2 correctly
+   did); it never lands through the law. Recorded in
+   OPEN-QUESTIONS.md so it needs no re-arguing.
+
+## Part 6 — S18.6 dispositions ledger (D6, ruled as proposed)
+
+| # | item | disposition (all dated 2026-07-06, ledger lines in OPEN-QUESTIONS.md) |
+|---|---|---|
+| 6a | dead-shape cluster (measured_cut, slow_burn, tithe_of_thread, mendthread) + Thread-glue pattern (votive_thread, litany_of_mending) | **PARKED to the playtest pile.** Three S17 batteries prove scalar-immunity; whether Thread is over-supplied or bots under-bank is adjudicable only by human data. Re-open trigger: first human playtest, Thread-banking debrief question, verbatim, unnamed. **No more +1s in the interim — ratified as a rule.** (S18 footnote: S-1 made mendthread draft-only; its draft-pool read moved +2.1 → +6.7 on this session's tool — the playtest question stands unchanged.) |
+| 6b | fray-relic trio (covetous_psalter, scar_votive, knotted_votive et al.) | **PARKED.** Bots don't fray; these are the sloppier-human-pair relics by design. Human data rules. |
+| 6c | OQ#41b (which relics become genuinely co-op) | **PARKED to the content pass**, as already scoped. |
+| 6d | OQ#56 (battery environment offset) | **CLOSED AS SUPERSEDED, with the verification run.** Evidence, this session, fresh container: (1) same build + seeds, repeat invocation → byte-identical TBITEMS telemetry (n=100); (2) tip vs the S17 pass-B build (c3c0f3d) → **byte-identical** (S17.4's mutations never fire under bot play — reclaims are 0 in canonical batteries); (3) cross-environment: this container reproduces the S17 container's §12 exit board **to the exact win-count** on all three n=2000 rows (721/1118/1433). The offset was the WS-contention era; the socket-free path is deterministic per seed, now shown across containers. |
+| 6e | watches: a2_boss / a2_silence rows, OQ#53 (Linked Shields vs Immovable), D10 re-observe (shrine treatment unfired) | **REMAIN on the playtest slate** — already correctly filed; dated lines added so the ledger reads total. |
