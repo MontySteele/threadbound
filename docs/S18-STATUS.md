@@ -160,6 +160,28 @@ fatter boss holds the sever window longer. Rest-heal untouched
 A3): A2/A3 rows on the final build, banked in Part 8's table. The
 mechanicLine string is sim-neutral (verified byte-identical n=100).
 
+## Part 4 — S18.4 the gate-4 packet (D4, ruled (c) as recommended)
+
+**The ≥2 gate is RE-DERIVED to a regression floor: knot-2/knot-1
+pair-HP ratio ≥ 1.2 on the probe leg.** The ≥2 aspiration predates
+the now-visible ceiling — braid paths meet at most TWO knots per act
+by construction, knotsCut resets per act, and even a sub-pool of one
+(Bellkeeper tier) tops out ~1.8 dragged to ~1.26 by act 1. A gate the
+topology cannot pass measures the wrong thing; the floor protects the
+escalation that exists (S16-D4 bought 1.08→1.2+) instead of demanding
+one the map geometry forbids.
+
+Read on the final build (probe ≡ braid at A0, re-verified Part 1):
+**vv 1.24 / vb 1.22 / bb 1.23 — PASS with margin.** The sim's
+calibration line now states the ruled floor (instrument-only change,
+bots untouched).
+
+Options (a)/(b), dispositioned per the ruling: (a) a hotter authored
+knot-2 comp is bounded by the ×3 pierce lesson and buys ≤ ~1.8
+regardless — declined; (b) per-run knot escalation is a real design
+but roadmap-sized (it re-paces both acts) — if the post-D3 game still
+wants steeper knots it returns as its own sprint with its own thesis.
+
 ### Part 7 strings — the D3 rows (RATIFIED, designer 2026-07-06)
 
 | # | string | text | status |

@@ -699,7 +699,12 @@ export function printSummary(results: RunResult[]): void {
     const first = byOrder[orders[0]];
     const last = byOrder[orders[orders.length - 1]];
     const ratio = (last.hp / last.n) / Math.max(1e-9, first.hp / first.n);
-    console.log(`S11.2 escalation calibration: ${line} — last/first ratio ${ratio.toFixed(2)} (gate >=2 needs steepening if unmet)`);
+    // S18-D4 (ruled 2026-07-06): the ≥2 aspiration is RE-DERIVED to a ≥1.2
+    // regression floor — braid paths meet at most TWO knots per act by
+    // construction (S16-STATUS Part 6), so last/first is a knot-2/knot-1
+    // ratio with a structural ceiling ~1.8 even for a sub-pool of one; the
+    // floor protects the escalation that exists (S16-D4's 1.08→1.2+).
+    console.log(`S11.2 escalation calibration: ${line} — knot-2/knot-1 ratio ${ratio.toFixed(2)} (S18-D4 regression floor: >=1.2 on the probe leg)`);
   }
   console.log('---------------- GATES ----------------');
   let allPass = true;
