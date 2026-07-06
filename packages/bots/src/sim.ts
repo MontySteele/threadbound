@@ -47,6 +47,13 @@
 // battery: post-content v2 60% vs v1 50%, S13-ECONOMY-STATUS.md).
 // TB_BOT_DRAFT_V2=0 restores v1 — the instrumented comparison policy for
 // load-bearing rows; pre-flip batteries were v1 unless marked DRAFT_V2.
+// S17 pre-audit — per-run item rows for the power-level sweep:
+//   TB_SIM_ITEMS=1   emit one '##TBITEMS##{json}' machine row per run
+//                    (outcome, act reached, per-seat card picks/plays by
+//                    def, relics acquired) so per-item win-rate lift can be
+//                    computed offline. OFF by default: the knob only ADDS
+//                    rows — the canonical run lines + summary stay
+//                    byte-identical, so no re-anchor is owed.
 
 process.env.PORT = process.env.PORT ?? '0';
 process.env.PERSIST = ''; // sims never persist rooms
@@ -133,6 +140,30 @@ interface Played {
 }
 
 const RESULT_MARK = '##TBRESULT##'; // shard child → parent machine row
+const ITEMS_MARK = '##TBITEMS##'; // TB_SIM_ITEMS=1 per-run item row (S17 pre-audit)
+const ITEMS = process.env.TB_SIM_ITEMS === '1';
+
+/** S17 pre-audit machine row: everything the per-item lift analysis needs
+ *  from one run, straight out of the S14.1 B23 telemetry (no engine change).
+ *  Cards are per-seat [p1, p2] so mixed pairs split by character offline. */
+function itemsLine(p: Played): string {
+  const t = p.result.telemetry;
+  const seatCell = (cell: Record<PlayerId, number> | undefined): [number, number] =>
+    [cell?.p1 ?? 0, cell?.p2 ?? 0];
+  const cards: Record<string, [number, number]> = {};
+  for (const [id, cell] of Object.entries(t.cards?.picks ?? {})) cards[id] = seatCell(cell);
+  const plays: Record<string, [number, number]> = {};
+  for (const [id, cell] of Object.entries(t.cards?.plays ?? {})) plays[id] = seatCell(cell);
+  return `${ITEMS_MARK}${JSON.stringify({
+    run: p.run,
+    outcome: p.result.outcome,
+    act: p.result.act,
+    characters: p.result.characters,
+    cards,
+    plays,
+    relics: Object.keys(t.relicSources ?? {}).sort(),
+  })}`;
+}
 
 function runLine(p: Played): string {
   const r = p.result;
@@ -709,6 +740,7 @@ async function main(): Promise<void> {
       DRAFT_V2 ? null : 'DRAFT_V1', // v2 is the default; the DEVIATION is what's loud
     ].filter(Boolean).join(' ');
     console.log(`sim: economy knobs ${knobLine || '(none — base config)'}  |  draft policy ${DRAFT_V2 ? 'v2' : 'v1'}`);
+    if (ITEMS) console.log('sim: TB_SIM_ITEMS=1 — per-run item rows on (S17 pre-audit; additive only)');
   }
 
   let played: Played[];
@@ -737,6 +769,7 @@ async function main(): Promise<void> {
   // completion timing (S16.0c: N shards ≡ 1 shard, pinned)
   played.sort((a, b) => a.run - b.run);
   if (SHARDS > 1) for (const p of played) console.log(runLine(p));
+  if (ITEMS) for (const p of played) console.log(itemsLine(p)); // additive rows, canonical order
   printSummary(played.map((p) => p.result));
   if (SOCKET) {
     // the WS server may hold the loop open — flush stdout, then hard-exit
