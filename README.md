@@ -11,6 +11,10 @@ npm run build
 npm run server        # serves game + client on http://localhost:8080
 ```
 
+`npm run server` **is the game** — no environment flags needed (S20.1
+ruling): the knotwork braid map, the death/birth rites, and the narrative
+truth tracks are all on by default, everywhere the server runs.
+
 Full game: two acts (The Undercroft, The Hollow Choir) and the finale (The
 Last Braid / The Unraveled) — branching maps, shops, relics, upgrades, the
 Wedding Knife, down-but-not-out revival. Target run length 60–75 minutes.
@@ -93,6 +97,23 @@ npm run sim           # 50-run headless bot simulation + M2 telemetry gates
 npm run check         # everything above
 npm run client        # vite dev server (proxies ws to :8080)
 ```
+
+### Archaeology flags (`=0` escapes)
+
+Since S20.1 the shipped configuration is the default: `TB_RITES`,
+`TB_TRACKS`, and `TB_KNOTWORK` are all ON when unset, for the server and
+the bot fleet alike. The old baselines survive only as explicit opt-outs
+for archaeology — comparing against pre-S15 behavior, or reproducing an
+old battery:
+
+| flag | `=0` restores |
+|---|---|
+| `TB_KNOTWORK=0` | the pre-S15 lane map generator (unbanded since S18/OQ#65) |
+| `TB_RITES=0` | no vestry phase, no death/birth rites, no growth tallies |
+| `TB_TRACKS=0` | no narrative truth system (no Tapestry, shrine, gated events) |
+
+None of these belong on a hosted build; they exist so history stays
+reproducible.
 
 Architecture (§11): `packages/engine` (pure deterministic reducer — all rules
 live here), `packages/server` (Node + ws, authoritative), `packages/client`

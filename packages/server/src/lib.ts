@@ -141,8 +141,9 @@ export function proxyTrustFromEnv(v: string | undefined = process.env.TB_TRUSTED
 /** Boolean env flag with an explicit off switch. The legacy `!!process.env.X`
  *  check read '0'/'false' as ON (any non-empty string is truthy) — harmless
  *  while these defaulted off, a footgun once they default on (S10a: index.ts
- *  turns rites/tracks on for interactive play). Unset → `def`; '', '0',
- *  'false', 'off', 'no' (case-insensitive) → false; anything else → true. */
+ *  turned rites/tracks on for interactive play; S20.1 makes rites, tracks,
+ *  and knotwork the global default at their call sites). Unset → `def`;
+ *  '', '0', 'false', 'off', 'no' (case-insensitive) → false; else true. */
 export function envFlag(name: string, def = false): boolean {
   const v = process.env[name];
   if (v === undefined) return def;
@@ -851,15 +852,18 @@ export class GameServer {
         }
         // S4.5: pool = union of both players' unlocked sets (server-built)
         // nt-slice: TB_TRACKS gates the narrative truth system; the pure
-        // engine never reads env, so the flag crosses here
+        // engine never reads env, so the flag crosses here.
+        // S20.1 (ruled, supersedes OQ#59): rites, tracks, and the braid are
+        // the GLOBAL DEFAULT — `npm run server` is the game. The `=0`
+        // escapes remain for archaeology only.
         this.applyAction(ctx.room, socket, {
           type: 'START_RUN', seed,
           unlockedCards: this.unlockUnion(ctx.room),
-          tracks: envFlag('TB_TRACKS'),
+          tracks: envFlag('TB_TRACKS', true),
           // S7: the rites flag crosses here too (pure engine never reads env)
-          rites: envFlag('TB_RITES'),
-          // S11.8 (Wave B): the braid generator, flag-gated during development
-          knotwork: envFlag('TB_KNOTWORK'),
+          rites: envFlag('TB_RITES', true),
+          // S11.8 (Wave B) → S20.1: the braid IS the shipped game (S15)
+          knotwork: envFlag('TB_KNOTWORK', true),
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
           // S11.4: codex-keyed event doors — UNION of the seats' proven
@@ -868,7 +872,7 @@ export class GameServer {
             ? { codexProven: this.codexProvenUnion(ctx.room) } : {}),
           // S9a: rite pool = union of the seats' claimed unlocks (absent =
           // everything; all rites ship unlocked tonight)
-          ...(envFlag('TB_RITES') ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
+          ...(envFlag('TB_RITES', true) ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.

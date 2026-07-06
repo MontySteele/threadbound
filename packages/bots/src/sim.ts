@@ -135,9 +135,11 @@ const ASCEND = Math.max(0, Math.min(5, Number(process.env.ASCEND ?? 0) || 0));
 // lowest-id rule so the S7.8 battery can measure birth-rite timing.
 // SIM-ONLY, default off; no production surface reads this.
 const SEEK_EVENTS = process.env.TB_BOT_SEEK_EVENTS === '1';
-// S7.8 gate-5 sim accommodation: flagged batteries only — bots occasionally
-// Reclaim so engagement is measurable (S6.2 precedent; never in production)
-const RECLAIM_NUDGE = process.env.TB_RITES === '1';
+// S7.8 gate-5 sim accommodation: rites batteries only — bots occasionally
+// Reclaim so engagement is measurable (S6.2 precedent; never in production).
+// S20.1: rides the rites flag through the same reader — rites default ON,
+// so every canonical battery is a rites battery; TB_RITES=0 kills both.
+const RECLAIM_NUDGE = envFlag('TB_RITES', true);
 // S13.1a/b knobs (header above) — threaded into BotPolicy per seat
 const SKIP_PICKS = process.env.TB_BOT_SKIP_PICKS === '1';
 const PICK_CAP = process.env.TB_BOT_PICK_CAP !== undefined && process.env.TB_BOT_PICK_CAP !== ''
@@ -147,7 +149,9 @@ const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 f
 const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 
 // the flags that cross START_RUN (server: envFlag; socket-free: same reader)
-const FLAGS = { tracks: envFlag('TB_TRACKS'), rites: envFlag('TB_RITES'), knotwork: envFlag('TB_KNOTWORK') };
+// S20.1 (ruled, supersedes OQ#59): all three default ON — the canonical
+// battery environment IS the shipped game; `=0` escapes are archaeology
+const FLAGS = { tracks: envFlag('TB_TRACKS', true), rites: envFlag('TB_RITES', true), knotwork: envFlag('TB_KNOTWORK', true) };
 const KNOT = FLAGS.knotwork;
 
 /** one battery entry: run index (1-based over the whole battery) + result */
