@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { generateActMap } from '../src/map';
-import { ENCOUNTER_POOLS } from '../src/content/encounters';
+import { ENCOUNTER_POOLS, KNOT_SUBPOOLS } from '../src/content/encounters';
 
 const SEEDS = Array.from({ length: 60 }, (_, i) => 1000 + i);
 
@@ -41,11 +41,25 @@ describe('S14.2 B1: elite slots sample the pool', () => {
   });
 
   it('sample-without-replacement: no elite repeats within one act map (A3 extra elite included)', () => {
+    // S16-D4 amendment: braid later-knots draw the act's SUB-POOL (size 2),
+    // so at A3 (three crossings) a repeat is arithmetically unavoidable when
+    // the debut already spent a sub-pool comp — the D4 ruling supersedes the
+    // variety pin exactly there, and nowhere else. Classic maps keep the
+    // full no-repeat rule; braid maps keep it up to sub-pool exhaustion.
     for (const seed of SEEDS.slice(0, 20)) {
       for (const knotwork of [false, true]) {
         const { map } = generateActMap(seed, 1, true, false, [], [], knotwork);
-        const ids = map.nodes.filter((n) => n.kind === 'elite').map((n) => n.encounterId);
-        expect(new Set(ids).size, `seed ${seed} ${knotwork ? 'braid' : 'classic'}: repeated elite`).toBe(ids.length);
+        const ids = map.nodes
+          .filter((n) => n.kind === 'elite')
+          .sort((a, b) => a.layer - b.layer)
+          .map((n) => n.encounterId!);
+        if (!knotwork) {
+          expect(new Set(ids).size, `seed ${seed} classic: repeated elite`).toBe(ids.length);
+        } else {
+          const laterChoices = KNOT_SUBPOOLS[1].filter((id) => id !== ids[0]).length;
+          const expected = Math.min(ids.length, 1 + Math.max(1, laterChoices));
+          expect(new Set(ids).size, `seed ${seed} braid: distinct elites`).toBe(expected);
+        }
       }
     }
   });

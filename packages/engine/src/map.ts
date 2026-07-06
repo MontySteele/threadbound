@@ -3,7 +3,7 @@
 
 import { MapNode, MapState } from './types';
 import { rngInt, rngShuffle } from './rng';
-import { ENCOUNTER_POOLS } from './content/encounters';
+import { ENCOUNTER_POOLS, KNOT_SUBPOOLS } from './content/encounters';
 import { ALL_RELICS, MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
 import { CROSSING_LAYERS, CROSSING_LAYER_A3, STRAND_TARGETS, StrandId } from './content/strand-targets';
 import { distinctApproaches } from './map-composition';
@@ -632,6 +632,20 @@ function generateBraidMap(
   const eliteDraw = rngShuffle(rng, pools.elite);
   rng = eliteDraw.state;
   const eliteIds = eliteDraw.value;
+  // S16-D4 (ruled): the FIRST crossing keeps the full-pool draw (the gentle
+  // debut stands); second-and-later crossings draw from the act's harder
+  // sub-pool. The sub-pool is ordered by the SAME shuffle and consumes NO
+  // new rng — every non-knot draw, the debut knot, and the whole classic
+  // topology are byte-identical to pre-S16. The debut's comp is skipped in
+  // the sub-pool when an alternative exists (sample-without-replacement
+  // habit, S14.2 B1).
+  const knotEnc = (k: number): string => {
+    if (k === 0) return eliteIds[0];
+    const sub = eliteIds.filter((id) => KNOT_SUBPOOLS[act].includes(id));
+    const later = sub.filter((id) => id !== eliteIds[0]);
+    const pick = later.length > 0 ? later : sub;
+    return pick[(k - 1) % pick.length];
+  };
   for (let layer = 1; layer <= 5; layer++) {
     placeSlot('truth', layer, 0);
     if (widen.truth === layer) placeSlot('truth', layer, 1);
@@ -639,7 +653,7 @@ function generateBraidMap(
       // the knot: a crossing owned by the weave, reachable from both strands
       push({
         kind: 'elite', layer, lane: 1,
-        encounterId: eliteIds[crossings.indexOf(layer) % eliteIds.length],
+        encounterId: knotEnc(crossings.indexOf(layer)),
       });
     }
     placeSlot('power', layer, 2);

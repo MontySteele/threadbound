@@ -179,3 +179,99 @@ gains a card-offer face), or (c) accept ±10 as the pairs' true distance
 on the clean instrument and re-derive the gate band (the ≤15 spread
 anchor suggests the old bands were contention artifacts). No
 recommendation is embedded — the premise correction comes first.
+
+## Part 3 — S16.2, the D4 sub-pool (landed; the dose check)
+
+Implementation: `KNOT_SUBPOOLS` (DATA, encounters.ts — a membership
+change is a sign-off row): act 2 = `a2_knot_rippers` +
+`a2_elite_bellkeeper` (the ruling's own words); act 1 = the same rule
+applied to the anchor heat table (warden + sexton). The braid's
+second-and-later crossings draw from it, ordered by the SAME elite
+shuffle — **no new rng**. First crossing keeps the full-pool draw
+byte-identically; later knots skip the debut's comp when an alternative
+exists (the S14.2 B1 habit). Classic topology untouched.
+
+Verified surgically: 1,200 generated braid maps (300 seeds × both acts
+× A0/A3), 23,400 nodes — the ONLY differences vs the pre-D4 build are
+later-knot encounterIds (780 nodes); zero rng drift, zero other node
+changes. Pinned (s16-knot-subpool.test.ts): later knots ⊆ sub-pool
+(200-seed sweep, both acts, A0+A3); the debut covers the FULL pool
+across a 300-seed sweep; no debut repeat when avoidable.
+
+Dose check (paired same-seed per S16-R1, seeds 1001–1200, vs the
+S16.0e anchors):
+
+| row | anchor | post-D4 | paired Δ | discordant (up/down) |
+|---|---|---|---|---|
+| vb braid | 74.0 | 69.5 | −4.5 | 33 (12/21) |
+| vv braid | 59.0 | 57.5 | −1.5 | 29 (13/16) |
+| bb braid | 84.0 | 76.5 | −7.5 | 27 (6/21) |
+| vb probe | 74.0 | 69.5 | −4.5 | ladder 1.09 → 1.24 |
+| bb probe | 84.0 | 76.5 | −7.5 | ladder 1.08 → 1.28 |
+
+The knot tax lands differentially exactly as the ruling intended: bb
+pays −7.5 to vb's −4.5, so **bb−vb on-braid closes +10.0 → +7.0** on
+the D4 lever alone. Knot-2 heat rises 25.6→29.6 (vb) / 26.6→31.3 (bb);
+on-braid spread 25.0 → 19.0. Gate readings on the FINAL build are in
+Part 6.
+
+## Part 4 — S16.3, the slate (each row its own commit)
+
+1. **OQ#37 theater HP (S16-D9): ALREADY LIVE — verified, recorded, no
+   code.** The ruled behavior landed at `22a4061` ("per-action HP
+   playback in the theater"): `hpDelta`/`displayHp` walk a client-held
+   display value down per `damage`/`detonate`/`player_hit` beat, skip
+   snaps to final (`onOffsets(null)`), enemy bars and player stats both
+   consume the offsets (App.tsx:1087/1169). §11-clean by construction —
+   no engine replay. The OQ ledger had simply never been closed; it is
+   now (OQ#37 gets its RULED line + the pointer).
+2. **Choirmaster mechanicLine (S16-D5): landed** (`33bbc51`), the
+   ratified string, trailing period normalized off per the D4-ratified
+   six. Witness-law check re-verified at the def: mournerMechanic +
+   chainReader both live; both clauses state true rules.
+3. **Relic-owner retexts (S16-D8): enumerated + proposed below —
+   STALLS at the table.** Effects untouched; nothing lands until each
+   string is signed. The convention (text names whose resource it
+   grants) is ratified; these are its applications.
+4. **Ascension host-only (S16-D6): landed** — see its commit. The S7.7
+   half (host-only dial, server-mirrored vote, host-persistent pick,
+   `data-gp` pad reachability) was already live; the S16 delta is the
+   CLAMP: the host's own unlock now rules (`maxAscension` reads the
+   host seat only), retiring the min-over-seats rule that silently
+   dragged a host's A2 to A0 beside a fresh-profile partner. Partner
+   rides; solo unchanged (bot seat never clamps). Pinned both ways in
+   s6.test.ts.
+5. **Anti-streak binding (S16-D7): landed** — see its commit and the
+   golden note there.
+6. **S15 paperwork: landed** — see its commit.
+
+### S16-D8 sign-off table (PROPOSED — STALLS HERE until each row is
+### ruled; effects untouched by construction)
+
+Relics whose current text is silent about whose resource it grants
+(the OQ#41a confusion class — "Ember Coal only gave Vess Momentum").
+Verified against the hook engine: every row below is per-HOLDER
+(`runHooks` runs on the holder's own relics).
+
+| # | relic | current text | proposed text |
+|---|---|---|---|
+| 1 | ember_coal | Begin each combat with 3 Momentum. | Its bearer begins each combat with 3 Momentum. |
+| 2 | kindling_bundle | Begin each combat Kindled 1. | Its bearer begins each combat Kindled 1. |
+| 3 | sealed_reliquary | Begin each combat with 6 Block. | Its bearer begins each combat with 6 Block. |
+| 4 | drawn_curtain | Draw 2 additional cards at the start of each combat. | Its bearer draws 2 additional cards at the start of each combat. |
+| 5 | census_of_wounds | At the start of each combat, heal 3. | At the start of each combat, its bearer heals 3. |
+| 6 | saints_marrow | When taken, heal 8. | When taken, the taker heals 8. |
+| 7 | scar_votive | Whenever the Thread frays, heal 3. | Whenever the Thread frays, its bearer heals 3. |
+| 8 | chord_of_the_choir | Whenever Resonance ignites, draw 1 and gain Kindled 1. | Whenever Resonance ignites, its bearer draws 1 and gains Kindled 1. |
+| 9 | pulsekeepers_ring | Every third Pulse costs 1 Thread. The Ring keeps count. | Every third Pulse its bearer declares costs 1 Thread. The Ring keeps count. |
+| 10 | bridegrooms_knot | Begin each combat with 3 additional Thread. | The pair's Thread begins each combat 3 higher. *(optional — the resource is already shared; flagged for completeness)* |
+
+Convention-compliant already, left alone: everything with a "you /
+your / your partner" anchor (whetstone_psalm, hungry_whetstone,
+vigil_lamp, iron_girdle, hexwrought_locket, twin_phylactery,
+tithing_bowl, covetous_psalter, loom_of_two_hands, wedding_knife,
+braided_censer, knotted_votive), the enemy-facing pair (cracked_bell,
+needlecase_of_saint_morrow), and the pair-scoped shared-event pair
+(steadfast_icon, threadspool_reliquary). OQ#41b (which relics become
+genuinely co-op) stays content-pass material, untouched per the
+ruling.
