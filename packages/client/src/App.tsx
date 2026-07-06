@@ -29,7 +29,7 @@ import { LoomEye } from './LoomEye';
 import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { CodexButton } from './Codex';
 import { RunSummary } from './Summary';
-import { Hints } from './Hints';
+import { Hints, WitnessHints } from './Hints';
 
 type Character = 'vess' | 'bram';
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
@@ -275,6 +275,7 @@ export default function App(): JSX.Element {
           <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
+          <WitnessHints state={state} />
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
@@ -413,6 +414,19 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
                 <option value="paced">paced</option>
                 <option value="instant">instant (testing)</option>
               </select>
+            </label>
+          )}
+          {solo && (
+            // S19.6 (D6): the Witness hint family — once-per-run, act-1-only
+            // teaching lines in the narrator's voice. Default ON (the
+            // tb_dmgPreview pattern); label is Part 7 row St-67.
+            <label>
+              witness hints
+              <input type="checkbox" checked={localStorage.getItem('tb_witnessHints') !== '0'}
+                onChange={(e) => {
+                  localStorage.setItem('tb_witnessHints', e.target.checked ? '1' : '0');
+                  tick((n) => n + 1);
+                }} />
             </label>
           )}
         </div>

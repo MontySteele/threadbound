@@ -126,6 +126,9 @@ export class BotPolicy {
   private allKnots: boolean;
   private draftV2: boolean;
   private reclaimedTurn = -1;
+  /** S19.2 (D1): the combat (act:position) in which the solo Reclaim fired —
+   *  at most once per combat, by rule */
+  private soloReclaimCombat = '';
   private pulsedTurn = -1;
   private reorderedTurn = -1;
   private reorderCount = 0;
@@ -302,6 +305,18 @@ export class BotPolicy {
       }
     }
 
+    // S19.2 (D1, row R-a): the solo partner's Reclaim — the flagship
+    // cross-deck verb, absent from every solo run before this sprint.
+    // Deterministic and legible (NOT the sim nudge's 30% roll): it fires
+    // only on an articulable pull, at most once per combat, and never takes
+    // the shared pool below the courtesy floor. Considered from the TOP of
+    // the turn — the full hand is what makes a pull articulable ("its tag
+    // fires a link I'm holding"); the echo arrives next turn either way.
+    if (this.mode === 'solo' && !anyFallen && !severed) {
+      const reclaim = this.trySoloReclaim(view);
+      if (reclaim) return reclaim;
+    }
+
     const affordable = me.hand
       .map((id) => ({ id, def: defOf(view, you, id) }))
       .filter((c) => c.def.cost <= me.energy);
@@ -374,6 +389,30 @@ export class BotPolicy {
       e.hp > 0 && e.intent.kind.startsWith('attack')
       && (e.boundTo === you || e.intent.kind === 'attack_all'));
     const pierceOnly = threats.length > 0 && threats.every((e) => e.intent.kind === 'attack_pierce');
+    // S19.3 (D2, +1.2 — SOLO ONLY): tail-planning against the open hand.
+    // Hands are open information (OQ#22) and the view carries the human's:
+    // when a candidate placement is the chain TAIL and the human holds a
+    // card whose link.condition matches the candidate's tag (exact tag —
+    // 'any'/'partner' fire regardless of what we leave), the bot
+    // deliberately leaves a live link on the table. +1.2 sits below "fires
+    // own link" (+2) by design: the bot sets tables, it doesn't sacrifice
+    // its own fires to do it. No announce line — the payoff line
+    // (human_linked_off_me, 18%) lands at the moment of proof, which
+    // teaches better than narrating the setup.
+    const humanHeldConditions = this.mode === 'solo'
+      ? new Set(view.players[otherOf(you)].hand
+          .map((id) => defOf(view, otherOf(you), id).link?.condition)
+          .filter((c) => c !== undefined))
+      : null;
+    // S19.5 (D4 — SOLO ONLY, the ruled cut-line item, landed): +0.5 for a
+    // placement that EXTENDS the current alternation streak — priced by the
+    // same computeResonanceSlots the engine ignites with and Pulse already
+    // prices against (S9c.6), so the bot stages toward the streaks that
+    // will actually ignite. Smallest term in the scorer by design; Pulse
+    // still carries the resonance IQ.
+    const baseResonances = this.mode === 'solo'
+      ? computeResonanceSlots(combat.chain, baseFired, (slot) => chainDefs[combat.chain.indexOf(slot)]).size
+      : 0;
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
@@ -397,23 +436,100 @@ export class BotPolicy {
           (isVess && (cardText.includes("'hex'") || cardText.includes('hexAll') || cardText.includes('doubleHex')) ? 0.9 : 0) +
           (cardText.includes('detonate') && bigPile ? 1.3 : 0) +
           (cardText.includes('damagePerHex') && targetable.some((e) => e.hex >= 3) ? 1.2 : 0);
-        const score = fires + next + guardBonus + axisBonus + card.def.cost * 0.1;
+        const tailBonus = humanHeldConditions !== null
+          && pos === combat.chain.length && humanHeldConditions.has(card.def.tag) ? 1.2 : 0;
+        let streakBonus = 0;
+        if (this.mode === 'solo') {
+          const slotsWith: typeof combat.chain = [
+            ...combat.chain.slice(0, pos),
+            { cardInstanceId: card.id, owner: you },
+            ...combat.chain.slice(pos),
+          ];
+          const withRes = computeResonanceSlots(
+            slotsWith, firedWith, (slot) => defsWith[slotsWith.indexOf(slot)]).size;
+          if (withRes > baseResonances) streakBonus = 0.5;
+        }
+        const score = fires + next + guardBonus + axisBonus + tailBonus + streakBonus + card.def.cost * 0.1;
         if (!best || score > best.score) best = { card, pos, score };
       }
     }
     const pick = best!.card;
     const text = JSON.stringify(pick.def);
     const hexed = [...targetable].sort((a, b) => b.hex - a.hex)[0];
+    // S19.4 (D3, row T-a — SOLO ONLY): partner-protective targeting. When
+    // the human is lethal-adjacent (the same read maySpend uses), the
+    // FALLBACK preference flips from enemies bound to me to enemies bound
+    // to the human — kill what's killing them. The detonate/hex pile
+    // convergence above it stays: the co-op axis outranks the flip (T-a
+    // scope is the damage/detonate fallback only; Sever preference is T-b,
+    // not landed — ride only on probe evidence).
+    const protectSeat: PlayerId =
+      this.mode === 'solo' && this.lethalAdjacent(view, otherOf(you)) ? otherOf(you) : you;
     // detonators and hex-appliers converge on the same pile (the co-op axis)
     const target =
       (text.includes('detonate') && hexed) ||
       (text.includes("'hex'") && hexed && hexed.hex > 0 && hexed) ||
-      targetable.find((e) => e.boundTo === you) ||
+      targetable.find((e) => e.boundTo === protectSeat) ||
       targetable[0];
     return {
       type: 'STAGE_CARD', player: you, cardInstanceId: pick.id,
       slot: best!.pos, targetId: pick.def.needsTarget ? target.id : undefined,
     };
+  }
+
+  /** S19.2 (D1, row R-a — SOLO ONLY): Reclaim a card from the human's
+   *  discard/exhaust when the pull is ARTICULABLE — "it took that FOR a
+   *  reason" is the whole design:
+   *    (a) the card's tag fires a link the bot is holding, or
+   *    (b) the card feeds the hex/detonate axis into a pile ≥ 3.
+   *  At most once per combat; Thread courtesy holds strictly (the floor of
+   *  5 after the 2-cost spend — Reclaim is never worth fraying the pair,
+   *  so the lethal-adjacent exception does NOT apply here). Announced
+   *  always via the i_reclaimed_yours pool at resolution (S19.6) — the
+   *  verb must be seen to teach. Deterministic: no rolls. */
+  private trySoloReclaim(view: BotView): Action | null {
+    const you = view.you;
+    const combat = view.combat!;
+    const combatKey = `${view.map.act}:${view.map.position}`;
+    if (this.soloReclaimCombat === combatKey) return null; // once per combat
+    // courtesy floor, strict — measured against what's LEFT after every
+    // spend already declared this turn (declarations don't decrement
+    // view.thread until resolution)
+    const declared = combat.threadActions.reduce(
+      (a, t) => a + (t.kind === 'sever' ? 3 : t.kind === 'steady' ? 1 : 2), 0);
+    if (view.thread - declared - 2 < 5) return null;
+    const me = view.players[you];
+    if (me.hand.length >= 10) return null; // a full hand drops the echo
+    const partner = view.players[otherOf(you)];
+    const pool = [...partner.discard, ...partner.exhaust].filter(
+      (id) => !combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id),
+    );
+    if (pool.length === 0) return null;
+    const targetable = combat.enemies.filter((e) => e.hp > 0 && !e.untargetable);
+    const pileReady = targetable.some((e) => e.hex >= 3);
+    // links the bot is holding: hand cards' link conditions, by exact tag —
+    // 'any'/'partner' conditions excluded on purpose (they fire regardless;
+    // an "articulable" pull names the specific card that lights them)
+    const heldConditions = new Set(
+      me.hand.map((id) => defOf(view, you, id).link?.condition).filter((c) => c !== undefined),
+    );
+    let best: { id: string; score: number } | null = null;
+    for (const id of pool) {
+      const def = defOf(view, otherOf(you), id);
+      const text = JSON.stringify(def.base) + JSON.stringify(def.link?.effects ?? []);
+      const firesHeldLink = heldConditions.has(def.tag);
+      // op names as JSON.stringify actually renders them — double-quoted
+      // (the tryPulse form, not axisBonus's sim-frozen single-quote read)
+      const feedsAxis = pileReady &&
+        (text.includes('"hex"') || text.includes('hexAll') || text.includes('doubleHex')
+          || text.includes('detonate') || text.includes('damagePerHex'));
+      if (!firesHeldLink && !feedsAxis) continue; // not articulable — no pull
+      const score = (firesHeldLink ? 2 : 0) + (feedsAxis ? 1 : 0);
+      if (!best || score > best.score) best = { id, score }; // tie → pile order
+    }
+    if (!best) return null;
+    this.soloReclaimCombat = combatKey;
+    return { type: 'DECLARE_THREAD', player: you, kind: 'reclaim', targetId: best.id };
   }
 
   /** §14.12 solo courtesy: never take the shared pool below 5 — except
@@ -423,20 +539,28 @@ export class BotPolicy {
     if (view.thread < cost + 2) return false; // never spend into fray range
     if (this.mode !== 'solo' || view.thread - cost >= 5) return true;
     if (kind === 'pulse') return false;
-    const me = view.players[view.you];
+    return this.lethalAdjacent(view, view.you);
+  }
+
+  /** The lethal-adjacent read (S15.2A form), per SEAT: hp minus unmitigated
+   *  incoming below 25% of maxHp. Factored out of maySpend (S19.4) so
+   *  partner-protective targeting reuses the exact same read — same math,
+   *  same intent kinds, same pierce split. */
+  private lethalAdjacent(view: BotView, seat: PlayerId): boolean {
+    const p = view.players[seat];
     // S15.2A: pierce damage bypasses block — split it out of the mitigated sum
     let incoming = 0;
     let pierceIncoming = 0;
     for (const e of view.combat!.enemies) {
       // S10a read_chain counts as a threat (its no-resonance branch is ×2 —
       // read conservatively as one hit here, same as `times` elsewhere)
-      if (!(e.hp > 0 && e.boundTo === view.you
+      if (!(e.hp > 0 && e.boundTo === seat
         && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))) continue;
       const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
       if (e.intent.kind === 'attack_pierce') pierceIncoming += raw + e.strength;
       else incoming += raw + e.strength;
     }
-    return me.hp - pierceIncoming - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+    return p.hp - pierceIncoming - Math.max(0, incoming - p.block) < p.maxHp * 0.25; // lethal-adjacent
   }
 
   /** S14.2 (B24, SIM-ONLY): Steady had literally never been spent by a bot —

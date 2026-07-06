@@ -1031,6 +1031,12 @@ export function resolveTurn(state: GameState): void {
             e: 'thread_action', player: ta.player, kind: 'pulse',
             detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: free)' : ''}`,
           });
+          // S19.6 (D5): the bot Pulsing a HUMAN-owned link is announced
+          // always — its least legible action made legible. Empty pool
+          // no-ops until the Part 7 strings sign (solo runs only).
+          if (state.botSeat && ta.player === state.botSeat && slot.owner !== state.botSeat) {
+            sayWitness(state, 'i_pulsed_yours');
+          }
         }
         break;
       }
@@ -1055,16 +1061,32 @@ export function resolveTurn(state: GameState): void {
         }
         // S8.1 Dowry-Bound: reclaiming a partner's card feeds the engine
         runHooks(state, ta.player, 'reclaim');
+        // S19.2/S19.6 (D1): the solo partner's Reclaim is ALWAYS announced —
+        // the verb must be seen to teach. {card} names the card as it sat in
+        // the human's pile (truth law: the line claims only what just
+        // happened). Empty pool → sayWitness no-ops (strings stall at the
+        // Part 7 sign-off); co-op/sim runs never reach this (no botSeat).
+        if (state.botSeat && ta.player === state.botSeat) {
+          sayWitness(state, 'i_reclaimed_yours', { card: effectiveDef(src).name });
+        }
         break;
       }
       case 'sever': {
         spendThread(state, 3);
         const enemy = combat.enemies.find((e) => e.id === ta.targetId && e.hp > 0);
         if (!enemy) break;
+        const wasBound = enemy.boundTo;
         if (ENEMIES[enemy.defId]?.chorus) {
           severChorus(state, enemy);
         } else if (enemy.boundTo !== null) {
           enemy.boundTo = otherPlayer(enemy.boundTo);
+        }
+        // S19.6 (D5): the bot's Sever, announced at resolution and ONLY when
+        // the binding actually moved (a chorus sever can no-op; a line about
+        // a cut that didn't happen would be a falsehood). Empty pool no-ops
+        // until the Part 7 strings sign.
+        if (state.botSeat && ta.player === state.botSeat && enemy.boundTo !== wasBound) {
+          sayWitness(state, 'i_severed');
         }
         break;
       }
@@ -1076,6 +1098,10 @@ export function resolveTurn(state: GameState): void {
         } else {
           combat.steadyShield++;
         }
+        // S19.6 (D5): the bot's Steady, announced always. The solo policy
+        // never Steadies today (trySteady is sim-only) — the pool waits for
+        // the verb rather than the verb for the pool.
+        if (state.botSeat && ta.player === state.botSeat) sayWitness(state, 'i_steadied');
         break;
     }
     // S3.1 thread economy: spend mix by action type (cost reflects any

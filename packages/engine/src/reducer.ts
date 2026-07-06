@@ -22,7 +22,7 @@ import { rollLiveMechanics } from './content/faces';
 import { RITES_BY_ID, unlockedRites } from './content/rites';
 import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
-import { maybeSayWitness, sayWitness } from './witness-draw';
+import { maybeSaySolo, maybeSayWitness, sayWitness } from './witness-draw';
 
 export const STARTING_HP: Record<CharacterId, number> = { vess: 68, bram: 78 };
 
@@ -478,6 +478,13 @@ function apply(state: GameState, action: Action): void {
         assert(reward.sets[action.player].includes(action.pick), 'not in your reward set');
         addCardToDeck(state, action.player, action.pick);
         offerPickRemoval(state, action.player); // S13.3: taking a card opens the offer
+        // S19.6 (D5): the bot narrates its reward pick at 50% — its most
+        // silent decision, and the line teaches the Reclaim menu ({card} is
+        // now in MY pile). Solo-gated inside maybeSaySolo (state.botSeat);
+        // empty pool no-ops until the Part 7 strings sign.
+        if (state.botSeat === action.player) {
+          maybeSaySolo(state, 'my_pick', 50, { card: CARDS[action.pick].name });
+        }
       }
       reward.picked[action.player] = action.pick;
       // S13.1c: the take/skip DECISION, per act per seat

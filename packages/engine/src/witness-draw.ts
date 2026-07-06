@@ -97,7 +97,7 @@ export function maybeSayWitness(state: GameState, context: string, chancePct: nu
  *  at 2–3 lines per combat so it stays a partner, not a podcast. */
 export const SOLO_COMBAT_LINE_CAP = 3;
 
-export function maybeSaySolo(state: GameState, context: string, chancePct: number): void {
+export function maybeSaySolo(state: GameState, context: string, chancePct: number, vars?: Record<string, string>): void {
   if (!state.botSeat) return;
   const combat = state.combat;
   if (combat && (combat.witnessLines ?? 0) >= SOLO_COMBAT_LINE_CAP) return;
@@ -105,7 +105,7 @@ export function maybeSaySolo(state: GameState, context: string, chancePct: numbe
   state.rng = r.state;
   if (r.value >= chancePct) return;
   const before = state.witnessSaid.length;
-  sayWitness(state, context);
+  sayWitness(state, context, vars);
   if (combat && state.witnessSaid.length > before) {
     combat.witnessLines = (combat.witnessLines ?? 0) + 1;
   }

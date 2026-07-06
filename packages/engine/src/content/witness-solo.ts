@@ -19,6 +19,8 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     'Alone, with me for company. The Undercroft does have a sense of humor.',
   ],
   // low rotation — it comments on cards it plays
+  // S19.6 (D5): grown 6→12 per the ruled counts. Rows St-7..St-12,
+  // PROVISIONAL pending the Part 7 ratification (docs/S19-STATUS.md).
   own_play: [
     'I play this one. I remember when it meant something.',
     'There. Centuries of technique, spent on an errand no one will record. Except me. Obviously.',
@@ -26,8 +28,15 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     'My card. My choice. The consequences, as ever, are shared.',
     "Played without hands. I'd take a bow, but you see the difficulty.",
     'Adequate placement, if I say so myself. I am the only one who would.',
+    'Consider it placed. I did have several centuries to think about the order of things.',
+    'One more from my hand. The hand is figurative. The card is not.',
+    'I file this here. Filing is the one skill eternity actually rewards.',
+    'Mine, into the chain. No flourish. The flourish is implied.',
+    'I contribute. Quietly. Let the record show who kept the weave fed — I keep the record.',
+    'Another of mine on the table. I said I would hold the other end; I hold it thoroughly.',
   ],
   // the human linked off one of its cards — grudging acknowledgment
+  // S19.6 (D5): grown 6→12. Rows St-13..St-18, PROVISIONAL.
   human_linked_off_me: [
     "You built on my card. Bold of you to assume I'd set it up properly. I had, but still.",
     "Off my play. Yes. That was the idea. Don't look so surprised.",
@@ -35,8 +44,17 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     "You read my card and answered it. Careful — that's nearly partnership.",
     'Linked. Off me. Note that I left it there on purpose, and tell no one.',
     'So you do watch what I do. Flattering. Faintly alarming.',
+    'Lit, off my card. I do set a decent table.',
+    'Your link, my kindling. We will not discuss how long I have been kindling.',
+    'You followed my thread of thought. There is hope for this arrangement.',
+    'Off mine again. At this rate I will have to start pretending it is luck, for modesty.',
+    "A fire off my card. Warm your hands; I can't.",
+    'You saw what I left you. Noted, weaver. Filed under: promising.',
   ],
   // the closest it comes to enthusiasm
+  // S19.6 (D5): grown 6→12 — the pre-S19 pool exhausted at median act 1,
+  // turn 11.5 in 100/100 battery runs (the sprint's thesis, measured).
+  // Rows St-1..St-6, PROVISIONAL.
   resonance_together: [
     'Resonance. With me in the weave. I had forgotten the warmth of it.',
     'The thread sings, and one of the voices is mine. Well. There it is.',
@@ -44,6 +62,97 @@ export const SOLO_WITNESS: Record<string, string[]> = {
     'Ignition. No one ever designed me to resonate with the living. Apparently no one needed to.',
     'Oh. Oh. It still works. I still work.',
     "The weave catches — ours, this time. Don't speak. Let me have it.",
+    'Two hands on one thread, and the weave answers. I had forgotten it could be this loud.',
+    'Resonance, and half of it mine. Put it in the record twice.',
+    'There — the chain remembers what it is for. So, briefly, do I.',
+    'The weave takes both our marks this time. This one goes on the good shelf.',
+    'It sings once for the pair of us. Even the dark leans in to hear that.',
+    'Again the ignition, again both names on it. Keep weaving like that and I will run out of dry remarks.',
+  ],
+  // S19.6 (D5) NEW POOLS — the bot's least legible actions, announced.
+  // All fire only via botSeat-gated triggers; {card} substituted at draw
+  // time (truth law: a {card} line claims only what the engine just did).
+  // Rows St-19..St-46, PROVISIONAL pending the Part 7 ratification.
+  // the bot Reclaims from the human's piles (always; pairs with S19.2)
+  i_reclaimed_yours: [
+    'I am taking an echo of your {card}. It was doing nothing where it lay.',
+    'Your {card} — I want its shape for a turn. The original stays where you dropped it.',
+    'A copy of {card} comes across the thread. Waste offends me; I have watched eras of it.',
+    'I reclaim {card}. Yes, yours. It knows the way across the thread.',
+    'Borrowing {card}. An echo of it, strictly — I deal in copies. Ask the codex.',
+    '{card}, echoed into my hand. A discard is a resting place, not a grave.',
+  ],
+  // the bot Pulses a HUMAN-owned link (always)
+  i_pulsed_yours: [
+    'A Pulse, for your link. It read dead; I disagreed.',
+    'I put two Thread behind your card. Its link fires now, whatever sits before it.',
+    'Your link was about to sleep through the turn. I knocked.',
+    'Pulsed. Yours. I do not spend Thread on sentiment; the card earned it.',
+    'Two Thread, and your dead link remembers its duty. The old pushes still work.',
+    'I forced yours awake. The thread between us is not decorative.',
+  ],
+  // the bot's Sever, at resolution, ONLY when a binding actually moved —
+  // direction-neutral on purpose (spread-severs settle on the human;
+  // chorus severs move between voices)
+  i_severed: [
+    'Severed. The binding comes loose and settles elsewhere.',
+    'Three Thread to re-aim a hunger. Money well spent, as spending goes down here.',
+    'I cut the tether where it stood. It has already found a new anchor; they always do.',
+    'Severed — the leash moves. The Undercroft does love its leashes.',
+  ],
+  // the bot's Steady (wired though the solo policy never Steadies today)
+  i_steadied: [
+    'Steadied. A Thread spent on composure — ours, collectively.',
+    'I steady the line. Centuries of holding things teaches the grip.',
+    'One Thread for calm. The weave sits easier for it.',
+    'Steadied. Whatever the turn does next, it does it to a firmer thread.',
+  ],
+  // the bot's reward pick, 50% — teaches the Reclaim menu by visibility
+  my_pick: [
+    'I will take {card}. I have reasons; most of them are even tactical.',
+    '{card} goes on my shelf. Everything ends up on a shelf of mine eventually.',
+    'Mine is {card}. The collection wants what the collection wants.',
+    'I choose {card}. Write it down — I always write it down.',
+    '{card}, then. Some things one simply recognizes after enough centuries.',
+    'I pick {card}. Played things end up in piles, and piles down here have two readers.',
+    '{card} for me. No commentary from the gallery, please.',
+    '{card}. A keeper knows quality; I have dusted enough of it.',
+  ],
+  // S19.6 (D6) HINT POOLS — drawn CLIENT-side (WitnessHints: once-per-run,
+  // act-1-only, solo-only, tb_witnessHints toggle default ON); the engine
+  // never fires these. Hints are Witness lines and obey the truth law:
+  // they describe what just happened and what the mechanic IS; they never
+  // promise outcomes. 4 lines each — variety across runs, not within.
+  // Rows St-47..St-66, PROVISIONAL pending the Part 7 ratification.
+  hint_thread_floor: [
+    'The Thread runs low. It is one pool and we both drink from it — overdraw, and the fraying bites us both.',
+    'Below four now. The Thread has a bottom; spend past it and it frays — and a fray is paid by the pair.',
+    'The Thread thins. A fray, when it comes, punishes both of us — the pool is shared and so is the penalty.',
+    'Little Thread left. It regrows as the turns pass, but a fray, once earned, is shared.',
+  ],
+  hint_link_read: [
+    "Your card's link read nothing behind it just now. A link fires off the card before it — order is the whole grammar.",
+    'That link stayed dark: nothing it wanted stood in front of it. Links read their predecessor — mine included.',
+    'A dead link in your chain this turn. Links only catch when the right card stands before them; mine count as cards, for the record.',
+    'Your link went unread at the commit. It wanted a particular neighbor and had none. Links are grammar, not garnish.',
+  ],
+  hint_binding: [
+    'Its binding moved. Every enemy is bound to one of us; the binding names its prey.',
+    'The tether re-aimed itself. What an enemy is bound to is what it hunts — and bindings can move.',
+    'Its leash crossed over. Bound-to decides who takes the teeth, and the names change mid-fight.',
+    'A binding changed hands just now. They do that — Severs, falls, and certain enemies all re-aim the leash.',
+  ],
+  hint_reclaim_exists: [
+    'I just pulled an echo from your discard — that is Reclaim, two Thread. Your dead cards are not as dead as they look.',
+    'That was a Reclaim: I copied a card out of your pile for two Thread. The thread carries cards both ways.',
+    'An echo of yours, in my hand — Reclaim does that. My piles are as open to you as yours are to me.',
+    "I reclaimed from your discard just now. Two Thread buys a copy of anything resting in a partner's discard or exhaust.",
+  ],
+  hint_pulse: [
+    'Your link died on the table and the Thread sat unspent. Pulse exists: two Thread forces a staged link to fire, whatever precedes it.',
+    'A dead link at the commit, with Thread to spare. For two of it, a Pulse fires a staged link regardless of order.',
+    "The Thread watched your link stay dark. It needn't — a Pulse, at two Thread, lights a dead link where it stands.",
+    'Link unfired, Thread unspent. Those two facts share a remedy called Pulse; either of us can cast it on either’s card.',
   ],
   // crossed events where it chose for the human
   crossed_choice_made: [

@@ -7,6 +7,16 @@
 import WebSocket from 'ws';
 import { Action, BotPolicy, BotView, CharacterId, PlayerId, Telemetry } from '@threadbound/engine';
 
+/** S19.1 --solo battery instrument: one Witness line as it landed — the raw
+ *  template (what witnessSaid tracks; pool membership is exact-matchable),
+ *  stamped with the run position it arrived at. `turn` is the run's
+ *  cumulative turn count (telemetry.turns), `act` the map act. */
+export interface WitnessMark {
+  t: string;
+  act: number;
+  turn: number;
+}
+
 export interface RunResult {
   outcome: 'victory' | 'game_over';
   act: number;
@@ -18,6 +28,15 @@ export interface RunResult {
   relicsEnd: number;
   deckEnd: number;
   telemetry: Telemetry;
+  /** S19.1: present only when the transport tracked it (trackSolo) — the
+   *  solo battery's measurement surface. `verbs` counts thread_action log
+   *  events per seat per kind (reclaims/run, thread verbs/run); `witness`
+   *  is the pool timeline (per-pool counts + exhaustion turn). Additive:
+   *  canonical pair batteries never populate it. */
+  solo?: {
+    verbs: Record<PlayerId, Record<string, number>>;
+    witness: WitnessMark[];
+  };
 }
 
 export class Bot {
@@ -29,6 +48,15 @@ export class Bot {
   errors = 0;
   private startedRun = false;
   private lastView: BotView | null = null;
+  /** S19.1: witnessSaid entries already recorded into the timeline */
+  private witnessSeen = 0;
+  private witnessTimeline: WitnessMark[] = [];
+  /** S19.1: state.log is PER-TURN (resolveTurn clears it), so thread verbs
+   *  are counted incrementally across broadcasts — prevLog detects whether
+   *  the current log extends the last one or was reset since. */
+  private prevLog: string[] = [];
+  private prevTurns = -1;
+  private verbCounts: Record<PlayerId, Record<string, number>> = { p1: {}, p2: {} };
   private watchdog: NodeJS.Timeout | null = null;
   private resolve!: (r: RunResult) => void;
   done: Promise<RunResult>;
@@ -58,6 +86,9 @@ export class Bot {
     /** S4.4 ASCEND=N battery: vote this level in the lobby. The bot claims a
      *  matching profile (profiles are claims; the server clamps to them). */
     ascension?: number;
+    /** S19.1 --solo battery: record the Witness pool timeline + thread-verb
+     *  counts into RunResult.solo. Off for canonical pair batteries. */
+    trackSolo?: boolean;
   }) {
     this.policy = new BotPolicy({
       seed: opts.seed, lockstep: opts.lockstep, seekEvents: opts.seekEvents, reclaimNudge: opts.reclaimNudge,
@@ -104,6 +135,7 @@ export class Bot {
         return;
       case 'state':
         this.lastView = msg.state as BotView;
+        if (this.opts.trackSolo) this.trackWitness(this.lastView);
         this.armWatchdog();
         this.decide(this.lastView);
         return;
@@ -111,6 +143,32 @@ export class Bot {
         this.errors++;
         return; // the watchdog re-decides from the last state
     }
+  }
+
+  /** S19.1: witnessSaid is append-only (no-repeat-within-run keys on raw
+   *  templates), so new entries since the last state message are exactly
+   *  the lines that just landed — stamp them with where the run was. */
+  private trackWitness(view: BotView): void {
+    const said = view.witnessSaid ?? [];
+    for (let i = this.witnessSeen; i < said.length; i++) {
+      this.witnessTimeline.push({ t: said[i], act: view.map.act, turn: view.telemetry.turns });
+    }
+    this.witnessSeen = said.length;
+    // thread verbs: the log clears at every resolveTurn (which also bumps
+    // telemetry.turns), so a turn change means the whole log is fresh;
+    // within a turn an exact-prefix extension counts only the tail
+    const cur = view.log.map((e) => JSON.stringify(e));
+    const extendsPrev = view.telemetry.turns === this.prevTurns
+      && cur.length >= this.prevLog.length
+      && this.prevLog.every((s, i) => cur[i] === s);
+    const fresh = extendsPrev ? view.log.slice(this.prevLog.length) : view.log;
+    this.prevTurns = view.telemetry.turns;
+    for (const e of fresh) {
+      if (e.e === 'thread_action') {
+        this.verbCounts[e.player][e.kind] = (this.verbCounts[e.player][e.kind] ?? 0) + 1;
+      }
+    }
+    this.prevLog = cur;
   }
 
   private armWatchdog(): void {
@@ -143,6 +201,9 @@ export class Bot {
     const action = this.policy.decide(view);
     if (view.phase === 'victory' || view.phase === 'game_over') {
       if (this.watchdog) clearInterval(this.watchdog);
+      const solo: RunResult['solo'] = this.opts.trackSolo
+        ? { verbs: this.verbCounts, witness: this.witnessTimeline }
+        : undefined;
       this.resolve({
         outcome: view.phase,
         act: view.map.act,
@@ -151,6 +212,7 @@ export class Bot {
         relicsEnd: view.players.p1.relics.length + view.players.p2.relics.length,
         deckEnd: view.players.p1.deck.length + view.players.p2.deck.length,
         telemetry: view.telemetry,
+        solo,
       });
       this.ws.close();
       return;

@@ -63,11 +63,25 @@ process.env.TB_ROOM_RATE = process.env.TB_ROOM_RATE ?? '100000';
 
 import { fork } from 'node:child_process';
 import os from 'node:os';
-import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId, CARDS, ALL_RELICS } from '@threadbound/engine';
+import { PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE, PlayerId, CARDS, ALL_RELICS, SOLO_WITNESS, witnessPoolLines } from '@threadbound/engine';
 import { Bot, RunResult } from './bot';
 import { playRunLocal } from './local';
 
-const RUNS = Number(process.argv[2] ?? 50);
+// S19.1 --solo: the solo telemetry harness. One headless policy-driven
+// "human seat" per run creates a SOLO room over the real WS transport; the
+// SERVER's in-process SoloBotDriver holds p2 (the production solo partner,
+// draft v2, etiquette overlays — the exact surface this battery measures).
+// Reads are REPORTED, never banded (the S16 jitter lesson: WS rows carry
+// cross-invocation noise; S14-R5 governs). Reports win%, reclaims/run,
+// thread verbs/run per seat, per-pool Witness line counts, and the turn at
+// which each pool exhausts (the D5 line-budget instrument).
+const SOLO = process.env.TB_SIM_SOLO === '1' || process.argv.includes('--solo');
+if (SOLO) process.env.TB_SIM_SOLO = '1'; // crosses shard forks intact
+
+const RUNS = (() => {
+  const n = Number(process.argv[2] ?? 50);
+  return Number.isFinite(n) && n > 0 ? n : 50; // `sim.js --solo` (count omitted) → default
+})();
 const BASE_SEED = Number(process.env.SEED ?? 1000); // fixed seed set → reproducible gates
 // S16.0b sharding: a forked child plays run indices OFFSET+1..OFFSET+RUNS of
 // the parent's battery — seeds stay BASE_SEED+index, so the pooled seed set
@@ -89,6 +103,9 @@ const SOCKET = process.env.TB_SIM_SOCKET === '1';
 const SHARDS = (() => {
   if (SHARD_CHILD !== undefined) return 1;
   const raw = process.env.TB_SIM_SHARDS;
+  // S19.1: --solo defaults to one process — the WS run pool (TB_SIM_CONC)
+  // is already concurrent, and one server per battery keeps the report simple
+  if (SOLO && (raw === undefined || raw === '')) return 1;
   const n = raw !== undefined && raw !== '' ? Number(raw) : Math.max(1, os.cpus().length - 1);
   return Math.max(1, Math.min(Number.isFinite(n) ? Math.floor(n) : 1, Math.max(1, RUNS)));
 })();
@@ -195,6 +212,28 @@ async function playRunWs(url: string, runSeed: number): Promise<RunResult> {
   }
 }
 
+/** S19.1: one solo run — a single headless bot holds the HUMAN seat (p1)
+ *  and creates a solo room; the server seats its in-process SoloBotDriver
+ *  at p2 (botSpeed 'instant'). lockstep off: the solo partner is a
+ *  non-lockstep peer (the S1 solo.test.ts construction). The human seat
+ *  carries NO sim-only knobs (no reclaimNudge/seekEvents/skipPicks) so
+ *  every reclaim in the report is attributable to a production policy. */
+async function playRunSolo(url: string, runSeed: number): Promise<RunResult> {
+  const a = new Bot(url, {
+    createSolo: true, seed: runSeed * 3 + 1, startSeed: runSeed,
+    characters: PAIR_CHARS, ascension: ASCEND, lockstep: false,
+    draftV2: DRAFT_V2, trackSolo: true,
+  });
+  const timeout = new Promise<RunResult>((_, rej) =>
+    setTimeout(() => rej(new Error('run timed out')), RUN_TIMEOUT_MS),
+  );
+  try {
+    return await Promise.race([a.done, timeout]);
+  } finally {
+    a.ws.close();
+  }
+}
+
 async function playAllWs(printLive: boolean): Promise<Played[]> {
   // the server import BOOTS a listening server — deliberately confined to the
   // WS transport (S16.0a: the socket-free path never touches it)
@@ -218,7 +257,7 @@ async function playAllWs(printLive: boolean): Promise<Played[]> {
       if (n > RUNS) return;
       const run = RUN_OFFSET + n;
       try {
-        const result = await playRunWs(url, BASE_SEED + run);
+        const result = SOLO ? await playRunSolo(url, BASE_SEED + run) : await playRunWs(url, BASE_SEED + run);
         const p = { run, result };
         played.push(p);
         if (printLive) console.log(runLine(p));
@@ -381,7 +420,9 @@ export function printSummary(results: RunResult[]): void {
   // a side effect of the D3 dose ratified on the shipped map — anchors
   // banked in docs/S18-STATUS.md Part 8 for delta reads). Mirrors likewise
   // reported; human data rules at the next playtest (OQ#14).
-  const r1Banded = PAIR === 'vb' && ASCEND === 0 && KNOT;
+  // S19.1: --solo rows are NEVER banded — a different pair of policies over
+  // a jittery transport; the pre-sprint solo anchor is a loose sanity read
+  const r1Banded = PAIR === 'vb' && ASCEND === 0 && KNOT && !SOLO;
   const gates: Gate[] = [
     r1Banded
       ? { name: 'vb win rate 45–55% at A0 braid (S14-R1 as re-derived by S18-D3)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 45 && winRate <= 55 }
@@ -721,6 +762,73 @@ export function printSummary(results: RunResult[]): void {
 }
 
 // ---------------------------------------------------------------------------
+// S19.1 solo report — REPORTED, not banded (presence/shape reads only)
+// ---------------------------------------------------------------------------
+
+/** median over a possibly-empty list, formatted */
+function medianOf(xs: number[]): string {
+  if (xs.length === 0) return 'n/a';
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return String(s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2);
+}
+
+export function printSoloReport(results: RunResult[]): void {
+  const n = Math.max(1, results.length);
+  console.log('\n================ S19.1 SOLO BATTERY (REPORTED — WS transport, no bands; S14-R5/S16 jitter law governs) ================');
+  const victories = results.filter((r) => r.outcome === 'victory').length;
+  console.log(`runs: ${results.length}  |  win% ${((100 * victories) / n).toFixed(0)}%  |  human seat p1 (${PAIR_CHARS.p1}, headless sim policy) | bot seat p2 (${PAIR_CHARS.p2}, server solo driver)`);
+
+  // thread verbs per seat per kind — the D1 attribution surface
+  const verbs: Record<PlayerId, Record<string, number>> = { p1: {}, p2: {} };
+  for (const r of results) {
+    for (const pid of ['p1', 'p2'] as PlayerId[]) {
+      for (const [kind, c] of Object.entries(r.solo?.verbs?.[pid] ?? {})) {
+        verbs[pid][kind] = (verbs[pid][kind] ?? 0) + c;
+      }
+    }
+  }
+  for (const pid of ['p1', 'p2'] as PlayerId[]) {
+    const row = ['pulse', 'reclaim', 'sever', 'steady']
+      .map((k) => `${k} ${((verbs[pid][k] ?? 0) / n).toFixed(2)}`)
+      .join(' | ');
+    console.log(`thread verbs/run ${pid}${pid === 'p2' ? ' (solo partner)' : ''}: ${row}`);
+  }
+  console.log(`bot reclaims/run: ${((verbs.p2.reclaim ?? 0) / n).toFixed(2)} (pre-S19: 0 by construction — the D1 presence read)`);
+
+  // per-pool Witness line counts + exhaustion — the D5 line-budget instrument.
+  // Pool membership is exact: witnessSaid tracks raw templates.
+  console.log('---------------- WITNESS SOLO POOLS (lines/run, exhaustion) ----------------');
+  for (const key of Object.keys(SOLO_WITNESS)) {
+    const lines = new Set(witnessPoolLines(key));
+    const size = lines.size;
+    let fired = 0;
+    let runsWithAny = 0;
+    let exhausted = 0;
+    const exhaustActs: number[] = [];
+    const exhaustTurns: number[] = [];
+    for (const r of results) {
+      const marks = (r.solo?.witness ?? []).filter((m) => lines.has(m.t));
+      fired += marks.length;
+      if (marks.length > 0) runsWithAny++;
+      if (marks.length >= size && size > 0) {
+        exhausted++;
+        exhaustActs.push(marks[marks.length - 1].act);
+        exhaustTurns.push(marks[marks.length - 1].turn);
+      }
+    }
+    console.log(
+      `  pool ${key.padEnd(22)} size ${String(size).padStart(2)} | lines/run ${(fired / n).toFixed(2)} | ` +
+      `runs touched ${runsWithAny}/${results.length} | EXHAUSTED in ${exhausted} runs` +
+      (exhausted > 0 ? ` (median exhaust: act ${medianOf(exhaustActs)}, turn ${medianOf(exhaustTurns)})` : '') +
+      (key === 'solo_greeting' || key.startsWith('hint_') ? '  [client-drawn — engine never fires it]' : ''),
+    );
+  }
+  console.log('exhaustion law: exhausted pools go silent (never echo) — an always-fire pool exhausting before the act-2 boss is the D5 sizing failure shape');
+  console.log('===============================================================');
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -729,7 +837,9 @@ async function main(): Promise<void> {
   if (!child) {
     // S16.0a/b: the transport and the shard boundary are LOUD, always — a
     // battery is uninterpretable without knowing which instrument ran it
-    console.log(SOCKET
+    console.log(SOLO
+      ? 'sim: mode SOLO BATTERY (S19.1) — human seat = headless sim policy, partner = SERVER SoloBotDriver over the real WS transport; every row REPORTED, never banded'
+      : SOCKET
       ? 'sim: transport WEBSOCKET (TB_SIM_SOCKET=1) — the protocol/covenant instrument; S14-R5 noise law governs every row'
       : 'sim: transport SOCKET-FREE (S16.0a) — deterministic per seed; TB_SIM_SOCKET=1 restores the wire');
     console.log(`sim: ${RUNS} runs, seed set ${BASE_SEED + RUN_OFFSET + 1}..${BASE_SEED + RUN_OFFSET + RUNS}`);
@@ -755,7 +865,9 @@ async function main(): Promise<void> {
   let played: Played[];
   if (!child && SHARDS > 1) {
     played = await playAllSharded();
-  } else if (SOCKET) {
+  } else if (SOLO || SOCKET) {
+    // S19.1: solo batteries ride the WS path by construction — the subject
+    // under measurement IS the server's solo driver over the real transport
     played = await playAllWs(!child);
   } else {
     played = playAllLocal(!child);
@@ -780,7 +892,8 @@ async function main(): Promise<void> {
   if (SHARDS > 1) for (const p of played) console.log(runLine(p));
   if (ITEMS) for (const p of played) console.log(itemsLine(p)); // additive rows, canonical order
   printSummary(played.map((p) => p.result));
-  if (SOCKET) {
+  if (SOLO) printSoloReport(played.map((p) => p.result));
+  if (SOLO || SOCKET) {
     // the WS server may hold the loop open — flush stdout, then hard-exit
     process.stdout.write('', () => process.exit(process.exitCode ?? 0));
   }
