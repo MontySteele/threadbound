@@ -287,3 +287,100 @@ that traveled with them, each on the record:
 |---|---|
 | pale_unmaking | "Pale Unmaking. She writes the curse and reads it out in the same motion." |
 | rend_the_weave | "Rend the Weave. A tear that takes the stitching with it — when there is stitching to take." |
+
+## 9. Post-move battery (same seeds, n=2000 ×3) — the moves' own dose
+
+| pairing | pre-moves | post-moves | Δ |
+|---|---|---|---|
+| vv | 54.4 | 35.4 | **−19.0** |
+| vb | 68.5 | 53.9 | −14.6 |
+| bb | 74.0 | 67.4 | −6.6 |
+
+Two big reads:
+
+1. **Bucket ordering fixed where it was broken.** vess 8.5/8.7/15.6
+   and bram 9.3/10.1/13.7 now order common < uncommon < rare on the
+   controlled lift. Neutral keeps a mild uncommon trough.
+2. **The approved moves were themselves a large, asymmetric nerf.**
+   Availability of top cards is a bigger dose than any ±1: the game
+   got ~7–19 points harder with zero number changes — and vess paid
+   most (5 promotions incl. 2-to-rare vs bram's 3 + two demotion
+   buybacks). Consequence on the standing gates: **gate 2 (bb−vb
+   within ±8, closed at +2.5 in S16) reopened at +13.5.** vv's act-1
+   death rate worsened to 40%.
+
+## 10. S17.2 numbers pass — slate + verify read
+
+Directed: small pass on each bucket's worst offenders + relic-class
+uplift. One smallest-step change per item (18 cards, 6 relics —
+details in the commit). Notable: gravebloom's intended buff was
+REVERTED in-pass — the S13.2 flat-hex-echo law caps hook hexAll at 2
+and the law outranks the pass (designer call if it should bend).
+Pulsekeeper's Ring landed its OQ#27 pre-agreed (b) escalation (every
+third Pulse FREE) — the audit read it near-dead in costs-1 form.
+
+Verify (same seeds): vv 35.4 (flat — vess buffs offset vess trims),
+vb 56.5 (+2.6), bb 73.5 (+6.1 — the relic uplift lands hardest where
+runs live longest). Within buckets: trims moved the outliers a step
+(needles_verdict +32.8 → +28.2, avalanche −4.4) but the top rares
+remain outliers; buffed floors mostly rose (ash_harvest +3.2→+7.4,
+ashfall +1.5→+6.8, stitchblade +0.8→+4.3). **The persistent dead
+cluster did NOT respond to +1s** — measured_cut, slow_burn,
+tithe_of_thread, mendthread sit at/below zero across three batteries
+now. Those are shape problems (the Thread-glue pattern), not scalar
+ones; they go to the playtest/design pile, not another +1.
+
+## 11. S17.3 pass B — the pairing lever, and where it stopped
+
+The numbers verify exposed the gap's engine: **bram commons as a
+class +10.2 vs vess commons +7.2**, and gate 2 at +17.0. Pass B, one
+step each, shaped to the pairing directive (a bram-common trim hits
+bb twice / vb once; a vess-Guard buff lifts vv twice): trims spark,
+followthrough, crossguard, brand, forearm_wall, cinderbreak; buffs
+wardknot, needle_wall, burr_shell, cinch, quiet_mending.
+
+Verify (same seeds): **vv 36.0 (+0.6), vb 55.9 (−0.6), bb 71.7
+(−1.8)** — every sign correct, every magnitude small. Bucket
+ordering held (vess 7.2/8.3/14.8, bram 10.1/10.5/13.4).
+
+## 12. End state + STOP-AND-REPORT packet (pairing & difficulty)
+
+Final S17 board, braid A0, n=2000 same seeds throughout:
+
+| | S17.0 baseline | after moves | after numbers | after pass B |
+|---|---|---|---|---|
+| vv | 54.4 | 35.4 | 35.4 | **36.0** |
+| vb | 68.5 | 53.9 | 56.5 | **55.9** |
+| bb | 74.0 | 67.4 | 73.5 | **71.7** |
+| bb−vb (gate-2 band ±8) | +5.5 | +13.5 | +17.0 | **+15.8** |
+| vv act-1 deaths | 27% | 40% | 39% | 38% |
+
+What the three passes established: within-pool bucket integrity is
+FIXED and holds under iteration; the pool-vs-pool gap is
+**structural** — smallest-step scalar tuning moves it ~1–2 points a
+round, and the honest read is that vess's kit is setup-shaped (hex →
+detonate needs two turns and two seats' cooperation) while bram's is
+immediate. Per house law this stops and reports rather than
+inventing a bigger dose. Candidate levers for the ruling:
+
+- (a) **A bigger authored dose at vess's act-1 floor** — e.g. +2/+3
+  steps on vess Guard commons, or a vess starter-deck tweak (touches
+  vb too, half-weight; the table above calibrates ~1–2 pts per
+  common-class step, so ~3 steps ≈ the visible knee).
+- (b) **A kit-shape lever, not a scalar** — e.g. vess starts combats
+  with 1 Hex pre-applied on a random enemy (makes turn-1 links live),
+  or act-1 enemies open one intent slower against double-vess.
+  Shape levers are exactly what moved gates in S16; they need design.
+- (c) **Accept the mirror spread, re-derive the gates on character
+  identity** — vv as the "hard mode" pair, bb the forgiving one; the
+  ±8 gate then binds bb−vb only (currently +15.8, still out) and a
+  bram-side dose does the remaining work.
+- Difficulty (the charter's step 3) waits on that ruling: vb 55.9
+  sits at the band's top edge, vv below band, bb far above — a
+  global knob moves all three and cannot fix their ORDER.
+
+Also on the record: braided_censer still reads +5.4 stratified at ⅓
+weight (weight cuts how often it appears, not what it does when it
+does) — if that still offends after human play, the remaining lever
+is the effect trim (heal 2→1), which the ruling declined this round
+in favor of weight.

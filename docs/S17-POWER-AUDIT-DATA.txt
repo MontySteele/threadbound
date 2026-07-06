@@ -359,3 +359,507 @@ votive_thread                vess/uncommon      -4.1 (z -1.3)   -4.2 (z -1.3)
   scar_votive                raw  +15.0  act>=2   +9.2  MH-strat   -0.6 [coop]
   loom_of_two_hands          raw  +12.1  act>=2   +8.0  MH-strat   -0.9 [coop] [rare]
   covetous_psalter           raw  +13.0  act>=2   +7.2  MH-strat   -1.1 [coop]
+
+==================== S17 POST-MOVE BATTERY (after S17.1 bucket moves) ====================
+=== CARDS: raw lift vs act>=2-restricted lift (flagged movers) ===
+card                         pool/rarity                 raw         act>=2
+needles_verdict              vess/rare         +46.2 (z+27.1)  +32.8 (z+18.3)
+final_bell                   bram/rare         +28.2 (z+18.2)  +26.4 (z+17.0)
+funeral_lace                 vess/rare         +36.0 (z+18.6)  +24.8 (z+12.6)
+avalanche                    bram/rare         +26.4 (z+16.4)  +24.5 (z+15.2)
+rend_the_weave               vess/rare         +35.6 (z+18.6)  +23.2 (z+11.8)
+pale_unmaking                vess/rare         +33.5 (z+17.5)  +20.1 (z+10.1)
+share_the_fire               bram/rare         +20.4 (z+11.9)  +18.8 (z+10.9)
+immovable                    bram/rare         +19.3 (z+11.1)  +18.0 (z+10.3)
+rendcall                     bram/uncommon     +19.9 (z+12.4)  +18.0 (z+11.1)
+graverust                    vess/common       +19.2 (z+11.4)  +15.9 (z +8.8)
+eye_of_the_loom              vess/rare         +20.3 (z +9.1)  +15.7 (z +6.9)
+ember_jab                    bram/uncommon     +17.1 (z +9.8)  +15.5 (z +8.9)
+counterargument              bram/uncommon     +17.2 (z +9.9)  +15.2 (z +8.8)
+withering                    vess/uncommon     +17.4 (z +9.5)  +15.1 (z +7.8)
+dig_in                       bram/uncommon     +15.9 (z +5.8)  +14.8 (z +5.4)
+patient_knife                vess/uncommon     +25.9 (z+13.8)  +14.2 (z +7.3)
+spark                        bram/common       +15.5 (z +7.6)  +14.1 (z +6.8)
+wind_up                      bram/common       +15.0 (z +7.4)  +13.8 (z +6.8)
+call_and_answer              bram/rare         +14.9 (z +8.5)  +13.6 (z +7.8)
+borrowed_hour                vess/rare         +18.4 (z +8.5)  +13.2 (z +5.9)
+followthrough                bram/common       +14.4 (z +9.4)  +12.9 (z +8.4)
+unpicking                    vess/uncommon     +19.2 (z+10.6)  +12.9 (z +6.7)
+final_word                   vess/rare         +21.9 (z+10.2)  +12.8 (z +5.8)
+crossguard                   bram/common       +14.0 (z +6.9)  +12.8 (z +6.3)
+brand                        bram/common       +14.4 (z +7.0)  +12.8 (z +6.2)
+forearm_wall                 bram/common       +14.0 (z +6.6)  +12.7 (z +6.0)
+spite_stitch                 vess/common       +12.6 (z +7.5)  +12.7 (z +6.9)
+patience                     neutral/common    +18.1 (z+10.5)  +12.6 (z +7.3)
+opener                       bram/uncommon     +14.3 (z +8.0)  +12.6 (z +7.1)
+pinprick                     vess/common       +14.2 (z +8.4)  +12.5 (z +6.8)
+haymaker                     bram/uncommon     +13.9 (z +7.9)  +12.4 (z +7.0)
+martyrs_knot                 vess/uncommon      +9.0 (z +2.5)  +12.3 (z +3.2)
+cinderfall                   bram/rare         +14.0 (z +8.2)  +12.2 (z +7.2)
+patient_breath               vess/uncommon     +10.7 (z +3.2)  +12.2 (z +3.5)
+cinderbreak                  bram/common       +13.9 (z +9.1)  +12.0 (z +7.8)
+thornward                    vess/common       +14.3 (z +8.9)  +11.9 (z +6.7)
+keepsake                     vess/rare         +13.7 (z +6.2)  +11.9 (z +5.1)
+one_two                      bram/common       +13.4 (z +8.7)  +11.9 (z +7.7)
+braided_malice               vess/uncommon     +11.9 (z +5.8)  +11.7 (z +5.4)
+festering_knot               vess/uncommon     +13.1 (z +6.3)  +11.7 (z +5.3)
+eye_for_an_opening           bram/uncommon     +12.8 (z +6.5)  +11.5 (z +5.8)
+threadlight                  vess/common       +10.0 (z +3.8)  +11.1 (z +4.0)
+breaker                      bram/uncommon     +12.5 (z +6.4)  +11.0 (z +5.6)
+pitchfire                    bram/uncommon     +12.0 (z +4.2)  +10.6 (z +3.7)
+needlework                   vess/common       +11.6 (z +6.9)  +10.1 (z +5.5)
+pummel                       bram/uncommon     +11.0 (z +6.0)   +9.9 (z +5.4)
+small_rites                  vess/common       +11.4 (z +7.1)   +9.9 (z +5.5)
+saturate                     vess/uncommon      +9.7 (z +4.7)   +9.7 (z +4.3)
+hammerfall                   bram/common       +11.0 (z +7.1)   +9.7 (z +6.2)
+carrion_lace                 vess/uncommon     +11.4 (z +5.5)   +9.7 (z +4.3)
+stamp_out                    bram/uncommon     +11.0 (z +6.6)   +9.6 (z +5.7)
+bellringer                   bram/common       +11.2 (z +7.2)   +9.4 (z +6.0)
+stand_fast                   bram/uncommon      +9.8 (z +3.3)   +9.3 (z +3.1)
+forgefire                    bram/uncommon     +10.7 (z +5.3)   +9.3 (z +4.6)
+candle_watch                 neutral/common    +13.1 (z +7.3)   +9.1 (z +5.0)
+two_as_one                   neutral/rare      +16.2 (z+11.7)   +8.9 (z +6.2)
+crossing_blow                neutral/rare      +17.6 (z+12.7)   +8.8 (z +6.1)
+tallow_mark                  neutral/uncommon  +13.4 (z +8.1)   +8.6 (z +5.1)
+hold_the_line                bram/uncommon      +9.4 (z +3.1)   +8.6 (z +2.9)
+loose_stitch                 vess/common        +5.8 (z +2.3)   +8.5 (z +3.0)
+wildfire_heart               bram/rare          +9.8 (z +5.3)   +8.2 (z +4.5)
+fan_the_flames               bram/common        +9.8 (z +4.5)   +8.1 (z +3.7)
+seeding_curse                vess/common       +11.9 (z +7.5)   +8.1 (z +4.6)
+body_blow                    bram/common        +9.3 (z +6.0)   +7.9 (z +5.1)
+quiet_mending                vess/common        +6.3 (z +2.4)   +7.9 (z +2.8)
+inkwell_curse                vess/uncommon      +9.6 (z +4.5)   +7.9 (z +3.5)
+stoke                        bram/uncommon      +9.3 (z +4.6)   +7.9 (z +4.0)
+crack_the_seal               neutral/uncommon  +14.6 (z+10.5)   +7.9 (z +5.5)
+cinder_cloak                 bram/uncommon      +9.5 (z +3.3)   +7.8 (z +2.7)
+banked_coals                 bram/common        +9.3 (z +4.3)   +7.7 (z +3.6)
+widows_arithmetic            vess/rare          +8.6 (z +3.9)   +7.6 (z +3.2)
+gathering_slack              vess/common        +8.1 (z +3.0)   +7.5 (z +2.6)
+hollow_seam                  vess/common        +8.6 (z +5.1)   +7.4 (z +4.0)
+second_wind                  bram/common        +8.9 (z +4.2)   +7.3 (z +3.4)
+aftershock                   bram/uncommon      +8.3 (z +4.1)   +7.1 (z +3.6)
+tally_of_griefs              vess/rare          +8.2 (z +3.9)   +6.8 (z +3.0)
+stolen_breath                neutral/common    +10.9 (z +6.1)   +6.8 (z +3.7)
+twinned_cut                  neutral/common    +15.1 (z+11.1)   +6.7 (z +4.7)
+soot_mark                    bram/common        +7.8 (z +3.5)   +6.6 (z +3.0)
+relentless                   bram/rare          +7.8 (z +4.3)   +6.6 (z +3.6)
+seam_split                   vess/common        +5.8 (z +2.3)   +6.4 (z +2.3)
+cross_counter                bram/uncommon      +8.0 (z +4.3)   +6.3 (z +3.4)
+black_lattice                vess/uncommon      +7.2 (z +3.2)   +6.3 (z +2.6)
+spitespun_mantle             vess/uncommon      +5.7 (z +2.5)   +6.3 (z +2.5)
+brace                        bram/common        +7.0 (z +3.2)   +6.2 (z +2.8)
+roundhouse                   bram/common        +7.4 (z +4.8)   +6.2 (z +3.9)
+square_up                    bram/common        +7.0 (z +3.2)   +6.1 (z +2.8)
+waxbound_oath                vess/common        +4.5 (z +1.8)   +6.0 (z +2.1)
+drumbeat                     bram/uncommon      +7.4 (z +2.5)   +5.9 (z +2.0)
+pyre_vault                   bram/uncommon      +6.4 (z +3.5)   +5.9 (z +3.2)
+spindle_step                 vess/uncommon      +1.9 (z +0.6)   +5.7 (z +1.5)
+gravebloom                   vess/rare          +9.1 (z +4.2)   +5.7 (z +2.5)
+bellows                      bram/common        +6.7 (z +3.1)   +5.5 (z +2.5)
+needle_wall                  vess/common        +2.1 (z +0.8)   +5.4 (z +1.9)
+stokers_due                  bram/uncommon      +6.4 (z +3.1)   +5.2 (z +2.6)
+bellmetal                    bram/rare          +6.4 (z +3.5)   +5.2 (z +2.9)
+lashing_coil                 vess/uncommon      +8.2 (z +4.2)   +5.1 (z +2.4)
+backdraft                    bram/uncommon      +6.2 (z +2.1)   +5.0 (z +1.7)
+unbroken_line                vess/uncommon      +6.3 (z +2.7)   +5.0 (z +1.9)
+selvage                      vess/uncommon      +7.3 (z +3.1)   +4.8 (z +1.9)
+splinter                     neutral/common    +14.1 (z+10.3)   +4.8 (z +3.4)
+loom_of_hours                vess/rare         +10.3 (z +4.5)   +4.6 (z +1.9)
+wardknot                     vess/common        +4.1 (z +1.6)   +4.6 (z +1.6)
+firewatch                    bram/common        +6.0 (z +2.7)   +4.6 (z +2.1)
+shared_burden                neutral/common     +8.6 (z +4.8)   +4.2 (z +2.3)
+knotward_veil                vess/uncommon      +2.3 (z +0.7)   +4.1 (z +1.1)
+held_breath                  bram/uncommon      +5.3 (z +1.7)   +3.9 (z +1.3)
+shoulder_through             bram/uncommon      +5.0 (z +1.7)   +3.8 (z +1.3)
+thousand_pins                vess/common        +6.3 (z +4.0)   +3.7 (z +2.1)
+quickening                   vess/common        +0.6 (z +0.3)   +3.6 (z +1.3)
+ash_harvest                  bram/rare          +4.1 (z +2.2)   +3.2 (z +1.7)
+linked_shields               neutral/uncommon   +6.9 (z +3.2)   +2.6 (z +1.2)
+cinch                        vess/common        +5.3 (z +2.1)   +2.6 (z +1.0)
+burr_shell                   vess/common        +0.7 (z +0.3)   +2.5 (z +0.9)
+shroudwork                   vess/uncommon      +0.2 (z +0.1)   +1.5 (z +0.4)
+ashfall                      bram/common        +2.6 (z +1.2)   +1.5 (z +0.6)
+litany_of_mending            neutral/common     +4.6 (z +2.5)   +1.0 (z +0.5)
+tithe_of_thread              neutral/uncommon   +5.1 (z +2.3)   +0.9 (z +0.4)
+stitchblade                  vess/common        +1.3 (z +0.5)   +0.8 (z +0.3)
+drawn_breath                 vess/uncommon      -2.7 (z -0.8)   +0.8 (z +0.2)
+seamripper                   vess/uncommon      +2.1 (z +0.6)   +0.7 (z +0.2)
+shared_sigil                 neutral/uncommon   +3.2 (z +2.0)   +0.5 (z +0.3)
+votive_thread                vess/uncommon      -2.3 (z -0.7)   +0.5 (z +0.1)
+kindle                       bram/common        +1.8 (z +0.8)   +0.4 (z +0.2)
+mendthread                   vess/common        -0.7 (z -0.3)   +0.1 (z +0.0)
+quick_words                  neutral/uncommon   +2.8 (z +1.2)   -0.2 (z -0.1)
+inheritance                  vess/uncommon      -6.1 (z -1.9)   -0.5 (z -0.1)
+slow_burn                    bram/uncommon      -1.4 (z -0.5)   -1.7 (z -0.5)
+measured_cut                 vess/uncommon      +0.2 (z +0.1)   -3.0 (z -0.8)
+
+=== BUCKET ORDERING on act>=2 lift (presence-weighted mean) ===
+  vess     common +8.5 | uncommon +8.7 | rare +15.6
+  bram     common +9.3 | uncommon +10.1 | rare +13.7
+  neutral  common +6.3 | uncommon +4.6 | rare +8.9
+
+=== RELICS: raw vs act>=2 vs relic-count-stratified (MH) ===
+  braided_censer             raw  +39.0  act>=2  +32.5  MH-strat   +6.5 [coop] [rare]
+  chord_of_the_choir         raw  +28.5  act>=2  +21.1  MH-strat   +3.9 [coop] [rare]
+  iron_girdle                raw  +25.8  act>=2  +19.6  MH-strat   +3.4
+  cracked_bell               raw  +21.5  act>=2  +14.6  MH-strat   +2.0
+  vigil_lamp                 raw  +25.6  act>=2  +18.7  MH-strat   +2.0
+  patient_bookmark           raw  +21.0  act>=2  +13.9  MH-strat   +1.9
+  drawn_curtain              raw  +18.5  act>=2  +11.7  MH-strat   +1.7
+  loom_of_two_hands          raw  +18.3  act>=2  +12.4  MH-strat   +1.7 [coop] [rare]
+  saints_marrow              raw  +22.6  act>=2  +15.0  MH-strat   +1.5
+  hexwrought_locket          raw  +23.8  act>=2  +18.2  MH-strat   +1.5
+  threadspool_reliquary      raw  +20.3  act>=2  +13.7  MH-strat   +1.4 [coop]
+  ashen_censer               raw  +23.1  act>=2  +17.2  MH-strat   +1.3
+  census_of_wounds           raw  +21.7  act>=2  +16.1  MH-strat   +1.3
+  steadfast_icon             raw  +21.0  act>=2  +13.7  MH-strat   +1.2 [coop]
+  hungry_whetstone           raw  +23.9  act>=2  +15.6  MH-strat   +1.1
+  needlecase_of_saint_morrow raw  +21.5  act>=2  +14.7  MH-strat   +1.0
+  sealed_reliquary           raw  +22.4  act>=2  +16.1  MH-strat   +0.9
+  kindling_bundle            raw  +25.1  act>=2  +17.9  MH-strat   +0.8
+  covetous_psalter           raw  +20.2  act>=2  +13.8  MH-strat   +0.5 [coop]
+  whetstone_psalm            raw  +18.6  act>=2  +11.9  MH-strat   +0.5
+  ember_coal                 raw  +21.9  act>=2  +15.5  MH-strat   +0.5
+  wedding_knife              raw  +20.1  act>=2  +14.4  MH-strat   +0.3 [coop]
+  tithing_bowl               raw  +19.2  act>=2  +13.2  MH-strat   +0.3 [coop]
+  bridegrooms_knot           raw  +20.5  act>=2  +14.1  MH-strat   +0.3 [coop]
+  pulsekeepers_ring          raw  +20.2  act>=2  +13.5  MH-strat   +0.1 [coop]
+  scar_votive                raw  +18.7  act>=2  +12.5  MH-strat   +0.0 [coop]
+  twin_phylactery            raw  +18.5  act>=2  +11.9  MH-strat   -0.2 [coop]
+  knotted_votive             raw  +18.0  act>=2  +11.2  MH-strat   -0.3 [coop]
+
+==================== S17 NUMBERS-PASS VERIFY (after S17.2) ====================
+=== CARDS: raw lift vs act>=2-restricted lift (flagged movers) ===
+card                         pool/rarity                 raw         act>=2
+needles_verdict              vess/rare         +40.4 (z+22.4)  +28.2 (z+15.1)
+funeral_lace                 vess/rare         +35.3 (z+18.6)  +25.2 (z+13.0)
+rend_the_weave               vess/rare         +36.4 (z+19.7)  +24.5 (z+12.9)
+final_bell                   bram/rare         +24.9 (z+16.6)  +23.5 (z+15.6)
+pale_unmaking                vess/rare         +35.5 (z+19.0)  +22.7 (z+11.7)
+avalanche                    bram/rare         +21.5 (z+13.7)  +20.1 (z+12.8)
+share_the_fire               bram/rare         +19.4 (z+12.0)  +18.4 (z+11.4)
+rendcall                     bram/uncommon     +19.0 (z+12.4)  +17.5 (z+11.4)
+spark                        bram/common       +16.8 (z +9.0)  +15.7 (z +8.4)
+haymaker                     bram/uncommon     +16.6 (z+10.0)  +15.6 (z +9.4)
+followthrough                bram/common       +16.5 (z+11.2)  +15.4 (z+10.4)
+dig_in                       bram/uncommon     +16.4 (z +6.3)  +15.4 (z +6.0)
+patient_knife                vess/uncommon     +26.2 (z+14.1)  +15.2 (z +7.9)
+opener                       bram/uncommon     +16.1 (z +9.6)  +14.8 (z +8.8)
+call_and_answer              bram/rare         +15.2 (z +9.0)  +14.4 (z +8.6)
+immovable                    bram/rare         +15.3 (z +9.0)  +14.3 (z +8.4)
+counterargument              bram/uncommon     +15.6 (z +9.3)  +14.3 (z +8.5)
+graverust                    vess/common       +17.4 (z+10.4)  +14.2 (z +7.9)
+ember_jab                    bram/uncommon     +15.2 (z +9.0)  +14.0 (z +8.3)
+withering                    vess/uncommon     +16.8 (z +9.2)  +13.6 (z +7.1)
+carrion_lace                 vess/uncommon     +13.0 (z +6.4)  +13.1 (z +6.1)
+eye_for_an_opening           bram/uncommon     +13.3 (z +7.3)  +12.6 (z +7.0)
+cinderbreak                  bram/common       +14.2 (z +9.5)  +12.5 (z +8.3)
+forearm_wall                 bram/common       +13.5 (z +6.8)  +12.3 (z +6.2)
+crossguard                   bram/common       +13.3 (z +6.7)  +12.3 (z +6.2)
+brand                        bram/common       +13.4 (z +6.8)  +12.2 (z +6.2)
+martyrs_knot                 vess/uncommon      +7.8 (z +2.3)  +12.2 (z +3.4)
+eye_of_the_loom              vess/rare         +16.1 (z +7.2)  +12.1 (z +5.2)
+one_two                      bram/common       +12.9 (z +8.7)  +12.1 (z +8.1)
+final_word                   vess/rare         +21.6 (z+10.0)  +11.9 (z +5.4)
+braided_malice               vess/uncommon     +11.6 (z +5.6)  +11.9 (z +5.5)
+forgefire                    bram/uncommon     +12.8 (z +6.9)  +11.7 (z +6.3)
+cinderfall                   bram/rare         +12.7 (z +7.8)  +11.6 (z +7.1)
+thornward                    vess/common       +14.3 (z +8.9)  +11.6 (z +6.6)
+borrowed_hour                vess/rare         +16.9 (z +7.7)  +11.5 (z +5.1)
+unpicking                    vess/uncommon     +17.3 (z +9.6)  +11.3 (z +5.9)
+patient_breath               vess/uncommon      +8.9 (z +2.6)  +11.1 (z +3.1)
+pummel                       bram/uncommon     +11.8 (z +6.8)  +10.9 (z +6.3)
+stand_fast                   bram/uncommon     +11.5 (z +4.2)  +10.8 (z +3.9)
+hammerfall                   bram/common       +11.6 (z +7.8)  +10.8 (z +7.2)
+wind_up                      bram/common       +11.8 (z +5.8)  +10.5 (z +5.1)
+soot_mark                    bram/common       +11.3 (z +5.4)  +10.3 (z +5.0)
+needle_wall                  vess/common        +6.5 (z +2.6)  +10.3 (z +3.8)
+patience                     neutral/common    +15.7 (z +9.3)  +10.1 (z +6.0)
+stoke                        bram/uncommon     +11.1 (z +6.0)  +10.0 (z +5.4)
+bellringer                   bram/common       +11.4 (z +7.6)   +9.9 (z +6.6)
+breaker                      bram/uncommon     +10.8 (z +5.9)   +9.9 (z +5.4)
+saturate                     vess/uncommon     +10.1 (z +4.9)   +9.9 (z +4.5)
+hold_the_line                bram/uncommon     +10.7 (z +3.7)   +9.8 (z +3.4)
+square_up                    bram/common       +10.9 (z +5.2)   +9.8 (z +4.7)
+second_wind                  bram/common       +10.7 (z +5.3)   +9.7 (z +4.8)
+spite_stitch                 vess/common        +8.8 (z +5.2)   +9.5 (z +5.2)
+pitchfire                    bram/uncommon     +10.7 (z +3.9)   +9.5 (z +3.5)
+pinprick                     vess/common       +12.5 (z +7.4)   +9.3 (z +5.1)
+two_as_one                   neutral/rare      +16.0 (z+11.8)   +9.2 (z +6.6)
+stamp_out                    bram/uncommon     +10.2 (z +6.3)   +9.1 (z +5.6)
+body_blow                    bram/common       +10.1 (z +6.7)   +9.0 (z +6.0)
+festering_knot               vess/uncommon     +11.1 (z +5.4)   +8.4 (z +3.8)
+crossing_blow                neutral/rare      +17.1 (z+12.5)   +8.3 (z +6.0)
+cross_counter                bram/uncommon      +9.7 (z +5.5)   +8.3 (z +4.7)
+hollow_seam                  vess/common        +9.2 (z +5.5)   +8.3 (z +4.6)
+shoulder_through             bram/uncommon      +8.6 (z +3.0)   +8.2 (z +2.9)
+wildfire_heart               bram/rare          +9.5 (z +5.5)   +8.2 (z +4.7)
+needlework                   vess/common       +10.0 (z +5.9)   +8.2 (z +4.4)
+splinter                     neutral/common    +16.9 (z+12.6)   +8.0 (z +5.9)
+bellows                      bram/common        +9.2 (z +4.4)   +8.0 (z +3.9)
+roundhouse                   bram/common        +8.3 (z +5.5)   +7.7 (z +5.1)
+relentless                   bram/rare          +8.5 (z +4.8)   +7.4 (z +4.2)
+ash_harvest                  bram/rare          +8.4 (z +4.8)   +7.4 (z +4.3)
+small_rites                  vess/common        +8.2 (z +5.1)   +7.3 (z +4.1)
+threadlight                  vess/common        +9.0 (z +3.5)   +7.1 (z +2.7)
+candle_watch                 neutral/common    +11.3 (z +6.4)   +7.1 (z +4.0)
+brace                        bram/common        +7.8 (z +3.7)   +7.1 (z +3.4)
+gravebloom                   vess/rare         +10.6 (z +5.1)   +6.9 (z +3.1)
+inkwell_curse                vess/uncommon      +7.6 (z +3.6)   +6.8 (z +3.0)
+ashfall                      bram/common        +7.8 (z +3.7)   +6.8 (z +3.2)
+widows_arithmetic            vess/rare          +7.6 (z +3.6)   +6.8 (z +2.9)
+cinder_cloak                 bram/uncommon      +7.9 (z +2.9)   +6.7 (z +2.5)
+twinned_cut                  neutral/common    +14.9 (z+11.0)   +6.7 (z +4.8)
+seeding_curse                vess/common       +10.8 (z +6.8)   +6.6 (z +3.8)
+crack_the_seal               neutral/uncommon  +14.0 (z+10.3)   +6.6 (z +4.7)
+pyre_vault                   bram/uncommon      +6.6 (z +3.7)   +6.6 (z +3.7)
+stokers_due                  bram/uncommon      +7.7 (z +3.9)   +6.4 (z +3.3)
+held_breath                  bram/uncommon      +7.5 (z +2.6)   +6.3 (z +2.2)
+fan_the_flames               bram/common        +7.3 (z +3.5)   +6.2 (z +3.0)
+bellmetal                    bram/rare          +7.1 (z +4.1)   +6.2 (z +3.5)
+banked_coals                 bram/common        +7.5 (z +3.5)   +6.1 (z +2.9)
+keepsake                     vess/rare          +8.9 (z +4.1)   +6.0 (z +2.6)
+quick_words                  neutral/uncommon   +8.3 (z +3.8)   +5.8 (z +2.6)
+drumbeat                     bram/uncommon      +6.7 (z +2.4)   +5.8 (z +2.0)
+lashing_coil                 vess/uncommon      +8.5 (z +4.4)   +5.7 (z +2.7)
+shroudwork                   vess/uncommon      +5.0 (z +1.5)   +5.5 (z +1.5)
+spindle_step                 vess/uncommon      +0.4 (z +0.1)   +5.4 (z +1.4)
+selvage                      vess/uncommon      +6.3 (z +2.8)   +5.1 (z +2.1)
+seamripper                   vess/uncommon      +3.8 (z +1.1)   +5.1 (z +1.3)
+firewatch                    bram/common        +5.9 (z +2.7)   +4.9 (z +2.2)
+thousand_pins                vess/common        +6.7 (z +4.2)   +4.7 (z +2.7)
+linked_shields               neutral/uncommon   +8.5 (z +3.9)   +4.6 (z +2.1)
+aftershock                   bram/uncommon      +5.3 (z +2.7)   +4.5 (z +2.3)
+seam_split                   vess/common        +4.3 (z +1.7)   +4.5 (z +1.7)
+waxbound_oath                vess/common        +2.5 (z +1.0)   +4.4 (z +1.6)
+quiet_mending                vess/common        +2.9 (z +1.1)   +4.4 (z +1.5)
+stolen_breath                neutral/common     +9.2 (z +5.2)   +4.4 (z +2.5)
+black_lattice                vess/uncommon      +5.3 (z +2.4)   +4.3 (z +1.8)
+stitchblade                  vess/common        +4.1 (z +1.6)   +4.3 (z +1.6)
+tally_of_griefs              vess/rare          +5.8 (z +2.7)   +4.1 (z +1.8)
+loom_of_hours                vess/rare          +8.7 (z +3.8)   +4.1 (z +1.7)
+tallow_mark                  neutral/uncommon   +8.8 (z +5.3)   +3.8 (z +2.2)
+cinch                        vess/common        +4.5 (z +1.8)   +3.6 (z +1.3)
+loose_stitch                 vess/common        +0.9 (z +0.3)   +3.2 (z +1.1)
+votive_thread                vess/uncommon      -0.3 (z -0.1)   +3.0 (z +0.8)
+spitespun_mantle             vess/uncommon      +3.6 (z +1.6)   +2.7 (z +1.1)
+gathering_slack              vess/common        +4.8 (z +1.8)   +2.4 (z +0.8)
+shared_burden                neutral/common     +6.3 (z +3.6)   +2.3 (z +1.2)
+backdraft                    bram/uncommon      +3.1 (z +1.1)   +2.1 (z +0.7)
+kindle                       bram/common        +3.2 (z +1.5)   +1.9 (z +0.9)
+knotward_veil                vess/uncommon      -0.1 (z -0.0)   +1.1 (z +0.3)
+litany_of_mending            neutral/common     +4.8 (z +2.7)   +1.1 (z +0.6)
+wardknot                     vess/common        +1.1 (z +0.4)   +1.0 (z +0.4)
+burr_shell                   vess/common        -0.2 (z -0.1)   +1.0 (z +0.4)
+unbroken_line                vess/uncommon      +1.9 (z +0.8)   -0.2 (z -0.1)
+mendthread                   vess/common        -2.2 (z -0.9)   -0.4 (z -0.1)
+quickening                   vess/common        -2.0 (z -0.8)   -0.5 (z -0.2)
+shared_sigil                 neutral/uncommon   +1.5 (z +0.9)   -1.4 (z -0.9)
+tithe_of_thread              neutral/uncommon   +2.4 (z +1.0)   -2.3 (z -1.0)
+slow_burn                    bram/uncommon      -1.6 (z -0.5)   -2.3 (z -0.8)
+drawn_breath                 vess/uncommon      -4.2 (z -1.2)   -2.9 (z -0.7)
+inheritance                  vess/uncommon      -6.9 (z -2.1)   -3.9 (z -1.0)
+measured_cut                 vess/uncommon      -2.0 (z -0.6)   -4.8 (z -1.3)
+
+=== BUCKET ORDERING on act>=2 lift (presence-weighted mean) ===
+  vess     common +7.2 | uncommon +8.0 | rare +14.4
+  bram     common +10.2 | uncommon +10.6 | rare +13.1
+  neutral  common +6.1 | uncommon +3.3 | rare +8.8
+
+=== RELICS: raw vs act>=2 vs relic-count-stratified (MH) ===
+  braided_censer             raw  +37.4  act>=2  +30.3  MH-strat   +5.4 [coop] [rare]
+  chord_of_the_choir         raw  +26.8  act>=2  +19.5  MH-strat   +2.9 [coop] [rare]
+  hungry_whetstone           raw  +25.1  act>=2  +16.8  MH-strat   +2.3
+  vigil_lamp                 raw  +25.5  act>=2  +18.8  MH-strat   +2.1
+  wedding_knife              raw  +19.1  act>=2  +13.4  MH-strat   +2.0 [coop]
+  needlecase_of_saint_morrow raw  +22.9  act>=2  +16.0  MH-strat   +1.8
+  iron_girdle                raw  +22.7  act>=2  +16.7  MH-strat   +1.7
+  census_of_wounds           raw  +20.7  act>=2  +14.6  MH-strat   +1.6
+  hexwrought_locket          raw  +23.5  act>=2  +17.4  MH-strat   +1.4
+  ashen_censer               raw  +22.7  act>=2  +16.7  MH-strat   +1.3
+  drawn_curtain              raw  +19.8  act>=2  +13.2  MH-strat   +1.3
+  sealed_reliquary           raw  +23.8  act>=2  +17.5  MH-strat   +1.2
+  cracked_bell               raw  +19.0  act>=2  +12.4  MH-strat   +1.0
+  tithing_bowl               raw  +19.6  act>=2  +13.3  MH-strat   +1.0 [coop]
+  pulsekeepers_ring          raw  +19.3  act>=2  +12.6  MH-strat   +0.9 [coop]
+  patient_bookmark           raw  +20.2  act>=2  +14.0  MH-strat   +0.8
+  kindling_bundle            raw  +22.8  act>=2  +15.3  MH-strat   +0.7
+  knotted_votive             raw  +18.1  act>=2  +11.7  MH-strat   +0.6 [coop]
+  whetstone_psalm            raw  +20.4  act>=2  +13.4  MH-strat   +0.6
+  saints_marrow              raw  +21.2  act>=2  +13.9  MH-strat   +0.6
+  ember_coal                 raw  +18.6  act>=2  +11.4  MH-strat   +0.5
+  covetous_psalter           raw  +19.7  act>=2  +13.6  MH-strat   +0.4 [coop]
+  twin_phylactery            raw  +21.2  act>=2  +15.0  MH-strat   +0.4 [coop]
+  scar_votive                raw  +18.7  act>=2  +13.1  MH-strat   +0.4 [coop]
+  bridegrooms_knot           raw  +19.9  act>=2  +13.4  MH-strat   +0.3 [coop]
+  threadspool_reliquary      raw  +17.4  act>=2  +10.9  MH-strat   -0.0 [coop]
+  loom_of_two_hands          raw  +16.9  act>=2  +10.9  MH-strat   -0.2 [coop] [rare]
+  steadfast_icon             raw  +19.7  act>=2  +12.0  MH-strat   -0.4 [coop]
+
+==================== S17 PASS-B VERIFY (after S17.3) ====================
+=== CARDS: raw lift vs act>=2-restricted lift (flagged movers) ===
+card                         pool/rarity                 raw         act>=2
+needles_verdict              vess/rare         +42.0 (z+23.8)  +30.2 (z+16.6)
+funeral_lace                 vess/rare         +36.1 (z+19.3)  +26.1 (z+13.7)
+rend_the_weave               vess/rare         +36.1 (z+19.5)  +24.3 (z+12.8)
+final_bell                   bram/rare         +25.5 (z+16.8)  +24.2 (z+15.9)
+pale_unmaking                vess/rare         +35.3 (z+18.9)  +22.8 (z+11.8)
+avalanche                    bram/rare         +21.2 (z+13.2)  +19.8 (z+12.3)
+share_the_fire               bram/rare         +18.9 (z+11.4)  +17.9 (z+10.8)
+followthrough                bram/common       +17.8 (z+12.0)  +16.8 (z+11.3)
+rendcall                     bram/uncommon     +17.7 (z+11.3)  +16.3 (z+10.3)
+counterargument              bram/uncommon     +17.3 (z+10.2)  +16.0 (z +9.5)
+dig_in                       bram/uncommon     +16.5 (z +6.4)  +15.6 (z +6.0)
+immovable                    bram/rare         +16.4 (z +9.7)  +15.5 (z +9.1)
+patient_knife                vess/uncommon     +26.7 (z+14.4)  +15.4 (z +8.0)
+call_and_answer              bram/rare         +16.0 (z +9.4)  +15.3 (z +9.0)
+eye_of_the_loom              vess/rare         +18.8 (z +8.5)  +14.9 (z +6.6)
+opener                       bram/uncommon     +15.8 (z +9.2)  +14.7 (z +8.5)
+crossguard                   bram/common       +15.6 (z +8.0)  +14.6 (z +7.5)
+withering                    vess/uncommon     +17.7 (z +9.8)  +14.6 (z +7.7)
+spark                        bram/common       +15.6 (z +8.1)  +14.5 (z +7.5)
+needle_wall                  vess/common        +8.8 (z +3.5)  +14.0 (z +5.3)
+martyrs_knot                 vess/uncommon      +8.7 (z +2.6)  +13.7 (z +3.9)
+ember_jab                    bram/uncommon     +14.4 (z +8.4)  +13.3 (z +7.7)
+haymaker                     bram/uncommon     +14.1 (z +8.3)  +13.1 (z +7.7)
+carrion_lace                 vess/uncommon     +13.2 (z +6.4)  +12.8 (z +6.0)
+graverust                    vess/common       +16.0 (z +9.6)  +12.6 (z +7.0)
+wind_up                      bram/common       +13.7 (z +6.8)  +12.4 (z +6.1)
+stand_fast                   bram/uncommon     +13.0 (z +4.8)  +12.4 (z +4.6)
+final_word                   vess/rare         +22.1 (z+10.3)  +12.4 (z +5.6)
+borrowed_hour                vess/rare         +16.9 (z +7.8)  +12.1 (z +5.4)
+festering_knot               vess/uncommon     +13.7 (z +6.7)  +11.7 (z +5.4)
+stoke                        bram/uncommon     +12.8 (z +6.9)  +11.7 (z +6.3)
+one_two                      bram/common       +12.5 (z +8.3)  +11.7 (z +7.7)
+braided_malice               vess/uncommon     +11.4 (z +5.6)  +11.6 (z +5.4)
+pummel                       bram/uncommon     +12.5 (z +7.1)  +11.6 (z +6.7)
+eye_for_an_opening           bram/uncommon     +12.0 (z +6.4)  +11.4 (z +6.1)
+hammerfall                   bram/common       +12.1 (z +8.0)  +11.3 (z +7.5)
+cinderfall                   bram/rare         +12.2 (z +7.4)  +11.1 (z +6.7)
+forearm_wall                 bram/common       +12.1 (z +5.9)  +10.9 (z +5.3)
+patience                     neutral/common    +16.3 (z +9.7)  +10.8 (z +6.4)
+cinderbreak                  bram/common       +12.4 (z +8.2)  +10.8 (z +7.1)
+soot_mark                    bram/common       +11.9 (z +5.7)  +10.8 (z +5.1)
+second_wind                  bram/common       +11.7 (z +5.7)  +10.7 (z +5.2)
+brand                        bram/common       +11.8 (z +5.9)  +10.7 (z +5.3)
+thornward                    vess/common       +13.5 (z +8.4)  +10.7 (z +6.1)
+pinprick                     vess/common       +13.4 (z +8.0)  +10.7 (z +5.9)
+square_up                    bram/common       +11.8 (z +5.6)  +10.6 (z +5.1)
+forgefire                    bram/uncommon     +11.5 (z +6.1)  +10.4 (z +5.5)
+unpicking                    vess/uncommon     +16.6 (z +9.2)  +10.3 (z +5.4)
+patient_breath               vess/uncommon      +9.1 (z +2.7)  +10.3 (z +2.9)
+wildfire_heart               bram/rare         +11.5 (z +6.7)  +10.2 (z +5.9)
+two_as_one                   neutral/rare      +16.5 (z+12.0)  +10.0 (z +7.2)
+shoulder_through             bram/uncommon     +10.2 (z +3.5)   +9.9 (z +3.4)
+body_blow                    bram/common       +10.9 (z +7.2)   +9.9 (z +6.5)
+hold_the_line                bram/uncommon     +10.8 (z +3.7)   +9.6 (z +3.3)
+spite_stitch                 vess/common        +8.5 (z +5.0)   +9.4 (z +5.1)
+cross_counter                bram/uncommon     +10.7 (z +6.1)   +9.4 (z +5.3)
+bellringer                   bram/common       +10.8 (z +7.1)   +9.4 (z +6.2)
+stamp_out                    bram/uncommon      +9.9 (z +6.0)   +8.8 (z +5.3)
+crossing_blow                neutral/rare      +17.2 (z+12.5)   +8.7 (z +6.2)
+breaker                      bram/uncommon      +9.5 (z +5.1)   +8.6 (z +4.6)
+banked_coals                 bram/common        +9.8 (z +4.6)   +8.5 (z +4.0)
+pitchfire                    bram/uncommon      +9.7 (z +3.5)   +8.4 (z +3.0)
+saturate                     vess/uncommon      +9.1 (z +4.4)   +8.4 (z +3.8)
+needlework                   vess/common       +10.1 (z +6.0)   +8.4 (z +4.6)
+held_breath                  bram/uncommon      +9.2 (z +3.2)   +8.3 (z +2.9)
+cinder_cloak                 bram/uncommon      +9.4 (z +3.5)   +8.2 (z +3.0)
+inkwell_curse                vess/uncommon      +7.9 (z +3.7)   +7.6 (z +3.3)
+small_rites                  vess/common        +8.7 (z +5.3)   +7.5 (z +4.2)
+splinter                     neutral/common    +15.9 (z+11.8)   +7.4 (z +5.4)
+relentless                   bram/rare          +8.3 (z +4.7)   +7.3 (z +4.1)
+brace                        bram/common        +7.9 (z +3.7)   +7.2 (z +3.4)
+bellows                      bram/common        +8.2 (z +3.8)   +7.0 (z +3.3)
+keepsake                     vess/rare          +9.5 (z +4.3)   +7.0 (z +3.0)
+hollow_seam                  vess/common        +8.7 (z +5.2)   +6.9 (z +3.8)
+shroudwork                   vess/uncommon      +5.9 (z +1.7)   +6.9 (z +1.9)
+ashfall                      bram/common        +7.8 (z +3.7)   +6.8 (z +3.2)
+threadlight                  vess/common        +8.4 (z +3.3)   +6.7 (z +2.5)
+ash_harvest                  bram/rare          +7.7 (z +4.3)   +6.7 (z +3.7)
+crack_the_seal               neutral/uncommon  +14.0 (z+10.3)   +6.6 (z +4.7)
+twinned_cut                  neutral/common    +14.5 (z+10.7)   +6.4 (z +4.6)
+selvage                      vess/uncommon      +7.2 (z +3.2)   +6.3 (z +2.6)
+pyre_vault                   bram/uncommon      +6.2 (z +3.5)   +6.2 (z +3.5)
+bellmetal                    bram/rare          +6.9 (z +3.9)   +6.1 (z +3.4)
+drumbeat                     bram/uncommon      +7.0 (z +2.4)   +6.0 (z +2.1)
+seeding_curse                vess/common       +10.3 (z +6.5)   +6.0 (z +3.4)
+quiet_mending                vess/common        +5.0 (z +1.9)   +5.9 (z +2.1)
+stitchblade                  vess/common        +5.9 (z +2.4)   +5.9 (z +2.2)
+seamripper                   vess/uncommon      +5.0 (z +1.4)   +5.9 (z +1.6)
+lashing_coil                 vess/uncommon      +8.4 (z +4.3)   +5.9 (z +2.8)
+candle_watch                 neutral/common     +9.5 (z +5.4)   +5.7 (z +3.2)
+widows_arithmetic            vess/rare          +6.7 (z +3.1)   +5.6 (z +2.4)
+roundhouse                   bram/common        +6.1 (z +4.0)   +5.3 (z +3.5)
+loose_stitch                 vess/common        +2.7 (z +1.1)   +5.3 (z +1.8)
+aftershock                   bram/uncommon      +6.0 (z +3.0)   +5.2 (z +2.6)
+gravebloom                   vess/rare          +9.0 (z +4.2)   +5.2 (z +2.3)
+spindle_step                 vess/uncommon      +0.9 (z +0.3)   +5.2 (z +1.4)
+tally_of_griefs              vess/rare          +7.0 (z +3.3)   +5.1 (z +2.3)
+waxbound_oath                vess/common        +3.3 (z +1.3)   +5.0 (z +1.8)
+fan_the_flames               bram/common        +5.5 (z +2.6)   +4.5 (z +2.1)
+gathering_slack              vess/common        +6.4 (z +2.4)   +4.5 (z +1.6)
+stolen_breath                neutral/common     +9.2 (z +5.2)   +4.4 (z +2.4)
+votive_thread                vess/uncommon      +1.0 (z +0.3)   +4.3 (z +1.1)
+firewatch                    bram/common        +5.0 (z +2.3)   +4.1 (z +1.8)
+seam_split                   vess/common        +4.2 (z +1.7)   +4.0 (z +1.5)
+quick_words                  neutral/uncommon   +6.5 (z +2.9)   +4.0 (z +1.8)
+tallow_mark                  neutral/uncommon   +8.9 (z +5.3)   +3.9 (z +2.3)
+shared_burden                neutral/common     +7.8 (z +4.4)   +3.9 (z +2.1)
+thousand_pins                vess/common        +5.9 (z +3.8)   +3.9 (z +2.2)
+stokers_due                  bram/uncommon      +5.0 (z +2.5)   +3.8 (z +1.9)
+wardknot                     vess/common        +3.5 (z +1.4)   +3.7 (z +1.3)
+black_lattice                vess/uncommon      +4.5 (z +2.0)   +3.7 (z +1.5)
+spitespun_mantle             vess/uncommon      +3.9 (z +1.8)   +3.4 (z +1.4)
+backdraft                    bram/uncommon      +4.2 (z +1.5)   +3.3 (z +1.1)
+loom_of_hours                vess/rare          +7.6 (z +3.3)   +3.2 (z +1.3)
+litany_of_mending            neutral/common     +6.3 (z +3.6)   +2.5 (z +1.4)
+cinch                        vess/common        +3.9 (z +1.6)   +2.2 (z +0.8)
+slow_burn                    bram/uncommon      +2.8 (z +1.0)   +2.2 (z +0.7)
+mendthread                   vess/common        -0.3 (z -0.1)   +2.1 (z +0.7)
+kindle                       bram/common        +2.9 (z +1.4)   +1.8 (z +0.8)
+linked_shields               neutral/uncommon   +5.5 (z +2.5)   +1.7 (z +0.8)
+burr_shell                   vess/common        +0.2 (z +0.1)   +1.1 (z +0.4)
+knotward_veil                vess/uncommon      -0.4 (z -0.1)   +0.7 (z +0.2)
+quickening                   vess/common        -1.8 (z -0.7)   +0.3 (z +0.1)
+drawn_breath                 vess/uncommon      -2.1 (z -0.6)   -0.1 (z -0.0)
+tithe_of_thread              neutral/uncommon   +2.8 (z +1.2)   -1.3 (z -0.6)
+unbroken_line                vess/uncommon      +0.4 (z +0.2)   -1.4 (z -0.5)
+shared_sigil                 neutral/uncommon   +1.0 (z +0.6)   -1.6 (z -1.0)
+measured_cut                 vess/uncommon      -0.6 (z -0.2)   -3.4 (z -0.9)
+inheritance                  vess/uncommon      -6.8 (z -2.1)   -3.5 (z -0.9)
+
+=== BUCKET ORDERING on act>=2 lift (presence-weighted mean) ===
+  vess     common +7.2 | uncommon +8.3 | rare +14.8
+  bram     common +10.1 | uncommon +10.5 | rare +13.4
+  neutral  common +6.2 | uncommon +3.0 | rare +9.4
+
+=== RELICS: raw vs act>=2 vs relic-count-stratified (MH) ===
+  braided_censer             raw  +37.5  act>=2  +30.8  MH-strat   +5.7 [coop] [rare]
+  chord_of_the_choir         raw  +28.6  act>=2  +21.1  MH-strat   +4.2 [coop] [rare]
+  iron_girdle                raw  +23.0  act>=2  +17.2  MH-strat   +2.3
+  pulsekeepers_ring          raw  +19.7  act>=2  +13.2  MH-strat   +2.3 [coop]
+  hungry_whetstone           raw  +26.6  act>=2  +18.7  MH-strat   +2.2
+  needlecase_of_saint_morrow raw  +23.8  act>=2  +17.3  MH-strat   +2.0
+  wedding_knife              raw  +17.8  act>=2  +12.6  MH-strat   +1.8 [coop]
+  hexwrought_locket          raw  +22.8  act>=2  +16.8  MH-strat   +1.5
+  census_of_wounds           raw  +20.8  act>=2  +14.7  MH-strat   +1.5
+  vigil_lamp                 raw  +24.6  act>=2  +18.4  MH-strat   +1.5
+  saints_marrow              raw  +21.8  act>=2  +14.9  MH-strat   +1.3
+  ember_coal                 raw  +18.3  act>=2  +11.2  MH-strat   +1.3
+  cracked_bell               raw  +19.9  act>=2  +13.5  MH-strat   +1.2
+  tithing_bowl               raw  +20.4  act>=2  +14.5  MH-strat   +1.2 [coop]
+  drawn_curtain              raw  +18.9  act>=2  +12.6  MH-strat   +1.1
+  whetstone_psalm            raw  +19.3  act>=2  +12.4  MH-strat   +1.0
+  ashen_censer               raw  +22.7  act>=2  +16.7  MH-strat   +1.0
+  kindling_bundle            raw  +23.3  act>=2  +16.1  MH-strat   +1.0
+  scar_votive                raw  +19.8  act>=2  +14.3  MH-strat   +0.8 [coop]
+  sealed_reliquary           raw  +22.8  act>=2  +16.7  MH-strat   +0.4
+  patient_bookmark           raw  +20.2  act>=2  +14.0  MH-strat   +0.4
+  knotted_votive             raw  +18.5  act>=2  +12.3  MH-strat   +0.3 [coop]
+  bridegrooms_knot           raw  +19.8  act>=2  +13.4  MH-strat   +0.2 [coop]
+  twin_phylactery            raw  +20.4  act>=2  +13.9  MH-strat   +0.0 [coop]
+  covetous_psalter           raw  +18.4  act>=2  +12.4  MH-strat   -0.0 [coop]
+  steadfast_icon             raw  +20.0  act>=2  +12.5  MH-strat   -0.2 [coop]
+  threadspool_reliquary      raw  +15.9  act>=2   +9.5  MH-strat   -0.4 [coop]
+  loom_of_two_hands          raw  +16.4  act>=2  +10.3  MH-strat   -0.7 [coop] [rare]
