@@ -51,6 +51,12 @@ export class Bot {
   /** S19.1: witnessSaid entries already recorded into the timeline */
   private witnessSeen = 0;
   private witnessTimeline: WitnessMark[] = [];
+  /** S19.1: state.log is PER-TURN (resolveTurn clears it), so thread verbs
+   *  are counted incrementally across broadcasts — prevLog detects whether
+   *  the current log extends the last one or was reset since. */
+  private prevLog: string[] = [];
+  private prevTurns = -1;
+  private verbCounts: Record<PlayerId, Record<string, number>> = { p1: {}, p2: {} };
   private watchdog: NodeJS.Timeout | null = null;
   private resolve!: (r: RunResult) => void;
   done: Promise<RunResult>;
@@ -148,6 +154,21 @@ export class Bot {
       this.witnessTimeline.push({ t: said[i], act: view.map.act, turn: view.telemetry.turns });
     }
     this.witnessSeen = said.length;
+    // thread verbs: the log clears at every resolveTurn (which also bumps
+    // telemetry.turns), so a turn change means the whole log is fresh;
+    // within a turn an exact-prefix extension counts only the tail
+    const cur = view.log.map((e) => JSON.stringify(e));
+    const extendsPrev = view.telemetry.turns === this.prevTurns
+      && cur.length >= this.prevLog.length
+      && this.prevLog.every((s, i) => cur[i] === s);
+    const fresh = extendsPrev ? view.log.slice(this.prevLog.length) : view.log;
+    this.prevTurns = view.telemetry.turns;
+    for (const e of fresh) {
+      if (e.e === 'thread_action') {
+        this.verbCounts[e.player][e.kind] = (this.verbCounts[e.player][e.kind] ?? 0) + 1;
+      }
+    }
+    this.prevLog = cur;
   }
 
   private armWatchdog(): void {
@@ -180,14 +201,9 @@ export class Bot {
     const action = this.policy.decide(view);
     if (view.phase === 'victory' || view.phase === 'game_over') {
       if (this.watchdog) clearInterval(this.watchdog);
-      let solo: RunResult['solo'];
-      if (this.opts.trackSolo) {
-        const verbs: Record<PlayerId, Record<string, number>> = { p1: {}, p2: {} };
-        for (const e of view.log) {
-          if (e.e === 'thread_action') verbs[e.player][e.kind] = (verbs[e.player][e.kind] ?? 0) + 1;
-        }
-        solo = { verbs, witness: this.witnessTimeline };
-      }
+      const solo: RunResult['solo'] = this.opts.trackSolo
+        ? { verbs: this.verbCounts, witness: this.witnessTimeline }
+        : undefined;
       this.resolve({
         outcome: view.phase,
         act: view.map.act,
