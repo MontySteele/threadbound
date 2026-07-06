@@ -9,8 +9,8 @@
 // S17 bucket moves (ruled 2026-07-06): four rares demoted (aftershock,
 // stokers_due, selvage, unbroken_line) — their lines retired with them,
 // preserved in docs/S17-POWER-AUDIT.md; two uncommons promoted to rare
-// (pale_unmaking, rend_the_weave) — their naming lines are PROVISIONAL
-// until the next witness read.
+// (pale_unmaking, rend_the_weave) — their naming lines RATIFIED at the
+// 8b sign-off (designer, 2026-07-06).
 // Register (S9c.3): disdain with an edge of reluctant recognition. Fences:
 // existence-naming — what the card IS, never what it's for; marks the
 // card's weight without promising outcomes; never lies; no pip economy.
@@ -38,7 +38,7 @@ export const S13_WITNESS: Record<string, string[]> = {
   rare_first_pick_needles_verdict: [
     'The Needle’s Verdict. It reads what the Hexes wrote, then closes the case.',
   ],
-  // S17 promotions — PROVISIONAL until the next witness read
+  // S17 promotions — RATIFIED (8b sign-off, 2026-07-06)
   rare_first_pick_pale_unmaking: [
     'Pale Unmaking. She writes the curse and reads it out in the same motion.',
   ],

@@ -511,6 +511,11 @@ export const BRAM_M2_CARDS: CardDef[] = [
     id: 'aftershock', name: 'Aftershock', character: 'bram', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
     text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
     base: [{ op: 'power', power: 'aftershock' }],
+    mutation: {
+      // S17 8a (ratified 2026-07-06): the demotion's owed mutation
+      name: 'Faultline', text: 'Power: whenever Hexes detonate, deal 2 to ALL enemies. Draw 1 when played. Exhaust.',
+      base: [{ op: 'power', power: 'faultline' }, { op: 'draw', amount: 1 }],
+    },
     upgrade: {
       text: 'Power: whenever Hexes detonate, deal 3 to ALL enemies. Exhaust.',
       cost: 1,

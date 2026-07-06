@@ -94,13 +94,10 @@ describe('Covenant (§3) and pool rules (§2.3) — full M2 pool', () => {
   });
 
   it('M2-B1: mutations on every common/uncommon; upgrades on every card', () => {
-    // S17 demotions (ruled 2026-07-06): four rares dropped to uncommon as
-    // availability moves ONLY — they were born rare (Echo unmutated) and
-    // their mutations are OWED. The strings stall at sign-off (proposed in
-    // docs/S17-POWER-AUDIT.md); this exemption comes out when they land.
-    const DEMOTED_AWAITING_MUTATIONS = ['aftershock', 'stokers_due', 'selvage', 'unbroken_line'];
+    // S17: the demoted four's owed mutations landed with the 8a ratification
+    // (2026-07-06) — no exemptions remain.
     for (const c of all) {
-      if (c.rarity !== 'rare' && !DEMOTED_AWAITING_MUTATIONS.includes(c.id)) {
+      if (c.rarity !== 'rare') {
         expect(c.mutation, `${c.id} missing mutation`).toBeTruthy();
       }
       expect(c.upgrade ?? c.starterOnly, `${c.id} missing upgrade`).toBeTruthy();

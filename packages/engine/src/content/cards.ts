@@ -157,6 +157,12 @@ def({
   id: 'unbroken_line', name: 'Unbroken Line', character: 'vess', rarity: 'uncommon', cost: 2, tag: 'Rite', exhaust: true,
   text: 'Power: at the start of each turn, gain 1 Thread. Exhaust.',
   base: [{ op: 'power', power: 'unbroken_line' }],
+  mutation: {
+    // S17 8a (ratified 2026-07-06, the row's pre-approved fallback wording —
+    // the double-clause draft was flagged muddy in the proposal itself)
+    name: 'Frayed Line', text: 'Power: at the start of each odd turn, gain 1 Thread. Exhaust.',
+    base: [{ op: 'power', power: 'frayed_line' }],
+  },
 });
 
 // ---------------------------------------------------------------------------

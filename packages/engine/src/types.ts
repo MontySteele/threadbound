@@ -107,6 +107,10 @@ export interface Hook {
    *  CombatState.hookCombatFired, never reset mid-combat) — the rite
    *  tables' 'first X each combat' pattern */
   oncePerCombat?: boolean;
+  /** S17 (Frayed Line, the demoted-four mutation slate): fires only when
+   *  the combat turn is ODD (turns count from 1). Checked against
+   *  CombatState.turn at fire time; no counter state. */
+  oddTurnsOnly?: boolean;
 }
 
 /** Named passive behaviors special-cased by the engine. */

@@ -214,7 +214,7 @@ export function hasPassive(player: PlayerState, passive: PassiveId): boolean {
 
 export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): void {
   const p = state.players[holder];
-  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean; oncePerCombat?: boolean }[] }> = [
+  const sources: Array<{ id: string; name: string; hooks?: { on: HookEvent; effects: HookOp[]; oncePerTurn?: boolean; oncePerCombat?: boolean; oddTurnsOnly?: boolean }[] }> = [
     ...p.relics.map((r) => RELICS_BY_ID[r]).filter(Boolean),
     // S7/S8.1: birth-rite hooks — hidden-relic semantics, never dormant
     ...(p.rites ?? []).map((r) => RITES_BY_ID[r]).filter(Boolean),
@@ -223,6 +223,9 @@ export function runHooks(state: GameState, holder: PlayerId, event: HookEvent): 
   for (const src of sources) {
     for (const hook of src.hooks ?? []) {
       if (hook.on !== event) continue;
+      // S17 Frayed Line: odd-turn cadence — turns count from 1, so this
+      // fires on 1st/3rd/5th… turnStarts of the combat
+      if (hook.oddTurnsOnly && state.combat && state.combat.turn % 2 === 0) continue;
       // PT2/OQ#29 (Loom ruling): oncePerTurn hooks spend their charge here
       if (hook.oncePerTurn && state.combat) {
         const key = `${holder}:${src.id}:${hook.on}`;

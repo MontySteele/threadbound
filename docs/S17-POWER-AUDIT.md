@@ -271,8 +271,11 @@ that traveled with them, each on the record:
 - **Golden regen** (loud, in-commit): rarity moves reshape reward
   pools → the random-walk covenant hashes moved.
 
-### 8a. SIGN-OFF — mutations owed by the demoted four (strings; the
-### covenant exemption comes out when these land)
+### 8a. SIGN-OFF — mutations owed by the demoted four — **RATIFIED
+### as proposed (designer, 2026-07-06); LANDED, exemption removed.**
+### Frayed Line landed in the row's own pre-approved fallback wording
+### ("at the start of each odd turn"); the odd-turn cadence needed a
+### one-flag hook addition (`oddTurnsOnly`), engine-tested.
 
 | # | card | proposed mutation |
 |---|---|---|
@@ -281,7 +284,8 @@ that traveled with them, each on the record:
 | M3 | selvage | **Raw Edge** — "Power: when the resolved Chain closes on your card, gain 4 Block. Exhaust." |
 | M4 | unbroken_line | **Frayed Line** — "Power: at the start of each turn, gain 1 Thread. Every other turn, this asks again." *(flavor draft — if the double-clause reads muddy, the fallback is a plain weaker echo: gain 1 Thread on ODD turns)* |
 
-### 8b. SIGN-OFF — the two PROVISIONAL witness lines (promotions)
+### 8b. SIGN-OFF — the two witness lines (promotions) — **RATIFIED
+### (designer, 2026-07-06)**
 
 | card | line |
 |---|---|
@@ -384,3 +388,27 @@ weight (weight cuts how often it appears, not what it does when it
 does) — if that still offends after human play, the remaining lever
 is the effect trim (heal 2→1), which the ruling declined this round
 in favor of weight.
+
+## 13. Disposition (designer, 2026-07-06): remaining items → DESIGN SESSION
+
+8a/8b ratified and landed. Everything still open moves to a design
+session rather than further autonomous tuning. The session's agenda,
+gathered from this doc and the S16 carries:
+
+1. The **pairing packet** (§12): levers (a)/(b)/(c) for the
+   structural vv floor and the reopened bb−vb gap — then the
+   **difficulty** dose (charter step 3) once pairing order is set.
+2. The **gate-4 packet** (S16-STATUS Part 6): authored knot-2 comp
+   vs per-run knot escalation vs re-deriving the ≥2 gate.
+3. The **dead-shape cluster** (§10): measured_cut, slow_burn,
+   tithe_of_thread, mendthread + the Thread-glue pattern (§4/6d) —
+   shape redesigns, not scalars.
+4. **gravebloom** — whether the S13.2 flat-hex-echo law bends (its
+   ruled buff was reverted by the law).
+5. **braided_censer** effect trim if the weight move isn't enough
+   (above), and the **S13.2-law-vs-uplift** question generally.
+6. The **S17 gate-band re-derivation** carry from S16 (±8 / ≤15 /
+   +4 were calibrated on the contended wire; the clean n=2000 reads
+   in this doc are the natural anchors).
+7. **Packet S16-P1** (gate-2 from-below lever) — likely subsumed by
+   item 1.

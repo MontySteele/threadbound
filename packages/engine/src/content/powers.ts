@@ -16,6 +16,13 @@ defPower({ id: 'stoke', name: 'Stoke', hooks: [{ on: 'turnStart', effects: [{ op
 defPower({ id: 'unbroken_line', name: 'Unbroken Line', hooks: [{ on: 'turnStart', effects: [{ op: 'thread', amount: 1 }] }] });
 defPower({ id: 'wildfire_heart', name: 'Wildfire Heart', passives: ['momentumNoHalve'] });
 
+// S17 mutation slate (8a, ratified 2026-07-06): the demoted four's Reclaim
+// echoes — each a plainer cousin of its parent power.
+defPower({ id: 'faultline', name: 'Faultline', hooks: [{ on: 'detonate', effects: [{ op: 'damageAll', amount: 2 }] }] });
+defPower({ id: 'stokers_advance', name: 'Stoker’s Advance', hooks: [{ on: 'threadSpend', effects: [{ op: 'momentum', amount: 2 }], oncePerTurn: true }] });
+defPower({ id: 'raw_edge', name: 'Raw Edge', hooks: [{ on: 'chainClose', effects: [{ op: 'block', amount: 4 }], oncePerTurn: true }] });
+defPower({ id: 'frayed_line', name: 'Frayed Line', hooks: [{ on: 'turnStart', effects: [{ op: 'thread', amount: 1 }], oddTurnsOnly: true }] });
+
 // M2 pool powers (declared via POWER NEEDED comments in vess-m2.ts / bram-m2.ts)
 defPower({ id: 'spitespun_mantle', name: 'Spitespun Mantle', hooks: [{ on: 'detonate', effects: [{ op: 'hexAll', amount: 1 }] }] });
 defPower({ id: 'loom_of_hours', name: 'Loom of Hours', hooks: [{ on: 'turnStart', effects: [{ op: 'kindled', amount: 1 }, { op: 'block', amount: 3 }] }] });
