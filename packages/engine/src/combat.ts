@@ -1075,15 +1075,19 @@ export function resolveTurn(state: GameState): void {
         spendThread(state, 3);
         const enemy = combat.enemies.find((e) => e.id === ta.targetId && e.hp > 0);
         if (!enemy) break;
+        const wasBound = enemy.boundTo;
         if (ENEMIES[enemy.defId]?.chorus) {
           severChorus(state, enemy);
         } else if (enemy.boundTo !== null) {
           enemy.boundTo = otherPlayer(enemy.boundTo);
         }
-        // S19.6 (D5): the bot's Sever, announced always (at resolution — the
-        // truth law wants the cut to have actually happened). Empty pool
-        // no-ops until the Part 7 strings sign.
-        if (state.botSeat && ta.player === state.botSeat) sayWitness(state, 'i_severed');
+        // S19.6 (D5): the bot's Sever, announced at resolution and ONLY when
+        // the binding actually moved (a chorus sever can no-op; a line about
+        // a cut that didn't happen would be a falsehood). Empty pool no-ops
+        // until the Part 7 strings sign.
+        if (state.botSeat && ta.player === state.botSeat && enemy.boundTo !== wasBound) {
+          sayWitness(state, 'i_severed');
+        }
         break;
       }
       case 'steady':
