@@ -389,6 +389,21 @@ export class BotPolicy {
       e.hp > 0 && e.intent.kind.startsWith('attack')
       && (e.boundTo === you || e.intent.kind === 'attack_all'));
     const pierceOnly = threats.length > 0 && threats.every((e) => e.intent.kind === 'attack_pierce');
+    // S19.3 (D2, +1.2 — SOLO ONLY): tail-planning against the open hand.
+    // Hands are open information (OQ#22) and the view carries the human's:
+    // when a candidate placement is the chain TAIL and the human holds a
+    // card whose link.condition matches the candidate's tag (exact tag —
+    // 'any'/'partner' fire regardless of what we leave), the bot
+    // deliberately leaves a live link on the table. +1.2 sits below "fires
+    // own link" (+2) by design: the bot sets tables, it doesn't sacrifice
+    // its own fires to do it. No announce line — the payoff line
+    // (human_linked_off_me, 18%) lands at the moment of proof, which
+    // teaches better than narrating the setup.
+    const humanHeldConditions = this.mode === 'solo'
+      ? new Set(view.players[otherOf(you)].hand
+          .map((id) => defOf(view, otherOf(you), id).link?.condition)
+          .filter((c) => c !== undefined))
+      : null;
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
@@ -412,18 +427,29 @@ export class BotPolicy {
           (isVess && (cardText.includes("'hex'") || cardText.includes('hexAll') || cardText.includes('doubleHex')) ? 0.9 : 0) +
           (cardText.includes('detonate') && bigPile ? 1.3 : 0) +
           (cardText.includes('damagePerHex') && targetable.some((e) => e.hex >= 3) ? 1.2 : 0);
-        const score = fires + next + guardBonus + axisBonus + card.def.cost * 0.1;
+        const tailBonus = humanHeldConditions !== null
+          && pos === combat.chain.length && humanHeldConditions.has(card.def.tag) ? 1.2 : 0;
+        const score = fires + next + guardBonus + axisBonus + tailBonus + card.def.cost * 0.1;
         if (!best || score > best.score) best = { card, pos, score };
       }
     }
     const pick = best!.card;
     const text = JSON.stringify(pick.def);
     const hexed = [...targetable].sort((a, b) => b.hex - a.hex)[0];
+    // S19.4 (D3, row T-a — SOLO ONLY): partner-protective targeting. When
+    // the human is lethal-adjacent (the same read maySpend uses), the
+    // FALLBACK preference flips from enemies bound to me to enemies bound
+    // to the human — kill what's killing them. The detonate/hex pile
+    // convergence above it stays: the co-op axis outranks the flip (T-a
+    // scope is the damage/detonate fallback only; Sever preference is T-b,
+    // not landed — ride only on probe evidence).
+    const protectSeat: PlayerId =
+      this.mode === 'solo' && this.lethalAdjacent(view, otherOf(you)) ? otherOf(you) : you;
     // detonators and hex-appliers converge on the same pile (the co-op axis)
     const target =
       (text.includes('detonate') && hexed) ||
       (text.includes("'hex'") && hexed && hexed.hex > 0 && hexed) ||
-      targetable.find((e) => e.boundTo === you) ||
+      targetable.find((e) => e.boundTo === protectSeat) ||
       targetable[0];
     return {
       type: 'STAGE_CARD', player: you, cardInstanceId: pick.id,
@@ -493,20 +519,28 @@ export class BotPolicy {
     if (view.thread < cost + 2) return false; // never spend into fray range
     if (this.mode !== 'solo' || view.thread - cost >= 5) return true;
     if (kind === 'pulse') return false;
-    const me = view.players[view.you];
+    return this.lethalAdjacent(view, view.you);
+  }
+
+  /** The lethal-adjacent read (S15.2A form), per SEAT: hp minus unmitigated
+   *  incoming below 25% of maxHp. Factored out of maySpend (S19.4) so
+   *  partner-protective targeting reuses the exact same read — same math,
+   *  same intent kinds, same pierce split. */
+  private lethalAdjacent(view: BotView, seat: PlayerId): boolean {
+    const p = view.players[seat];
     // S15.2A: pierce damage bypasses block — split it out of the mitigated sum
     let incoming = 0;
     let pierceIncoming = 0;
     for (const e of view.combat!.enemies) {
       // S10a read_chain counts as a threat (its no-resonance branch is ×2 —
       // read conservatively as one hit here, same as `times` elsewhere)
-      if (!(e.hp > 0 && e.boundTo === view.you
+      if (!(e.hp > 0 && e.boundTo === seat
         && (e.intent.kind.startsWith('attack') || e.intent.kind === 'read_chain'))) continue;
       const raw = 'amount' in e.intent ? e.intent.amount : 'base' in e.intent ? e.intent.base : 0;
       if (e.intent.kind === 'attack_pierce') pierceIncoming += raw + e.strength;
       else incoming += raw + e.strength;
     }
-    return me.hp - pierceIncoming - Math.max(0, incoming - me.block) < me.maxHp * 0.25; // lethal-adjacent
+    return p.hp - pierceIncoming - Math.max(0, incoming - p.block) < p.maxHp * 0.25; // lethal-adjacent
   }
 
   /** S14.2 (B24, SIM-ONLY): Steady had literally never been spent by a bot —
