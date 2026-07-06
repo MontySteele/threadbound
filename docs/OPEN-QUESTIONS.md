@@ -778,6 +778,12 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     all evidence, levers, and instrument needs: docs/S12-CARD-ECONOMY-
     BRIEF.md. S11.10 gate 2 defers to re-anchor after S12; TB_KNOTWORK
     stays default-off meanwhile. **CLOSED into S12.**
+    **S20.1 (2026-07-06): the default-off rider is SUPERSEDED** — the
+    ruling predated S15 ("the braid is the shipped game") and S18/OQ#65
+    (lane topology unbanded). TB_KNOTWORK, TB_RITES, and TB_TRACKS are
+    now the GLOBAL DEFAULT; flag-off bot runs are SUNSET; `=0` escapes
+    remain for archaeology only (README table; the S20-R1 re-bank is
+    the successor anchor set).
     DESIGNER HYPOTHESIS (2026-07-04, supersedes the quota amendment as
     the first lever): the inflation may indict the CARD-REWARD economy,
     not the fight count — a pair that routes around combat should do
@@ -844,6 +850,13 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     REPORTED-not-banded (the fallback lane generator; its anchors are
     banked in docs/S18-STATUS.md Part 8 for delta reads). Instrument
     change landed in sim.ts with the ruling. **CLOSED as re-derived.**
+    **S20.1 (2026-07-06), the lane question SHARPENS:** with the canon
+    flip the lane generator is now explicit-only dead config — no
+    default path reaches it, no battery is owed on it, and its anchors
+    are archaeology. Its DELETION is the natural next ruling; NOT taken
+    in S20 (engine deletion is out of this sprint's scope beyond the
+    flip itself). The 45–55 braid band this entry derived is itself
+    superseded on the new canon — see OQ#70.
 
 66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
     philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%
@@ -865,3 +878,42 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     binding half (the S3 thesis's cross-player signal); thread/combat
     becomes a REPORTED texture row.** Anchors for the reported row banked
     in docs/S18-STATUS.md Part 8. **CLOSED as re-derived.**
+
+## S20 First Impressions (2026-07-06, docs/S20-STATUS.md carries the evidence)
+
+68. **Knot contact floor (braid elites are bypassable by design).**
+    The S11.8 comment is explicit: bypassing a knot continues your
+    strand — the crossing is the elite's reward, so a pair CAN route an
+    act with zero elite contact. **RULED (2026-07-06): WORKING AS
+    DESIGNED today; PARKED for the human read.** Free telemetry
+    instrument already on the board: knot take-rate (map.knotsCut /
+    eliteFights kill-order rows). The S11.11-1 "crossings stay scarce"
+    pending row adjudicates with it at the same session. **PARKED.**
+
+69. **Pulse legality read the UNGROWN def (S20.1 tracks-on audit,
+    stop-and-report fired).** A mutated rite echo whose only Link is
+    tier-granted (S9d growth) was a Pulse target everywhere that uses
+    grownDef — resolution effects, client preview, bot policy — but the
+    reducer's legality assert and computeForcedLinks read the ungrown
+    effectiveDef: fleet livelock on 2–4% of rites-on runs, a spurious
+    "no Link to force" for humans, a silenced solo partner. The
+    pre-approved F-fallback did NOT dodge it (rites-only batteries
+    stalled too). **RULED (2026-07-06): align the Pulse machinery on
+    grownDef** (reducer legality + computeForcedLinks; regression test
+    pins it). Byte-invisible to the rites-off canon (S19 parity PASS).
+    **RESIDUAL, FILED:** computeLinksFired still reads the ungrown def,
+    so a mutated grower's tier link fires only when FORCED, never
+    naturally — a consistent rule, but worth an explicit ruling at the
+    next design session. **CLOSED as ruled; residual OPEN.**
+
+70. **Band re-derivation owed on the S20-R1 board (re-bank re-read,
+    stop-and-report fired).** On the all-flags-on canon the board
+    floated up together (vv 67.1 / vb 69.7 / bb 76.2) with structure
+    intact (gate 2 +6.5 IN, knot ratio IN, link-fire lead IN, floors
+    IN). Three bands read OUT and **RULED (2026-07-06) convert to
+    REPORTED-not-banded** rather than silently re-derive: the S18-D3
+    vb 45–55 win band (69.7), the vb Hex-share 25–45 band (46.3), and
+    the B22 reclaim <25% band (57–64% — it measured rites-off fleets;
+    the S7.8 nudge now rides every canonical battery). Deriving fresh
+    bands on the S20-R1 anchor set is the NEXT DESIGN SESSION's first
+    instrument item. **OPEN — owed a session.**
