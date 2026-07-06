@@ -12,6 +12,14 @@ import WebSocket from 'ws';
 import { initialState } from '@threadbound/engine';
 import { GameServer, GameServerOptions, Room, clientIp, proxyTrustFromEnv } from '../src/lib';
 
+// S20.1 suite audit: the drain test walks a run to the MAP and asserts the
+// phase — a flag-off read (rites opens on the vestry). The flags default ON
+// now; this file's servers assert lifecycle mechanics, so the flag-off
+// baseline is pinned explicitly, not assumed.
+process.env.TB_RITES = '0';
+process.env.TB_TRACKS = '0';
+process.env.TB_KNOTWORK = '0';
+
 const servers: GameServer[] = [];
 const clients: Client[] = [];
 
