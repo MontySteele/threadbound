@@ -1004,6 +1004,18 @@ const STRAND_HUE: Record<string, string> = {
   power: 'color-mix(in srgb, var(--p2) 60%, #d69b62)',
 };
 
+/** live window dims — the braid sizes itself to the screen it's given
+ *  (designer 2026-07-06: fill the screen, bigger type and icons) */
+function useViewport(): [number, number] {
+  const [dims, setDims] = useState<[number, number]>([window.innerWidth, window.innerHeight]);
+  useEffect(() => {
+    const on = () => setDims([window.innerWidth, window.innerHeight]);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return dims;
+}
+
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const you = state.you;
   const map = state.map;
@@ -1023,8 +1035,18 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     : [];
   const below = (layer: number): number => crossings.filter((c) => c < layer).length;
 
-  const COL = braid ? 196 : 168;
-  const ROW = 96;
+  // ---- geometry rides the viewport (designer 2026-07-06): the braid fills
+  // the width the rail leaves it and the height under the header, clamped so
+  // small screens keep the S20.3 shipped numbers as their floor ------------
+  const [vw, vh] = useViewport();
+  const availW = Math.max(560, vw - 300 /* rail */ - 72);
+  const availH = Math.max(540, vh - 250 /* header + title + picks */);
+  const lanes = braid ? 3.4 : Math.max(...laneCounts.values());
+  const COL = Math.round(Math.min(braid ? 330 : 290, Math.max(braid ? 196 : 168, availW / lanes)));
+  const ROW = Math.round(Math.min(170, Math.max(96, availH / layerCount)));
+  // icons and type ride the geometry — one knob, so nothing drifts apart
+  const scale = Math.min(COL / (braid ? 196 : 168), ROW / 96);
+  const sz = (n: number): number => Math.round(n * scale);
   const W = braid ? Math.round(3.4 * COL) : Math.max(...laneCounts.values()) * COL;
   const H = layerCount * ROW;
   const xC = W / 2;
@@ -1126,7 +1148,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     (warpSegs[strand] ?? []).filter((_, i) => i === layer - 1 || i === layer);
 
   return (
-    <div className="center">
+    <div className="center map-center">
       <h2>{ACT_NAME[map.act]}</h2>
       <p className="muted">
         Pick your next node — you must both pick the <i>same</i> one.
@@ -1142,7 +1164,8 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         </span>
       </p>
       <div className="map-scroll">
-      <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`} style={{ width: W, height: H }}>
+      <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`}
+        style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
           {/* the warps: continuous threads, crossing at the knots */}
           {braid && (['truth', 'power'] as const).map((strand) => (
@@ -1222,7 +1245,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             >
               {medallion ? (
                 <NodeMedallion kind={n.kind as NodeKindId} variant={n.variant as 'toll' | 'covet' | undefined}
-                  act={map.act as 1 | 2 | 3} size={n.kind === 'boss' ? 66 : n.kind === 'elite' ? 58 : 50}
+                  act={map.act as 1 | 2 | 3} size={n.kind === 'boss' ? sz(66) : n.kind === 'elite' ? sz(58) : sz(50)}
                   className="node-medallion" />
               ) : (
                 <span>{NODE_ICON[n.kind]}</span>
@@ -1230,8 +1253,8 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               {/* the current pair stands ON the node */}
               {here && (
                 <span className="node-pair">
-                  <CharacterMark who={state.players.p1.character} size={22} />
-                  <CharacterMark who={state.botSeat === 'p2' ? 'witness' : state.players.p2.character} size={22} />
+                  <CharacterMark who={state.players.p1.character} size={sz(22)} />
+                  <CharacterMark who={state.botSeat === 'p2' ? 'witness' : state.players.p2.character} size={sz(22)} />
                 </span>
               )}
               <span className="node-word">{nodeName(n)}</span>

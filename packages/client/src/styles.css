@@ -2,7 +2,9 @@
 @import './theme.css';
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-ui); font-size: 15px; }
+body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-ui); font-size: 16px; }
+/* big screens earn bigger type (designer 2026-07-06: the UI ran too small) */
+@media (min-width: 1600px) { body { font-size: 17px; } }
 a { color: var(--thread); } /* S20.2: no browser-blue on the parchment */
 
 /* ---- per-act atmosphere (S2.2): CSS-only — gradient ground, parchment
@@ -37,12 +39,16 @@ input, select {
 }
 input[type='range'] { accent-color: var(--thread); }
 
-.app { max-width: 1240px; margin: 0 auto; padding: 8px 16px 24px; }
+.app { max-width: 1500px; margin: 0 auto; padding: 8px 16px 24px; }
 header { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding: 6px 0; font-size: 0.9em; align-items: center; }
 .title { letter-spacing: 0.3em; font-weight: bold; }
 .header-right { display: flex; gap: 10px; align-items: center; }
 .on { color: var(--good); } .off { color: var(--strike); }
 .center { max-width: 780px; margin: 26px auto; text-align: center; }
+/* the map screen breaks the reading-column cage — the braid gets the screen
+   (designer 2026-07-06); the header/picks text steps up with it */
+.center.map-center { max-width: none; margin: 16px auto; }
+.map-picks { font-size: 1.08em; }
 .home .panel { margin: 14px auto; }
 .home-sigils { display: flex; justify-content: center; align-items: center; gap: 20px; margin: 8px 0; }
 .panel { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 12px; margin: 8px 0; }
@@ -94,16 +100,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   box-shadow: inset 0 0 60px 18px #00000055;
 }
 .map-cords { position: absolute; inset: 0; }
+/* strokes ride the map's scale knob (--map-scale, set by MapView from the
+   viewport) so lines keep their weight when the braid grows */
 /* the warps: the two continuous strands (S20.3 item 1) */
-.warp { fill: none; stroke-width: 3; opacity: 0.6; }
-.warp-casing { fill: none; stroke: var(--ink); stroke-width: 11; opacity: 0.95; }
+.warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; }
+.warp-casing { fill: none; stroke: var(--ink); stroke-width: calc(11px * var(--map-scale, 1)); opacity: 0.95; }
 /* edges between strand positions: lighter thread segments; dashing is
    reserved for the unreachable (S20.3 items 1 & 4) */
-.map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: 1.4; }
-.map-cord.cord-live { stroke: var(--thread); stroke-width: 2.2; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
+.map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
+.map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
 .map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
-.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: 2.4; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
+.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
 .mapnode:disabled { opacity: 1; cursor: default; } /* scouting ahead must stay readable */
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
@@ -114,7 +122,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
    unreachable) reads on the medallion's ring. */
 .mapnode.medallion-node {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  padding: 2px 4px 4px; min-width: 76px; max-width: 150px;
+  padding: 2px 4px 4px;
+  min-width: calc(76px * var(--map-scale, 1)); max-width: calc(150px * var(--map-scale, 1));
   background: transparent; border: none; box-shadow: none;
 }
 .mapnode.medallion-node.can { border: none; box-shadow: none; }
@@ -151,9 +160,9 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
    sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
    you"). Italic + dim: it reads as knowledge, not as the node's name. */
 .map-scout {
-  display: block; font-size: 10.5px; font-style: italic; line-height: 1.25;
+  display: block; font-size: 0.7em; font-style: italic; line-height: 1.25;
   color: color-mix(in srgb, var(--thread) 70%, var(--text));
-  max-width: 150px; margin-top: 2px;
+  max-width: calc(150px * var(--map-scale, 1)); margin-top: 2px;
 }
 
 /* ---- enemies (B5) ---- */
@@ -616,6 +625,8 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 /* hint-family: teaching, not color — a marked, bordered form */
 .rail-line.rail-hint { border-left: 2px solid var(--thread); padding-left: 6px; font-style: normal; }
 .rail-hint-tag { color: var(--thread); }
+/* big screens: the rail widens with the rest of the UI */
+@media (min-width: 1600px) { .witness-rail { width: 320px; right: 14px; } }
 /* mobile: collapse to the latest line; tap to expand */
 @media (max-width: 700px) {
   .witness-rail { width: calc(100% - 16px); bottom: 40px; cursor: pointer; }

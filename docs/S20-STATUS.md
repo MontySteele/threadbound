@@ -303,5 +303,15 @@ parity instruments byte-identical after):
    `Log` takes `muteWitness`, set on the two screens that mount the
    rail — one voice, one place. The log keeps witness lines everywhere
    the rail is absent (rites, shop, summary epitaph untouched).
+3. **Scale pass (designer: too small, too much dead screen).** Base
+   type 15px → 16px (17px ≥1600px wide); `.app` cap 1240px → 1500px;
+   the map screen leaves the 780px reading column. The braid's
+   geometry now derives from the viewport — column and row spacing
+   fill the width the rail leaves and the height under the header,
+   clamped so the shipped S20.3 numbers stay the floor on small
+   screens — and one scale knob (`--map-scale`) carries medallion
+   sizes, captions, and stroke weights together so nothing drifts
+   apart. Mobile unchanged (clamps to the floor). A `-big.jpg` pair
+   (2000×1300, the designer's window class) joined the banked set.
 
 The banked screenshot set was retaken on the fixed build.
