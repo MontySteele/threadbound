@@ -821,7 +821,7 @@ export function printSoloReport(results: RunResult[]): void {
       `  pool ${key.padEnd(22)} size ${String(size).padStart(2)} | lines/run ${(fired / n).toFixed(2)} | ` +
       `runs touched ${runsWithAny}/${results.length} | EXHAUSTED in ${exhausted} runs` +
       (exhausted > 0 ? ` (median exhaust: act ${medianOf(exhaustActs)}, turn ${medianOf(exhaustTurns)})` : '') +
-      (key === 'solo_greeting' ? '  [client-drawn — engine never fires it]' : ''),
+      (key === 'solo_greeting' || key.startsWith('hint_') ? '  [client-drawn — engine never fires it]' : ''),
     );
   }
   console.log('exhaustion law: exhausted pools go silent (never echo) — an always-fire pool exhausting before the act-2 boss is the D5 sizing failure shape');

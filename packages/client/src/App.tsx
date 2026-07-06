@@ -416,6 +416,19 @@ function Settings({ net, solo, telemetryActive }: { net: Net; solo: boolean; tel
               </select>
             </label>
           )}
+          {solo && (
+            // S19.6 (D6): the Witness hint family — once-per-run, act-1-only
+            // teaching lines in the narrator's voice. Default ON (the
+            // tb_dmgPreview pattern); label is Part 7 row St-67.
+            <label>
+              witness hints
+              <input type="checkbox" checked={localStorage.getItem('tb_witnessHints') !== '0'}
+                onChange={(e) => {
+                  localStorage.setItem('tb_witnessHints', e.target.checked ? '1' : '0');
+                  tick((n) => n + 1);
+                }} />
+            </label>
+          )}
         </div>
       )}
     </span>
