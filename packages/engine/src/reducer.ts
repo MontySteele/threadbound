@@ -969,7 +969,18 @@ function addCardToDeck(state: GameState, pid: PlayerId, defId: string): void {
   const p = state.players[pid];
   assert(CARDS[defId], 'unknown card');
   assert(!CARDS[defId].starterOnly, 'starter cards cannot be acquired');
-  p.deck.push({ instanceId: `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`, defId });
+  // S16.0 correctness fix: the deck-length id scheme could COLLIDE — take a
+  // card, spend the free pick-removal (length returns to L), then covet the
+  // same defId at the same screen → two cards sharing one instanceId. In
+  // combat the twin is unstageable ("already staged" forever); on the wire
+  // that surfaced as the S15-era 0.09% run timeouts, and the deterministic
+  // path exposed it as a hard stall. De-dup with an rng-free suffix so only
+  // the colliding card's id changes (every pre-S16 non-colliding id is
+  // byte-identical; goldens hold).
+  const base = `${pid}_${defId}_${p.deck.length}_a${state.map.act}n${state.map.position}`;
+  let instanceId = base;
+  for (let k = 2; p.deck.some((c) => c.instanceId === instanceId); k++) instanceId = `${base}_${k}`;
+  p.deck.push({ instanceId, defId });
   economyCount(state, state.telemetry.economy.deckAddsByAct, pid); // S13.1c
   cardCell(state.telemetry.cards.picks, defId)[pid]++; // S14.1 (B23)
   // S13.4 (D5): the Witness NAMES a rare the first time it joins a deck —

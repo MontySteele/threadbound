@@ -721,11 +721,15 @@ async function main(): Promise<void> {
   }
 
   if (child) {
-    // machine rows only — the parent owns the canonical battery output
+    // machine rows only — the parent owns the canonical battery output.
+    // stdout here is a PIPE: writes are async, and process.exit() would
+    // truncate them mid-row (the bug read as "shards losing runs") — flush
+    // first, then exit.
     for (const p of played.sort((a, b) => a.run - b.run)) {
       process.stdout.write(`${RESULT_MARK}${JSON.stringify(p)}\n`);
     }
-    process.exit(process.exitCode ?? 0);
+    process.stdout.write('', () => process.exit(process.exitCode ?? 0));
+    return;
   }
 
   // canonical pooled order: by run index — makes the pooled summary (and, on
@@ -734,7 +738,11 @@ async function main(): Promise<void> {
   played.sort((a, b) => a.run - b.run);
   if (SHARDS > 1) for (const p of played) console.log(runLine(p));
   printSummary(played.map((p) => p.result));
-  process.exit(process.exitCode ?? 0);
+  if (SOCKET) {
+    // the WS server may hold the loop open — flush stdout, then hard-exit
+    process.stdout.write('', () => process.exit(process.exitCode ?? 0));
+  }
+  // socket-free: no open handles — exit naturally so piped stdout drains
 }
 
 if (require.main === module) {
