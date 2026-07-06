@@ -118,3 +118,51 @@ the random-walk covenant goldens moved — regenerated IN the balance
 commit per the fixture's own law (S16.3.5 precedent); the S18
 charter's "own commits" is satisfied by this commit carrying ONLY
 the ruled levers + their regen. Suite 429/429 green after regen.
+
+## Part 3 — S18.3 difficulty (D3)
+
+Probe matrix as enumerated, paired vs the post-D2 build (n=2000
+same-seed; act-1 death rates untouched by (i)/(ii) **by
+construction** — both levers live past act 1):
+
+| row | vv | vb | bb | gate 2 | boss-act lethality vv/vb/bb | vv act-1 |
+|---|---|---|---|---|---|---|
+| post-D2 baseline | 48.6 | 65.0 | 71.7 | +6.7 | 0.9 / 1.6 / 0.8% | 30.3% |
+| (i) second-intent rung (below) | 46.2 (−2.5) | 55.5 (−9.4) | 58.6 (−13.0) | +3.1 | 5.5 / 16.0 / 18.8% | 30.3% |
+| (ii) acts-2/3 HP ×1.1 fold | 46.6 (−2.0) | 57.9 (−7.1) | 63.2 (−8.4) | +5.3 | ~1% | 30.3% |
+| (iii) rest-heal 30→25% | 45.1 (−3.5) | 59.3 (−5.7) | 64.0 (−7.7) | +4.7 | ~1% | **32.7% — bleeds into act 1** |
+| **(i)+(ii) — RATIFIED** | **44.0** | **48.6** | **48.8** | **+0.2** | **6.1 / 17.6 / 23.8%** | **30.3%** |
+
+**The authored act-3 tooth (i), as landed:** while the Thread is
+severed — the boss's own 50%-HP mechanic — **The Unraveled acts twice
+per enemy phase.** Two extra boss actions per fight, arriving
+mid-fight, exactly when links are dead and the pair must hold the
+Covenant's solo floor. Deterministic, learnable, zero new rolls; the
+attribution read is clean (P-i discordants near-purely downward: bb
+1↑/261↓, acts 1–2 rows unchanged). No new comps were authored — the
+rung rides the existing boss — so no encounter sign-off row is owed;
+the strings are the mechanicLine clause and the log line, ratified
+below. (iv) was not spent: (ii) IS the act-scoped sizing dose, and
+the global env scales stay untouched as shipped anchors.
+
+**Ratification (designer, 2026-07-06): (i)+(ii) land; target band
+vb 45–55 at A0 with act-3 lethality visibly nonzero — MET** (vb 48.6
+mid-band; the boss act now takes 6/18/24% of vv/vb/bb arrivals; the
+run-level board reads 44.0 / 48.6 / 48.8 — the three pairings land
+within 5 points of each other, vv hardest per the ruled identity
+frame). On the record, the costs the ruling priced in: bb's finale
+is the hottest read on the board (23.8%), and the (i)+(ii)
+interaction is superlinear on bb (−22.9 vs −21.4 naive sum) — the
+fatter boss holds the sever window longer. Rest-heal untouched
+((iii) rejected: it taxes the act-1 floor D2 just rebuilt).
+
+**A3 placement fold-in** (the S16 Part 6 carry — bb read FLAT at
+A3): A2/A3 rows on the final build, banked in Part 8's table. The
+mechanicLine string is sim-neutral (verified byte-identical n=100).
+
+### Part 7 strings — the D3 rows (RATIFIED, designer 2026-07-06)
+
+| # | string | text | status |
+|---|---|---|---|
+| St-5 | the_unraveled mechanicLine | "at half its blood it severs the Thread — two turns with nothing between you, and the cut frees both its hands" | RATIFIED — literally true (the double-act runs exactly while the sever holds) |
+| St-6 | enemy-phase log line | "the cut frees both its hands — it acts again" | RATIFIED — emitted only on the double-act |

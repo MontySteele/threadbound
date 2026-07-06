@@ -270,7 +270,10 @@ export const M2_ENEMIES: EnemyDef[] = [
     unraveled: { severTurns: 2 },
     // S14.3 (B9) backfill, RATIFIED 2026-07-05 (D4). Kit-level
     // line only — the face liveMechanics stay shrine-earned (S6.5).
-    mechanicLine: 'at half its blood it severs the Thread — two turns with nothing between you',
+    // S18.3 (D3-i, RATIFIED 2026-07-06): the second-intent clause joins the
+    // line with the rung it names — literally true, the double-act runs
+    // exactly while the sever holds (combat.ts enemy phase).
+    mechanicLine: 'at half its blood it severs the Thread — two turns with nothing between you, and the cut frees both its hands',
     script: [
       { kind: 'attack_drain', amount: 10, threadDrain: 2 },
       { kind: 'attack', amount: 16 },
