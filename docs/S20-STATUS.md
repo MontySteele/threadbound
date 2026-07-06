@@ -350,5 +350,14 @@ parity instruments byte-identical after):
    stay inline as scene text: the lobby greeting (pre-run; the title
    is never narrated per S20.2) and the Summary epitaph (post-run).
    `reward-rail-desktop.jpg` joined the banked set as the reference.
+8. **Braids not taken lose their colored line** (designer finding:
+   mid-run, the full-strength warps through unreachable branches were
+   noise). A warp segment now draws only where the run HAS BEEN or
+   CAN STILL GO (both endpoints visited or reachable); everywhere
+   else the colored strand is hidden and the covered edges fall back
+   to the dashed dead cords, so the ghost topology stays readable
+   without the color. Pre-first-pick the whole loom is reachable, so
+   the pristine full braid is unchanged. `map-braid-midrun.jpg` is
+   the banked reference.
 
 The banked screenshot set was retaken on the fixed build.

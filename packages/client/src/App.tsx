@@ -1018,11 +1018,18 @@ function cubicsFrom(pts: Pt[]): { a: Pt; c1: Pt; c2: Pt; b: Pt }[] {
   return segs;
 }
 
-function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[]): string {
-  if (segs.length === 0) return '';
+/** Path for the segments — optionally only the `live` ones, emitted as
+ *  subpath runs (an M restarts wherever a hidden segment breaks the strand). */
+function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[], live?: boolean[]): string {
   const f = (n: number) => n.toFixed(1);
-  return `M ${f(segs[0].a.x)} ${f(segs[0].a.y)} ` +
-    segs.map((s) => `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)}`).join(' ');
+  let d = '';
+  for (let i = 0; i < segs.length; i++) {
+    if (live && !live[i]) continue;
+    const s = segs[i];
+    if (!(i > 0 && (!live || live[i - 1]))) d += `M ${f(s.a.x)} ${f(s.a.y)} `;
+    d += `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)} `;
+  }
+  return d.trim();
 }
 
 /** stable per-run key (the Hints.tsx construction): the act map layout is a
@@ -1152,7 +1159,12 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 
   // ---- the warps (braid only): one waypoint per layer per strand ----------
   const warpSegs: Record<string, { a: Pt; c1: Pt; c2: Pt; b: Pt }[]> = {};
-  // edges the warps already draw — a plain cord there would put TWO lines
+  // designer 2026-07-06: a strand keeps its COLOR only where the run has
+  // been or can still go — braids not taken lose the colored line, and
+  // their edges fall back to the dashed dead cords below
+  const warpLive: Record<string, boolean[]> = {};
+  const onLoom = (n: MapNode): boolean => visited.has(n.id) || reachable.has(n.id);
+  // edges the warps still draw — a plain cord there would put TWO lines
   // between the same rooms (designer, 2026-07-06: one thread per strand)
   const warpCovered = new Set<string>();
   if (braid) {
@@ -1176,15 +1188,18 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         }
       }
       warpSegs[strand] = cubicsFrom(waypoints.map(pos));
+      warpLive[strand] = [];
       for (let i = 0; i < waypoints.length - 1; i++) {
-        warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
+        const live = onLoom(waypoints[i]) && onLoom(waypoints[i + 1]);
+        warpLive[strand].push(live);
+        if (live) warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
       }
     }
   }
   // over/under alternates per knot: even crossings carry truth over
   const overAt = (k: number): string => (k % 2 === 0 ? 'truth' : 'power');
   const knotSegs = (strand: string, layer: number) =>
-    (warpSegs[strand] ?? []).filter((_, i) => i === layer - 1 || i === layer);
+    (warpSegs[strand] ?? []).filter((_, i) => (i === layer - 1 || i === layer) && (warpLive[strand]?.[i] ?? true));
 
   return (
     <div className="center map-center">
@@ -1206,11 +1221,15 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
-          {/* the warps: continuous threads, crossing at the knots */}
-          {braid && (['truth', 'power'] as const).map((strand) => (
-            <path key={`warp-${strand}`} className="warp" d={pathOf(warpSegs[strand])}
-              style={{ stroke: STRAND_HUE[strand] }} />
-          ))}
+          {/* the warps: continuous threads, crossing at the knots — drawn
+              only where the run has been or can still go */}
+          {braid && (['truth', 'power'] as const).map((strand) => {
+            const d = pathOf(warpSegs[strand], warpLive[strand]);
+            return d ? (
+              <path key={`warp-${strand}`} className="warp" d={d}
+                style={{ stroke: STRAND_HUE[strand] }} />
+            ) : null;
+          })}
           {/* the crossings: the over-strand re-draws with an ink casing so
               one thread visibly passes OVER the other at every knot */}
           {braid && crossings.map((layer, k) => {
