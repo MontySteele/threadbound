@@ -9,7 +9,7 @@ this doc is the enumerate+propose; nothing is final until you sign.
 
 - **S8.1 (rite redesign):** landed during S7 — the mid-sprint re-ruling
   arrived before any passive death-rite existed, so the card design went
-  in directly. See docs/S7-RITES-STATUS.md.
+  in directly. See docs/archive/S7-RITES-STATUS.md.
 - **S8.2 — the fourth question + pools:** `q_came` (paid / compelled /
   volunteered / fleeing), q_what 2→4 (+abandoned mid-rite, +consumed by a
   starving part), q_why 3→5 (+mercy, +unity), q_who held at 2 (bubble
@@ -40,10 +40,10 @@ this doc is the enumerate+propose; nothing is final until you sign.
   answers carry a face.
 - **S8.6 — mutation renames:** 21 renames toward the birth column
   (+8 rite-card mutations already there = 29/117 ≈ 1 in 4), weighted to
-  renewal effects; full old→new→rationale table in docs/content-audit.md.
+  renewal effects; full old→new→rationale table in docs/archive/content-audit.md.
 - **S8.7 — the Witness pass:** never-lies audit over ~60 lines with all
   ghost-biography lines rewritten to repair-instinct canon (audit table
-  in docs/content-audit.md); codex-keyed voice registers (0/30/70
+  in docs/archive/content-audit.md); codex-keyed voice registers (0/30/70
   provisional; sardonic pools go quiet at 70) with the §5b sacrament
   fall-rebind quote gated at 70; new pools for death-rite pick and
   birth-rite arrival ({rite} substitution); `codexPct` plumbed

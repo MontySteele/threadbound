@@ -150,15 +150,17 @@ function runKeyOf(s: ClientState): number {
   return h >>> 0;
 }
 
-export function WitnessHints({ state }: { state: ClientState }): JSX.Element | null {
-  const [line, setLine] = useState<string | null>(null);
+/** S20.4: hint lines no longer pop — they land in the Witness rail (App
+ *  owns the rail store; this component keeps the trigger machinery: solo
+ *  only, once-per-run, act-1-only, toggle-gated, inert until the Part 7
+ *  strings are signed). Renders nothing itself. */
+export function WitnessHints({ state, onLine }: { state: ClientState; onLine: (line: string) => void }): null {
   const prevRef = useRef<ClientState | null>(null);
   const runRef = useRef<{ run: number; seen: string[] } | null>(null);
 
   useEffect(() => {
     const prev = prevRef.current;
     prevRef.current = state;
-    if (line) return;
     if (!state.botSeat) return; // the Witness coaches only when it plays (solo)
     if (localStorage.getItem('tb_witnessHints') === '0') return; // toggle, default ON
     if (state.phase === 'lobby' || state.map.act !== 1) return; // act-1-only
@@ -177,34 +179,12 @@ export function WitnessHints({ state }: { state: ClientState }): JSX.Element | n
       if (!fires) continue;
       runRef.current.seen.push(hint.pool);
       localStorage.setItem(WH_KEY, JSON.stringify(runRef.current));
-      setLine(lines[run % lines.length]); // variety across runs, not within
+      onLine(lines[run % lines.length]); // variety across runs, not within
       return;
     }
-  }, [state, line]);
+  }, [state, onLine]);
 
-  useEffect(() => {
-    if (!line) return;
-    const dismiss = () => setLine(null);
-    const t = setTimeout(() => {
-      window.addEventListener('pointerdown', dismiss, { once: true });
-      window.addEventListener('keydown', dismiss, { once: true });
-      window.addEventListener('gp-input', dismiss, { once: true });
-    }, 600);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener('pointerdown', dismiss);
-      window.removeEventListener('keydown', dismiss);
-      window.removeEventListener('gp-input', dismiss);
-    };
-  }, [line]);
-
-  if (!line) return null;
-  return (
-    <div className="hint-pop">
-      <span className="hint-pop-tag">◆</span> THE WITNESS: “{line}”
-      <span className="muted"> — any input dismisses</span>
-    </div>
-  );
+  return null;
 }
 
 export function Hints({ state }: { state: ClientState }): JSX.Element | null {

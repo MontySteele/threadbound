@@ -16,6 +16,12 @@ import { Bot } from '../src/bot';
 
 process.env.PORT = '0';
 process.env.PERSIST = '';
+// S20.1 suite audit: these tests assert solo-room lifecycle MECHANICS
+// (persist/restore, concede, waiver) against the flag-off baseline — the
+// raw-Client harnesses never pick a vestment. Pinned, not assumed.
+process.env.TB_RITES = '0';
+process.env.TB_TRACKS = '0';
+process.env.TB_KNOTWORK = '0';
 
 /** Buffers every incoming message so awaited matches can never be missed. */
 class Client {

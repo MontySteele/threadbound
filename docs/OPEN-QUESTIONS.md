@@ -1,7 +1,7 @@
 # Open Questions for the Designer
 
 Conservative-reading + log protocol (working agreement). M1 entries were ruled on
-2026-06 — rulings live in `docs/threadbound_M2_plan.md` Part A and are folded into
+2026-06 — rulings live in `docs/archive/threadbound_M2_plan.md` Part A and are folded into
 the design doc (§14 changelog). This file now carries the **M2 judgment calls**.
 
 ## Resolved (designer rulings, 2026-06)
@@ -235,7 +235,7 @@ confirmed. OQ#12/#13 (link rate, difficulty) → Part C gates, all passing.
     Implemented S4.3 (§14.13).
 
 28. **S3.5 battery findings** (2026-06-12, full data in
-    `docs/S3-BALANCE-REPORT.md`): at the 1.5/1.35 anchor, vb resonates more
+    `docs/archive/S3-BALANCE-REPORT.md`): at the 1.5/1.35 anchor, vb resonates more
     than either mirror (4.13/combat vs 3.36/3.21 — links are not too
     generic), but the vess mirror out-WINS vb 32% vs 26% on the back of the
     hex engine (84.7% Hex share, 13.1 stacks/burst, Worn Knife = 26% of all
@@ -388,7 +388,7 @@ working as intended, not a missing-content bug.
     replay — §11-clean by construction. *Implementation record (S16):
     verified ALREADY LIVE at `22a4061` (hpDelta/displayHp offsets, skip
     snap, enemy bars + player stats both consume them) — the ledger had
-    never been closed; it is now. docs/S16-STATUS.md Part 4.1. CLOSED.*
+    never been closed; it is now. docs/archive/S16-STATUS.md Part 4.1. CLOSED.*
 
 38. **Discard pile is often empty, so Reclaim has nothing to grab** (report).
     Fixed draw-of-5 (§14.7) keeps hands full and discards thin early in a
@@ -434,14 +434,14 @@ working as intended, not a missing-content bug.
     **OQ#41a RULED (2026-07-05, S16-D8): relic text names whose resource it
     grants**, adopted as a text CONVENTION. The affected relic retexts are
     strings: enumerate→propose→sign-off table at implementation
-    (docs/S16-STATUS.md, the D8 table — STALLS there until each string is
+    (docs/archive/S16-STATUS.md, the D8 table — STALLS there until each string is
     signed). Effects untouched; OQ#41b (which relics become genuinely
     co-op) stays content-pass material, not this sprint.
     **RE-RULED (2026-07-06): the stall resolved toward presentation, not
     strings** — descriptions stay as written; the RelicBar now shows only
     relics the viewer benefits from (own relics + the partner's `coop:
     true` relics). The retext table is superseded, preserved for the
-    record in docs/S16-STATUS.md. CLOSED.
+    record in docs/archive/S16-STATUS.md. CLOSED.
     **OQ#41b RULED (2026-07-06, S18 6c): PARKED to the content pass, as
     already scoped** — which relics become genuinely co-op is content-pass
     material; no S18 work.
@@ -454,7 +454,7 @@ working as intended, not a missing-content bug.
     Trivial either way once decided — left as a judgment call, not a bug.
 
     **OQ#42 RULED (2026-07-04): drop the button** — Onward's auto-pass is
-    the decline. Rides S14.3 (docs/threadbound_sprint_S14_instruments_reanchor.md).
+    the decline. Rides S14.3 (docs/archive/threadbound_sprint_S14_instruments_reanchor.md).
 
 43. **Hex >> Momentum, "especially since you can repeatedly double it"**
     (designer, live). Echoes OQ#28 (the vess-mirror hex engine: Saturate's
@@ -680,8 +680,8 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
 54. **S9d grower rates retuned on first battery** (Knell per 2→3,
     Pyre-Brand 4→6, Mourner's 10→15) — the signed table read vb +8 /
     vv +11 vs post-S9c, outside the ±6 gate; retuned reads +7/+6/+4.
-    Original rows in docs/threadbound_sprint_S9d.md §S9d.1; evidence in
-    docs/S9B-S11-STATUS.md. **RULED (2026-07-04): retune RATIFIED**
+    Original rows in docs/archive/threadbound_sprint_S9d.md §S9d.1; evidence in
+    docs/archive/S9B-S11-STATUS.md. **RULED (2026-07-04): retune RATIFIED**
     (vb's +7 read accepted as band-edge, pooled with escalation landing).
     Votive's tier shape (S9d.0-4) stands by the same ruling's default.
 
@@ -698,7 +698,7 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     open item moves to the S11.9 work queue, not this list.
     *S16 pointer: the composition lever (S16-D4, the knot sub-pool) landed —
     probe-leg ladder 1.09 → ~1.26; the ≥2 gate's stop-and-report decision
-    packet is in docs/S16-STATUS.md.*
+    packet is in docs/archive/S16-STATUS.md.*
     **RULED (2026-07-06, S18-D4): the ≥2 gate is RE-DERIVED — knot-2/knot-1
     pair-HP ratio ≥ 1.2 on the probe leg, a regression floor.** Braid paths
     meet at most TWO knots per act by construction; even a sub-pool of one
@@ -727,7 +727,7 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     byte-reproducibility pinned), the re-anchor banked, and the offset's
     MECHANISM was identified — event-loop contention makes bots act on
     stale views, a one-directional misplay tax that scales with machine
-    load. docs/S16-STATUS.md carries the parity bridge.
+    load. docs/archive/S16-STATUS.md carries the parity bridge.
     **CLOSED AS SUPERSEDED (2026-07-06, S18 6d), with verification.** A
     fresh container reproduced the S17 §12 exit board to the exact
     win-count on all three n=2000 rows (721/1118/1433 of 2000), repeat
@@ -735,7 +735,7 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     byte-compare equal at n=100 (mutations never fire under bot play).
     The offset was the WS-contention era; the socket-free path is
     deterministic per seed ACROSS environments. Evidence:
-    docs/S18-STATUS.md Part 6.
+    docs/archive/S18-STATUS.md Part 6.
 
 57. **Instrument gaps named**: "questions provable/run" (S11.3 target
     band) has no harness calculation — distinctEliminations is the proxy;
@@ -778,6 +778,12 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     all evidence, levers, and instrument needs: docs/S12-CARD-ECONOMY-
     BRIEF.md. S11.10 gate 2 defers to re-anchor after S12; TB_KNOTWORK
     stays default-off meanwhile. **CLOSED into S12.**
+    **S20.1 (2026-07-06): the default-off rider is SUPERSEDED** — the
+    ruling predated S15 ("the braid is the shipped game") and S18/OQ#65
+    (lane topology unbanded). TB_KNOTWORK, TB_RITES, and TB_TRACKS are
+    now the GLOBAL DEFAULT; flag-off bot runs are SUNSET; `=0` escapes
+    remain for archaeology only (README table; the S20-R1 re-bank is
+    the successor anchor set).
     DESIGNER HYPOTHESIS (2026-07-04, supersedes the quota amendment as
     the first lever): the inflation may indict the CARD-REWARD economy,
     not the fight count — a pair that routes around combat should do
@@ -792,7 +798,7 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     junk, so card value reads LOW on bot evidence — a card-economy
     rebalance should be sized against playtest reads too.
 
-## S18 Tying Off (2026-07-06, docs/S18-STATUS.md carries the evidence)
+## S18 Tying Off (2026-07-06, docs/archive/S18-STATUS.md carries the evidence)
 
 60. **gravebloom vs the S13.2 flat-hex-echo law (the S17.2 reverted
     buff).** **RULED (2026-07-06, S18-D5): THE LAW HOLDS.** Hex dominance
@@ -842,8 +848,15 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     band binds vb at A0 on the BRAID at 45–55 (the S18-D3 target band;
     currently 48.6, mid-band PASS). Default-topology rows become
     REPORTED-not-banded (the fallback lane generator; its anchors are
-    banked in docs/S18-STATUS.md Part 8 for delta reads). Instrument
+    banked in docs/archive/S18-STATUS.md Part 8 for delta reads). Instrument
     change landed in sim.ts with the ruling. **CLOSED as re-derived.**
+    **S20.1 (2026-07-06), the lane question SHARPENS:** with the canon
+    flip the lane generator is now explicit-only dead config — no
+    default path reaches it, no battery is owed on it, and its anchors
+    are archaeology. Its DELETION is the natural next ruling; NOT taken
+    in S20 (engine deletion is out of this sprint's scope beyond the
+    flip itself). The 45–55 braid band this entry derived is itself
+    superseded on the new canon — see OQ#70.
 
 66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
     philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%
@@ -864,4 +877,43 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     **RULED (2026-07-06): 1e RE-DERIVED — the link-fire lead is the
     binding half (the S3 thesis's cross-player signal); thread/combat
     becomes a REPORTED texture row.** Anchors for the reported row banked
-    in docs/S18-STATUS.md Part 8. **CLOSED as re-derived.**
+    in docs/archive/S18-STATUS.md Part 8. **CLOSED as re-derived.**
+
+## S20 First Impressions (2026-07-06, docs/S20-STATUS.md carries the evidence)
+
+68. **Knot contact floor (braid elites are bypassable by design).**
+    The S11.8 comment is explicit: bypassing a knot continues your
+    strand — the crossing is the elite's reward, so a pair CAN route an
+    act with zero elite contact. **RULED (2026-07-06): WORKING AS
+    DESIGNED today; PARKED for the human read.** Free telemetry
+    instrument already on the board: knot take-rate (map.knotsCut /
+    eliteFights kill-order rows). The S11.11-1 "crossings stay scarce"
+    pending row adjudicates with it at the same session. **PARKED.**
+
+69. **Pulse legality read the UNGROWN def (S20.1 tracks-on audit,
+    stop-and-report fired).** A mutated rite echo whose only Link is
+    tier-granted (S9d growth) was a Pulse target everywhere that uses
+    grownDef — resolution effects, client preview, bot policy — but the
+    reducer's legality assert and computeForcedLinks read the ungrown
+    effectiveDef: fleet livelock on 2–4% of rites-on runs, a spurious
+    "no Link to force" for humans, a silenced solo partner. The
+    pre-approved F-fallback did NOT dodge it (rites-only batteries
+    stalled too). **RULED (2026-07-06): align the Pulse machinery on
+    grownDef** (reducer legality + computeForcedLinks; regression test
+    pins it). Byte-invisible to the rites-off canon (S19 parity PASS).
+    **RESIDUAL, FILED:** computeLinksFired still reads the ungrown def,
+    so a mutated grower's tier link fires only when FORCED, never
+    naturally — a consistent rule, but worth an explicit ruling at the
+    next design session. **CLOSED as ruled; residual OPEN.**
+
+70. **Band re-derivation owed on the S20-R1 board (re-bank re-read,
+    stop-and-report fired).** On the all-flags-on canon the board
+    floated up together (vv 67.1 / vb 69.7 / bb 76.2) with structure
+    intact (gate 2 +6.5 IN, knot ratio IN, link-fire lead IN, floors
+    IN). Three bands read OUT and **RULED (2026-07-06) convert to
+    REPORTED-not-banded** rather than silently re-derive: the S18-D3
+    vb 45–55 win band (69.7), the vb Hex-share 25–45 band (46.3), and
+    the B22 reclaim <25% band (57–64% — it measured rites-off fleets;
+    the S7.8 nudge now rides every canonical battery). Deriving fresh
+    bands on the S20-R1 anchor set is the NEXT DESIGN SESSION's first
+    instrument item. **OPEN — owed a session.**

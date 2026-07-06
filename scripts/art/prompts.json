@@ -115,5 +115,9 @@
   "character_witness": {
     "subject": "The Witness — a long-dead spirit bound to a thread, a disdainful long-suffering steward; pale lavender accent",
     "tier": "character"
+  },
+  "title_splash": {
+    "subject": "Two spirit-binders at the mouth of the descent, seen from behind, a single luminous soul-thread strung between their wrists, the jammed funeral-machine's stair falling away into the dark below them — the game's thesis in one image; gold-thread accent",
+    "tier": "splash"
   }
 }

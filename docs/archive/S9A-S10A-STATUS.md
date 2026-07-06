@@ -1,6 +1,6 @@
 # S9a + S10a Status — Tonight's Stacked Build
 
-2026-07-02, `main`. Stages per docs/threadbound_tonight_s9a_s10a.md, each
+2026-07-02, `main`. Stages per docs/archive/threadbound_tonight_s9a_s10a.md, each
 tagged after its gates passed: comfort pass + bug fixes →
 `test-candidate-1/2` interleaved, S9a → `test-candidate-2`, S10a →
 `test-candidate-3`, battery + docs → `test-candidate-4`. Tomorrow's

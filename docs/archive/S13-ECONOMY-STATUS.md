@@ -154,12 +154,12 @@ review-sweep jitter class, now measured). Pooled: v2-vb 159/299 =
 noise.** The flip stands on D7's process and v2's measured behavior
 (dilution discipline, lever usage, take-rate shape, texture), not on
 a win-rate claim. Full accounting + the instrument rule proposal
-(pooled n≥200 for ±6-style gates): docs/S13-DIFFICULTY-REVIEW.md §0–1.
+(pooled n≥200 for ±6-style gates): docs/archive/S13-DIFFICULTY-REVIEW.md §0–1.
 
 ## Post-sprint (designer-ruled sequencing) — NOW RUN
 
 The difficulty re-evaluation ran on these batteries as ruled:
-**docs/S13-DIFFICULTY-REVIEW.md** (S13.6). Verdicts in brief: HP band
+**docs/archive/S13-DIFFICULTY-REVIEW.md** (S13.6). Verdicts in brief: HP band
 still 4–8 hot (pre-existing, unchanged by S13; band decision
 proposed); fight-price question ANSWERED — fights pay now (winners
 fight more in every leg; close it); S11.10 gate 2 re-anchored on the

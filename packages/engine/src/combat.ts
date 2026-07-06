@@ -389,7 +389,9 @@ export function computeForcedLinks(state: GameState, chain: ChainSlot[], fired: 
   );
   return chain.map((slot, i) => {
     if (fired[i] || !pulsed.has(slot.cardInstanceId)) return false;
-    return !!effectiveDef(mustFind(state, slot)).link;
+    // S20.1 (ruled): the GROWN def — a tier-granted link (S9d) is forceable,
+    // matching the reducer's legality read and the effects resolution fires
+    return !!grownDef(state, mustFind(state, slot), slot.owner).link;
   });
 }
 

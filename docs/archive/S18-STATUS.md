@@ -1,6 +1,6 @@
 # S18 status — Tying Off (implementation record)
 
-Sprint doc: `docs/threadbound_sprint_S18_tying_off.md` (the charter and
+Sprint doc: `docs/archive/threadbound_sprint_S18_tying_off.md` (the charter and
 the D-list live there; this file is the execution record). Designer
 kickoff 2026-07-06: the D-list recommendations ratified as proposed —
 "if there are no open questions, let's get to it." Probe-dependent

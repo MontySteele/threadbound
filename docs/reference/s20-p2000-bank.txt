@@ -1,0 +1,62 @@
+S20-R1 — the canonical anchor re-bank (sprint doc Part 1, item 4)
+==================================================================
+
+The S20.1 canon flip changed the anchor ENVIRONMENT: TB_RITES, TB_TRACKS,
+and TB_KNOTWORK are the global default, so the canonical battery command
+carries NO env prefix beyond the seed window and shard pin. This board is
+the successor anchor set to S18-P2000/S19 (docs/reference/s19-p2000-bank.txt,
+whose environment — knotwork-on, rites-OFF, tracks-OFF — is now archaeology).
+Correction on the record: the sprint doc's Part 0 said the old anchors were
+"rites-on"; the S19 bank's own command line shows they were rites-off too,
+so this re-bank moves TWO flags' worth of environment, not one.
+
+Command per leg (socket-free, deterministic per seed; run twice this
+session — identical win counts both invocations, fresh container):
+  SEED=20000 PAIR=<vv|vb|bb> TB_SIM_SHARDS=4 node packages/bots/dist/sim.js 2000
+
+Board (seeds 20001–22000, n=2000 ×3, braid+rites+tracks A0, draft v2,
+reclaim nudge on — the nudge rides the rites flag since the flip):
+
+| leg | win % | died a1 | died a2 | died a3 (of arrivals) | act-1 pair HP/combat | overall link-fire | thread/combat | knot-2/knot-1 |
+|-----|-------|---------|---------|----------------------|---------------------|-------------------|---------------|---------------|
+| vv  | 67.1 (1342/2000) | 16.7% | 15.6% | 13 (1.0% of 1355) | 23.5 | 47.2% | 5.78 | 1.28 |
+| vb  | 69.7 (1394/2000) |  0.7% | 27.8% | 38 (2.7% of 1432) | 22.2 | 56.4% | 7.37 | 1.25 |
+| bb  | 76.2 (1523/2000) |  0.1% | 22.0% | 37 (2.4% of 1560) | 23.2 | 53.0% | 7.71 | 1.25 |
+
+sha256 of full stdout per leg:
+| vv | a9be25bab2ff233970e50e70cc2f9fe2321d9f61b1a272a26322bf7dcc2a7fb1 |
+| vb | 6d4e604b68c56af3f31b8636b8f9cb3361d49983f37be3d92b865adfd9391ebf |
+| bb | 3f916d0516f779753b55404ef20092c94160073e9c18c546104ac040d975bd93 |
+
+THE BAND RE-READ (ruled, designer 2026-07-06 — stop-and-report fired
+and answered in-session):
+
+- gate 2 (bb−vb within ±8): 76.2 − 69.7 = +6.5 — IN.
+- gate 4 (knot-2/knot-1 ≥ 1.2): 1.28 / 1.25 / 1.25 — IN.
+- co-op texture (1e as re-derived, link-fire lead): vb 56.4 vs vv 47.2 /
+  bb 53.0 — IN (thread/combat REPORTED per OQ#67: vb 7.37 / bb 7.71).
+- vv floor watch (1c, act-1 deaths tripwire 35.3%): 16.7% — IN, with
+  margin. New floor-watch anchor: 16.7% (tripwire re-arms at 21.7%).
+- HP tripwires (1d, floor ≥16): 22.2–23.5 — IN.
+- S18-D3 vb 45–55 braid band: 69.7 — OUT (+15). RULED: converts to
+  REPORTED-not-banded (rites + tracks are player power; the whole board
+  floated up together while its structure held). Re-derivation of fresh
+  bands is the next design session's item, not this instrument's.
+- vb Hex share 25–45: 46.3 — OUT (marginal). RULED: REPORTED, same item.
+- B22 reclaim <25% band: 57.5–63.6% — the band predates the nudge-on
+  canon (it measured rites-off fleets where the S7.8 nudge never ran).
+  RULED: REPORTED, same item.
+
+Delta-form gates (HP tripwires, S16-R1 paired reads, vv floor watch)
+survive by construction and re-anchor on this board.
+
+Ascension fold-in rows and default-topology rows are NOT re-banked:
+ascension numbers remain PROVISIONAL (OQ#66 → roadmap), and flag-off bot
+runs are SUNSET by the S20.1 ruling — no lane-map anchor is owed again.
+
+Cheap per-commit form: scripts/s20-parity-check.sh — n=100 vb, EXPLICIT
+flags (TB_RITES=1 TB_TRACKS=1 TB_KNOTWORK=1), TBITEMS rows, 4 shards,
+full-stdout byte-diff against docs/reference/s20-parity-vb100.txt.
+The S19 instrument (scripts/s19-parity-check.sh + its bank) remains
+runnable as archaeology: it now pins TB_RITES=0 TB_TRACKS=0 explicitly,
+preserving the environment its bank was cut in.

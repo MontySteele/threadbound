@@ -18,7 +18,7 @@ commits.
 ## Part 0 — Evidence on record (nothing here needs re-running)
 
 The S17 final board (braid, A0, n=2000, same seeds 20001–22000
-throughout — docs/S17-POWER-AUDIT.md §12):
+throughout — docs/archive/S17-POWER-AUDIT.md §12):
 
 | | S17.0 baseline | end of S17 (pass B) |
 |---|---|---|

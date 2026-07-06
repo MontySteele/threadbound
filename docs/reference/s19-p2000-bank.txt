@@ -2,7 +2,7 @@ S19.1 — pre-sprint parity bank (sprint doc Part 1, item 1)
 ===========================================================
 
 S18-P2000 reproduced on the S19 branch tip (0a8878a, the S18 merge), fresh
-container, 2026-07-06. The board reproduces docs/S18-STATUS.md Part 8's exit
+container, 2026-07-06. The board reproduces docs/archive/S18-STATUS.md Part 8's exit
 board EXACTLY (same wins-counts to the run) — cross-container determinism
 re-proven in-branch; this is the read the S19 exit gate 1 byte-diffs against.
 

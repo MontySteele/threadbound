@@ -5,7 +5,7 @@ Soft-Release Flywheel sprint on main, running in parallel on
 `s6-flywheel`. This sprint is the `nt-slice` branch.)
 
 First implementation sprint of the narrative truth system, per the ratified
-spec **docs/threadbound_narrative_track_slice.md** (rev 2, 2026-07-01). The
+spec **docs/archive/threadbound_narrative_track_slice.md** (rev 2, 2026-07-01). The
 slice tests ONE question: *is assembling the truth together fun?* Everything
 here is falsification apparatus for that question.
 

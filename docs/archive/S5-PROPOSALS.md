@@ -21,7 +21,7 @@ Status: SIGNED OFF and implemented per the record above (originally: DRAFT). Per
 lands unapproved. Prepared 2026-07-01 on `s5-balance`.
 
 Already landed (pre-decided by the sprint doc, separate commits):
-- S5.0 baseline banked (`docs/S5-BASELINE.md`): **vb 18 / vv 60 / bb 22**.
+- S5.0 baseline banked (`docs/archive/S5-BASELINE.md`): **vb 18 / vv 60 / bb 22**.
 - S5.1 lever 1 — doubleHex capped at +6 (Saturate, Braided Malice link,
   Widow's Arithmetic). Battery alone: vv 60→48%, stacks/burst 16.2→11.2.
 - S5.1 lever 2 — Worn Knife per-play damage capped at 12. Battery with both

@@ -5,13 +5,13 @@
 // throughout: names, flavor, text — no explanation copy.
 
 import React from 'react';
-import { CARDS, GrowthAxis, RITES_BY_ID, PlayerId, RiteDef, unlockedRites } from '@threadbound/engine';
+import { CARDS, GrowthAxis, RITES_BY_ID, PlayerId, RiteDef, applyGrowth, effectiveDef, tallyAxisValue, unlockedRites } from '@threadbound/engine';
 import { ClientState, Net } from './net';
 import { Card, Log } from './App';
 import { CHAR_NAME } from './chars';
 
-/** S9d.3: plain-language axis names for the death pick ("grows with
- *  detonations") — visible mechanics, zero narrative economy. */
+/** S9d.3: plain-language axis names — visible mechanics, zero narrative
+ *  economy. S20.5 keeps them as the tiered rites' rule header. */
 const AXIS_PHRASE: Record<GrowthAxis, string> = {
   detonations: 'grows with detonations',
   falls: 'grows each time either of you falls',
@@ -22,6 +22,77 @@ const AXIS_PHRASE: Record<GrowthAxis, string> = {
   momentumSpent: 'grows with Momentum spent',
   resonances: 'grows with Resonance ignitions',
 };
+
+// ---------------------------------------------------------------------------
+// S20.5 (D-b, ruled shape) — every vestry card shows RULE + PROGRESS +
+// CEILING; tiered rites get their own phrasing row as a ladder with the
+// current tier marked. Strings PROVISIONAL pending the Part 7 sign-off
+// (one row per rite, both forms — docs/S20-STATUS.md). Client-side only:
+// nothing here reaches battery stdout, so no re-bank is owed (Part 5
+// instrument note).
+// ---------------------------------------------------------------------------
+
+/** per-N rule strings, one row per linear grower (Part 7 rows St-r1..r6) */
+const GROWTH_RULE: Record<string, string> = {
+  rite_shroud: '+2 Block each time either of you falls',
+  rite_vigil: '+1 Block for each enemy that dies Bound to you',
+  rite_knell: '+1 damage per 3 detonations',
+  rite_pyre_brand: '+1 damage per 6 Kindled burned',
+  rite_mourners_step: '+1 Block per 15 Momentum spent',
+  rite_toll: '+1 Momentum per 25 links fired',
+};
+
+/** tiered ladders, one phrasing row per rite (Part 7 rows St-r7..r8) */
+const TIER_RULES: Record<string, string[]> = {
+  rite_votive: [
+    '8 Thread spent — Votive also draws 1',
+    '20 Thread spent — its link deepens: your partner draws 2',
+  ],
+  rite_descant: [
+    '6 Resonances — its link widens: you and your partner each draw 1',
+    '14 Resonances — Descant draws 2',
+  ],
+};
+
+/** S20.5: the growth line under a rite card — rule, current growth, ceiling.
+ *  Reads the run tally (absent at the vestry ≙ 0; live mid-run on the worn
+ *  re-read), so the same treatment follows the card everywhere it renders. */
+export function RiteGrowth({ state, cardId, holder }: {
+  state: ClientState; cardId: string; holder: PlayerId;
+}): JSX.Element | null {
+  const def = CARDS[cardId];
+  const g = def?.growsWith;
+  if (!g) return null;
+  const v = state.tallies ? tallyAxisValue(state.tallies, g.axis, holder) : 0;
+  if (g.tiers) {
+    const rules = TIER_RULES[cardId] ?? [];
+    const reached = g.tiers.filter((t) => v >= t.at).length;
+    return (
+      <div className="rite-growth">
+        <p className="muted rite-axis">▲ {AXIS_PHRASE[g.axis]} · {v} so far</p>
+        <ul className="rite-ladder">
+          {g.tiers.map((t, i) => (
+            <li key={t.at} className={i < reached ? 'tier-reached' : 'tier-ahead'}>
+              <span className="tier-mark">{i < reached ? '✦' : '·'}</span> {rules[i] ?? `at ${t.at}`}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  const bonus = Math.min(g.cap ?? 0, Math.floor(v / (g.per ?? 1)) * (g.amount ?? 0));
+  return (
+    <p className="muted rite-axis rite-growth">
+      ▲ {GROWTH_RULE[cardId] ?? AXIS_PHRASE[g.axis]} · +{bonus} so far · cap +{g.cap}
+    </p>
+  );
+}
+
+/** the card def a rite renders with — grown against the live tally, so a
+ *  Shroud at +4 reads "Gain 8 Block" (grown segment marked by the ▲ chip) */
+function grownRiteCard(state: ClientState, cardId: string, holder: PlayerId) {
+  return applyGrowth(effectiveDef({ instanceId: `vestry_${cardId}`, defId: cardId }), state.tallies, holder);
+}
 
 /** The seat's picked death rite, if any (their choice is not secret). */
 function deathRiteOf(state: ClientState, pid: PlayerId): RiteDef | undefined {
@@ -55,7 +126,7 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
           <div className="rite-row">
             {offered.map((id) => {
               const rite = RITES_BY_ID[id];
-              const card = rite?.cardId ? CARDS[rite.cardId] : undefined;
+              const card = rite?.cardId ? grownRiteCard(state, rite.cardId, you) : undefined;
               if (!rite || !card) return null;
               return (
                 <div key={id} className="panel rite-option">
@@ -64,10 +135,11 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
                   <div className="rite-cardwrap">
                     <Card def={card} />
                   </div>
-                  {/* S9d.3: the archetype declaration must be legible at the
-                      moment of declaration — the axis is visible mechanics,
-                      not narrative economy (held reveal unaffected) */}
-                  {card.growsWith && <p className="muted rite-axis">▲ {AXIS_PHRASE[card.growsWith.axis]}</p>}
+                  {/* S9d.3 → S20.5 (D-b): the archetype declaration must be
+                      legible at the moment of declaration — RULE + PROGRESS
+                      + CEILING, visible mechanics, not narrative economy
+                      (held reveal unaffected) */}
+                  <RiteGrowth state={state} cardId={rite.cardId!} holder={you} />
                   <button className="big" data-gp="META"
                     onClick={() => net.act({ type: 'RITE_PICK', riteId: rite.id })}>
                     Don the vestment
@@ -86,9 +158,11 @@ export function RiteOffer({ state, net }: { state: ClientState; net: Net }): JSX
           <p className="muted rite-flavor">{mine.flavor}</p>
           {mine.cardId && CARDS[mine.cardId] && (
             <div className="rite-cardwrap rite-worn">
-              <Card def={CARDS[mine.cardId]} small />
+              {/* S20.5: the worn re-read shows the GROWN card + the rule */}
+              <Card def={grownRiteCard(state, mine.cardId, you)} small />
             </div>
           )}
+          {mine.cardId && <RiteGrowth state={state} cardId={mine.cardId} holder={you} />}
           <p className="muted">
             {theirs
               ? <>{seatName(state, partner)} wears <b>{theirs.name}</b>.</>
