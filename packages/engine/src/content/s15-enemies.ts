@@ -5,7 +5,7 @@
 // real counterplay — Weak dulls it (modifiers apply pre-pierce) and kill
 // priority ends it. Covenant check on record: post-block damage, not Hex;
 // no Hex-amount growth; caps not implicated. Numbers and all strings
-// PROVISIONAL pending the D5 sign-off table (S15 status doc).
+// RATIFIED as proposed — S16-D1 (2026-07-05), D5 rows 1–10.
 
 import { EnemyDef } from '../types';
 

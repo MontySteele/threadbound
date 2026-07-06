@@ -16,7 +16,7 @@ export type WitnessContext =
   | 'resonance'
   | 'fray'
   | 'elite_mourner_intro'
-  // S15.2A (D5, PROVISIONAL): the pierce enemy's telegraph in the Witness's
+  // S15.2A (D5 rows 4, RATIFIED — S16-D1): the pierce enemy's telegraph in the Witness's
   // voice — same pattern as the Mourner intro, keyed on its encounters
   | 'seamripper_intro'
   // §14.11 starter payoffs: one line each, first occurrence per run (solo + pair)
@@ -89,7 +89,7 @@ export const WITNESS_LINES: Record<WitnessContext, string[]> = {
     'It grieves for those who fight alone. Give it nothing to mourn.',
     'Ah, the Mourner. Play selfishly and it will love you to death.',
   ],
-  // S15.2A (D5, PROVISIONAL until the sign-off table): never-lies audit —
+  // S15.2A (D5 rows 4, RATIFIED — S16-D1): never-lies audit —
   // no biography, no falsehood; the mechanic stated straight, sardonically
   seamripper_intro: [
     'The Seamripper. Your guard is a seam like any other. It knows the way through.',

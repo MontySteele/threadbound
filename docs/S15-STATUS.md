@@ -21,7 +21,7 @@ per row; vb-default deliberately deepened to n=400 for the R1 read).
   elite comp `a2_knot_rippers`), own telegraph tint (`tel-pierce`,
   bone-bright — deliberately outside every faction hue), intent text
   states the whole mechanic, Witness intro pool (Mourner pattern), motif
-  row. ALL strings + numbers PROVISIONAL (D5 below).
+  row. ALL strings + numbers RATIFIED as proposed - S16-D1 (D5 rows 1-10).
   - Rider 1: `describeIntent` rest-boon prose (exhaustive-switch catch).
   - Rider 2: knot fights escalate by NODE kind, not just def-elite —
     `a2_knot_rippers` carries normal-tier defs but IS the knot; union
@@ -32,7 +32,7 @@ per row; vb-default deliberately deepened to n=400 for the R1 read).
   estimate stops crediting block against pierce. Pinned both ways.
 - **S15.2B** — at A4 the Fray damage bonus lands PAST Block. Below A4 the
   arithmetic is byte-identical (pinned; golden untouched). Rung copy
-  re-authored (PROVISIONAL, D5). The rung finally bites the pair it was
+  re-authored (RATIFIED - S16-D1, D5 row 8). The rung finally bites the pair it was
   aimed at — see the A4 differential below.
 - **S15.3 instrument** — `TB_BOT_ALL_KNOTS` (S13.1a pattern, SIM-ONLY):
   the elite-excess routing probe; OQ#55's ≥2 gate reads on this leg. Loud
@@ -116,13 +116,20 @@ so the bb delta carries a small mixed component — direction is clean,
 the vb control barely moved.)
 
 **R1 band (standing gate): vb default 38.3 at n=400 vs the 40–55 band —
-FAIL-marginal.** The floor sits inside the CI (±~4.8), S14's anchor was
+FAIL-marginal.** *(S16-D2 RULED: option (c) — accepted as-is pending the
+human difficulty re-read, with (b) pierce 7→6 PRE-APPROVED as the fallback
+if the playtest agrees vb-default feels over-taxed. The band stays 40–55;
+the row is reported FAIL-marginal-accepted, not re-tuned. Post-script, on
+the record: the S16.0e re-anchor read this row at 49.0 (n=400) on the
+socket-free instrument — the 38.3 carried the wire's contention tax, and
+the band holds with room on the clean read. See docs/S16-STATUS.md.)* The floor sits inside the CI (±~4.8), S14's anchor was
 41.5, battery 1 (pierce-6 mix) read 40.5. Causally this is act-2 ripper
 exposure on the classic map (the only lever touching that row). Two
 checkpoint resizes were already spent; a third against a noise-level
 target is tuning theater — the knob goes to the designer in D5 row 11.
 
-## D5 sign-off table (ALL PROVISIONAL until ruled)
+## D5 sign-off table — rows 1–10 RATIFIED as proposed (S16-D1, 2026-07-05);
+## row 11 ruled S16-D2 (both recorded in the S16 sprint doc)
 
 | row | surface | proposed |
 |---|---|---|

@@ -45,7 +45,7 @@ export const ASCENSION_RUNGS: Record<number, string> = {
   1: 'enemies have +10% HP',
   2: 'enemies hit +10% harder',
   3: 'one more elite per act',
-  // S15.2B: copy PROVISIONAL (D5 sign-off table) — the rung's new teeth stated
+  // S15.2B: copy RATIFIED (D5 row 8 — S16-D1) — the rung's new teeth stated
   4: 'the Thread frays on its last point — and Fray bites past Block',
   5: 'rest sites heal 20% instead of 30%',
 };
