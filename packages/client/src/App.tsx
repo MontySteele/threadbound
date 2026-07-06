@@ -1091,29 +1091,33 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 
   // ---- the warps (braid only): one waypoint per layer per strand ----------
   const warpSegs: Record<string, { a: Pt; c1: Pt; c2: Pt; b: Pt }[]> = {};
+  // edges the warps already draw — a plain cord there would put TWO lines
+  // between the same rooms (designer, 2026-07-06: one thread per strand)
+  const warpCovered = new Set<string>();
   if (braid) {
     for (const strand of ['truth', 'power']) {
-      const pts: Pt[] = [];
+      const waypoints: MapNode[] = [];
       for (let layer = 0; layer < layerCount; layer++) {
         const knot = map.nodes.find((n) => n.kind === 'elite' && n.layer === layer);
-        if (knot) { pts.push(pos(knot)); continue; }
+        if (knot) { waypoints.push(knot); continue; }
         const own = map.nodes.filter((n) => n.strand === strand && n.layer === layer);
         if (own.length > 0) {
-          const primary = own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0];
-          pts.push(pos(primary));
+          waypoints.push(own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0]);
           continue;
         }
         const shared = map.nodes.filter((n) => !n.strand && n.layer === layer);
         if (shared.length > 1) {
           // the breath: each strand ties off through its near rest
           const x = sideX(strand, layer);
-          const near = shared.reduce((a, b) => (Math.abs(pos(a).x - x) <= Math.abs(pos(b).x - x) ? a : b));
-          pts.push(pos(near));
+          waypoints.push(shared.reduce((a, b) => (Math.abs(pos(a).x - x) <= Math.abs(pos(b).x - x) ? a : b)));
         } else if (shared.length === 1) {
-          pts.push(pos(shared[0])); // the boss: both threads end in one knot
+          waypoints.push(shared[0]); // the boss: both threads end in one knot
         }
       }
-      warpSegs[strand] = cubicsFrom(pts);
+      warpSegs[strand] = cubicsFrom(waypoints.map(pos));
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
+      }
     }
   }
   // over/under alternates per knot: even crossings carry truth over
@@ -1169,6 +1173,10 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const to = pos(target);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
+              // the warp IS this segment's line — only the stateful reads
+              // (taut trail, live pick) draw over it; a neutral cord here
+              // would double the braid
+              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live) return null;
               const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
               if (isTrail) {
                 // the thread behind you pulls TAUT (straight) and brightens
@@ -1243,7 +1251,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         })}
       </div>
       </div>
-      <Log log={state.log} state={state} />
+      <Log log={state.log} state={state} muteWitness />
     </div>
   );
 }
@@ -1591,7 +1599,7 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
         </span>
       </div>
 
-      <Log log={state.log} state={state} />
+      <Log log={state.log} state={state} muteWitness />
     </div>
   );
 }
@@ -2285,11 +2293,14 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
 // ---------------------------------------------------------------------------
 
-export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
-  if (!log || log.length === 0) return <></>;
+export function Log({ log, state, muteWitness }: { log: GameEvent[]; state: ClientState; muteWitness?: boolean }): JSX.Element {
+  // S20.4 (designer 2026-07-06): where the Witness rail is mounted (map,
+  // combat) the voice must not ALSO appear in the log — one voice, one place
+  const rows = muteWitness ? (log ?? []).filter((e) => e.e !== 'witness') : log;
+  if (!rows || rows.length === 0) return <></>;
   return (
     <div className="log">
-      {log.map((e, i) => (
+      {rows.map((e, i) => (
         <div key={i} className={e.e === 'witness' ? 'witness' : e.e === 'resonance_ignite' ? 'resonance' : ''}>
           {renderEvent(e, state)}
         </div>

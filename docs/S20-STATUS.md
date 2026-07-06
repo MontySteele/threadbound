@@ -284,3 +284,24 @@ The S21 ascension doc travels with the handoff package per the
 after-close note. Owed next session: strings + art + deletion
 signatures (Part 7 / Del rows), fresh gate bands on the S20-R1 board
 (OQ#70), the OQ#69 residual ruling, and the deployed smoke run.
+
+### Post-close touch-up (designer smoke look, 2026-07-06)
+
+The designer's first live look at the braid caught two Part 3/4
+defects, both fixed the same day (client-only; suite 431/431 and both
+parity instruments byte-identical after):
+
+1. **Doubled braid lines.** The warp strands already pass through
+   every on-strand node, and the edge loop drew a plain sagging cord
+   over those same connections again — two lines between the same
+   rooms. Fix: the warp waypoint walk now records which edges it
+   covers (`warpCovered`), and the cord for a covered edge is skipped
+   unless it carries state (taut trail, live pick). The remaining
+   faint cords are the genuine cross-route edges.
+2. **The Witness spoke in two places.** The rail (S20.4) and the
+   bottom `Log` both rendered the same line on map and combat. Fix:
+   `Log` takes `muteWitness`, set on the two screens that mount the
+   rail — one voice, one place. The log keeps witness lines everywhere
+   the rail is absent (rites, shop, summary epitaph untouched).
+
+The banked screenshot set was retaken on the fixed build.
