@@ -24,7 +24,10 @@ if [ "${SKIP_BUILD:-0}" != "1" ]; then
   npm run build >/dev/null 2>&1
 fi
 
-SEED=20000 PAIR=vb TB_KNOTWORK=1 TB_SIM_ITEMS=1 TB_SIM_SHARDS=4 \
+# S20.1: rites/tracks default ON now — this bank was cut in the rites-off /
+# tracks-off era, so the instrument pins that environment explicitly to stay
+# runnable as archaeology. The living instrument is scripts/s20-parity-check.sh.
+SEED=20000 PAIR=vb TB_KNOTWORK=1 TB_RITES=0 TB_TRACKS=0 TB_SIM_ITEMS=1 TB_SIM_SHARDS=4 \
   node packages/bots/dist/sim.js 100 >"$OUT" 2>/dev/null
 
 if [ "${1:-}" = "--bank" ]; then

@@ -426,11 +426,15 @@ export function printSummary(results: RunResult[]): void {
   // reported; human data rules at the next playtest (OQ#14).
   // S19.1: --solo rows are NEVER banded — a different pair of policies over
   // a jittery transport; the pre-sprint solo anchor is a loose sanity read
-  const r1Banded = PAIR === 'vb' && ASCEND === 0 && KNOT && !SOLO;
+  // S20-R1 (ruled, designer 2026-07-06, stop-and-report): the S18-D3 45–55
+  // vb band read OUT (+15) on the new all-flags-on canon — rites and tracks
+  // are player power and the whole board floated up together (structure
+  // held: gate 2 +6.5 IN, knot ratio IN, texture lead IN, floors IN). The
+  // win band converts to REPORTED-not-banded; re-derivation of fresh bands
+  // is a design-session item, not this instrument's to invent. Anchor board
+  // banked in docs/reference/s20-p2000-bank.txt.
   const gates: Gate[] = [
-    r1Banded
-      ? { name: 'vb win rate 45–55% at A0 braid (S14-R1 as re-derived by S18-D3)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 45 && winRate <= 55 }
-      : { name: `win rate (reported, not banded — S14-R1/S18: ${PAIR}${KNOT ? ' braid' : ' default'} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
+    { name: `win rate (REPORTED — S20-R1: bands owed re-derivation on the new canon; ${PAIR}${KNOT ? ' braid' : ' default'} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -445,9 +449,9 @@ export function printSummary(results: RunResult[]): void {
     // S5 designer amendment (2026-07-01, gate 4): the band gates PAIR=vb
     // only — mirror pairs' shares are structural (a hex mirror's damage is
     // hex-flavored by construction) and read as telemetry, not gates.
-    PAIR === 'vb'
-      ? { name: 'Hex damage share 25–45% (vb gate, §14.10 + S5)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 }
-      : { name: `Hex damage share (telemetry only for ${PAIR}, S5 gate-4 amendment)`, value: `${hexShare.toFixed(1)}%`, pass: true },
+    // S20-R1 (ruled): the vb 25–45 band read 46.3 (marginally OUT) on the
+    // new canon — REPORTED with the win band, same re-derivation item.
+    { name: `Hex damage share (REPORTED — S20-R1; ${PAIR === 'vb' ? 'was the vb 25–45 gate, §14.10 + S5' : `telemetry only for ${PAIR}, S5 gate-4 amendment`})`, value: `${hexShare.toFixed(1)}%`, pass: true },
   ];
 
   console.log('\n================ TELEMETRY SUMMARY (M2 Part C) ================');
@@ -565,9 +569,13 @@ export function printSummary(results: RunResult[]): void {
   // S16.0d (B22): the gate-3 Reclaim band's denominator, finally emitted —
   // reclaims vs every card acquisition channel (reward picks, covets, shop
   // buys, rite vestments: everything through addCardToDeck since S14.1)
+  // S20-R1 (ruled): the <25% gate-3 band was calibrated on rites-off fleets
+  // where the S7.8 reclaim nudge never ran; the nudge now rides every
+  // canonical battery, so the band measures the instrument, not the game —
+  // REPORTED, re-derivation owed with the other bands.
   console.log(
     `B22 reclaim ratio: ${spendMix.reclaim ?? 0} reclaims / ${acquisitions} card acquisitions = ` +
-    `${acquisitions ? ((100 * (spendMix.reclaim ?? 0)) / acquisitions).toFixed(1) : 'n/a'}% (gate-3 band: <25%)`,
+    `${acquisitions ? ((100 * (spendMix.reclaim ?? 0)) / acquisitions).toFixed(1) : 'n/a'}% (REPORTED — S20-R1; the <25% band predates the nudge-on canon)`,
   );
 
   // ---- S4.1 gold economy ------------------------------------------------------

@@ -381,7 +381,7 @@ p2 (bram): damage 100698 | block 28373 | link-fires 9300 | falls 53 | covets tak
 Worn Knife: 1137 plays | mean damage 9.05
 thread: spent/combat 3.70 | spend mix {"pulse":1359,"reclaim":0,"sever":43,"steady":255} | regen wasted at cap/combat 4.89
 forced links (Pulse): 1251 (6.2% of fires) | Resonances needing one: 978/3652
-B22 reclaim ratio: 0 reclaims / 2367 card acquisitions = 0.0% (gate-3 band: <25%)
+B22 reclaim ratio: 0 reclaims / 2367 card acquisitions = 0.0% (REPORTED — S20-R1; the <25% band predates the nudge-on canon)
 gold: mean income/run 511.4 ({"combat":5581,"elite":18960,"boss":16833,"event":1470,"treasure":8298}) | mean residual 156.0 | removals/player/run p1 2.62 / p2 0.83 | removal spend 73.8% of total spend
 Pulsekeeper's Ring discounts fired: 23
 ---------------- S13.1c ECONOMY (per act) ----------------
@@ -391,11 +391,11 @@ Pulsekeeper's Ring discounts fired: 23
 OQ#59 economy: relics/run wins 10.2 vs losses 6.6 | deck/run wins 33.7 vs losses 33.5 | combats/run wins 9.0 vs losses 6.4
 S11.2 escalation calibration: kill 1: 23.5 HP (n=192) | kill 2: 28.1 HP (n=172) — knot-2/knot-1 ratio 1.19 (S18-D4 regression floor: >=1.2 on the probe leg)
 ---------------- GATES ----------------
-PASS  vb win rate 45–55% at A0 braid (S14-R1 as re-derived by S18-D3)  →  54%
+PASS  win rate (REPORTED — S20-R1: bands owed re-derivation on the new canon; vb braid A0)  →  54%
 PASS  avg HP lost per Act 1 combat ≥ 8  →  24.4
 PASS  Act 1 link-fire ≥ 30%  →  49.8%
 FAIL  Act 2 link-fire 40–60%  →  60.3%
 PASS  no tag > 50% of resonance streaks  →  37%
-FAIL  Hex damage share 25–45% (vb gate, §14.10 + S5)  →  49.1%
+PASS  Hex damage share (REPORTED — S20-R1; was the vb 25–45 gate, §14.10 + S5)  →  49.1%
 GATES PENDING PART A RECALIBRATION — do not tune off this number before the human-uplift bands exist (M3 Part A)
 ===============================================================
