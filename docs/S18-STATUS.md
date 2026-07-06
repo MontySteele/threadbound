@@ -49,7 +49,10 @@ The ruled bands (1a–1e, D1 ratified as proposed):
   Anchor act-1 reads banked above; floor check 26.7 ≥ 16 PASS.
 - **1e** — co-op texture gate unchanged, currently **PASS**: vb leads
   link-fire (55.8 vs vv 47.8 / bb 51.9) and thread/combat (4.47 vs
-  vv 3.01 / bb 4.03) on the braid.
+  vv 3.01 / bb 4.03) on the braid. *(Amended at exit — see Part 8:
+  the thread/combat half was ruled REPORTED-not-binding after the
+  ratified S-1 exposed its starter-composition confound; link-fire is
+  the binding half. OQ#67.)*
 
 Instrument facts re-verified on tip, on the record: the ALL_KNOTS
 probe leg ≡ the braid rows at A0, identically (n=100 vb, byte-diff
@@ -225,3 +228,80 @@ wants steeper knots it returns as its own sprint with its own thesis.
 | 6c | OQ#41b (which relics become genuinely co-op) | **PARKED to the content pass**, as already scoped. |
 | 6d | OQ#56 (battery environment offset) | **CLOSED AS SUPERSEDED, with the verification run.** Evidence, this session, fresh container: (1) same build + seeds, repeat invocation → byte-identical TBITEMS telemetry (n=100); (2) tip vs the S17 pass-B build (c3c0f3d) → **byte-identical** (S17.4's mutations never fire under bot play — reclaims are 0 in canonical batteries); (3) cross-environment: this container reproduces the S17 container's §12 exit board **to the exact win-count** on all three n=2000 rows (721/1118/1433). The offset was the WS-contention era; the socket-free path is deterministic per seed, now shown across containers. |
 | 6e | watches: a2_boss / a2_silence rows, OQ#53 (Linked Shields vs Immovable), D10 re-observe (shrine treatment unfired) | **REMAIN on the playtest slate** — already correctly filed; dated lines added so the ledger reads total. |
+
+## Part 8 — batteries & exit gates (final build `bd4f576`+instrument, seeds 20001–22000)
+
+**The exit board** (canonical braid battery; byte-identical to the
+ratified D3 probe rows — the build did not move between ratification
+and exit):
+
+| row | win % | died a1 | died a2 | died a3 (of arrivals) | act-1 pair HP/combat | link-fire | thread/combat | knot-2/knot-1 |
+|---|---|---|---|---|---|---|---|---|
+| vv | **44.0** (881) | 30.3% | 22.9% | 57 (6.1%) | 31.8 | 45.1% | 2.40 | 1.24 |
+| vb | **48.6** (972) | 2.0% | 39.0% | 207 (17.6%) | 25.3 | 55.6% | 3.90 | 1.22 |
+| bb | **48.8** (975) | 0.3% | 35.7% | 305 (23.8%) | 26.7 | 51.7% | 4.18 | 1.23 |
+
+Sprint deltas, S17 exit → S18 exit: vv 36.0 → 44.0, vb 55.9 → 48.6,
+bb 71.7 → 48.8. The three pairings close within 5 points; the mirror
+is the hard pair by ruled identity; the boss act kills.
+
+**Ascension fold-in rows (REPORTED)**: vb A2 22.2 / A3 22.4 (flat);
+bb A2 17.5 / A3 20.0 — **bb's A3 tooth is not restored; it is
+INVERTED** (+2.5: at compressed win rates the A3 extra elite pays
+more in rewards than it costs). The whole curve steepened with the
+S17+S18 doses (S16 read ~40s at A2/A3). **Ruled (designer,
+2026-07-06): REPORT → ROADMAP** — the ascension-implementation item
+inherits this as its first calibration input (OQ#66).
+
+**Default-topology rows (fallback lane generator, now
+REPORTED-not-banded per OQ#65)**, anchored pre-D2 (pass-B build) →
+final: vv 28.9 → 36.0 (+7.1) / vb 40.5 → 32.4 (−8.2) / bb 46.9 →
+27.5 (−19.4); act-1 HP/combat all improved-or-flat. The S14-R1
+40–55 default band broke on the vb row — **stop-and-report fired;
+ruled: R1 RE-DERIVED onto the shipped topology** (braid, 45–55,
+currently 48.6 PASS; render.yaml runs TB_KNOTWORK=1). Instrument
+updated with the ruling.
+
+### Exit criteria, each on the record
+
+1. **Gate 2 (1b): bb−vb = +0.2, within ±8 — PASS** (from +15.8 at
+   entry).
+2. **vv floor watch (1c) banked: 30.3%** act-1 deaths (tripwire
+   35.3%); materially below the 38% S17 exit — **PASS** (−7.7 pts).
+3. **Bucket ordering — PASS, all three pools** (act≥2-controlled,
+   this session's tool): vess 10.4/11.3/17.7, bram 3.7/5.3/8.5,
+   neutral 3.8/5.2/6.2 — the S17 neutral trough closed too.
+4. **Gate 4 (re-derived ≥1.2): 1.24 / 1.22 / 1.23 — PASS** on the
+   probe leg (probe ≡ braid at A0, re-verified on tip).
+5. **HP tripwires (1d) — PASS**: floor ≥16 everywhere (lowest 22.8,
+   vb default); paired regression ≤ +4 everywhere (every pair
+   improved or held on both topologies — the reshape RAISED the
+   defense floor). **Co-op texture (1e) — PASS as re-derived**:
+   vb leads link-fire 55.6 vs vv 45.1 / bb 51.7; thread/combat
+   REPORTED (vb 3.90 / bb 4.18 / vv 2.40 — the S-1 ratification
+   moved the vess starter's Thread supply out by design; OQ#67).
+6. **D3 target band — PASS as ratified**: vb 48.6 in 45–55; act-3
+   lethality visibly nonzero (6.1 / 17.6 / 23.8% of arrivals).
+7. **No-balance audit — PASS**: the content plane carries exactly
+   the ruled strings (patchwork base+upgrade texts, the mechanicLine
+   clause, the double-act log line); every number change traces to a
+   D-row (S-1/S-2b → D2; the fold + double-act → D3; the sim gate
+   lines → D4/OQ#65); the golden regen is the D2 commit's own, loud.
+8. **Ledger total — PASS**: every Part 4–6 item carries a dated
+   ruling line in OPEN-QUESTIONS.md (#55, #56, #41, #52, #53,
+   #60–#64), plus the three in-sprint stop-and-reports (#65 R1,
+   #66 A3 inversion, #67 texture gate). **The decision queue reads
+   empty.**
+
+## Close
+
+The sprint's three stop-and-reports are the system working as
+designed: every collision between a ratified dose and a standing
+band surfaced, went to the designer, and came back as a re-derivation
+recorded in the ledger — nothing landed unruled, nothing was tuned
+past a law. **S18 closes; the roadmap resumes** — narrative-truth
+playtest slate, ascension implementation (now carrying the A3
+inversion + steepened-curve report as its first input), and
+meta-progression, with the playtest pile (6a/6b + D10 + the censer
+trigger + the R1 human read + the Thread-banking debrief question)
+as the first playtest's pre-written agenda.

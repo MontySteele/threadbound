@@ -833,3 +833,35 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     al.).** **RULED (2026-07-06, S18 6b): PARKED.** Bots don't fray;
     these are the sloppier-human-pair relics by design. Human data rules.
     **PARKED.**
+
+65. **S14-R1 band collision (S18 exit battery, stop-and-report fired).**
+    The vb-default 40–55 band broke on the S18 final build (40.5 → 32.4)
+    as a side effect of the D3 dose, which was ratified on the braid —
+    the shipped topology (render.yaml runs TB_KNOTWORK=1). **RULED
+    (2026-07-06): S14-R1 is RE-DERIVED onto the shipped topology** — the
+    band binds vb at A0 on the BRAID at 45–55 (the S18-D3 target band;
+    currently 48.6, mid-band PASS). Default-topology rows become
+    REPORTED-not-banded (the fallback lane generator; its anchors are
+    banked in docs/S18-STATUS.md Part 8 for delta reads). Instrument
+    change landed in sim.ts with the ruling. **CLOSED as re-derived.**
+
+66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
+    philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%
+    (+2.5 — the A3 extra elite now PAYS at compressed win rates: its
+    rewards outweigh its cost) and vb reads flat (22.2 → 22.4). The whole
+    ascension curve steepened with the S17+S18 doses (S16-era A2/A3 read
+    ~40s). **RULED (2026-07-06): REPORT → ROADMAP** — the
+    ascension-implementation roadmap item inherits this as its first
+    calibration input; every ascension number remains PROVISIONAL by
+    design (ascension.ts header). No S18 scope grew. **FILED.**
+
+67. **Co-op texture gate (1e) half-collision (S18 exit battery,
+    stop-and-report fired).** vb kept the link-fire lead (55.6 vs vv
+    45.1 / bb 51.7) but lost the thread-spent/combat lead to bb (3.90 vs
+    4.18) — isolated to the ratified S-1: the vess starter's Thread
+    generator (mendthread) left the deck while bram's kindle stayed, so
+    the metric's old form was partly measuring starter composition.
+    **RULED (2026-07-06): 1e RE-DERIVED — the link-fire lead is the
+    binding half (the S3 thesis's cross-player signal); thread/combat
+    becomes a REPORTED texture row.** Anchors for the reported row banked
+    in docs/S18-STATUS.md Part 8. **CLOSED as re-derived.**
