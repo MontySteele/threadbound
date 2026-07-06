@@ -644,16 +644,17 @@ export class GameServer {
     return max;
   }
 
-  /** S4.4: highest ascension this room may start at — the minimum over every
-   *  HUMAN seat's claimed unlock for the character it plays. No claim = A0.
-   *  Profiles are claims, not authority: this is the clamp, not a trust. */
+  /** S16-D6 (OQ#44, ruled): highest ascension this room may start at — the
+   *  HOST's own claimed unlock for the character the host plays; the partner
+   *  simply rides (the genre convention). Retires the S4.4 min-over-seats
+   *  clamp, which silently dragged a host's A2 to A0 next to a fresh-profile
+   *  partner (the "nothing happened" read). Solo hosts read the same rule.
+   *  Profiles are claims, not authority: this is the clamp, not a trust.
+   *  No human host claim = A0. */
   private maxAscension(room: Room): number {
-    let max = 5;
-    for (const seat of Object.values(room.seats)) {
-      if (!seat || seat.bot) continue;
-      max = Math.min(max, seat.claim?.ascensionUnlocked?.[seat.character] ?? 0);
-    }
-    return max;
+    const host = room.seats.p1;
+    if (!host || host.bot) return 0;
+    return host.claim?.ascensionUnlocked?.[host.character] ?? 0;
   }
 
   /** S4.5 union rule: the run's pool is the union of both players' unlocked
@@ -838,8 +839,9 @@ export class GameServer {
         if (!ctx.room.seats.p1 || !ctx.room.seats.p2) return this.send(socket, { type: 'error', message: 'waiting for your partner' });
         if (ctx.room.state.phase !== 'lobby') return this.send(socket, { type: 'error', message: 'already started' });
         const seed = Number.isInteger(msg.seed) ? (msg.seed >>> 0) : crypto.randomInt(2 ** 31);
-        // S4.4: re-clamp the agreed level against the seats present NOW (a
-        // partner with a lower unlock may have joined after the vote)
+        // S16-D6: re-clamp the agreed level against the HOST's unlock as
+        // claimed NOW (a reconnect can carry a fresh claim; the partner's
+        // unlocks no longer cap the rung — they ride)
         const allowed = this.maxAscension(ctx.room);
         const votes = ctx.room.state.ascensionVotes ?? { p1: 0, p2: 0 };
         if (votes.p1 === votes.p2 && votes.p1 > allowed) {

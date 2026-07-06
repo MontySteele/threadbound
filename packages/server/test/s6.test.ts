@@ -424,9 +424,17 @@ describe('host-only ascension (S7.7, OQ#44)', () => {
     expect(state.ascensionVotes).toEqual({ p1: 2, p2: 2 });
   });
 
-  it('still clamps to the unlock union: the lower seat caps the rung', async () => {
+  it("S16-D6: the partner's unlocks no longer cap the rung — they ride", async () => {
     const { port } = await mkServer();
     const { a } = await lobbyPair(port, 5, 1); // joiner has only A1 unlocked
+    a.send({ type: 'action', action: { type: 'SET_ASCENSION', level: 4 } });
+    const state = await stateWhere(a, (s) => s.ascensionVotes.p1 === 4 && s.ascensionVotes.p2 === 4);
+    expect(state.ascension).toBe(4);
+  });
+
+  it("S16-D6: the clamp is the HOST's own unlock", async () => {
+    const { port } = await mkServer();
+    const { a } = await lobbyPair(port, 1, 5); // host has only A1 unlocked
     a.send({ type: 'action', action: { type: 'SET_ASCENSION', level: 4 } });
     const state = await stateWhere(a, (s) => s.ascensionVotes.p1 === 1 && s.ascensionVotes.p2 === 1);
     expect(state.ascension).toBe(1);
