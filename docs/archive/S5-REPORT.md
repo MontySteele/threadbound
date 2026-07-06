@@ -1,7 +1,7 @@
 # S5 Final Report — The Thesis Pass (hex ceiling + Bram floor)
 
 2026-07-01, branch `s5-balance`. All content changes designer-approved
-(sign-off recorded in docs/S5-PROPOSALS.md). Every battery = 50 runs/pair,
+(sign-off recorded in docs/archive/S5-PROPOSALS.md). Every battery = 50 runs/pair,
 scales as committed at that step, A0.
 
 ## The ladder (seed set 1000)

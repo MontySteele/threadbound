@@ -2,14 +2,14 @@
 
 > **RECONSTRUCTION (S20 Part 6, 2026-07-06).** The original S19 sprint
 > doc was delivered for the session but never committed —
-> `docs/S19-STATUS.md` cited it and the reference dangled (found in the
+> `docs/archive/S19-STATUS.md` cited it and the reference dangled (found in the
 > S20 evidence pass, Part 0). This file is reconstructed FROM the
 > status doc's execution record so the reference resolves and the
 > project record reads whole. Charter language and D-table below are
 > recovered from the rulings, probe protocols, and dispositions that
 > S19-STATUS quotes; where the status record is silent, this document
 > says so rather than inventing. The execution record itself
-> (`docs/S19-STATUS.md`) remains the authority.
+> (`docs/archive/S19-STATUS.md`) remains the authority.
 
 **Charter (recovered):** solo is a supported mode, not a fallback —
 but the pre-S19 solo partner never touched the game's flagship
@@ -75,4 +75,4 @@ is not recoverable and is not invented)
 | D6 | hint family | ratified as tabled |
 
 Evidence, batteries, string tables, and gate readings:
-`docs/S19-STATUS.md`.
+`docs/archive/S19-STATUS.md`.

@@ -1,6 +1,6 @@
 # S15 Status — Braid Recalibration (2026-07-05)
 
-Sprint doc: docs/threadbound_sprint_S15_braid_recalibration.md. D0–D2 ruled
+Sprint doc: docs/archive/threadbound_sprint_S15_braid_recalibration.md. D0–D2 ruled
 2026-07-05 (D2: **option C, A-first**, after the ramp-scaling design
 analysis — pre-block scaling is the already-run A2/A4 experiment bb read
 FLAT to; the accepted levers relocate damage past Block instead of
@@ -122,7 +122,7 @@ if the playtest agrees vb-default feels over-taxed. The band stays 40–55;
 the row is reported FAIL-marginal-accepted, not re-tuned. Post-script, on
 the record: the S16.0e re-anchor read this row at 49.0 (n=400) on the
 socket-free instrument — the 38.3 carried the wire's contention tax, and
-the band holds with room on the clean read. See docs/S16-STATUS.md.)* The floor sits inside the CI (±~4.8), S14's anchor was
+the band holds with room on the clean read. See docs/archive/S16-STATUS.md.)* The floor sits inside the CI (±~4.8), S14's anchor was
 41.5, battery 1 (pierce-6 mix) read 40.5. Causally this is act-2 ripper
 exposure on the classic map (the only lever touching that row). Two
 checkpoint resizes were already spent; a third against a noise-level

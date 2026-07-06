@@ -48,9 +48,9 @@ inherit R1/R2-as-amended/R5 in their recorded forms.
 - D3, this doc's D4, and D5 remain open by design — they stall at
   their battery/sign-off checkpoints.
 
-Companion evidence: docs/S13-DIFFICULTY-REVIEW.md §4–§7,
+Companion evidence: docs/archive/S13-DIFFICULTY-REVIEW.md §4–§7,
 docs/REVIEW-SWEEP.md B5, docs/OPEN-QUESTIONS.md #55/#59,
-docs/S9B-S11-STATUS.md (knotwork ledger), and S14's status doc
+docs/archive/S9B-S11-STATUS.md (knotwork ledger), and S14's status doc
 (the banked anchor rows).
 
 ---

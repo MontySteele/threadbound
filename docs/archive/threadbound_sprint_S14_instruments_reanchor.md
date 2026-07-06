@@ -24,7 +24,7 @@ from content commits; content via enumerate→propose→sign-off; golden
 regens only when forced, loudly — this sprint forces exactly one, and
 part of its purpose is that everything needing one rides it together.
 
-Companion evidence: docs/S13-DIFFICULTY-REVIEW.md (the five recs and
+Companion evidence: docs/archive/S13-DIFFICULTY-REVIEW.md (the five recs and
 the noise floor), docs/REVIEW-SWEEP.md (Bucket B items cited by number
 below), docs/OPEN-QUESTIONS.md.
 

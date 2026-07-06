@@ -1,7 +1,7 @@
 # Threadbound — Sprint S11: Knotwork (Waves A + B)
 
 Purpose: implement the map redesign ruled in
-docs/threadbound_map_knotwork_session.md. Two waves in one doc
+docs/archive/threadbound_map_knotwork_session.md. Two waves in one doc
 (S9a/S10a stacked-build precedent): Wave A reworks composition, elites,
 and the event grammar on the CURRENT topology; Wave B replaces the
 topology with the braid. Per ruling S11.0-8 Wave B is NOT gated on a

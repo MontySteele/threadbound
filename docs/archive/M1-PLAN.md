@@ -103,7 +103,7 @@ Resolution is computed entirely inside the reducer when the second `SET_READY` l
 5. Enemies act (bound targeting, §6; Stun skips; Weak −25%; Vulnerable +50%; Frayed +25% incoming per stack).
 6. End of turn: discard hands, statuses tick, Thread +2 (cap 10), draw to 5, new intents, Mourner checks `soloStreakMax ≥ 4`.
 
-## 6. M1 card list (20 per character) — Covenant audit in `docs/content-audit.md`
+## 6. M1 card list (20 per character) — Covenant audit in `docs/archive/content-audit.md`
 
 Distribution per character: 10 common / 7 uncommon / 3 rare. Every broad tag appears at common in both pools (§4); zero self-similar commons; self-similar uncommons scarce (≤2/char); narrow link conditions (`partner`) only at rare (§2.2).
 

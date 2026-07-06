@@ -163,7 +163,7 @@ Order of operations (do not parallelize 1 and 3):
 
 ## Part E — Working agreements (unchanged from kickoff, plus)
 
-- Covenant audit updates with every content batch; `docs/content-audit.md` regenerated.
+- Covenant audit updates with every content batch; `docs/archive/content-audit.md` regenerated.
 - New OPEN-QUESTIONS entries follow the same most-conservative-reading + log protocol.
 - Update `docs/DESIGN.md` in place for Part A revisions (single source of truth), with
   a changelog section noting the OQ ruling each change came from.

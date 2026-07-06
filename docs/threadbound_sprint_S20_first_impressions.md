@@ -51,7 +51,7 @@ from cleanup commits.
 - docs/ holds ~50 files spanning M1→S19 with superseded plans, old
   one-off reports, and a stray patch file at top level. **Broken
   reference found:** S19-STATUS.md cites
-  docs/threadbound_sprint_S19_descend_alone.md — never committed.
+  docs/archive/threadbound_sprint_S19_descend_alone.md — never committed.
 
 ## Part 1 — S20.1 Flags: the canon environment flip (RULED, lands first)
 
@@ -191,7 +191,7 @@ the current sprint + status pair, and the roadmap/handoff doc;
 sprint doc is committed from the deliverable in this part**;
 (5) scripts are removed only with a grep-proof of zero references
 (candidates for the inventory: spotcheck-s1s2.js, the stray
-docs/comfort-pass.patch whose content presumably landed long ago);
+docs/archive/comfort-pass.patch whose content presumably landed long ago);
 (6) the cleanup commits touch no code path — suite green before and
 after is the mechanical proof.
 

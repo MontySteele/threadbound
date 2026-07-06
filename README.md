@@ -1,7 +1,7 @@
 # Threadbound
 
 A two-player cooperative deckbuilding roguelike, played in the browser.
-Design: `docs/threadbound_design_doc.md` (Draft 3) · M2 plan: `docs/threadbound_M2_plan.md` · Playtest checklist: `docs/PLAYTEST-2.md`
+Design: `docs/threadbound_design_doc.md` (Draft 3) · M2 plan: `docs/archive/threadbound_M2_plan.md` · Playtest checklist: `docs/PLAYTEST-2.md`
 
 ## Play (two people, two machines)
 

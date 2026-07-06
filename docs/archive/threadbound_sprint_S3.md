@@ -107,7 +107,7 @@ to post-playtest data.
   links is pure player upside) — that is expected and is corrected by S3.4,
   which re-anchors AFTER this slice precisely so the difficulty floor absorbs
   the Pulse buff and the starter changes together, in one ladder walk.
-- Record both batches in `docs/S3-BALANCE-REPORT.md` alongside the battery.
+- Record both batches in `docs/archive/S3-BALANCE-REPORT.md` alongside the battery.
 
 **Ordering note (binding):** S3.1 → S3.2 → S3.3 → S3.3b → A/B → S3.4 re-anchor
 → S3.5 battery. Do not re-anchor before the Pulse rework lands or the floor
@@ -161,7 +161,7 @@ configuration; the tuned product remains vb.
   the strong mirror; report, designer rules.
 - avgStackAtDetonation < 3 → confirm Knuckle-Crack (not pool detonators) is the
   consumer; if pool detonators drip, that's a pool issue — report.
-- All reports land in `docs/S3-BALANCE-REPORT.md`; no tuning beyond S3.4's two
+- All reports land in `docs/archive/S3-BALANCE-REPORT.md`; no tuning beyond S3.4's two
   knobs without a logged designer ruling.
 
 ## S3 sign-off
@@ -172,7 +172,7 @@ configuration; the tuned product remains vb.
   else escalate to designer before proceeding to S3.4.
 - S3.4 anchor committed with updated ladder comment (absorbing starter + Pulse
   changes in one walk).
-- `docs/S3-BALANCE-REPORT.md` with the A/B and all three battery batches, bands
+- `docs/archive/S3-BALANCE-REPORT.md` with the A/B and all three battery batches, bands
   evaluated, caveats printed.
 - DESIGN.md §14.11 (starters) and §14.12 (Pulse rework) entries written; the
   deferred Thread levers (link-generated Thread economy, overcap strain, earlier

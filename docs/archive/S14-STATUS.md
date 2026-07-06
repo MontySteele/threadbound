@@ -1,6 +1,6 @@
 # S14 Status — Instruments & the Bundled Re-anchor (2026-07-05)
 
-Sprint doc: docs/threadbound_sprint_S14_instruments_reanchor.md. All rulings
+Sprint doc: docs/archive/threadbound_sprint_S14_instruments_reanchor.md. All rulings
 (R1–R8, D0–D3, D5, D6) were recorded before implementation; D4 returns below
 as the sign-off table, by design. Branch: `claude/sprint-14-15-design-review-6fxjef`
 (the session's designated branch; the doc's `s14-instruments-reanchor` name

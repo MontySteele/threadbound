@@ -1,6 +1,6 @@
 # S19 status — Descend Alone (implementation record)
 
-Sprint doc: `docs/threadbound_sprint_S19_descend_alone.md` (charter and
+Sprint doc: `docs/archive/threadbound_sprint_S19_descend_alone.md` (charter and
 D-list live there; this file is the execution record). Designer kickoff
 2026-07-06: "if there are no open questions, let's get to it" — the
 D-list recommendations taken as ratified as proposed (R-a, +1.2, T-a,
