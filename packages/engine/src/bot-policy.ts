@@ -404,6 +404,15 @@ export class BotPolicy {
           .map((id) => defOf(view, otherOf(you), id).link?.condition)
           .filter((c) => c !== undefined))
       : null;
+    // S19.5 (D4 — SOLO ONLY, the ruled cut-line item, landed): +0.5 for a
+    // placement that EXTENDS the current alternation streak — priced by the
+    // same computeResonanceSlots the engine ignites with and Pulse already
+    // prices against (S9c.6), so the bot stages toward the streaks that
+    // will actually ignite. Smallest term in the scorer by design; Pulse
+    // still carries the resonance IQ.
+    const baseResonances = this.mode === 'solo'
+      ? computeResonanceSlots(combat.chain, baseFired, (slot) => chainDefs[combat.chain.indexOf(slot)]).size
+      : 0;
     let best: { card: typeof affordable[0]; pos: number; score: number } | null = null;
     for (const card of affordable) {
       for (let pos = 0; pos <= combat.chain.length; pos++) {
@@ -429,7 +438,18 @@ export class BotPolicy {
           (cardText.includes('damagePerHex') && targetable.some((e) => e.hex >= 3) ? 1.2 : 0);
         const tailBonus = humanHeldConditions !== null
           && pos === combat.chain.length && humanHeldConditions.has(card.def.tag) ? 1.2 : 0;
-        const score = fires + next + guardBonus + axisBonus + tailBonus + card.def.cost * 0.1;
+        let streakBonus = 0;
+        if (this.mode === 'solo') {
+          const slotsWith: typeof combat.chain = [
+            ...combat.chain.slice(0, pos),
+            { cardInstanceId: card.id, owner: you },
+            ...combat.chain.slice(pos),
+          ];
+          const withRes = computeResonanceSlots(
+            slotsWith, firedWith, (slot) => defsWith[slotsWith.indexOf(slot)]).size;
+          if (withRes > baseResonances) streakBonus = 0.5;
+        }
+        const score = fires + next + guardBonus + axisBonus + tailBonus + streakBonus + card.def.cost * 0.1;
         if (!best || score > best.score) best = { card, pos, score };
       }
     }
