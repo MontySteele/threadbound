@@ -170,12 +170,15 @@ function eventBeat(e: GameEvent, pname: (p: PlayerId) => string, ename?: (id: st
   }
 }
 
-export function ResolutionTheater({ log, pname, ename, onOffsets }: {
+export function ResolutionTheater({ log, pname, ename, onOffsets, onDone }: {
   log: GameEvent[]; pname: (p: PlayerId) => string;
   /** roster-aware enemy display names (ordinals, face renames) */
   ename?: (id: string) => string;
   /** playback HP offsets for the bars (see hpDelta); null = playback over */
   onOffsets?: (o: Record<string, number> | null) => void;
+  /** the recap is OVER — played to the end or skipped (S20: the App holds
+   *  the combat panel through a combat-ending recap until this fires) */
+  onDone?: () => void;
 }): JSX.Element | null {
   const [lines, setLines] = useState<Beat[] | null>(null);
   const playedRef = useRef<string>('');
@@ -227,7 +230,7 @@ export function ResolutionTheater({ log, pname, ename, onOffsets }: {
       }
       if (!cancelled) {
         onOffsets?.(null);
-        setTimeout(() => setLines(null), 1200);
+        setTimeout(() => { setLines(null); onDone?.(); }, 1200);
       }
     })();
     // Deliberately NO cleanup on log churn: every broadcast (the partner or
@@ -242,7 +245,7 @@ export function ResolutionTheater({ log, pname, ename, onOffsets }: {
 
   if (!lines) return null;
   return (
-    <div className="theater" onClick={() => { cancelRef.current?.(); setLines(null); }} data-gp-action="cancel">
+    <div className="theater" onClick={() => { cancelRef.current?.(); setLines(null); onDone?.(); }} data-gp-action="cancel">
       {lines.map((b, i) => (
         <div key={i} className={`beat ${b.cls ?? ''} ${i === lines.length - 1 ? 'beat-now' : ''}`}>{b.text}</div>
       ))}

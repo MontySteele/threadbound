@@ -320,5 +320,44 @@ parity instruments byte-identical after):
    right gutter the rail's width, so content and rail can no longer
    share pixels at any scrollback height. Below 1100px the rail
    overlays as before (and collapses to one line ≤700px).
+5. **The vestry still spoke from the bottom log.** The rites phase
+   didn't mount the rail, so its Witness acknowledgements stayed in
+   the old bottom position. Fix: the rail mounts on `rites` too and
+   the vestry log takes `muteWitness` — the voice now has one place
+   on every screen where it speaks mid-run (rites, map, combat). The
+   vestry column is narrow, so no gutter is needed there.
+6. **The combat recap played over the reward screen** (pre-existing,
+   designer finding). When a resolution killed the last enemy, the
+   authoritative phase flipped to `reward` immediately and the recap
+   theater narrated over the Spoils screen. Fix (client-only,
+   per-player by construction): when a broadcast leaves `combat`
+   carrying a resolution log, the client holds a synthetic combat
+   view — the last combat state (chain/hands/counts intact) with the
+   recap log, final player HP, and every enemy pinned to its final
+   0 HP so the per-beat HP-offset animation works unchanged. The held
+   panel is display-only (`.recap-hold`, pointer-events none); the
+   theater gained an `onDone` callback (natural end after its 1.2s
+   linger, or skip-click) that releases the hold. Each seat holds and
+   skips independently. Verified live: 1720 DOM samples across a
+   driven fight — theater+combat coexisted (the hold), theater+Spoils
+   never did. Defeat and act-advance transitions get the same hold.
+7. **The Witness's location made uniform** (designer ruling). The
+   rail now mounts on EVERY screen between the lobby and the end
+   screens (rites, map, combat, reward, event, rest, covet, shop,
+   loom — `RAIL_PHASES`), and `Log` filters witness lines
+   unconditionally: the log is the mechanical record, the rail is the
+   voice, on every screen that has both. Two deliberate exceptions
+   stay inline as scene text: the lobby greeting (pre-run; the title
+   is never narrated per S20.2) and the Summary epitaph (post-run).
+   `reward-rail-desktop.jpg` joined the banked set as the reference.
+8. **Braids not taken lose their colored line** (designer finding:
+   mid-run, the full-strength warps through unreachable branches were
+   noise). A warp segment now draws only where the run HAS BEEN or
+   CAN STILL GO (both endpoints visited or reachable); everywhere
+   else the colored strand is hidden and the covered edges fall back
+   to the dashed dead cords, so the ghost topology stays readable
+   without the color. Pre-first-pick the whole loom is reachable, so
+   the pristine full braid is unchanged. `map-braid-midrun.jpg` is
+   the banked reference.
 
 The banked screenshot set was retaken on the fixed build.

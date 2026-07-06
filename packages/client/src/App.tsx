@@ -33,6 +33,11 @@ import { Hints, WitnessHints } from './Hints';
 
 type Character = 'vess' | 'bram';
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
+// S20.4 (designer 2026-07-06, uniform): every screen between the lobby and
+// the end screens mounts the Witness rail — the voice has ONE place mid-run.
+// The lobby greeting and the Summary epitaph stay inline (pre/post-run scene
+// text; the title is never narrated per S20.2).
+const RAIL_PHASES = ['rites', 'map', 'combat', 'reward', 'event', 'rest', 'covet_treasure', 'shop', 'loom'];
 const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
 const NODE_ICON: Record<string, string> = {
   combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦', loom: '◉',
@@ -97,6 +102,13 @@ export default function App(): JSX.Element {
   // playback HP: while the theater narrates, the bars show live hp + these
   // offsets so damage lands per-beat instead of snapping to the final state
   const [hpOffsets, setHpOffsets] = useState<Record<string, number> | null>(null);
+  // S20 (designer 2026-07-06): when a resolution ENDS the combat, the recap
+  // must play over the combat panel, not the next screen. This holds a
+  // synthetic combat view (last roster, enemies pinned to their final 0 HP
+  // so the per-beat offset animation works unchanged) until the theater
+  // reports done or this seat skips — per-player by construction.
+  const [heldCombat, setHeldCombat] = useState<ClientState | null>(null);
+  const prevStateRef = useRef<ClientState | null>(null);
   const [joined, setJoined] = useState<{ code: string; playerId: PlayerId; character: string } | null>(null);
   const [error, setError] = useState('');
   const [partnerOn, setPartnerOn] = useState(false);
@@ -127,6 +139,26 @@ export default function App(): JSX.Element {
     netRef.current = new Net({
       onState: (s) => {
         truthRef.current = !!s.truth;
+        const prev = prevStateRef.current;
+        prevStateRef.current = s;
+        if (s.phase === 'combat') {
+          setHeldCombat(null); // a new fight always releases any stale hold
+        } else if (prev?.phase === 'combat' && prev.combat && s.log?.length && isResolution(s.log)) {
+          // combat just ended mid-recap: keep the combat panel up under the
+          // theater. The view is the last combat state (chain, hands and
+          // counts still intact there — the reward broadcast wipes them),
+          // overridden with what playback needs: the recap log, final
+          // player HP for the offset math, and every enemy at its final 0.
+          setHeldCombat({
+            ...prev,
+            log: s.log,
+            players: {
+              p1: { ...prev.players.p1, hp: s.players.p1.hp },
+              p2: { ...prev.players.p2, hp: s.players.p2.hp },
+            },
+            combat: { ...prev.combat, enemies: prev.combat.enemies.map((e) => ({ ...e, hp: 0 })) },
+          });
+        }
         setState(s);
         if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
         // S20.4: harvest Witness lines into the rail as they cross the wire
@@ -254,7 +286,7 @@ export default function App(): JSX.Element {
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
       ) : (
-        <div className={`app ${state.phase === 'map' || state.phase === 'combat' ? 'rail-on' : ''}`}>
+        <div className={`app ${RAIL_PHASES.includes((heldCombat ?? state).phase) ? 'rail-on' : ''}`}>
           <header>
             <span className="title">THREADBOUND</span>
             <span className="header-mid">
@@ -292,8 +324,15 @@ export default function App(): JSX.Element {
           </header>
           <RelicBar state={state} />
           {error && <div className="error">{error}</div>}
-          <Phase state={state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
-          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
+          {/* while a combat-ending recap holds, the panel is display-only —
+              clicks belong to the theater (skip) and the real phase's
+              actions wait behind it */}
+          <div className={heldCombat ? 'recap-hold' : undefined}>
+            <Phase state={heldCombat ?? state} net={net} partnerOn={partnerOn} hpOffsets={hpOffsets} />
+          </div>
+          <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character}
+            ename={(id) => enemyName((heldCombat ?? state).combat, id)}
+            onOffsets={setHpOffsets} onDone={() => setHeldCombat(null)} />
           <Tutorial state={state} />
           <Hints state={state} />
           {/* S20.4: hint-family lines land in the rail, not a popup */}
@@ -302,7 +341,7 @@ export default function App(): JSX.Element {
             railSeen.current.add(text);
             setRail((r) => [...r.slice(-23), { text, kind: 'hint', at: Date.now() }]);
           }} />
-          {(state.phase === 'map' || state.phase === 'combat') && <WitnessRail rail={rail} />}
+          {RAIL_PHASES.includes((heldCombat ?? state).phase) && <WitnessRail rail={rail} />}
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
@@ -979,11 +1018,18 @@ function cubicsFrom(pts: Pt[]): { a: Pt; c1: Pt; c2: Pt; b: Pt }[] {
   return segs;
 }
 
-function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[]): string {
-  if (segs.length === 0) return '';
+/** Path for the segments — optionally only the `live` ones, emitted as
+ *  subpath runs (an M restarts wherever a hidden segment breaks the strand). */
+function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[], live?: boolean[]): string {
   const f = (n: number) => n.toFixed(1);
-  return `M ${f(segs[0].a.x)} ${f(segs[0].a.y)} ` +
-    segs.map((s) => `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)}`).join(' ');
+  let d = '';
+  for (let i = 0; i < segs.length; i++) {
+    if (live && !live[i]) continue;
+    const s = segs[i];
+    if (!(i > 0 && (!live || live[i - 1]))) d += `M ${f(s.a.x)} ${f(s.a.y)} `;
+    d += `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)} `;
+  }
+  return d.trim();
 }
 
 /** stable per-run key (the Hints.tsx construction): the act map layout is a
@@ -1113,7 +1159,12 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
 
   // ---- the warps (braid only): one waypoint per layer per strand ----------
   const warpSegs: Record<string, { a: Pt; c1: Pt; c2: Pt; b: Pt }[]> = {};
-  // edges the warps already draw — a plain cord there would put TWO lines
+  // designer 2026-07-06: a strand keeps its COLOR only where the run has
+  // been or can still go — braids not taken lose the colored line, and
+  // their edges fall back to the dashed dead cords below
+  const warpLive: Record<string, boolean[]> = {};
+  const onLoom = (n: MapNode): boolean => visited.has(n.id) || reachable.has(n.id);
+  // edges the warps still draw — a plain cord there would put TWO lines
   // between the same rooms (designer, 2026-07-06: one thread per strand)
   const warpCovered = new Set<string>();
   if (braid) {
@@ -1137,15 +1188,18 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         }
       }
       warpSegs[strand] = cubicsFrom(waypoints.map(pos));
+      warpLive[strand] = [];
       for (let i = 0; i < waypoints.length - 1; i++) {
-        warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
+        const live = onLoom(waypoints[i]) && onLoom(waypoints[i + 1]);
+        warpLive[strand].push(live);
+        if (live) warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
       }
     }
   }
   // over/under alternates per knot: even crossings carry truth over
   const overAt = (k: number): string => (k % 2 === 0 ? 'truth' : 'power');
   const knotSegs = (strand: string, layer: number) =>
-    (warpSegs[strand] ?? []).filter((_, i) => i === layer - 1 || i === layer);
+    (warpSegs[strand] ?? []).filter((_, i) => (i === layer - 1 || i === layer) && (warpLive[strand]?.[i] ?? true));
 
   return (
     <div className="center map-center">
@@ -1167,11 +1221,15 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
-          {/* the warps: continuous threads, crossing at the knots */}
-          {braid && (['truth', 'power'] as const).map((strand) => (
-            <path key={`warp-${strand}`} className="warp" d={pathOf(warpSegs[strand])}
-              style={{ stroke: STRAND_HUE[strand] }} />
-          ))}
+          {/* the warps: continuous threads, crossing at the knots — drawn
+              only where the run has been or can still go */}
+          {braid && (['truth', 'power'] as const).map((strand) => {
+            const d = pathOf(warpSegs[strand], warpLive[strand]);
+            return d ? (
+              <path key={`warp-${strand}`} className="warp" d={d}
+                style={{ stroke: STRAND_HUE[strand] }} />
+            ) : null;
+          })}
           {/* the crossings: the over-strand re-draws with an ink casing so
               one thread visibly passes OVER the other at every knot */}
           {braid && crossings.map((layer, k) => {
@@ -1274,7 +1332,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         })}
       </div>
       </div>
-      <Log log={state.log} state={state} muteWitness />
+      <Log log={state.log} state={state} />
     </div>
   );
 }
@@ -1622,7 +1680,7 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
         </span>
       </div>
 
-      <Log log={state.log} state={state} muteWitness />
+      <Log log={state.log} state={state} />
     </div>
   );
 }
@@ -2316,11 +2374,13 @@ function Shop({ state, net }: { state: ClientState; net: Net }): JSX.Element {
 
 // ---------------------------------------------------------------------------
 
-export function Log({ log, state, muteWitness }: { log: GameEvent[]; state: ClientState; muteWitness?: boolean }): JSX.Element {
-  // S20.4 (designer 2026-07-06): where the Witness rail is mounted (map,
-  // combat) the voice must not ALSO appear in the log — one voice, one place
-  const rows = muteWitness ? (log ?? []).filter((e) => e.e !== 'witness') : log;
-  if (!rows || rows.length === 0) return <></>;
+export function Log({ log, state }: { log: GameEvent[]; state: ClientState }): JSX.Element {
+  // S20.4 (designer 2026-07-06, made uniform): the log is the MECHANICAL
+  // record — the Witness's voice lives in the rail, which mounts on every
+  // screen that renders a Log. Witness lines never appear here. (The lobby
+  // greeting and the Summary epitaph are scene text, not log renders.)
+  const rows = (log ?? []).filter((e) => e.e !== 'witness');
+  if (rows.length === 0) return <></>;
   return (
     <div className="log">
       {rows.map((e, i) => (

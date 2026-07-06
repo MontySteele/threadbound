@@ -75,6 +75,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .relicbar { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0; }
 .relic { border: 1px solid; border-radius: var(--radius); padding: 1px 8px; font-size: 0.75em; background: var(--panel); cursor: help; }
 
+/* a combat-ending recap holds the combat panel on screen, display-only —
+   every click belongs to the theater's skip until it finishes (S20) */
+.recap-hold { pointer-events: none; }
+
 /* ---- focus ring (B1) ---- */
 .pad-active .gp-focus, .gp-focus {
   outline: 2px solid var(--focus) !important;
@@ -103,8 +107,8 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 /* strokes ride the map's scale knob (--map-scale, set by MapView from the
    viewport) so lines keep their weight when the braid grows */
 /* the warps: the two continuous strands (S20.3 item 1) */
-.warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; }
-.warp-casing { fill: none; stroke: var(--ink); stroke-width: calc(11px * var(--map-scale, 1)); opacity: 0.95; }
+.warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; stroke-linecap: round; }
+.warp-casing { fill: none; stroke: var(--ink); stroke-width: calc(11px * var(--map-scale, 1)); opacity: 0.95; stroke-linecap: round; }
 /* edges between strand positions: lighter thread segments; dashing is
    reserved for the unreachable (S20.3 items 1 & 4) */
 .map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
