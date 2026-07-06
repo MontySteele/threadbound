@@ -1,0 +1,24 @@
+S19.1 — pre-sprint parity bank (sprint doc Part 1, item 1)
+===========================================================
+
+S18-P2000 reproduced on the S19 branch tip (0a8878a, the S18 merge), fresh
+container, 2026-07-06. The board reproduces docs/S18-STATUS.md Part 8's exit
+board EXACTLY (same wins-counts to the run) — cross-container determinism
+re-proven in-branch; this is the read the S19 exit gate 1 byte-diffs against.
+
+Command per leg (socket-free, deterministic per seed):
+  SEED=20000 PAIR=<vv|vb|bb> TB_KNOTWORK=1 TB_SIM_SHARDS=4 \
+    node packages/bots/dist/sim.js 2000 > p2000-<pair>.txt
+
+| leg | victories | win % | sha256 of full stdout |
+|-----|-----------|-------|-----------------------|
+| vv  | 881/2000  | 44.0  | e419120cdfd05409712acdfee52743730f212a3cd264af54ff596c6996f6df8c |
+| vb  | 972/2000  | 48.6  | dac54634e82cd5a3cb1d7569fe35446fcb7608673a8c897833390a9e02dcf564 |
+| bb  | 975/2000  | 48.8  | b25d38c1937c1504e967ffdec38cc6ca3562dc14ce82e45f752ed8575a1ac7d2 |
+
+Cheap per-commit form (sprint doc Part 1): scripts/s19-parity-check.sh —
+n=100 vb braid + TBITEMS rows, full-stdout byte-diff against the banked
+docs/reference/s19-parity-vb100.txt (sha256
+670e4bfd9c620ef54a5917565e8020c97ad53c0b2068025ec14a00f004974e58).
+Same-seed repeat and 4-shard-vs-1-shard invariance (modulo the loud shard
+header line) both verified on the tip before banking.

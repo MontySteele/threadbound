@@ -38,6 +38,9 @@ export { POWERS } from './content/powers';
 export { RITES, RITES_BY_ID, RITE_CARDS, ritesFor, unlockedRites } from './content/rites';
 export { ENCOUNTERS, ENCOUNTER_POOLS } from './content/encounters';
 export { WITNESS_POOLS, poolLines, witnessPoolLines } from './witness-draw';
+// S19.1: the solo pool map itself — the --solo battery enumerates its keys
+// to report per-pool line counts and exhaustion (the D5 line-budget instrument)
+export { SOLO_WITNESS } from './content/witness-solo';
 export type { WitnessPool, WitnessRegister, RegisteredPool } from './witness-draw';
 export { BotPolicy, STARTER_DECK_SIZE } from './bot-policy';
 export type { BotView, BotPolicyOptions } from './bot-policy';
