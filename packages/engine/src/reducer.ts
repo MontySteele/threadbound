@@ -12,7 +12,7 @@ import { CARDS, ENEMIES, EVENTS, ALL_RELICS, RELICS_BY_ID, LOCKED_CARDS } from '
 import { STARTER_DECKS, cardsForCharacter, neutralCards } from './content/cards';
 import { ENCOUNTERS } from './content/encounters';
 import {
-  computeLinksFired, effectiveDef, emptyActStats, findInstance, hasPassive, otherPlayer,
+  computeLinksFired, effectiveDef, emptyActStats, findInstance, grownDef, hasPassive, otherPlayer,
   resolveTurn, runHooks, startCombat, startTurn,
 } from './combat';
 import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
@@ -423,7 +423,12 @@ function apply(state: GameState, action: Action): void {
         // Pulse either player's card; one Pulse per card is enough.
         const slot = combat.chain.find((s) => s.cardInstanceId === action.targetId);
         assert(slot, 'pulse needs a staged card');
-        const def = effectiveDef(findInstance(state.players[slot.owner], slot.cardInstanceId)!);
+        // S20.1 (ruled, designer 2026-07-06): legality reads the GROWN def —
+        // resolution fires grown links (grownDef, S9d) and the client offers
+        // them as Pulse targets, so an ungrown read here rejected a link the
+        // rest of the engine says exists (a mutated rite echo whose only
+        // link is tier-granted wedged the fleet and silenced solo partners).
+        const def = grownDef(state, findInstance(state.players[slot.owner], slot.cardInstanceId)!, slot.owner);
         assert(def.link, 'that card has no Link to force');
         const fired = computeLinksFired(state, combat.chain);
         assert(!fired[combat.chain.indexOf(slot)], 'that Link already fires');
