@@ -3,6 +3,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--font-ui); font-size: 15px; }
+a { color: var(--thread); } /* S20.2: no browser-blue on the parchment */
 
 /* ---- per-act atmosphere (S2.2): CSS-only — gradient ground, parchment
    grain, vignette. Nothing here that fights a future commissioned pass. ---- */
@@ -75,25 +76,77 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   box-shadow: 0 0 12px color-mix(in srgb, var(--focus) 50%, transparent);
 }
 
-/* ---- map (S2.2): knots on branching cord paths ---- */
+/* ---- map (S2.2 → S20.3): the braid, drawn as a braid ---- */
+.map-scroll { overflow-x: auto; max-width: 100%; }
 .mapwrap { position: relative; margin: 0 auto; }
 .mapwrap.act-1 { filter: sepia(0.06); }
 .mapwrap.act-2 { filter: hue-rotate(8deg) saturate(0.96); }
 .mapwrap.act-3 { filter: saturate(1.08); }
+/* S20.3 item 5: the field — the map sits IN something. A barely-there loom
+   texture + radial vignette, CSS only; restraint row: nothing moves. */
+.mapwrap.braid-field {
+  background:
+    radial-gradient(ellipse at 50% 38%, #d4af6f07 0%, transparent 62%),
+    repeating-linear-gradient(0deg, transparent 0 23px, #d8cfc003 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, #d8cfc003 23px 24px),
+    radial-gradient(ellipse at 50% 50%, #1a1612cc 0%, #14110f00 78%);
+  border-radius: 8px;
+  box-shadow: inset 0 0 60px 18px #00000055;
+}
 .map-cords { position: absolute; inset: 0; }
-.map-cord { stroke: color-mix(in srgb, var(--thread) 38%, transparent); stroke-width: 1.6; stroke-dasharray: 6 4; }
-.map-cord.cord-live { stroke: var(--thread); stroke-width: 2.2; stroke-dasharray: none; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
-.map-cord.cord-cleared { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
+/* the warps: the two continuous strands (S20.3 item 1) */
+.warp { fill: none; stroke-width: 3; opacity: 0.6; }
+.warp-casing { fill: none; stroke: var(--ink); stroke-width: 11; opacity: 0.95; }
+/* edges between strand positions: lighter thread segments; dashing is
+   reserved for the unreachable (S20.3 items 1 & 4) */
+.map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: 1.4; }
+.map-cord.cord-live { stroke: var(--thread); stroke-width: 2.2; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
+.map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
+/* the walked trail pulls taut and brightens — the run leaves a woven line */
+.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: 2.4; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
 .mapnode:disabled { opacity: 1; cursor: default; } /* scouting ahead must stay readable */
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
-/* S11.8 (TB_KNOTWORK): the two warp strands read as textures, not labels —
-   a cool cast on the truth strand, an ember cast on the power strand.
-   PROVISIONAL palette pending the string/lore pass. */
-.mapnode.strand-truth { border-color: color-mix(in srgb, #7d9bd6 55%, var(--panel)); }
-.mapnode.strand-power { border-color: color-mix(in srgb, #d69b62 55%, var(--panel)); }
+/* S20.3 medallion nodes: CIRCULAR — the medallion IS the node; the chip
+   box is gone. Every state (pickable / current / picked / visited /
+   unreachable) reads on the medallion's ring. */
+.mapnode.medallion-node {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 2px 4px 4px; min-width: 76px; max-width: 150px;
+  background: transparent; border: none; box-shadow: none;
+}
+.mapnode.medallion-node.can { border: none; box-shadow: none; }
+.mapnode.medallion-node.here { outline: none; }
+.node-medallion { display: block; border-radius: 50%; box-shadow: 0 0 0 1px var(--line-soft); background: var(--ink); }
+.medallion-node.can .node-medallion {
+  box-shadow: 0 0 0 1px var(--thread), 0 0 12px color-mix(in srgb, var(--thread) 45%, transparent);
+  cursor: pointer;
+}
+.medallion-node.here .node-medallion { box-shadow: 0 0 0 2px var(--text); }
+.medallion-node.mypick .node-medallion { box-shadow: 0 0 0 2px var(--pick-mine), 0 0 10px var(--pick-mine); }
+.medallion-node.theirpick .node-medallion { box-shadow: 0 0 0 2px var(--pick-theirs), 0 0 14px var(--pick-theirs); }
+.medallion-node.mypick.theirpick .node-medallion {
+  box-shadow: 0 0 0 2px var(--pick-mine), 0 0 0 4.5px var(--pick-theirs), 0 0 14px var(--pick-theirs);
+}
+.node-word { font-size: 0.78em; letter-spacing: 0.05em; }
+.node-pair { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+.node-pair svg { border-radius: 50%; background: var(--ink); }
+/* visited beads stay readable on the taut trail; the unreachable dims and
+   DASHES (border) — legibility outranks decoration */
+.mapnode.visited { opacity: 0.62; }
+.mapnode.unreachable, .mapnode.unreachable:disabled { opacity: 0.28; border-style: dashed; }
+/* the one permitted motion: a subtle pulse on the current node */
+.mapnode.here .node-medallion { animation: node-pulse 2.6s ease-in-out infinite; }
+@keyframes node-pulse {
+  0%, 100% { filter: none; }
+  50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--thread) 55%, transparent)); }
+}
+@media (prefers-reduced-motion: reduce) { .mapnode.here .node-medallion { animation: none; } }
+/* S11.8 → S20.3: strand keying rides the warp hues (You/partner rhyme) */
+.mapnode.strand-truth { border-color: color-mix(in srgb, var(--p1) 40%, var(--line)); }
+.mapnode.strand-power { border-color: color-mix(in srgb, var(--p2) 45%, var(--line)); }
 /* S11.6 asymmetric scouting: your seat's face for a node — a whispered
    sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
    you"). Italic + dim: it reads as knowledge, not as the node's name. */
@@ -336,6 +389,13 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
    voice; left corner so the momentum badge keeps the right */
 .card-badge.tally-chip { left: -5px; right: auto; color: var(--witness); border-color: var(--witness); }
 .rite-axis { margin-top: 4px; font-size: 0.85em; }
+/* S20.5 (D-b): rule + progress + ceiling; tiered ladders mark the tier */
+.rite-growth { margin: 4px 0 0; }
+.rite-ladder { list-style: none; margin: 2px 0 0; padding: 0; font-size: 0.82em; text-align: left; }
+.rite-ladder li { padding: 1px 0; color: var(--text-dim); }
+.rite-ladder li.tier-reached { color: var(--text); }
+.rite-ladder li.tier-reached .tier-mark { color: var(--thread); }
+.rite-ladder li.tier-ahead .tier-mark { color: var(--text-faint); }
 
 /* rest-site upgrade picker: before → after, click the pair (playtest 1) */
 .upgrade-pair {
@@ -538,6 +598,31 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
   box-shadow: 0 8px 30px #000b; font-size: 0.92em; }
 .hint-pop-tag { color: var(--thread); }
 
+/* ---- S20.4 the Witness rail (D-c row b): right side, map + combat ---- */
+.witness-rail {
+  position: fixed; right: 8px; bottom: 56px; z-index: 44; width: 252px;
+  display: flex; flex-direction: column; gap: 4px; padding: 8px 10px;
+  background: color-mix(in srgb, var(--ink) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--witness) 30%, var(--line-soft));
+  border-radius: var(--radius); pointer-events: auto; text-align: left;
+}
+.rail-line { color: var(--witness); font-style: italic; font-family: var(--font-display); font-size: 0.82em; line-height: 1.4; }
+.rail-back { display: flex; flex-direction: column; gap: 3px; max-height: 30vh; overflow-y: auto; }
+.rail-back .rail-line { opacity: 0.48; } /* the quiet scrollback */
+.rail-back .rail-line.rail-pinned { opacity: 0.85; } /* a teaching line holds on */
+.rail-current { opacity: 1; font-size: 0.95em; border-top: 1px dotted var(--line-soft); padding-top: 5px; }
+.rail-speaker { display: block; font-style: normal; font-family: var(--font-ui); font-size: 0.68em;
+  letter-spacing: 0.18em; color: var(--text-faint); margin-bottom: 2px; }
+/* hint-family: teaching, not color — a marked, bordered form */
+.rail-line.rail-hint { border-left: 2px solid var(--thread); padding-left: 6px; font-style: normal; }
+.rail-hint-tag { color: var(--thread); }
+/* mobile: collapse to the latest line; tap to expand */
+@media (max-width: 700px) {
+  .witness-rail { width: calc(100% - 16px); bottom: 40px; cursor: pointer; }
+  .witness-rail:not(.open) .rail-back { display: none; }
+  .witness-rail:not(.open) .rail-current { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: none; padding-top: 0; }
+}
+
 /* map pick coordination */
 .map-picks { font-size: 0.95em; }
 .mapnode.mypick { outline: 3px solid; outline-offset: 2px; }
@@ -556,9 +641,33 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .survey input, .bug-panel input { margin: 0 6px; }
 .bug-panel input { width: 240px; }
 
-/* S6.6 first-visit blurb */
-.blurb { max-width: 560px; text-align: left; }
-.blurb h3 { margin-top: 0; }
+/* ---- S20.2 the title screen ---- */
+.home { margin-top: 0; min-height: 88vh; display: flex; flex-direction: column; justify-content: center; }
+.epigraph {
+  color: var(--text-dim); font-family: var(--font-display); font-style: italic;
+  font-size: 1.02em; margin: 2px 0 6px; letter-spacing: 0.04em;
+}
+.home-modes { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 10px 0 2px; }
+.mode-door {
+  min-width: 220px; padding: 14px 26px; font-family: var(--font-display);
+  letter-spacing: 0.12em; font-size: 1.1em;
+  border-color: color-mix(in srgb, var(--thread) 45%, var(--line));
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.mode-door:hover:not(:disabled), .mode-door.mode-open {
+  border-color: var(--thread);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--thread) 30%, transparent);
+}
+.mode-panel { max-width: 460px; margin: 10px auto; }
+.mode-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.home-utility { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 22px; opacity: 0.85; flex-wrap: wrap; }
+.profile-chip { position: relative; }
+.profile-pop { max-width: 420px; margin: 6px auto; text-align: left; }
+/* S20.2 how-to-play overlay (the S6.6 blurb reborn): Esc / ✕ / click-out */
+.howto-backdrop { position: fixed; inset: 0; z-index: 72; background: #000a; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.howto { max-width: 560px; text-align: left; position: relative; max-height: 86vh; overflow-y: auto; }
+.howto h3 { margin-top: 0; }
+.howto-close { position: absolute; top: 8px; right: 8px; }
 
 /* nt-slice S6.5: boss mechanic reveals (shrine-earned) + hidden-mechanic
    telegraph whisper on the enemy panel */

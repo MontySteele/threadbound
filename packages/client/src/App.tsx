@@ -17,7 +17,7 @@ import { CHAR_NAME } from './chars';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
 import { audio } from './sfx';
-import { CharacterMark, Mark, MarkDefs } from './sigils';
+import { CharacterMark, Mark, MarkDefs, NodeKindId, NodeMedallion } from './sigils';
 import { InspectPanel, inspectElement, previewInspect } from './Tooltip';
 import { ThreadCord } from './ThreadCord';
 import { ResolutionTheater, isResolution, displayHp } from './Theater';
@@ -110,6 +110,13 @@ export default function App(): JSX.Element {
   // S6.2/S6.3: server-declared lifecycle status (drain, telemetry collection)
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [, consentTick] = useState(0);
+  // S20.4 the Witness rail: every line the Witness says accumulates here —
+  // no line is lost to a screen transition. Deduped by line text (the
+  // engine's exhaustion law: pools never echo within a run), reset when the
+  // browser enters a different room.
+  const [rail, setRail] = useState<RailLine[]>([]);
+  const railSeen = useRef<Set<string>>(new Set());
+  const railRoom = useRef<string | null>(null);
   const netRef = useRef<Net | null>(null);
   // S6.6: the `t` hotkey exists only when the server pushed a truth
   // projection — a ref, because the key handler outlives any one state
@@ -122,8 +129,22 @@ export default function App(): JSX.Element {
         truthRef.current = !!s.truth;
         setState(s);
         if (s.log?.length && isResolution(s.log)) setResolutionLog(s.log);
+        // S20.4: harvest Witness lines into the rail as they cross the wire
+        for (const e of s.log ?? []) {
+          if (e.e === 'witness' && !railSeen.current.has(e.line)) {
+            railSeen.current.add(e.line);
+            setRail((r) => [...r.slice(-23), { text: e.line, kind: 'line', at: Date.now() }]);
+          }
+        }
       },
-      onJoined: (info) => setJoined(info),
+      onJoined: (info) => {
+        if (railRoom.current !== info.code) {
+          railRoom.current = info.code;
+          railSeen.current = new Set();
+          setRail([]);
+        }
+        setJoined(info);
+      },
       onError: (m) => { setError(m); setTimeout(() => setError(''), 4000); },
       onPresence: setPartnerOn,
       onConnection: setConnected,
@@ -275,7 +296,13 @@ export default function App(): JSX.Element {
           <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
-          <WitnessHints state={state} />
+          {/* S20.4: hint-family lines land in the rail, not a popup */}
+          <WitnessHints state={state} onLine={(text) => {
+            if (railSeen.current.has(text)) return;
+            railSeen.current.add(text);
+            setRail((r) => [...r.slice(-23), { text, kind: 'hint', at: Date.now() }]);
+          }} />
+          {(state.phase === 'map' || state.phase === 'combat') && <WitnessRail rail={rail} />}
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
@@ -318,6 +345,58 @@ export default function App(): JSX.Element {
  *  screenshot without its build is unusable once data pools across patches. */
 function VersionFooter(): JSX.Element {
   return <div className="version-footer">{VERSION_STAMP}</div>;
+}
+
+// ---------------------------------------------------------------------------
+// S20.4 (D-c, ruled row b) — the Witness rail: the voice leaves the bottom
+// bar for a right-side rail on map and combat. Current line emphasized, the
+// last ~5 above it in a quiet scrollback; hint-family lines visually
+// distinct (they are teaching, not color) and pinned slightly longer; no
+// line is lost to a screen transition (App accumulates across phases).
+// Mobile: collapses to the latest line, tap-to-expand.
+// ---------------------------------------------------------------------------
+
+export interface RailLine {
+  text: string;
+  kind: 'line' | 'hint';
+  at: number;
+}
+
+const HINT_PIN_MS = 18_000; // a teaching line holds the floor a little longer
+
+function WitnessRail({ rail }: { rail: RailLine[] }): JSX.Element | null {
+  const [open, setOpen] = useState(false); // mobile tap-to-expand
+  const [, tick] = useState(0);
+  // re-render once when the newest hint's pin expires
+  useEffect(() => {
+    const hint = [...rail].reverse().find((l) => l.kind === 'hint');
+    if (!hint) return;
+    const left = hint.at + HINT_PIN_MS - Date.now();
+    if (left <= 0) return;
+    const t = setTimeout(() => tick((n) => n + 1), left + 50);
+    return () => clearTimeout(t);
+  }, [rail]);
+  if (rail.length === 0) return null;
+  const current = rail[rail.length - 1];
+  const back = rail.slice(-6, -1);
+  const pinned = (l: RailLine): boolean =>
+    l.kind === 'hint' && Date.now() - l.at < HINT_PIN_MS;
+  return (
+    <aside className={`witness-rail ${open ? 'open' : ''}`} onClick={() => setOpen((o) => !o)}
+      aria-label="the Witness">
+      <div className="rail-back">
+        {back.map((l, i) => (
+          <div key={`${l.at}-${i}`} className={`rail-line ${l.kind === 'hint' ? 'rail-hint' : ''} ${pinned(l) ? 'rail-pinned' : ''}`}>
+            {l.kind === 'hint' && <span className="rail-hint-tag">◆ </span>}“{l.text}”
+          </div>
+        ))}
+      </div>
+      <div className={`rail-line rail-current ${current.kind === 'hint' ? 'rail-hint' : ''}`}>
+        <span className="rail-speaker">THE WITNESS</span>
+        {current.kind === 'hint' && <span className="rail-hint-tag">◆ </span>}“{current.text}”
+      </div>
+    </aside>
+  );
 }
 
 /** S6.3 opt-in consent card (first launch, only while the server declares
@@ -534,30 +613,47 @@ function MicroSurvey({ net, runKey }: { net: Net; runKey: string }): JSX.Element
   );
 }
 
-/** S6.6 first-visit blurb: strangers arrive with no one to explain rooms.
- *  Dismissible; the choice lives in localStorage. No accounts, no email. */
-function FirstVisitBlurb(): JSX.Element | null {
-  const [seen, setSeen] = useState(() => localStorage.getItem('tb_blurb_seen') === '1');
-  if (seen) return null;
+/** S20.2: the "How to play" overlay — the S6.6 first-visit blurb reborn as a
+ *  dismissible overlay. Auto-opens ONCE per browser (legacy tb_blurb_seen
+ *  honored), then only from the affordance. Esc / ✕ / click-out close it.
+ *  Copy carried over from the blurb (Part 7 row: carried as-is + controls). */
+const HOWTO_KEY = 'tb_howto_seen';
+
+function howtoSeen(): boolean {
+  return localStorage.getItem(HOWTO_KEY) === '1' || localStorage.getItem('tb_blurb_seen') === '1';
+}
+
+function HowToPlay({ onClose }: { onClose: () => void }): JSX.Element {
+  useEffect(() => {
+    localStorage.setItem(HOWTO_KEY, '1');
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   return (
-    <div className="panel blurb">
-      <h3>New here? Threadbound in three lines</h3>
-      <p className="muted">
-        <b>Rooms are the whole lobby:</b> one of you creates a room and reads the 5-letter code to
-        the other, who joins with it. Refreshing is always safe — your seat waits for you.
-      </p>
-      <p className="muted">
-        <b>No partner handy?</b> Descend alone — the Witness (a grudging voice) plays the other
-        seat.{DISCORD_READY && <> Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.</>}
-      </p>
-      <p className="muted">
-        <b>Something felt great, bad, or broken?</b> Press <b>]</b> / <b>[</b> / <b>\</b> during a
-        run to stamp the moment, or use “report a bug…” in the ♪ menu — the links below the panels
-        do the rest.
-      </p>
-      <button className="chip" data-gp="META" onClick={() => { localStorage.setItem('tb_blurb_seen', '1'); setSeen(true); }}>
-        got it — don’t show this again
-      </button>
+    <div className="howto-backdrop" onClick={onClose}>
+      <div className="panel howto" onClick={(e) => e.stopPropagation()}>
+        <button className="chip howto-close" data-gp="META" aria-label="close" onClick={onClose}>✕</button>
+        <h3>How to play</h3>
+        <p className="muted">
+          <b>Rooms are the whole lobby:</b> one of you creates a room and reads the 5-letter code to
+          the other, who joins with it. Refreshing is always safe — your seat waits for you.
+        </p>
+        <p className="muted">
+          <b>No partner handy?</b> Descend alone — the Witness (a grudging voice) plays the other
+          seat.{DISCORD_READY && <> Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.</>}
+        </p>
+        <p className="muted">
+          <b>Your first fight teaches itself:</b> a short guide walks you through staging cards,
+          Links, and the Thread the first time you descend on this browser.
+        </p>
+        <p className="muted">
+          <b>Keys:</b> <b>d</b> deck · <b>f</b> fullscreen · gamepads work everywhere.
+          {' '}<b>Something felt great, bad, or broken?</b> Press <b>]</b> / <b>[</b> / <b>\</b>{' '}
+          during a run to stamp the moment, or use “report a bug…” in the ♪ menu.
+        </p>
+        <button className="chip" data-gp="META" onClick={onClose}>got it</button>
+      </div>
     </div>
   );
 }
@@ -569,69 +665,97 @@ const LOBBY_GREETINGS = [
   'Oh good, reinforcements. The Undercroft was getting worried.',
 ];
 
+/** S20.2 — the title screen: one composition, no scroll (desktop), mobile-
+ *  width safe. Splash art slot stalls at the Part 7 art pick (B6: no art
+ *  lands unpicked — the TitleCord holds the thesis image until then);
+ *  title + epigraph; two EQUAL mode doors (solo is a supported mode, S19);
+ *  tutorial behind a "How to play" affordance; footer = version stamp
+ *  (fixed corner) + drain banner + the quiet utility row. */
 function Home({ net, error, status }: { net: Net; error: string; status: ServerStatus | null }): JSX.Element {
   const [code, setCode] = useState('');
   const [character, setCharacter] = useState<Character>('vess');
   const [soloCharacter, setSoloCharacter] = useState<Character>('vess');
   const [botCharacter, setBotCharacter] = useState<Character>('bram');
+  const [mode, setMode] = useState<'together' | 'alone' | null>(null);
+  // auto-open ONCE per browser; never while the consent card has the floor
+  const needConsent = !!status?.telemetryActive && loadProfile().telemetryConsent === null;
+  const [howto, setHowto] = useState(() => !howtoSeen());
   return (
     <div className="center home">
       <h1 className="game-title">THREADBOUND</h1>
+      {/* Part 7 row St-e1 (PROVISIONAL): the epigraph. Authorial voice — the
+          Witness does NOT narrate the title screen (it hasn't met them yet;
+          the truth law extends to voice placement). */}
+      <p className="epigraph">Two go down together, bound by one thread.</p>
       <TitleCord left={null} right={null} />
-      <p className="muted">Two spirit-binders, one thread. Bring a friend.</p>
       {/* S6.2 drain window: no new rooms; runs in progress play on */}
       {status?.drain && (
         <div className="error">The loom is being restrung — no new rooms for a moment. Runs in progress play on; rejoining works.</div>
       )}
       {error && <div className="error">{error}</div>}
-      <FirstVisitBlurb />
-      <div className="panel">
-        <h3>Create a room</h3>
-        <label>
-          Play as{' '}
-          <select data-gp="META" value={character} onChange={(e) => setCharacter(e.target.value as Character)}>
-            <option value="vess">Vess, the Hexweaver</option>
-            <option value="bram">Bram, the Cinderfist</option>
-          </select>
-        </label>
-        <button data-gp="META" onClick={() => { goFullscreen(); net.create(character); }}>Create room</button>
+      <div className="home-modes">
+        <button className={`big mode-door ${mode === 'together' ? 'mode-open' : ''}`} data-gp="META"
+          onClick={() => setMode(mode === 'together' ? null : 'together')}>
+          Descend Together
+        </button>
+        <button className={`big mode-door ${mode === 'alone' ? 'mode-open' : ''}`} data-gp="META"
+          onClick={() => setMode(mode === 'alone' ? null : 'alone')}>
+          Descend Alone
+        </button>
       </div>
-      <div className="panel">
-        <h3>Join a room</h3>
-        <input placeholder="5-letter code" value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-        <button data-gp="META" onClick={() => { goFullscreen(); net.join(code); }}>Join</button>
-      </div>
-      <div className="panel">
-        <h3>Descend alone</h3>
-        <p className="muted">The Witness will assist. It is thrilled.</p>
-        <div>
-          <label>
-            You{' '}
-            <select data-gp="META" value={soloCharacter} onChange={(e) => setSoloCharacter(e.target.value as Character)}>
-              <option value="vess">Vess, the Hexweaver</option>
-              <option value="bram">Bram, the Cinderfist</option>
-            </select>
-          </label>{' '}
-          <label>
-            The Witness plays{' '}
-            <select data-gp="META" value={botCharacter} onChange={(e) => setBotCharacter(e.target.value as Character)}>
-              <option value="bram">Bram, the Cinderfist</option>
-              <option value="vess">Vess, the Hexweaver</option>
-            </select>
-          </label>
+      {mode === 'together' && (
+        <div className="panel mode-panel">
+          <div className="mode-row">
+            <label>
+              Play as{' '}
+              <select data-gp="META" value={character} onChange={(e) => setCharacter(e.target.value as Character)}>
+                <option value="vess">Vess, the Hexweaver</option>
+                <option value="bram">Bram, the Cinderfist</option>
+              </select>
+            </label>
+            <button data-gp="META" onClick={() => { goFullscreen(); net.create(character); }}>Create room</button>
+          </div>
+          <p className="muted">…then read the 5-letter code to your partner. Or join theirs:</p>
+          <div className="mode-row">
+            <input placeholder="5-letter code" value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+            <button data-gp="META" onClick={() => { goFullscreen(); net.join(code); }}>Join</button>
+          </div>
         </div>
-        {/* own line: the two inline selects were shoving this button off the
-            pad's vertical column — move()'s cross-axis penalty made it a
-            navigation dead spot (controller bug report) */}
-        <div>
-          <button data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Descend alone</button>
+      )}
+      {mode === 'alone' && (
+        <div className="panel mode-panel">
+          <p className="muted">The Witness will assist. It is thrilled.</p>
+          <div className="mode-row">
+            <label>
+              You{' '}
+              <select data-gp="META" value={soloCharacter} onChange={(e) => setSoloCharacter(e.target.value as Character)}>
+                <option value="vess">Vess, the Hexweaver</option>
+                <option value="bram">Bram, the Cinderfist</option>
+              </select>
+            </label>
+            <label>
+              The Witness plays{' '}
+              <select data-gp="META" value={botCharacter} onChange={(e) => setBotCharacter(e.target.value as Character)}>
+                <option value="bram">Bram, the Cinderfist</option>
+                <option value="vess">Vess, the Hexweaver</option>
+              </select>
+            </label>
+          </div>
+          {/* own line: the two inline selects were shoving this button off the
+              pad's vertical column — move()'s cross-axis penalty made it a
+              navigation dead spot (controller bug report) */}
+          <div>
+            <button className="big" data-gp="META" onClick={() => { goFullscreen(); net.createSolo(soloCharacter, botCharacter); }}>Begin the descent</button>
+          </div>
         </div>
-      </div>
-      {/* S9a: the codex, from the title (the other door is the ♪ pop in-run) */}
-      <div className="panel" style={{ opacity: 0.85 }}>
+      )}
+      {/* quiet utility row: how-to-play affordance + the doors that already
+          existed (profile, codex, data note) — small, out of the composition */}
+      <div className="home-utility">
+        <button className="chip" data-gp="META" onClick={() => setHowto(true)}>How to play</button>
         <CodexButton />
+        <ProfileChip />
       </div>
-      <ProfilePanel />
       {/* S6.5 title footer: version stamp lives in the fixed corner footer;
           links stay relative to the page origin (S6.7 — no absolute URLs
           except the community link, which is external by nature) */}
@@ -642,13 +766,15 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
           <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
         </>}
       </p>
+      {howto && !needConsent && <HowToPlay onClose={() => setHowto(false)} />}
     </div>
   );
 }
 
 /** S4.5: the browser profile's export/import — the save-state until a real
- *  account layer exists (explicitly out of scope). Small, on the title screen. */
-function ProfilePanel(): JSX.Element {
+ *  account layer exists (explicitly out of scope). S20.2: a quiet chip in
+ *  the title's utility row; the body opens in place beneath it. */
+function ProfileChip(): JSX.Element {
   const [open, setOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [msg, setMsg] = useState('');
@@ -656,12 +782,12 @@ function ProfilePanel(): JSX.Element {
   const p = loadProfile();
   const clears = p.clears.vess.count + p.clears.bram.count;
   return (
-    <div className="panel" style={{ opacity: 0.85 }}>
+    <span className="profile-chip">
       <button className="chip" data-gp="META" onClick={() => setOpen(!open)}>
         profile — {clears} clear{clears === 1 ? '' : 's'} · A{p.ascensionUnlocked.vess}/{p.ascensionUnlocked.bram} unlocked {open ? '▴' : '▾'}
       </button>
       {open && (
-        <div>
+        <div className="panel profile-pop">
           <p className="muted">Progress lives in this browser. Carry it with the string below.</p>
           <textarea readOnly value={exportProfile(p)} rows={2} style={{ width: '100%' }}
             onFocus={(e) => e.currentTarget.select()} />
@@ -680,7 +806,7 @@ function ProfilePanel(): JSX.Element {
           {msg && <p className="muted">{msg}</p>}
         </div>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -826,6 +952,58 @@ function nodeLabel(map: ClientState['map'], id: number): string {
   return n ? `${NODE_ICON[n.kind]} ${nodeName(n)}` : '?';
 }
 
+// ---- S20.3: the braid, drawn as a braid (presentation only — map.ts and
+// every edge/pick rule untouched). The two warp strands render as
+// continuous curved paths that CROSS at the knots (one passes over); nodes
+// are medallions from the sigil vocabulary; the walked trail pulls taut and
+// brightens; the unreachable dims and dashes. Legibility outranks
+// decoration everywhere (the S15 knot lesson stands).
+
+interface Pt { x: number; y: number }
+
+/** Catmull-Rom → cubic segments (vertical flow; endpoints clamped). */
+function cubicsFrom(pts: Pt[]): { a: Pt; c1: Pt; c2: Pt; b: Pt }[] {
+  const segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? pts[i + 1];
+    segs.push({
+      a: p1,
+      c1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
+      c2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 },
+      b: p2,
+    });
+  }
+  return segs;
+}
+
+function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[]): string {
+  if (segs.length === 0) return '';
+  const f = (n: number) => n.toFixed(1);
+  return `M ${f(segs[0].a.x)} ${f(segs[0].a.y)} ` +
+    segs.map((s) => `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)}`).join(' ');
+}
+
+/** stable per-run key (the Hints.tsx construction): the act map layout is a
+ *  pure function of the run seed, which redaction masks — hash it instead */
+function mapKeyOf(map: ClientState['map']): number {
+  const src = JSON.stringify(map.nodes.map((n) => [n.id, n.kind, n.edges]));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < src.length; i++) {
+    h ^= src.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+const STRAND_HUE: Record<string, string> = {
+  // the established You/partner hues key the two strands (map header rhyme)
+  truth: 'color-mix(in srgb, var(--p1) 55%, #7d9bd6)',
+  power: 'color-mix(in srgb, var(--p2) 60%, #d69b62)',
+};
+
 function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element {
   const you = state.you;
   const map = state.map;
@@ -835,31 +1013,113 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       : map.nodes.find((n) => n.id === map.position)?.edges ?? [];
   const partner: PlayerId = you === 'p1' ? 'p2' : 'p1';
 
-  // S2.2: nodes as knots on branching cord paths (the B3/B4 motif continued).
-  // Pure layout math from layer/lane — no game data the old grid didn't show.
   const layerCount = Math.max(...map.nodes.map((n) => n.layer)) + 1;
   const laneCounts = new Map<number, number>();
   for (const n of map.nodes) laneCounts.set(n.layer, (laneCounts.get(n.layer) ?? 0) + 1);
-  // S11.8 braid maps: lane is a strand COLUMN (truth 0 · knot 1 · power 2,
-  // widened slots 1/3) and lanes within a layer can be sparse — stranded
-  // nodes and the knots keep their absolute lane so the two warps read as
-  // parallel verticals crossing only at the knots. Density-centering a
-  // braid layer shears the columns (and pushes lane 3 off-canvas). Only
-  // strandless layers (the shared breath, the boss) center; non-braid maps
-  // have dense lanes and keep the old layout exactly.
   const braid = map.nodes.some((n) => n.strand);
-  const maxLanes = braid
-    ? Math.max(...map.nodes.map((n) => n.lane)) + 1
-    : Math.max(...laneCounts.values());
-  const COL = 168, ROW = 92;
-  const W = maxLanes * COL, H = layerCount * ROW;
-  const pos = (n: MapNode): { x: number; y: number } => {
-    const absolute = braid && (!!n.strand || n.kind === 'elite');
-    const offset = absolute ? 0 : ((maxLanes - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
-    return { x: offset + (n.lane + 0.5) * COL, y: H - (n.layer + 0.5) * ROW };
+  // knot layers, ascending — on braid maps the elite IS the crossing
+  const crossings = braid
+    ? [...new Set(map.nodes.filter((n) => n.kind === 'elite').map((n) => n.layer))].sort((a, b) => a - b)
+    : [];
+  const below = (layer: number): number => crossings.filter((c) => c < layer).length;
+
+  const COL = braid ? 196 : 168;
+  const ROW = 96;
+  const W = braid ? Math.round(3.4 * COL) : Math.max(...laneCounts.values()) * COL;
+  const H = layerCount * ROW;
+  const xC = W / 2;
+  /** which side a strand runs at a given layer — the side FLIPS at every
+   *  crossing below it: that alternation IS the braid */
+  const sideX = (strand: string, layer: number): number => {
+    const flipped = below(layer) % 2 === 1;
+    const left = strand === 'truth' ? !flipped : flipped;
+    return left ? xC - COL : xC + COL;
+  };
+  const pos = (n: MapNode): Pt => {
+    const y = H - (n.layer + 0.5) * ROW;
+    if (!braid) {
+      const offset = ((Math.max(...laneCounts.values()) - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
+      return { x: offset + (n.lane + 0.5) * COL, y };
+    }
+    if (n.kind === 'boss') return { x: xC, y };
+    if (n.kind === 'elite') return { x: xC, y }; // the knot sits ON the crossing
+    if (n.strand) {
+      const primary = n.lane === 0 || n.lane === 2;
+      const x = sideX(n.strand, n.layer);
+      // widened slot hangs off its strand toward the (crossing-free) center
+      return { x: primary ? x : x + (x < xC ? 0.62 * COL : -0.62 * COL), y };
+    }
+    // the shared breath: strandless rests, centered as a pair
+    const mates = map.nodes.filter((m) => m.layer === n.layer);
+    const i = mates.findIndex((m) => m.id === n.id);
+    return { x: xC + (i - (mates.length - 1) / 2) * 1.1 * COL, y };
   };
   const hereLayer = map.nodes.find((n) => n.id === map.position)?.layer ?? -1;
   const byId = new Map(map.nodes.map((n) => [n.id, n]));
+
+  // ---- the walked trail (client-local; the run leaves a woven trail) ------
+  const trailKey = `tb_trail_${map.act}_${mapKeyOf(map)}`;
+  const [trail, setTrail] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem(trailKey) ?? '[]'); } catch { return []; }
+  });
+  useEffect(() => {
+    if (map.position < 0) return;
+    setTrail((t) => {
+      if (t[t.length - 1] === map.position) return t;
+      const next = [...t, map.position];
+      localStorage.setItem(trailKey, JSON.stringify(next));
+      return next;
+    });
+  }, [map.position, trailKey]);
+  const visited = new Set(trail);
+  const trailEdges = new Set(trail.slice(1).map((id, i) => `${trail[i]}-${id}`));
+
+  // ---- reachability: BFS over edges from here — everything else dims ------
+  const reachable = new Set<number>();
+  {
+    const start = map.position === -1
+      ? map.nodes.filter((n) => n.layer === 0).map((n) => n.id)
+      : [map.position];
+    const queue = [...start];
+    while (queue.length) {
+      const id = queue.pop()!;
+      if (reachable.has(id)) continue;
+      reachable.add(id);
+      for (const e of byId.get(id)?.edges ?? []) queue.push(e);
+    }
+  }
+
+  // ---- the warps (braid only): one waypoint per layer per strand ----------
+  const warpSegs: Record<string, { a: Pt; c1: Pt; c2: Pt; b: Pt }[]> = {};
+  if (braid) {
+    for (const strand of ['truth', 'power']) {
+      const pts: Pt[] = [];
+      for (let layer = 0; layer < layerCount; layer++) {
+        const knot = map.nodes.find((n) => n.kind === 'elite' && n.layer === layer);
+        if (knot) { pts.push(pos(knot)); continue; }
+        const own = map.nodes.filter((n) => n.strand === strand && n.layer === layer);
+        if (own.length > 0) {
+          const primary = own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0];
+          pts.push(pos(primary));
+          continue;
+        }
+        const shared = map.nodes.filter((n) => !n.strand && n.layer === layer);
+        if (shared.length > 1) {
+          // the breath: each strand ties off through its near rest
+          const x = sideX(strand, layer);
+          const near = shared.reduce((a, b) => (Math.abs(pos(a).x - x) <= Math.abs(pos(b).x - x) ? a : b));
+          pts.push(pos(near));
+        } else if (shared.length === 1) {
+          pts.push(pos(shared[0])); // the boss: both threads end in one knot
+        }
+      }
+      warpSegs[strand] = cubicsFrom(pts);
+    }
+  }
+  // over/under alternates per knot: even crossings carry truth over
+  const overAt = (k: number): string => (k % 2 === 0 ? 'truth' : 'power');
+  const knotSegs = (strand: string, layer: number) =>
+    (warpSegs[strand] ?? []).filter((_, i) => i === layer - 1 || i === layer);
 
   return (
     <div className="center">
@@ -877,22 +1137,52 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           {state.players[partner].character}<RitePips state={state} pid={partner} />: <b>{map.picks[partner] !== null ? nodeLabel(map, map.picks[partner]!) : 'choosing…'}</b>
         </span>
       </p>
-      <div className={`mapwrap act-${map.act}`} style={{ width: W, height: H }}>
+      <div className="map-scroll">
+      <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`} style={{ width: W, height: H }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+          {/* the warps: continuous threads, crossing at the knots */}
+          {braid && (['truth', 'power'] as const).map((strand) => (
+            <path key={`warp-${strand}`} className="warp" d={pathOf(warpSegs[strand])}
+              style={{ stroke: STRAND_HUE[strand] }} />
+          ))}
+          {/* the crossings: the over-strand re-draws with an ink casing so
+              one thread visibly passes OVER the other at every knot */}
+          {braid && crossings.map((layer, k) => {
+            const over = overAt(k);
+            const segs = knotSegs(over, layer);
+            if (segs.length === 0) return null;
+            const d = pathOf(segs);
+            return (
+              <g key={`cross-${layer}`}>
+                <path className="warp-casing" d={d} />
+                <path className="warp" d={d} style={{ stroke: STRAND_HUE[over] }} />
+              </g>
+            );
+          })}
+          {/* the edges: lighter thread segments between strand positions;
+              dashing is reserved for the unreachable */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
             return n.edges.map((toId) => {
               const target = byId.get(toId);
               if (!target) return null;
               const to = pos(target);
-              const cleared = n.layer < hereLayer; // walked-past cords dim
-              const live = n.id === map.position && pickable.includes(toId);
+              const isTrail = trailEdges.has(`${n.id}-${toId}`);
+              const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
+              const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
+              if (isTrail) {
+                // the thread behind you pulls TAUT (straight) and brightens
+                return (
+                  <path key={`${n.id}-${toId}`} className="map-cord cord-trail"
+                    d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} fill="none" />
+                );
+              }
               // a cord sags toward the midpoint — knots ride a hung thread
               const mx = (from.x + to.x) / 2 + (from.x === to.x ? 0 : (to.x - from.x) * 0.08);
               const my = (from.y + to.y) / 2 + 10;
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${cleared ? 'cord-cleared' : ''} ${live ? 'cord-live' : ''}`}
+                  className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''}`}
                   d={`M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`} fill="none" />
               );
             });
@@ -902,26 +1192,44 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           const { x, y } = pos(n);
           const here = n.id === map.position;
           const can = pickable.includes(n.id);
-          const cleared = n.layer < hereLayer && !here;
+          const wasVisited = visited.has(n.id) && !here;
+          const unreachable = !here && !can && !reachable.has(n.id) && !wasVisited;
           const myPick = map.picks[you] === n.id;
           const theirPick = map.picks[partner] === n.id;
+          const medallion = n.kind in NODE_KINDS;
           return (
             <button
               key={n.id}
               data-gp="MAP"
-              className={`mapnode ${here ? 'here' : ''} ${can ? 'can' : ''} ${cleared ? 'cleared' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
+              className={`mapnode medallion-node ${here ? 'here' : ''} ${can ? 'can' : ''} ${wasVisited ? 'visited' : ''} ${unreachable ? 'unreachable' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
               style={{
                 left: x, top: y,
-                ...(myPick ? { outlineColor: PCOLOR[you] } : {}),
-                ...(theirPick ? { boxShadow: `0 0 14px ${PCOLOR[partner]}`, borderColor: PCOLOR[partner] } : {}),
+                // pick hues ride CSS vars — the ring styling lives on the
+                // medallion (circular states, not chip-box states)
+                ...(myPick ? { ['--pick-mine' as string]: PCOLOR[you], outlineColor: PCOLOR[you] } : {}),
+                ...(theirPick ? { ['--pick-theirs' as string]: PCOLOR[partner] } : {}),
               }}
               disabled={!can}
               onClick={() => { audio.play('map_move'); net.act({ type: 'NODE_PICK', nodeId: n.id }); }}
             >
-              {NODE_ICON[n.kind]} {nodeName(n)}
+              {medallion ? (
+                <NodeMedallion kind={n.kind as NodeKindId} variant={n.variant as 'toll' | 'covet' | undefined}
+                  act={map.act as 1 | 2 | 3} size={n.kind === 'boss' ? 66 : n.kind === 'elite' ? 58 : 50}
+                  className="node-medallion" />
+              ) : (
+                <span>{NODE_ICON[n.kind]}</span>
+              )}
+              {/* the current pair stands ON the node */}
+              {here && (
+                <span className="node-pair">
+                  <CharacterMark who={state.players.p1.character} size={22} />
+                  <CharacterMark who={state.botSeat === 'p2' ? 'witness' : state.players.p2.character} size={22} />
+                </span>
+              )}
+              <span className="node-word">{nodeName(n)}</span>
               {/* S11.6 asymmetric scouting: YOUR seat's face for this node —
                   the partner sees their own (or nothing). Say it out loud. */}
-              {!cleared && state.scout?.[n.id] && (
+              {!wasVisited && !unreachable && state.scout?.[n.id] && (
                 <span className="map-scout">{state.scout[n.id]}</span>
               )}
               {(myPick || theirPick) && (
@@ -934,10 +1242,16 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           );
         })}
       </div>
+      </div>
       <Log log={state.log} state={state} />
     </div>
   );
 }
+
+/** node kinds that own a medallion in the vocabulary (sigils.tsx) */
+const NODE_KINDS: Record<string, true> = {
+  combat: true, elite: true, boss: true, event: true, rest: true, shop: true, treasure: true, loom: true,
+};
 
 // ---------------------------------------------------------------------------
 // Combat

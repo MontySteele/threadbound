@@ -435,3 +435,108 @@ export function CharacterMark({ who, size = 64 }: { who: 'vess' | 'bram' | 'witn
   const hue = who === 'vess' ? 'var(--hex)' : who === 'bram' ? 'var(--p2)' : 'var(--witness)';
   return <Mark id={`character_${who}`} tier="character" act={1} size={size} hue={hue} />;
 }
+
+// ---------------------------------------------------------------------------
+// S20.3 — map-node MEDALLIONS. The map chips join the vocabulary: same hand
+// (seeded ring, pale line palette, accent knot, shared ground), one small
+// deterministic glyph per node KIND — never per encounter (scouting stays
+// the asymmetric layer; a combat medallion must not leak WHICH combat).
+// Ring semantic extends R3: fight kinds (combat / elite / boss) wear a
+// BROKEN ring like every enemy mark; shelter and passage kinds wear whole
+// ones. Deterministic from (kind, variant, act) — no consumed rng streams.
+// ---------------------------------------------------------------------------
+
+export type NodeKindId =
+  | 'combat' | 'elite' | 'boss' | 'event' | 'rest' | 'shop' | 'treasure' | 'loom';
+export type NodeVariantId = 'toll' | 'covet' | undefined;
+
+/** inner markup of a medallion's <svg> (viewBox 0 0 64 64) — exported for
+ *  the style screen and any future snapshot gate */
+export function nodeMedallionSvg(kind: NodeKindId, variant: NodeVariantId, act: 1 | 2 | 3): string {
+  const key = `node_${kind}${variant ? `_${variant}` : ''}`;
+  const r = new Rand(hash32(key));
+  const pool = ACT_ACCENTS[act] || ACT_ACCENTS[1];
+  const acc = pool[r.int(pool.length)];
+  const cx = 32; const cy = 32;
+  const fight = kind === 'combat' || kind === 'elite' || kind === 'boss';
+  const R = kind === 'boss' ? 24 : kind === 'elite' ? 23 : 21;
+  // the ring: broken for fight kinds (enemy grammar), whole otherwise
+  const gap = fight ? r.range(0.7, 1.3) : 0;
+  const dash = gap ? `stroke-dasharray="${f(R * (Math.PI * 2 - gap))} ${f(R * gap)}"` : '';
+  let out = `<circle cx="${cx}" cy="${cy}" r="${R + 6}" fill="url(#tb-ground)"/>`
+    + `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--text)" stroke-width="1.2" ${dash}`
+    + ` transform="rotate(${f(r.range(0, 360))} ${cx} ${cy})" opacity="0.9"/>`;
+  if (kind === 'elite') { // the knot doubles its ring — a snarl, not a bead
+    out += `<circle cx="${cx}" cy="${cy}" r="${R - 3.5}" fill="none" stroke="${acc}" stroke-width="0.7" stroke-dasharray="4 5" opacity="0.6"/>`;
+  }
+  if (kind === 'boss') {
+    out += `<circle cx="${cx}" cy="${cy}" r="${R - 4}" fill="none" stroke="var(--text-dim)" stroke-width="0.6" opacity="0.8"/>`;
+  }
+  const S = 'stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" fill="none"';
+  const soft = 'stroke="var(--text-dim)" stroke-width="1.2" stroke-linecap="round" fill="none"';
+  switch (kind) {
+    case 'combat': // two crossing cut-threads
+      out += `<path d="M 22 22 Q 32 30 42 42" ${S}/><path d="M 42 22 Q 32 30 22 42" ${S}/>`;
+      break;
+    case 'elite': // the knot itself: a loop pulled tight around the crossing
+      out += `<path d="M 21 40 C 27 26 37 26 43 40" ${S}/>`
+        + `<path d="M 21 26 C 27 40 37 40 43 26" ${S}/>`
+        + `<circle cx="32" cy="33" r="3" fill="${acc}" opacity="0.95"/>`;
+      break;
+    case 'boss': // the crown arc over a heavy center
+      out += `<path d="M 21 30 A 13 13 0 0 1 43 30" stroke="${acc}" stroke-width="1.6" fill="none" opacity="0.9"/>`
+        + `<circle cx="32" cy="36" r="4.5" fill="#0b0908" stroke="var(--text)" stroke-width="1.1"/>`;
+      break;
+    case 'event': // a door meant for someone: frame + threshold
+      out += `<path d="M 25 43 V 29 Q 32 21 39 29 V 43" ${S}/><line x1="22" y1="43" x2="42" y2="43" ${soft}/>`;
+      break;
+    case 'rest':
+      if (variant === 'toll') { // the toll-door: frame + the coin it wants
+        out += `<path d="M 25 43 V 29 Q 32 21 39 29 V 43" ${S}/>`
+          + `<circle cx="32" cy="37" r="3.2" fill="none" stroke="${acc}" stroke-width="1.2"/>`;
+      } else { // a kept ember over a hearth line
+        out += `<line x1="24" y1="41" x2="40" y2="41" ${soft}/>`
+          + `<path d="M 32 38 q -4 -5 -1.5 -10 q 3.5 4 2.5 -5 q 4 6 1.5 11 q -1 2.5 -2.5 4 Z" stroke="${acc}" stroke-width="1.1" fill="none" opacity="0.95"/>`;
+      }
+      break;
+    case 'shop': // the balance: beam + two hanging pans
+      out += `<line x1="32" y1="22" x2="32" y2="27" ${soft}/><line x1="23" y1="27" x2="41" y2="27" ${S}/>`
+        + `<path d="M 23 27 v 7 m -3.5 0 h 7" ${soft}/><path d="M 41 27 v 7 m -3.5 0 h 7" ${soft}/>`;
+      break;
+    case 'treasure':
+      if (variant === 'covet') { // the case: spark behind old glass
+        out += `<rect x="23" y="24" width="18" height="16" ${soft}/>`
+          + `<path d="M 32 27 l 2 4 4 1 -4 1 -2 4 -2 -4 -4 -1 4 -1 Z" fill="${acc}" opacity="0.9"/>`;
+      } else { // the spark itself
+        out += `<path d="M 32 21 l 3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="none" stroke="${acc}" stroke-width="1.3"/>`
+          + `<circle cx="32" cy="32" r="1.8" fill="${acc}"/>`;
+      }
+      break;
+    case 'loom': // the Loom's Eye
+      out += `<path d="M 20 32 Q 32 21 44 32 Q 32 43 20 32 Z" ${S}/>`
+        + `<circle cx="32" cy="32" r="4.5" fill="none" stroke="var(--text)" stroke-width="1"/>`
+        + `<circle cx="32" cy="32" r="1.8" fill="${acc}"/>`;
+      break;
+  }
+  // the crossing thread — the set's signature, never dropped
+  const ty1 = r.range(14, 50); const ty2 = r.range(14, 50);
+  out += `<path d="M -2 ${f(ty1)} Q 32 ${f(r.range(18, 46))} 66 ${f(ty2)}" fill="none" stroke="var(--thread)" stroke-width="0.7" opacity="0.28"/>`;
+  return out;
+}
+
+export interface NodeMedallionProps {
+  kind: NodeKindId;
+  variant?: 'toll' | 'covet';
+  act: 1 | 2 | 3;
+  size?: number;
+  className?: string;
+}
+
+/** A map node's medallion. Pure function of (kind, variant, act) — memoized. */
+export const NodeMedallion = React.memo(function NodeMedallion({ kind, variant, act, size = 52, className }: NodeMedallionProps): JSX.Element {
+  const inner = React.useMemo(() => nodeMedallionSvg(kind, variant, act), [kind, variant, act]);
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 64 64" aria-hidden
+      dangerouslySetInnerHTML={{ __html: inner }} />
+  );
+});
