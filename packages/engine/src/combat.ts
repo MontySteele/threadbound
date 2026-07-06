@@ -1685,6 +1685,22 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const dmgScale = mods.dmgScale * (1 + esc);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;
+  // S16-D7 (OQ#45, ruled): single-enemy ELITE/BOSS fights were a pure
+  // per-combat coin flip with no memory, so a run could pile every elite
+  // onto one seat. Anti-streak: those fights bind toward whichever seat has
+  // been bound LESS this run (per-run counter, single-body elite/boss
+  // assignments only); a tie keeps the rolled coin. The `first` roll is
+  // consumed either way (parity habit) — the rng stream is byte-identical;
+  // multi-enemy split behavior is untouched.
+  const singleEliteBoss = enemyDefIds.length === 1
+    && (ENEMIES[enemyDefIds[0]]?.elite || ENEMIES[enemyDefIds[0]]?.boss);
+  let antiStreak: PlayerId | null = null;
+  if (singleEliteBoss) {
+    const binds = (state.bindsByPlayer ??= { p1: 0, p2: 0 });
+    const coin: PlayerId = first.value === 0 ? 'p1' : 'p2';
+    antiStreak = binds.p1 < binds.p2 ? 'p1' : binds.p2 < binds.p1 ? 'p2' : coin;
+    binds[antiStreak]++;
+  }
   const chorusIds = enemyDefIds.filter((id) => ENEMIES[id]?.chorus);
   let chorusSeen = 0;
   enemyDefIds.forEach((defId, i) => {
@@ -1701,7 +1717,7 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       defId,
       hp, maxHp: hp,
       block: 0, hex: 0, weak: 0, vulnerable: 0, stun: 0, strength: 0,
-      boundTo: isChorusOdd ? null : (i + first.value) % 2 === 0 ? 'p1' : 'p2',
+      boundTo: isChorusOdd ? null : antiStreak ?? ((i + first.value) % 2 === 0 ? 'p1' : 'p2'),
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
       intent: scaleIntent(def.script[start.value], dmgScale),

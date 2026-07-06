@@ -885,6 +885,12 @@ export interface GameState {
    *  events exist in no unflagged pool), so flag-off serialized state is
    *  untouched. */
   seenRareEvents?: string[];
+  /** S16-D7 (OQ#45, ruled): per-run count of single-enemy (elite/boss)
+   *  binding assignments per seat — the anti-streak counter. Single-body
+   *  fights bind toward the seat bound LESS; ties keep the rolled coin.
+   *  Created on the first such fight (multi-enemy split behavior and its
+   *  state shape are untouched). */
+  bindsByPlayer?: Record<PlayerId, number>;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
