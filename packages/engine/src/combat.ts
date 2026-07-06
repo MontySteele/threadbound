@@ -1367,6 +1367,18 @@ export function resolveTurn(state: GameState): void {
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: 'stunned — skips its turn' });
     } else {
       enemyAct(state, enemy);
+      // S18.3 (D3-i, ratified 2026-07-06, strings ratified same session):
+      // the second-intent rung — while the Thread is severed, The Unraveled
+      // acts twice per enemy phase. Two extra boss actions per fight, at
+      // mid-fight, exactly when links are dead: the boss act can now lose
+      // you a run you hadn't already lost. Deterministic and learnable; the
+      // sever window is the mechanic the kit already telegraphs.
+      if (selfDef.unraveled && combat.severedTurns > 0 && enemy.hp > 0) {
+        enemy.scriptIndex = (enemy.scriptIndex + 1) % selfDef.script.length;
+        enemy.intent = scaleIntent(selfDef.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: 'the cut frees both its hands — it acts again' });
+        enemyAct(state, enemy);
+      }
     }
     if (enemy.weak > 0) enemy.weak--;
     if (enemy.vulnerable > 0) enemy.vulnerable--;
@@ -1686,7 +1698,13 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   const node = state.map?.nodes?.find((n) => n.id === state.map.position);
   const esc = (enemyDefIds.some((id) => ENEMIES[id]?.elite) || node?.kind === 'elite')
     ? escalationFactor(state.map?.knotsCut ?? 0) : 0;
-  const hpScale = mods.hpScale * (1 + esc);
+  // S18.3 (D3-ii, ratified 2026-07-06): one A1-style HP rung folded into the
+  // A0 baseline for acts 2–3 only — the acts where the S17/S18 boards say
+  // runs stopped dying. Act 1 keeps the integer path byte-identically (the
+  // vv act-1 floor was just rebuilt by D2 and this lever must not touch it).
+  // Ascension rungs stack multiplicatively on top, as always.
+  const lateActTooth = (state.map?.act ?? 1) >= 2 ? 1.1 : 1;
+  const hpScale = mods.hpScale * (1 + esc) * lateActTooth;
   const dmgScale = mods.dmgScale * (1 + esc);
   const first = rngInt(state.rng, 2);
   state.rng = first.state;

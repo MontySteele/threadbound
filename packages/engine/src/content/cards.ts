@@ -360,10 +360,16 @@ def({
 def({
   id: 'patchwork', name: 'Patchwork', character: 'vess', rarity: 'common', cost: 1, tag: 'Guard',
   starterOnly: true,
-  text: 'Gain 4 Block.',
-  base: [{ op: 'block', amount: 4, primary: true }],
+  // S18.2 S-2 (D2, ruled 2026-07-06): the defense turn is the setup turn —
+  // the rider makes turn-1 links live from the Guard side (the P1 from-below
+  // shape). Untargeted rider: the engine retargets to the first targetable
+  // enemy; Pinprick stays the aimed Hex. Mutation checked, unchanged — the
+  // cross-thread form is bram-flavored by design (momentum mirrors the hex
+  // rider at equal weight).
+  text: 'Gain 4 Block. Apply 1 Hex.',
+  base: [{ op: 'block', amount: 4, primary: true }, { op: 'hex', amount: 1 }],
   mutation: { name: 'Riveted Patchwork', text: 'Gain 3 Block. Gain 1 Momentum.', base: [{ op: 'block', amount: 3, primary: true }, { op: 'momentum', amount: 1 }] },
-  upgrade: { text: 'Gain 5 Block. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
+  upgrade: { text: 'Gain 5 Block. Apply 1 Hex. Link (Surge): gain 2 more.', base: [{ op: 'block', amount: 5, primary: true }, { op: 'hex', amount: 1 }], link: { condition: 'Surge', text: 'Gain 2 more.', effects: [{ op: 'block', amount: 2 }] } },
 });
 def({
   id: 'jab', name: 'Jab', character: 'bram', rarity: 'common', cost: 1, tag: 'Strike',
@@ -387,8 +393,11 @@ def({
 // M2-A5 starter decks; §14.11: one Hatpin/Jab slot becomes the payoff card
 export const STARTER_DECKS: Record<CharacterId, string[]> = {
   vess: [
+    // S18.2 S-1 (D2, ruled 2026-07-06): tenth slot — mendthread out, second
+    // Pinprick in. Turn-1 Hex supply for the setup-shaped kit; mendthread
+    // stays draftable (its shape parks per S18 §6a).
     'hatpin', 'hatpin', 'hatpin', 'worn_knife', 'patchwork', 'patchwork', 'patchwork',
-    'pinprick', 'loose_stitch', 'mendthread',
+    'pinprick', 'loose_stitch', 'pinprick',
   ],
   bram: [
     'jab', 'jab', 'jab', 'knuckle_crack', 'brace_up', 'brace_up', 'brace_up',

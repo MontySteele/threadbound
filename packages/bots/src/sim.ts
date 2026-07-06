@@ -373,15 +373,19 @@ export function printSummary(results: RunResult[]): void {
   const totalResTags = Object.values(resonanceTags).reduce((a, b) => a + b, 0);
   const maxResTagShare = totalResTags ? Math.max(...Object.values(resonanceTags)) / totalResTags : 0;
 
-  // S14-R1: the win-rate band binds vb at A0 on the DEFAULT topology only —
-  // the 25–35/≤40 bands were calibrated to draft-v1 bots that no longer
-  // exist. Mirrors and braid rows are reported, not banded; human data
-  // rules at the next playtest (OQ#14).
-  const r1Banded = PAIR === 'vb' && ASCEND === 0 && !KNOT;
+  // S14-R1 as re-derived by S18 (ruled 2026-07-06, stop-and-report): the
+  // win-rate band binds vb at A0 on the BRAID — the shipped topology
+  // (render.yaml runs TB_KNOTWORK=1; S15 recalibrated on it; the S18-D3
+  // target band is its number). The default-topology row is the flag-off
+  // fallback lane generator: REPORTED, not banded (its 40–55 band broke as
+  // a side effect of the D3 dose ratified on the shipped map — anchors
+  // banked in docs/S18-STATUS.md Part 8 for delta reads). Mirrors likewise
+  // reported; human data rules at the next playtest (OQ#14).
+  const r1Banded = PAIR === 'vb' && ASCEND === 0 && KNOT;
   const gates: Gate[] = [
     r1Banded
-      ? { name: 'vb win rate 40–55% at A0 default topology (S14-R1)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 40 && winRate <= 55 }
-      : { name: `win rate (reported, not banded — S14-R1: ${PAIR}${KNOT ? ' braid' : ''} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
+      ? { name: 'vb win rate 45–55% at A0 braid (S14-R1 as re-derived by S18-D3)', value: `${winRate.toFixed(0)}%`, pass: winRate >= 45 && winRate <= 55 }
+      : { name: `win rate (reported, not banded — S14-R1/S18: ${PAIR}${KNOT ? ' braid' : ' default'} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -699,7 +703,12 @@ export function printSummary(results: RunResult[]): void {
     const first = byOrder[orders[0]];
     const last = byOrder[orders[orders.length - 1]];
     const ratio = (last.hp / last.n) / Math.max(1e-9, first.hp / first.n);
-    console.log(`S11.2 escalation calibration: ${line} — last/first ratio ${ratio.toFixed(2)} (gate >=2 needs steepening if unmet)`);
+    // S18-D4 (ruled 2026-07-06): the ≥2 aspiration is RE-DERIVED to a ≥1.2
+    // regression floor — braid paths meet at most TWO knots per act by
+    // construction (S16-STATUS Part 6), so last/first is a knot-2/knot-1
+    // ratio with a structural ceiling ~1.8 even for a sub-pool of one; the
+    // floor protects the escalation that exists (S16-D4's 1.08→1.2+).
+    console.log(`S11.2 escalation calibration: ${line} — knot-2/knot-1 ratio ${ratio.toFixed(2)} (S18-D4 regression floor: >=1.2 on the probe leg)`);
   }
   console.log('---------------- GATES ----------------');
   let allPass = true;

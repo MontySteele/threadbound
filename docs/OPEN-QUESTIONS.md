@@ -442,6 +442,9 @@ working as intended, not a missing-content bug.
     relics the viewer benefits from (own relics + the partner's `coop:
     true` relics). The retext table is superseded, preserved for the
     record in docs/S16-STATUS.md. CLOSED.
+    **OQ#41b RULED (2026-07-06, S18 6c): PARKED to the content pass, as
+    already scoped** — which relics become genuinely co-op is content-pass
+    material; no S18 work.
 
 42. **"Pass on Coveting" and "Onward" are redundant on the reward screen**
     (designer, live). True: ADVANCE auto-passes an undecided Covet in the
@@ -659,6 +662,9 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     38–50% at act-2 L3) — re-observe at the next playtest (debrief question
     2 verbatim, unnamed). The D10-C EXECUTE (full-screen shrine treatment
     for the pick) stays UNFIRED pending that read.
+    **S18 6e (2026-07-06): REMAINS on the playtest slate as filed** — the
+    re-observe rides the first human playtest's pre-written agenda; no
+    ruling owed, dated so the S18 ledger reads total.
 
 53. **Linked Shields vs Immovable dominance evidence** filed to the §7
     guard-suite item: 7/6 vs 12/8 at equal cost; the niche (Guard
@@ -666,6 +672,8 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     No action in S9b. S9d.A2 adds Immovable's partnerHeal 3 link to the
     same telemetry watch (same verb as Quiet Mending's A1 ritual, on the
     card the playtest already called strictly-better). **WATCH.**
+    **S18 6e (2026-07-06): REMAINS on the playtest slate as filed** — the
+    watch continues; dated so the S18 ledger reads total.
 
 ## S9c/S9d/S11 Wave A (2026-07-04, same branch)
 
@@ -691,6 +699,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     *S16 pointer: the composition lever (S16-D4, the knot sub-pool) landed —
     probe-leg ladder 1.09 → ~1.26; the ≥2 gate's stop-and-report decision
     packet is in docs/S16-STATUS.md.*
+    **RULED (2026-07-06, S18-D4): the ≥2 gate is RE-DERIVED — knot-2/knot-1
+    pair-HP ratio ≥ 1.2 on the probe leg, a regression floor.** Braid paths
+    meet at most TWO knots per act by construction; even a sub-pool of one
+    tops out ~1.8 — the aspiration measured what the topology forbids. The
+    floor banks the S16-D4 gain (final-build read 1.22–1.24, PASS). Option
+    (b) per-run escalation returns as its own sprint if the post-D3 game
+    still wants steeper knots; option (a) hot comps declined (×3 pierce
+    lesson). **CLOSED into the S18 exit gates.**
 
 56. **Battery environment offset**: this container reads the recorded
     S9a/S10a matrix ~8–26 points low on identical code+seeds (bb worst).
@@ -712,6 +728,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     MECHANISM was identified — event-loop contention makes bots act on
     stale views, a one-directional misplay tax that scales with machine
     load. docs/S16-STATUS.md carries the parity bridge.
+    **CLOSED AS SUPERSEDED (2026-07-06, S18 6d), with verification.** A
+    fresh container reproduced the S17 §12 exit board to the exact
+    win-count on all three n=2000 rows (721/1118/1433 of 2000), repeat
+    invocations are byte-identical, and tip-vs-S17.4-parent builds
+    byte-compare equal at n=100 (mutations never fire under bot play).
+    The offset was the WS-contention era; the socket-free path is
+    deterministic per seed ACROSS environments. Evidence:
+    docs/S18-STATUS.md Part 6.
 
 57. **Instrument gaps named**: "questions provable/run" (S11.3 target
     band) has no harness calculation — distinctEliminations is the proxy;
@@ -767,3 +791,77 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     wins vs losses split). Bot-meta caveat applies (OQ#14): bots draft
     junk, so card value reads LOW on bot evidence — a card-economy
     rebalance should be sized against playtest reads too.
+
+## S18 Tying Off (2026-07-06, docs/S18-STATUS.md carries the evidence)
+
+60. **gravebloom vs the S13.2 flat-hex-echo law (the S17.2 reverted
+    buff).** **RULED (2026-07-06, S18-D5): THE LAW HOLDS.** Hex dominance
+    was structural (OQ#28/#43); hookAll-hex past 2 is exactly what the law
+    blocks, and bending it for one dead card licenses every floor-raise to
+    petition. The D2 reshape did not lift it for free (flat, +5.2 → +5.0,
+    same tool both sides). Different-axis enumeration PARKED at sign-off,
+    nothing authored: (g-a) detonate-side rider (inside the ≤2 law);
+    (g-b) draw hook on the existing partner-link trigger; (g-c) cost 2→1.
+    Next audit/design session rules or discards. **CLOSED as ruled.**
+
+61. **braided_censer effect trim (the S17 §12 stratified +5.4
+    residual).** **RULED (2026-07-06, S18-D5): PARKED with a named
+    trigger.** The residual is a bot-resonance-rate artifact until proven
+    otherwise; fray/resonance items are where bot and human play diverge
+    most. Trigger, pre-approved: if the next human playtest reads the
+    censer as table-dominant, the trim is heal 2→1 — no new session
+    needed. **PARKED.**
+
+62. **Laws vs passes, generally.** **RATIFIED (2026-07-06, S18-D5) as
+    standing procedure: laws outrank passes by default.** A pass that
+    collides with a law stops and reports (S17.2's gravebloom revert is
+    the model); a law bends only by its own sign-off row in a design
+    session. **CLOSED.**
+
+63. **Dead-shape cluster (measured_cut, slow_burn, tithe_of_thread,
+    mendthread) + the Thread-glue pattern (votive_thread,
+    litany_of_mending).** **RULED (2026-07-06, S18 6a): PARKED to the
+    playtest pile.** Three S17 batteries prove scalar-immunity; whether
+    Thread is over-supplied or bots under-bank it is adjudicable only by
+    human data. Re-open trigger: first human playtest, Thread-banking
+    debrief question, verbatim, unnamed. **No more +1s in the interim —
+    ratified as a rule.** (S18 note: S-1 removed mendthread from the vess
+    starter; it stays draftable and the playtest question is unchanged.)
+    **PARKED.**
+
+64. **Fray-relic trio (covetous_psalter, scar_votive, knotted_votive et
+    al.).** **RULED (2026-07-06, S18 6b): PARKED.** Bots don't fray;
+    these are the sloppier-human-pair relics by design. Human data rules.
+    **PARKED.**
+
+65. **S14-R1 band collision (S18 exit battery, stop-and-report fired).**
+    The vb-default 40–55 band broke on the S18 final build (40.5 → 32.4)
+    as a side effect of the D3 dose, which was ratified on the braid —
+    the shipped topology (render.yaml runs TB_KNOTWORK=1). **RULED
+    (2026-07-06): S14-R1 is RE-DERIVED onto the shipped topology** — the
+    band binds vb at A0 on the BRAID at 45–55 (the S18-D3 target band;
+    currently 48.6, mid-band PASS). Default-topology rows become
+    REPORTED-not-banded (the fallback lane generator; its anchors are
+    banked in docs/S18-STATUS.md Part 8 for delta reads). Instrument
+    change landed in sim.ts with the ruling. **CLOSED as re-derived.**
+
+66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
+    philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%
+    (+2.5 — the A3 extra elite now PAYS at compressed win rates: its
+    rewards outweigh its cost) and vb reads flat (22.2 → 22.4). The whole
+    ascension curve steepened with the S17+S18 doses (S16-era A2/A3 read
+    ~40s). **RULED (2026-07-06): REPORT → ROADMAP** — the
+    ascension-implementation roadmap item inherits this as its first
+    calibration input; every ascension number remains PROVISIONAL by
+    design (ascension.ts header). No S18 scope grew. **FILED.**
+
+67. **Co-op texture gate (1e) half-collision (S18 exit battery,
+    stop-and-report fired).** vb kept the link-fire lead (55.6 vs vv
+    45.1 / bb 51.7) but lost the thread-spent/combat lead to bb (3.90 vs
+    4.18) — isolated to the ratified S-1: the vess starter's Thread
+    generator (mendthread) left the deck while bram's kindle stayed, so
+    the metric's old form was partly measuring starter composition.
+    **RULED (2026-07-06): 1e RE-DERIVED — the link-fire lead is the
+    binding half (the S3 thesis's cross-player signal); thread/combat
+    becomes a REPORTED texture row.** Anchors for the reported row banked
+    in docs/S18-STATUS.md Part 8. **CLOSED as re-derived.**
