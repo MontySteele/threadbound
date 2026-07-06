@@ -56,4 +56,180 @@ So promoting a card common→uncommon roughly halves its offer
 frequency and raises its price ~50%; demoting does the reverse. A
 bucket move is an *availability* lever, not a text or effect change.
 
-<!-- SECTIONS 3-7 FILLED FROM THE BATTERY — see analysis below -->
+## 3. Battery overview — pairing balance & where runs die
+
+Same seed set, n=2000 each, braid, A0:
+
+| pairing | win% | died act 1 | died act 2 | died act 3 |
+|---|---|---|---|---|
+| vv | 54.4 | 539 (27.0%) | 368 (18.4%) | 5 (0.3%) |
+| vb | 68.5 | 39 (2.0%) | 582 (29.1%) | 10 (0.5%) |
+| bb | 74.0 | 6 (0.3%) | 504 (25.2%) | 11 (0.6%) |
+
+Three findings, in order of size:
+
+1. **vv's deficit is an act-1 problem, almost entirely.** The vess
+   mirror loses 27% of runs in act 1; vb loses 2%, bb 0.3%. Past act
+   1, vv converts about as well as the others. The vess kit is
+   setup-shaped (hex, detonate, scaling) — two slow starters
+   compound, where bram's immediate block/momentum kit carries the
+   early game. Any "bring pairings into balance" lever should aim at
+   vess's act-1 floor, not at vv's whole curve.
+2. **bb−vb = +5.5 at n=2000** — inside the ±8 gate-2 band (the n=200
+   final-battery read was +2.5; this is the tighter estimate).
+   Character-vs-character is roughly where S16 left it; the *mirror*
+   spread (bb−vv = +19.6) is the outstanding imbalance.
+3. **Act 3 kills nobody.** 26 of 3,962 runs that reached act 3 lost
+   (0.7%). All lethality is front-loaded into acts 1–2; the boss act
+   is a formality under bot play. Whatever the difficulty ruling ends
+   up being, this is the texture gap to know about: the game's *end*
+   currently cannot lose you a run you didn't already lose.
+
+## 4. Card audit — rarity buckets don't order value
+
+Presence-weighted mean lift per bucket, on the act≥2-controlled
+column (the honest one):
+
+| pool | common | uncommon | rare |
+|---|---|---|---|
+| vess | **+9.4** | +8.6 | +9.0 |
+| bram | +7.9 | **+5.6** | +8.0 |
+| neutral | +6.1 | **+3.7** | +8.2 |
+
+Expected common < uncommon < rare; observed: vess is flat with
+commons on top, and in every pool the uncommon bucket is the trough.
+Rarity is currently a price/frequency dial that does *not* track
+value. Individual tier-breakers (act≥2 lift, `**` = z ≥ 2; full
+tables in the battery logs and `audit-lift2` output):
+
+**Commons at rare-tier value** (vess rare mean is +9.0, bram's +8.0):
+- vess: `withering` +14.9**, `unpicking` +14.3**, `patient_knife`
+  +13.6** (and a second shelf ~+10.5: graverust, spite_stitch,
+  pinprick, seeding_curse, hollow_seam, thornward)
+- bram: `rendcall` +14.0**, `ember_jab` +13.1**, `opener` +12.3**
+- neutral: `tallow_mark` +13.4** (a 0-cost Hex 2 — the best common
+  in the game by this read)
+
+**Uncommons above nearly every rare:** `pale_unmaking` +16.3**,
+`rend_the_weave` +15.5** (only needles_verdict and final_bell beat
+them among all 24 rares).
+
+**Rares at glue-tier value (demote or retune):** `aftershock` +0.4,
+`stokers_due` +1.4 (bram); `selvage` +2.5, `unbroken_line` +2.2
+(vess).
+
+**Dead or negative (retune candidates — a bucket move can't fix
+these):** `votive_thread` −4.2, `litany_of_mending` −2.5,
+`tithe_of_thread` −0.9, `quickening` −0.1, `banked_coals` +0.5,
+`inheritance` +0.9, `kindle` +1.0, `measured_cut` +1.3. Pattern
+worth naming: **the Thread-gain glue reads dead under bot play**
+(litany, tithe, votive_thread are three of the bottom eight).
+Either Thread is over-supplied by regen/relics, or bots under-value
+banking it — the human playtest should adjudicate before any retune.
+
+## 5. Relic audit — flat as a class, two genuine outliers
+
+Raw relic lift is +12…+35 across the board, but stratifying by total
+relic count (within "you hold k relics, which ones?") collapses the
+class to −1…+2: **relic lift was mostly the more-relics-=-better-run
+confound, and the relic pool is broadly flat — reasonably bucketed
+already.** Two exceptions stand clear of the pack after
+stratification:
+
+| relic | raw | act≥2 | count-stratified |
+|---|---|---|---|
+| braided_censer (coop) | +35.3 | +28.8 | **+5.0** |
+| chord_of_the_choir (coop) | +26.7 | +20.5 | **+4.1** |
+| *(next best)* hungry_whetstone | +20.0 | +13.2 | +1.9 |
+
+Both are the **Resonance-hook relics** (per-ignition heal-both /
+draw+Kindled). At bot resonance rates they fire constantly; they are
+the two strongest items in the game by a factor of ~2.5 over the
+next relic.
+
+Bottom of the stratified table (−0.5…−1.1): covetous_psalter,
+loom_of_two_hands, scar_votive, steadfast_icon, knotted_votive.
+Note before anyone swings at them: three of those five are
+**fray-hook relics**, and bots manage Thread well enough that fray
+barely fires — they read dead under bot play but are exactly the
+relics a sloppier human pair would feel. No action proposed; human
+data rules here.
+
+No relic went unacquired; no card went unsampled.
+
+## 6. Proposed moves — SIGN-OFF TABLES (nothing below has landed;
+## each row stalls until ruled)
+
+Bucket moves are availability/price levers (§2), not effect changes.
+Proposals are deliberately one-step; if a promoted card still tops
+its new bucket next audit, promote again then.
+
+### 6a. Card promotions (cut frequency 60%→30%, raise price ~50%)
+
+| # | card | pool | move | act≥2 lift | evidence line |
+|---|---|---|---|---|---|
+| 1 | pale_unmaking | vess | uncommon → rare | +16.3 | beats 22 of 24 rares |
+| 2 | rend_the_weave | vess | uncommon → rare | +15.5 | beats 22 of 24 rares |
+| 3 | withering | vess | common → uncommon | +14.9 | above vess rare mean +9.0 |
+| 4 | unpicking | vess | common → uncommon | +14.3 | above vess rare mean |
+| 5 | patient_knife | vess | common → uncommon | +13.6 | above vess rare mean |
+| 6 | rendcall | bram | common → uncommon | +14.0 | above bram rare mean +8.0 |
+| 7 | ember_jab | bram | common → uncommon | +13.1 | above bram rare mean |
+| 8 | opener | bram | common → uncommon | +12.3 | above bram rare mean |
+| 9 | tallow_mark | neutral | common → uncommon | +13.4 | best common in the game; **covenant note:** the neutral pool's 8/5/2 split is pinned (M2 §9 + covenant.test.ts) — this row is a covenant amendment (7/6/2), not just a data edit |
+
+### 6b. Card demotions (raise frequency, cut price)
+
+| # | card | pool | move | act≥2 lift |
+|---|---|---|---|---|
+| 10 | aftershock | bram | rare → uncommon | +0.4 |
+| 11 | stokers_due | bram | rare → uncommon | +1.4 |
+| 12 | selvage | vess | rare → uncommon | +2.5 |
+| 13 | unbroken_line | vess | rare → uncommon | +2.2 |
+
+### 6c. Relic weight moves (the loom_of_two_hands precedent: `rare:
+### true` = ⅓ drop weight, effect untouched)
+
+| # | relic | move | stratified lift |
+|---|---|---|---|
+| 14 | braided_censer | add `rare: true` | +5.0 (2.6× next peer) |
+| 15 | chord_of_the_choir | add `rare: true` | +4.1 (2.2× next peer) |
+
+If the ruling prefers effect trims over weight (heal 2→1 / drop the
+Kindled), that's a different lever with a different feel — flagging
+both; the table proposes the weight lever because it preserves the
+relics' identity and matches the audit's availability framing.
+
+### 6d. Retune-flag list (PARKED — design work, not bucket moves)
+
+votive_thread, litany_of_mending, tithe_of_thread, quickening,
+banked_coals, inheritance, kindle, measured_cut — plus the
+Thread-glue pattern (§4) and the fray-relic trio (§5), both of which
+want human playtest data before anyone touches numbers.
+
+## 7. Sequencing from here (per the charter)
+
+1. **These tables get ruled** → moves land in their own commit(s),
+   then a re-read battery (same seeds) confirms bucket ordering
+   improved and measures the win-rate side effect (promotions of
+   top cards should *lower* win rates a little on their own —
+   strong cards become scarcer).
+2. **Pairing balance:** the vv act-1 floor is the target
+   (§3.1). Candidate levers for the ruling, from below: vess
+   early-defense glue (e.g. a starter or common Guard tweak — lifts
+   vv double, vb half, bb none, which is the shape of the gap);
+   NOT a global act-1 nerf (vb/bb act-1 death rates are already ~0).
+   Dose comes from the designer, per house law.
+3. **Difficulty last**, once value and pairings sit right: bot win
+   rates 54–74% at A0 braid say the baseline is soft, and §3.3 says
+   the missing teeth are act-2/act-3-shaped (act 3 kills 0.7%).
+   Levers on the shelf: global scales (TB_ENEMY_HP_SCALE 1.45 /
+   TB_ENEMY_DMG_SCALE 1.3 are baked anchors today), folding
+   A1/A2-style rungs into the A0 baseline, authored act-3/boss
+   teeth (the knot sub-pool precedent), rest-heal. No dose proposed
+   here by design.
+
+Caveat once more, so it travels with the tables: **bot lift ≠ human
+value.** Where a human read exists and disagrees, it outranks this
+sweep. The sweep's strength is coverage (129 defs × 6,000 runs), not
+depth.
