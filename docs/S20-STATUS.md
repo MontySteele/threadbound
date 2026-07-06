@@ -313,5 +313,12 @@ parity instruments byte-identical after):
    sizes, captions, and stroke weights together so nothing drifts
    apart. Mobile unchanged (clamps to the floor). A `-big.jpg` pair
    (2000×1300, the designer's window class) joined the banked set.
+4. **The rail covered the character panel in combat.** The fixed-
+   position rail sat on top of whatever the layout put bottom-right —
+   on tall windows, Bram's panel. Fix: on the two screens that mount
+   the rail (`.app.rail-on`, ≥1100px) the phase root reserves a real
+   right gutter the rail's width, so content and rail can no longer
+   share pixels at any scrollback height. Below 1100px the rail
+   overlays as before (and collapses to one line ≤700px).
 
 The banked screenshot set was retaken on the fixed build.

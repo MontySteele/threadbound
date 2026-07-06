@@ -625,8 +625,18 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 /* hint-family: teaching, not color — a marked, bordered form */
 .rail-line.rail-hint { border-left: 2px solid var(--thread); padding-left: 6px; font-style: normal; }
 .rail-hint-tag { color: var(--thread); }
+/* the rail owns a real GUTTER on the screens that mount it (map + combat,
+   flagged .app.rail-on) — fixed positioning must never cover the character
+   panels (designer 2026-07-06). Scoped to the phase roots so the header
+   doesn't shift between phases. Below 1100px the rail overlays as before. */
+@media (min-width: 1100px) {
+  .rail-on .combat, .rail-on .center.map-center { padding-right: 292px; }
+}
 /* big screens: the rail widens with the rest of the UI */
-@media (min-width: 1600px) { .witness-rail { width: 320px; right: 14px; } }
+@media (min-width: 1600px) {
+  .witness-rail { width: 320px; right: 14px; }
+  .rail-on .combat, .rail-on .center.map-center { padding-right: 360px; }
+}
 /* mobile: collapse to the latest line; tap to expand */
 @media (max-width: 700px) {
   .witness-rail { width: calc(100% - 16px); bottom: 40px; cursor: pointer; }

@@ -254,7 +254,7 @@ export default function App(): JSX.Element {
       {!joined || !state ? (
         <Home net={net} error={error} status={status} />
       ) : (
-        <div className="app">
+        <div className={`app ${state.phase === 'map' || state.phase === 'combat' ? 'rail-on' : ''}`}>
           <header>
             <span className="title">THREADBOUND</span>
             <span className="header-mid">
