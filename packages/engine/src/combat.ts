@@ -1055,6 +1055,14 @@ export function resolveTurn(state: GameState): void {
         }
         // S8.1 Dowry-Bound: reclaiming a partner's card feeds the engine
         runHooks(state, ta.player, 'reclaim');
+        // S19.2/S19.6 (D1): the solo partner's Reclaim is ALWAYS announced —
+        // the verb must be seen to teach. {card} names the card as it sat in
+        // the human's pile (truth law: the line claims only what just
+        // happened). Empty pool → sayWitness no-ops (strings stall at the
+        // Part 7 sign-off); co-op/sim runs never reach this (no botSeat).
+        if (state.botSeat && ta.player === state.botSeat) {
+          sayWitness(state, 'i_reclaimed_yours', { card: effectiveDef(src).name });
+        }
         break;
       }
       case 'sever': {

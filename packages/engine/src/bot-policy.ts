@@ -126,6 +126,9 @@ export class BotPolicy {
   private allKnots: boolean;
   private draftV2: boolean;
   private reclaimedTurn = -1;
+  /** S19.2 (D1): the combat (act:position) in which the solo Reclaim fired —
+   *  at most once per combat, by rule */
+  private soloReclaimCombat = '';
   private pulsedTurn = -1;
   private reorderedTurn = -1;
   private reorderCount = 0;
@@ -302,6 +305,18 @@ export class BotPolicy {
       }
     }
 
+    // S19.2 (D1, row R-a): the solo partner's Reclaim — the flagship
+    // cross-deck verb, absent from every solo run before this sprint.
+    // Deterministic and legible (NOT the sim nudge's 30% roll): it fires
+    // only on an articulable pull, at most once per combat, and never takes
+    // the shared pool below the courtesy floor. Considered from the TOP of
+    // the turn — the full hand is what makes a pull articulable ("its tag
+    // fires a link I'm holding"); the echo arrives next turn either way.
+    if (this.mode === 'solo' && !anyFallen && !severed) {
+      const reclaim = this.trySoloReclaim(view);
+      if (reclaim) return reclaim;
+    }
+
     const affordable = me.hand
       .map((id) => ({ id, def: defOf(view, you, id) }))
       .filter((c) => c.def.cost <= me.energy);
@@ -414,6 +429,61 @@ export class BotPolicy {
       type: 'STAGE_CARD', player: you, cardInstanceId: pick.id,
       slot: best!.pos, targetId: pick.def.needsTarget ? target.id : undefined,
     };
+  }
+
+  /** S19.2 (D1, row R-a — SOLO ONLY): Reclaim a card from the human's
+   *  discard/exhaust when the pull is ARTICULABLE — "it took that FOR a
+   *  reason" is the whole design:
+   *    (a) the card's tag fires a link the bot is holding, or
+   *    (b) the card feeds the hex/detonate axis into a pile ≥ 3.
+   *  At most once per combat; Thread courtesy holds strictly (the floor of
+   *  5 after the 2-cost spend — Reclaim is never worth fraying the pair,
+   *  so the lethal-adjacent exception does NOT apply here). Announced
+   *  always via the i_reclaimed_yours pool at resolution (S19.6) — the
+   *  verb must be seen to teach. Deterministic: no rolls. */
+  private trySoloReclaim(view: BotView): Action | null {
+    const you = view.you;
+    const combat = view.combat!;
+    const combatKey = `${view.map.act}:${view.map.position}`;
+    if (this.soloReclaimCombat === combatKey) return null; // once per combat
+    // courtesy floor, strict — measured against what's LEFT after every
+    // spend already declared this turn (declarations don't decrement
+    // view.thread until resolution)
+    const declared = combat.threadActions.reduce(
+      (a, t) => a + (t.kind === 'sever' ? 3 : t.kind === 'steady' ? 1 : 2), 0);
+    if (view.thread - declared - 2 < 5) return null;
+    const me = view.players[you];
+    if (me.hand.length >= 10) return null; // a full hand drops the echo
+    const partner = view.players[otherOf(you)];
+    const pool = [...partner.discard, ...partner.exhaust].filter(
+      (id) => !combat.threadActions.some((t) => t.kind === 'reclaim' && t.targetId === id),
+    );
+    if (pool.length === 0) return null;
+    const targetable = combat.enemies.filter((e) => e.hp > 0 && !e.untargetable);
+    const pileReady = targetable.some((e) => e.hex >= 3);
+    // links the bot is holding: hand cards' link conditions, by exact tag —
+    // 'any'/'partner' conditions excluded on purpose (they fire regardless;
+    // an "articulable" pull names the specific card that lights them)
+    const heldConditions = new Set(
+      me.hand.map((id) => defOf(view, you, id).link?.condition).filter((c) => c !== undefined),
+    );
+    let best: { id: string; score: number } | null = null;
+    for (const id of pool) {
+      const def = defOf(view, otherOf(you), id);
+      const text = JSON.stringify(def.base) + JSON.stringify(def.link?.effects ?? []);
+      const firesHeldLink = heldConditions.has(def.tag);
+      // op names as JSON.stringify actually renders them — double-quoted
+      // (the tryPulse form, not axisBonus's sim-frozen single-quote read)
+      const feedsAxis = pileReady &&
+        (text.includes('"hex"') || text.includes('hexAll') || text.includes('doubleHex')
+          || text.includes('detonate') || text.includes('damagePerHex'));
+      if (!firesHeldLink && !feedsAxis) continue; // not articulable — no pull
+      const score = (firesHeldLink ? 2 : 0) + (feedsAxis ? 1 : 0);
+      if (!best || score > best.score) best = { id, score }; // tie → pile order
+    }
+    if (!best) return null;
+    this.soloReclaimCombat = combatKey;
+    return { type: 'DECLARE_THREAD', player: you, kind: 'reclaim', targetId: best.id };
   }
 
   /** §14.12 solo courtesy: never take the shared pool below 5 — except
