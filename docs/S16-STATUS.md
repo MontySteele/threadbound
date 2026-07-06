@@ -141,3 +141,41 @@ container): socket-free unsharded 53 s; socket-free 3-shard 19–20 s;
 WS conc-8 (the S15-era config) 283 s. **The new instrument reads a
 pooled row ~14× faster** — and the paired S16-R1 form needs half the
 runs for a cleaner read on top.
+
+## Part 2 — S16.1, the D3 lever (executed as pinning + a decision packet)
+
+**Finding: the D3-B ruling's premise does not match the shipped code.**
+"Today: strand-local" is false — the knot reward screen has offered a
+card pick to BOTH seats (each from their own pool) since M2 (§8), at
+every knot kind, on both topologies, and the reward screen's copy
+already reads correctly for two seats. Verified three ways: reducer
+(`afterResolution` rolls per-seat sets at every combat victory, no
+strand gate anywhere in engine or client), empirically (in-process
+probe runs across braid knots, all four elite comps), and now by test.
+
+Executed per the sprint's own law ("the next lever is a fresh design
+session, not a bigger dose — the ×3 lesson stands"):
+
+- **The ruled END STATE is pinned** (s16-knot-reward.test.ts): both-seat
+  3-card offers at every braid crossing (both acts), classic elites, and
+  non-knot combat rewards; both picks actually takeable. It can never
+  silently regress into the strand-local shape the ruling forbids.
+- **No balance change landed.** Granting an EXTRA pick at knots would be
+  an unruled dose invented to rescue a mis-premised ruling — exactly the
+  resize class D3's own packet history warns against.
+- **The Part 2 battery is vacuous by construction** (build A ≡ build B)
+  and was not spent. Gate 2 closure rides the D4 sub-pool alone this
+  sprint.
+- **D2 sign-off table: EMPTY** (the doc's own anticipated case — the
+  existing screen copy already reads correctly for two seats).
+
+**DECISION PACKET — S16-P1 (gate 2's from-below lever, returns to the
+designer):** vb-braid sits 10.0 under bb-braid on the clean anchor. If
+gate 2 must close from below in a future arc, the honest candidate
+levers are (a) knots pay one ADDITIONAL pick to each seat (a real dose
+of the card economy at mandatory crossings — needs a fresh ruling and
+its own battery), (b) the S15-D3 option C (a truth-strand deep event
+gains a card-offer face), or (c) accept ±10 as the pairs' true distance
+on the clean instrument and re-derive the gate band (the ≤15 spread
+anchor suggests the old bands were contention artifacts). No
+recommendation is embedded — the premise correction comes first.
