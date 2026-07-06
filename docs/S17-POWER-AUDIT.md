@@ -233,3 +233,57 @@ Caveat once more, so it travels with the tables: **bot lift ≠ human
 value.** Where a human read exists and disagrees, it outranks this
 sweep. The sweep's strength is coverage (129 defs × 6,000 runs), not
 depth.
+
+---
+
+# S17 implementation record (rulings of 2026-07-06)
+
+**Designer rulings on the tables above:** 6a/6b/6c APPROVED as
+proposed. Additionally: after the moves, identify each bucket's
+biggest outliers and run a SMALL NUMBERS PASS to bring cards into
+line (playtest is far out; bot data governs until then), and give
+the relic class a modest uplift — the designer reads relic rewards
+as below the value floor of the card-reward classes.
+
+## 8. S17.1 — the moves, landed
+
+All 15 moves in one commit; availability/price only. Consequences
+that traveled with them, each on the record:
+
+- **Covenant pool splits amended** (a sign-off row by its own comment):
+  vess 25/20/12 → 22/23/12, bram 25/20/12 → 22/25/10, neutral 8/5/2 →
+  7/6/2 (the tallow_mark row amends the M2 §9 split).
+- **The four demoted rares owe mutations** (born rare = Echo
+  unmutated; every uncommon must mutate). Mutation strings stall at
+  sign-off — covenant carries a documented exemption until the rows
+  below are ruled.
+- **Witness rare-naming lines** (S13.4 rider pins authored = draftable
+  exactly): two PROVISIONAL lines authored for the promotions; four
+  lines retired with the demotions, preserved here for the record:
+  - unbroken_line: "An Unbroken Line. Thread that keeps arriving.
+    Inheritance, of a kind."
+  - selvage: "Selvage. The finished edge. Whoever closes the row
+    keeps it from unraveling."
+  - aftershock: "An Aftershock. Every burst leaves one more tremor
+    than anyone counted."
+  - stokers_due: "The Stoker's Due. The Thread is spent; someone
+    collects. He has decided it is him."
+- **Golden regen** (loud, in-commit): rarity moves reshape reward
+  pools → the random-walk covenant hashes moved.
+
+### 8a. SIGN-OFF — mutations owed by the demoted four (strings; the
+### covenant exemption comes out when these land)
+
+| # | card | proposed mutation |
+|---|---|---|
+| M1 | aftershock | **Faultline** — "Power: whenever Hexes detonate, deal 2 to ALL enemies. Draw 1 when played. Exhaust." |
+| M2 | stokers_due | **Stoker's Advance** — "Power: the first time Thread is spent each turn, gain 2 Momentum. Draw 1 when played. Exhaust." |
+| M3 | selvage | **Raw Edge** — "Power: when the resolved Chain closes on your card, gain 4 Block. Exhaust." |
+| M4 | unbroken_line | **Frayed Line** — "Power: at the start of each turn, gain 1 Thread. Every other turn, this asks again." *(flavor draft — if the double-clause reads muddy, the fallback is a plain weaker echo: gain 1 Thread on ODD turns)* |
+
+### 8b. SIGN-OFF — the two PROVISIONAL witness lines (promotions)
+
+| card | line |
+|---|---|
+| pale_unmaking | "Pale Unmaking. She writes the curse and reads it out in the same motion." |
+| rend_the_weave | "Rend the Weave. A tear that takes the stitching with it — when there is stitching to take." |
