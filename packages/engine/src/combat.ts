@@ -1031,6 +1031,12 @@ export function resolveTurn(state: GameState): void {
             e: 'thread_action', player: ta.player, kind: 'pulse',
             detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: free)' : ''}`,
           });
+          // S19.6 (D5): the bot Pulsing a HUMAN-owned link is announced
+          // always — its least legible action made legible. Empty pool
+          // no-ops until the Part 7 strings sign (solo runs only).
+          if (state.botSeat && ta.player === state.botSeat && slot.owner !== state.botSeat) {
+            sayWitness(state, 'i_pulsed_yours');
+          }
         }
         break;
       }
@@ -1074,6 +1080,10 @@ export function resolveTurn(state: GameState): void {
         } else if (enemy.boundTo !== null) {
           enemy.boundTo = otherPlayer(enemy.boundTo);
         }
+        // S19.6 (D5): the bot's Sever, announced always (at resolution — the
+        // truth law wants the cut to have actually happened). Empty pool
+        // no-ops until the Part 7 strings sign.
+        if (state.botSeat && ta.player === state.botSeat) sayWitness(state, 'i_severed');
         break;
       }
       case 'steady':
@@ -1084,6 +1094,10 @@ export function resolveTurn(state: GameState): void {
         } else {
           combat.steadyShield++;
         }
+        // S19.6 (D5): the bot's Steady, announced always. The solo policy
+        // never Steadies today (trySteady is sim-only) — the pool waits for
+        // the verb rather than the verb for the pool.
+        if (state.botSeat && ta.player === state.botSeat) sayWitness(state, 'i_steadied');
         break;
     }
     // S3.1 thread economy: spend mix by action type (cost reflects any

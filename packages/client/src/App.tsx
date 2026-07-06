@@ -29,7 +29,7 @@ import { LoomEye } from './LoomEye';
 import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { CodexButton } from './Codex';
 import { RunSummary } from './Summary';
-import { Hints } from './Hints';
+import { Hints, WitnessHints } from './Hints';
 
 type Character = 'vess' | 'bram';
 const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
@@ -275,6 +275,7 @@ export default function App(): JSX.Element {
           <ResolutionTheater log={resolutionLog} pname={(p) => state.players[p].character} ename={(id) => enemyName(state.combat, id)} onOffsets={setHpOffsets} />
           <Tutorial state={state} />
           <Hints state={state} />
+          <WitnessHints state={state} />
           <HintBar />
           {deckOpen && <DeckOverlay state={state} onClose={() => setDeckOpen(false)} />}
           {tapestryOpen && state.truth && <TapestryOverlay state={state} onClose={() => setTapestryOpen(false)} />}
