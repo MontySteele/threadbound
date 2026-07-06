@@ -113,7 +113,7 @@ export interface Hook {
 export type PassiveId =
   | 'momentumNoHalve' // Wildfire Heart
   // §14.13 (OQ#27): 'pulseCostMinusOne' removed — Pulsekeeper's Ring now uses
-  // the run-persistent ringPulses counter (every 3rd Pulse costs 1).
+  // the run-persistent ringPulses counter (every 3rd Pulse is free — S17).
   | 'threadRegenPlusOne' // +1 Thread regen per turn
   | 'covetMaxPlusOne' // may hold 3 Covet charges
   | 'handRetainOne' // M2-A1: retain 1 card at end of turn

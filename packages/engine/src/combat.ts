@@ -1008,12 +1008,14 @@ export function resolveTurn(state: GameState): void {
         // §14.12: the forcing itself happens in the link computation below;
         // here we pay, and say which card so the spend is legible to both.
         // §14.13 (OQ#27) Pulsekeeper's Ring: the owner's run-persistent
-        // counter ticks on every Pulse they cast; each 3rd costs 1.
+        // counter ticks on every Pulse they cast; each 3rd is FREE (the
+        // pre-agreed (b) escalation, landed S17 relic uplift 2026-07-06 —
+        // the costs-1 form read near-dead on the audit).
         let discounted = false;
         if (actor.relics.includes('pulsekeepers_ring')) {
           actor.ringPulses = (actor.ringPulses ?? 0) + 1;
           if (actor.ringPulses % 3 === 0) {
-            cost = 1;
+            cost = 0;
             discounted = true;
             state.telemetry.ringDiscountsFired++;
           }
@@ -1024,7 +1026,7 @@ export function resolveTurn(state: GameState): void {
           const name = effectiveDef(mustFind(state, slot)).name;
           state.log.push({
             e: 'thread_action', player: ta.player, kind: 'pulse',
-            detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: 1 Thread)' : ''}`,
+            detail: `pulses ${name} — its Link fires no matter what precedes it${discounted ? ' (the Ring kept count: free)' : ''}`,
           });
         }
         break;

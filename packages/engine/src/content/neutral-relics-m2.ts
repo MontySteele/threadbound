@@ -90,13 +90,13 @@ export const NEUTRAL_CARDS: CardDef[] = [
     id: 'litany_of_mending', name: 'Litany of Mending', character: 'neutral', rarity: 'common', cost: 1, tag: 'Rite',
     text: 'Gain 1 Thread.',
     base: [{ op: 'thread', amount: 1 }],
-    link: { condition: 'Guard', text: 'You and your partner each gain 2 Block.', effects: [{ op: 'block', amount: 2 }, { op: 'partnerBlock', amount: 2 }] },
+    link: { condition: 'Guard', text: 'You and your partner each gain 3 Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
     mutation: {
       name: 'Murmured Litany', text: 'Gain 2 Block. Draw 1.',
       base: [{ op: 'block', amount: 2 }, { op: 'draw', amount: 1 }],
     },
     upgrade: {
-      link: { condition: 'Guard', text: 'You and your partner each gain 3 Block.', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] },
+      link: { condition: 'Guard', text: 'You and your partner each gain 4 Block.', effects: [{ op: 'block', amount: 4 }, { op: 'partnerBlock', amount: 4 }] },
     },
   },
   {
@@ -160,8 +160,8 @@ export const NEUTRAL_CARDS: CardDef[] = [
   },
   {
     id: 'tithe_of_thread', name: 'Tithe of Thread', character: 'neutral', rarity: 'uncommon', cost: 1, tag: 'Rite',
-    text: 'Gain 2 Thread.',
-    base: [{ op: 'thread', amount: 2 }],
+    text: 'Gain 2 Thread. Gain 2 Block.',
+    base: [{ op: 'thread', amount: 2 }, { op: 'block', amount: 2 }],
     link: { condition: 'Surge', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     mutation: {
       // S8.6 (PROVISIONAL): birth-column rename, was 'Lean Tithe' — the
@@ -171,8 +171,8 @@ export const NEUTRAL_CARDS: CardDef[] = [
     },
     upgrade: {
       // S9b.3 row 18: neutral stays under character power; Thread untouched
-      base: [{ op: 'thread', amount: 2 }, { op: 'block', amount: 2 }],
-      text: 'Gain 2 Thread. Gain 2 Block.',
+      base: [{ op: 'thread', amount: 2 }, { op: 'block', amount: 4 }],
+      text: 'Gain 2 Thread. Gain 4 Block.',
       link: { condition: 'Surge', text: 'Draw 1. Your partner draws 1.', effects: [{ op: 'draw', amount: 1 }, { op: 'partnerDraw', amount: 1 }] },
     },
   },
@@ -296,24 +296,24 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'knotted_votive', name: 'Knotted Votive',
-    text: 'Whenever the Thread frays, you and your partner each gain 3 Block.',
+    text: 'Whenever the Thread frays, you and your partner each gain 4 Block.',
     coop: true,
-    hooks: [{ on: 'fray', effects: [{ op: 'block', amount: 3 }, { op: 'partnerBlock', amount: 3 }] }],
+    hooks: [{ on: 'fray', effects: [{ op: 'block', amount: 4 }, { op: 'partnerBlock', amount: 4 }] }],
   },
   {
     id: 'scar_votive', name: 'Scar Votive',
-    text: 'Whenever the Thread frays, heal 3.',
+    text: 'Whenever the Thread frays, heal 4.',
     coop: true,
-    hooks: [{ on: 'fray', effects: [{ op: 'heal', amount: 3 }] }],
+    hooks: [{ on: 'fray', effects: [{ op: 'heal', amount: 4 }] }],
   },
   {
     id: 'pulsekeepers_ring', name: 'Pulsekeeper’s Ring',
     // §14.13 (OQ#27): the flat cost break literally doubled Pulses per
-    // Thread — ruled overpowered. Now a run-persistent charge counter on the
-    // owner (PlayerState.ringPulses, engine-special-cased in resolveTurn):
-    // every 3rd Pulse costs 1. If Playtest 2 reads it dead, the pre-agreed
-    // (b) escalation is "every third Pulse FREE".
-    text: 'Every third Pulse costs 1 Thread. The Ring keeps count.',
+    // Thread — ruled overpowered; charge-counter form landed (every 3rd
+    // costs 1). S17 relic uplift (2026-07-06): the Ring read near-dead on
+    // the audit (+0.1 stratified), so the pre-agreed (b) escalation lands —
+    // every third Pulse is FREE.
+    text: 'Every third Pulse is free. The Ring keeps count.',
     coop: true,
   },
   {
@@ -324,9 +324,9 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'bridegrooms_knot', name: 'Bridegroom’s Knot',
-    text: 'Begin each combat with 3 additional Thread.',
+    text: 'Begin each combat with 4 additional Thread.',
     coop: true,
-    hooks: [{ on: 'combatStart', effects: [{ op: 'thread', amount: 3 }] }],
+    hooks: [{ on: 'combatStart', effects: [{ op: 'thread', amount: 4 }] }],
   },
   {
     id: 'loom_of_two_hands', name: 'Loom of Two Hands',
@@ -345,9 +345,9 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'twin_phylactery', name: 'Twin Phylactery',
-    text: 'At the start of your turn, your partner gains 1 Block.',
+    text: 'At the start of your turn, your partner gains 2 Block.',
     coop: true,
-    hooks: [{ on: 'turnStart', effects: [{ op: 'partnerBlock', amount: 1 }] }],
+    hooks: [{ on: 'turnStart', effects: [{ op: 'partnerBlock', amount: 2 }] }],
   },
   {
     id: 'covetous_psalter', name: 'Covetous Psalter',
@@ -357,9 +357,9 @@ export const RELICS: RelicDef[] = [
   },
   {
     id: 'tithing_bowl', name: 'Tithing Bowl',
-    text: 'Whenever you Covet a card, heal 3.',
+    text: 'Whenever you Covet a card, heal 4.',
     coop: true,
-    hooks: [{ on: 'covet', effects: [{ op: 'heal', amount: 3 }] }],
+    hooks: [{ on: 'covet', effects: [{ op: 'heal', amount: 4 }] }],
   },
 
   // --- Solo relics (15) -----------------------------------------------------

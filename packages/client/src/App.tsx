@@ -1183,7 +1183,7 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
             row shows the real price — the affordance matters more than the math */}
         <button data-gp="THREAD" data-inspect="kw:pulse" disabled={me.ready || me.fallen || severed || anyFallen || pulseTargets.size === 0}
           onClick={() => setPendingPulse(!pendingPulse)}>
-          Pulse ({me.relics.includes('pulsekeepers_ring') && ((me.ringPulses ?? 0) + 1) % 3 === 0 ? 1 : 2})…
+          Pulse ({me.relics.includes('pulsekeepers_ring') && ((me.ringPulses ?? 0) + 1) % 3 === 0 ? 0 : 2})…
         </button>
         <button data-gp="THREAD" data-inspect="kw:reclaim" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setReclaimOpen(!reclaimOpen)}>Reclaim (2)…</button>
         <button data-gp="THREAD" data-inspect="kw:sever" disabled={me.ready || me.fallen || severed || anyFallen} onClick={() => setPendingSever(!pendingSever)}>Sever (3)…</button>

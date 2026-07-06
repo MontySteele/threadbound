@@ -53,8 +53,8 @@ def({
 def({
   id: 'stitchblade', name: 'Stitchblade', character: 'vess', rarity: 'common', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 5.',
-  base: [{ op: 'damage', amount: 5, primary: true }],
+  text: 'Deal 6.',
+  base: [{ op: 'damage', amount: 6, primary: true }],
   link: { condition: 'Hex', text: 'Apply 3 Hex.', effects: [{ op: 'hex', amount: 3 }] }, // lever 3 (2nd pass)
 });
 def({
@@ -85,7 +85,7 @@ def({
   id: 'mendthread', name: 'Mendthread', character: 'vess', rarity: 'common', cost: 1, tag: 'Rite',
   text: 'Gain 1 Thread.',
   base: [{ op: 'thread', amount: 1 }],
-  link: { condition: 'Guard', text: 'Your partner gains 4 Block.', effects: [{ op: 'partnerBlock', amount: 4 }] },
+  link: { condition: 'Guard', text: 'Your partner gains 5 Block.', effects: [{ op: 'partnerBlock', amount: 5 }] },
 });
 
 // Uncommons (7) — self-similar allowed but scarce (§2.3): Inheritance only.
@@ -174,8 +174,8 @@ def({
 def({
   id: 'rendcall', name: 'Rendcall', character: 'bram', rarity: 'uncommon', cost: 1, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 8.',
-  base: [{ op: 'damage', amount: 8, primary: true }],
+  text: 'Deal 7.',
+  base: [{ op: 'damage', amount: 7, primary: true }],
   link: { condition: 'Hex', text: 'Detonate all Hexes on the target.', effects: [{ op: 'detonate' }] },
   mutation: {
     name: 'Stitched Rendcall', text: 'Deal 6. Apply 2 Hex.',
@@ -225,8 +225,8 @@ def({
 });
 def({
   id: 'kindle', name: 'Kindle', character: 'bram', rarity: 'common', cost: 1, tag: 'Rite',
-  text: 'Gain 1 Thread. Gain 1 Momentum.',
-  base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 1, primary: true }],
+  text: 'Gain 1 Thread. Gain 2 Momentum.',
+  base: [{ op: 'thread', amount: 1 }, { op: 'momentum', amount: 2, primary: true }],
   link: { condition: 'Strike', text: 'Draw 1.', effects: [{ op: 'draw', amount: 1 }] }, // S5.2: Hex → Strike (Table A)
 });
 def({
@@ -287,9 +287,9 @@ def({
 def({
   id: 'avalanche', name: 'Avalanche', character: 'bram', rarity: 'rare', cost: 3, tag: 'Strike',
   needsTarget: true,
-  text: 'Deal 8 three times.',
-  base: [{ op: 'damage', amount: 8, times: 3, primary: true }],
-  link: { condition: 'partner', text: 'Link (Partner’s card): deal 8 five times instead.', effects: [{ op: 'damage', amount: 8, times: 5, primary: true }], replace: true },
+  text: 'Deal 7 three times.',
+  base: [{ op: 'damage', amount: 7, times: 3, primary: true }],
+  link: { condition: 'partner', text: 'Link (Partner’s card): deal 7 five times instead.', effects: [{ op: 'damage', amount: 7, times: 5, primary: true }], replace: true },
 });
 def({
   id: 'wildfire_heart', name: 'Wildfire Heart', character: 'bram', rarity: 'rare', cost: 2, tag: 'Rite', exhaust: true,
