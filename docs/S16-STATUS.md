@@ -275,3 +275,134 @@ needlecase_of_saint_morrow), and the pair-scoped shared-event pair
 (steadfast_icon, threadspool_reliquary). OQ#41b (which relics become
 genuinely co-op) stays content-pass material, untouched per the
 ruling.
+
+## Part 5 — sequencing, as executed
+
+S16.0a→b→c→d landed and pinned → the two instrument defects the
+deterministic path exposed were fixed (their own commit) → **1e anchors
+banked** → Part 2 (pinning + packet; battery correctly not spent) →
+Part 3 + its battery (the two levers' contributions separate in the
+ledger by construction — D3 contributed zero, so the whole knot-tax
+delta is D4's) → slate rows, each its own commit, binding's golden
+regen inside the window → final battery → gates on the final build.
+Total sim spend this sprint: ~7,700 runs (~7,000 socket-free + ~700
+over the wire for the bridge and checks), wall-clock minutes where S15
+spent hours. Zero failed runs after the instanceId fix.
+
+## Part 6 — batteries & gates, read on the FINAL build (all levers +
+## D7 binding; paired per S16-R1 vs the S16.0e anchors, seeds 1001+)
+
+Final rows, with the per-lever attribution the sprint's sequencing was
+designed to yield (P3 battery = D4 alone; final − P3 = D7 alone; the
+D3 contribution is zero by construction):
+
+| row | anchor | +D4 | +D7 (final) | paired Δ total | discordant (up/dn) |
+|---|---|---|---|---|---|
+| vb braid | 74.0 | 69.5 | 70.5 | −3.5 | 43 (18/25) |
+| vv braid | 59.0 | 57.5 | 57.5 | −1.5 | 43 (20/23) |
+| bb braid | 84.0 | 76.5 | 73.0 | −11.0 | 44 (11/33) |
+| vb default | 49.0 (n=400) | — | 50.0 | +1.0 | 78 (41/37) |
+| vv default | 53.0 | — | 52.0 | −1.0 | 22 (10/12) |
+| bb default | 50.0 | — | 52.5 | +2.5 | 35 (20/15) |
+| vb probe | 74.0 · ladder 1.09 | 1.24 | 70.5 · ladder 1.21 | — | ≡ braid at A0 |
+| bb probe | 84.0 · ladder 1.08 | 1.28 | 73.0 · ladder 1.26 | — | ≡ braid at A0 |
+| vb braid A2/A3 | — | — | 40.0 / 36.5 | tooth −3.5 | — |
+| bb braid A2/A3 | — | — | 43.5 / 44.5 | tooth +1.0 | — |
+
+The unplanned finding in the ledger: **D7's anti-streak binding is a
+real balance lever, not just fairness plumbing** — isolated on paired
+seeds it moves bb-braid −3.5 (vb +1.0, vv 0.0). Alternating elite
+bindings deny the bram mirror its lucky-streak turtle wins; it stacks
+with D4's knot tax in exactly the gate-2 direction. Both effects were
+ruled; the attribution is on record because the levers landed in
+separate batteries.
+
+1. **CI/structure — determinism & parity: PASS.** Same-seed
+   byte-identical telemetry pinned (base + braid/probe); the one-time
+   WS parity bridge recorded (Part 1: paired −3.3 vs the uncontended
+   wire); shard aggregation pinned (N ≡ 1, fork path included);
+   knot-reward pinning (Part 2); sub-pool + first-knot pinning
+   (Part 3); binding-bias pinning (Part 4.5, rng-stream identity
+   included); suite green per commit (427 at tip, from 406); one
+   golden regen (D7), loud, in-commit.
+2. **Gate 2 (headline): bb on-braid within ±8 of vb — PASS at +2.5**
+   (anchor +10.0; old instrument +12.2). D4 closed −2.5 of it, D7
+   closed −4.5 more, and bb's own default rows are untouched (+2.5,
+   inside noise) — the tax is braid-knot-specific as ruled.
+3. **Gate 4: ladder ≥2 on the probe leg — FAIL at 1.21/1.26 (from
+   1.09/1.08). THE STOP-AND-REPORT BRANCH FIRES, per the doc.** The
+   composition lever landed at its full honest dose (100% of later
+   knots draw the sub-pool; no rng, no constants touched) and bought
+   +0.12/+0.18. The remaining gap is structural, now with the
+   mechanism fully visible: (i) braid topology — knots never edge into
+   the next crossing's knot, so every act path meets at most TWO
+   knots, and last/first is a knot-2/knot-1 ratio by construction;
+   (ii) knot-1 averages the full pool (~24.5 pair HP) while the
+   hottest existing comp (Bellkeeper tier, ~44) yields at most ~1.8
+   even as a sub-pool of one, dragged to ~1.26 by the cooler act-1
+   sub-pool; (iii) knotsCut resets per act, as S15 named.
+   **DECISION PACKET (gate 4):** reaching ≥2 requires one of — (a) a
+   dedicated authored knot-2 comp hotter than Bellkeeper (content
+   session; the ×3 pierce lesson bounds how much absolute heat is
+   safe), (b) per-run (non-resetting) knot escalation — structural,
+   re-paces both acts, (c) re-derive the ≥2 gate itself: it predates
+   the visible 2-knots-per-act ceiling, and a knot-2/knot-1 ratio of
+   ~1.3 with composition may simply be what the braid IS. No resize
+   attempted here.
+4. **No-regression trio:** on-braid spread 15.5 — improved 9.5 points
+   from the 25.0 anchor (the old ≤15 band, calibrated on the
+   contended wire, is met in spirit and missed by 0.5 in letter; the
+   band itself is S17 re-derivation material, Part 1). **vb keeps the
+   co-op texture lead — PASS** (link-fire 56.7 vs vv 50.1 / bb 50.8;
+   thread/combat 4.46 vs bb 4.13 / vv 3.08). **A3 tooth: PARTIAL** —
+   vb keeps a clear tooth (40.0 → 36.5, −3.5); bb reads FLAT at A3
+   (43.5 → 44.5, +1.0, within row noise). Attribution: D4 moved the
+   sting INTO A2's second knot — both A2's later knot and A3's extra
+   knot now draw the same sub-pool, so the marginal rung shrank for
+   the pair that handles those comps best. REPORTED; any A3 placement
+   action is a designer call (the S15 Part-3.3 philosophy).
+5. **HP tripwires (S14-R2 as amended, paired form): PASS.** Floor:
+   lowest pooled act-1 read 24.1 ≥ 16. Regression: max +1.2 (bb
+   braid/probe), inside +4, per pair per topology. Watches REPORTED,
+   no action: a2_boss 46.2 hp/combat (vb-braid leg, n=159) and
+   a2_silence_wretch mid-table — both rows in the final battery logs.
+6. **R1 band, reported per S16-D2: vb default 50.0 at n=400 —
+   mid-band.** The (b) fallback stays unspent; the human re-read
+   arrives with a clean prior.
+7. **No-balance audit: PASS.** The sprint diff's content plane carries
+   exactly the ruled D4 sub-pool data and the ratified D5 string;
+   engine number changes are the two ruled levers; the D8 retexts did
+   not land (stalled at the table); the instanceId fix is
+   correctness-only (colliding ids had no legal play at all).
+8. **Speed, informational:** pooled n=200 gate read 283 s (S15-era
+   config) → 19 s (sharded socket-free), ~14×; a paired S16-R1 read
+   costs half the runs of a pooled read on top of that.
+
+## Part 7 — D-list outcomes
+
+- **D0** — satisfied: the session's designated branch, from main after
+  PR #13 (S14/S15 precedent).
+- **D1 (relic retexts)** — table authored above; **STALLED at the
+  table**, as designed. No strings landed.
+- **D2 (knot-reward copy)** — **EMPTY**, the doc's own anticipated
+  case: the existing screen copy already reads correctly for two seats.
+- **D3 (ladder short of ≥2)** — the stop-and-report branch FIRED; the
+  decision packet is in the Part 6 gate-4 row below. No resize was
+  attempted (the ×3 lesson stands).
+- Unscheduled finding, recorded as **packet S16-P1** (Part 2): the
+  D3-B premise mismatch and the honest from-below lever candidates.
+
+## Carries (updated)
+
+The playtest slate stands as written in the sprint doc (the human
+difficulty re-read now arrives with a cleaner prior — the clean
+instrument puts vb default at 49, mid-band; the S16-D2 (b) fallback
+looks unlikely to be needed but remains the playtest's call). New
+carry: **the gate bands themselves** (±8, ≤15, the +4 tripwire) were
+all calibrated against contended-wire readings; the S17 balance
+session should re-derive them against clean-instrument anchors before
+they gate anything else. S17 pointers from S15 stand; add packet
+S16-P1 (gate-2 from-below lever) and the gate-4 packet (below) to the
+same session. Watches: a2_boss and a2_silence rows continue —
+REPORTED in the final battery logs, no action taken (future sprint,
+per the sprint doc).
