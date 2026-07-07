@@ -882,6 +882,23 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     ascension-implementation roadmap item inherits this as its first
     calibration input; every ascension number remains PROVISIONAL by
     design (ascension.ts header). No S18 scope grew. **FILED.**
+    **READ + RULED (2026-07-07, S21.3/S21.4).** The full-grid survey on
+    the new canon (docs/reference/s21-ladder-survey.txt) answered both
+    halves: the S18-era A2/A3 cliff (~17–22) is NOT real on this canon
+    (A2 reads 43–51 — the ladder floated with the S20 flip; A2-b as
+    recommended: no tune, the read is filed); the A3 inversion IS real
+    and now UNIVERSAL (A3 above A2 on all three pairings, paired
+    per-seed net +18/+11/+16 of 500). **A3-a executed as recommended:
+    the A3 extra crossing (CROSSING_LAYER_A3) pays NO card picks — a
+    toll, not a knot; S16-D3's both-seat picks stay scoped to the base
+    crossings; relic/covet/gold untouched; A0–A2 byte-identical by
+    construction (parity PASS unchanged). Rung-3 copy retexted
+    PROVISIONAL ("one more elite per act — a toll: its crossing pays no
+    card picks"), signature row in S21-STATUS. A4 read as a bot no-op
+    (OQ#64 blindspot — bots don't fray): REPORTED, unreadable by this
+    instrument, human data rules it. A5 monotone and toothy (−9/−19/−17)
+    — direction healthy, numbers stay PROVISIONAL. **CLOSED as ruled;
+    the ladder's human calibration remains the roadmap item.**
 
 67. **Co-op texture gate (1e) half-collision (S18 exit battery,
     stop-and-report fired).** vb kept the link-fire lead (55.6 vs vv

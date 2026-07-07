@@ -17,6 +17,7 @@ import {
 } from './combat';
 import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
 import { generateActMap, generateFinaleMap, pickableNodes } from './map';
+import { CROSSING_LAYER_A3 } from './content/strand-targets';
 import { FRAGMENTS_BY_ID, rollTruth, serveBoundWitness, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
 import { RITES_BY_ID, unlockedRites } from './content/rites';
@@ -1695,13 +1696,35 @@ function afterResolution(state: GameState): void {
       return;
     }
 
-    state.reward = {
-      sets: { p1: rollRewardSet(state, 'p1'), p2: rollRewardSet(state, 'p2') },
-      picked: { p1: null, p2: null },
-      coveted: { p1: null, p2: null },
-      gold,
-      relic,
-    };
+    // S21.4 (D4, ruled on the S21.3 survey): the A3 EXTRA crossing pays NO
+    // card picks — the rung's elite is a toll, not a knot. The survey read
+    // the OQ#66 inversion as real and UNIVERSAL on the new canon (A3 above
+    // A2 on all three pairings, paired per-seed net +18/+11/+16 of 500;
+    // knot fights/run rising in step): the extra elite's crossing arrived
+    // with the S16-D3 pick rewards attached and paid for itself. S16-D3's
+    // both-seat picks stay scoped to the A0–A2 crossings (the base
+    // layers); relic, covet charge, gold, and the bound-witness fragment
+    // are untouched. The toll is the crossing the extraElite mod adds
+    // (CROSSING_LAYER_A3 — generated only at A3+), so A0–A2 reward flow
+    // and rng are byte-identical by construction. Pre-answered picks are
+    // the covet-cache precedent (above): no pick is OWED at a toll, so the
+    // screen is pass-through for humans and bots alike.
+    const tollKnot = node.kind === 'elite' && node.layer === CROSSING_LAYER_A3;
+    state.reward = tollKnot
+      ? {
+          sets: { p1: [], p2: [] },
+          picked: { p1: 'skip', p2: 'skip' },
+          coveted: { p1: null, p2: null },
+          gold,
+          relic,
+        }
+      : {
+          sets: { p1: rollRewardSet(state, 'p1'), p2: rollRewardSet(state, 'p2') },
+          picked: { p1: null, p2: null },
+          coveted: { p1: null, p2: null },
+          gold,
+          relic,
+        };
     state.phase = 'reward';
     return;
   }
