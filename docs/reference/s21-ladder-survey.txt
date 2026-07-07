@@ -1,0 +1,93 @@
+S21.3 — the ladder survey (sprint doc Part 3, D3 ratified as written)
+======================================================================
+
+The full ascension grid on the new canon: A0–A5 × vv/vb/bb, n=500 per
+cell, PAIRED SEEDS (every cell plays seeds 20001–20500), socket-free,
+shards 4. Build: the S21.2 instruments commit — the same build as the
+S21-R1 anchor board (docs/reference/s21-p2000-bank.txt); the A0 row
+reproduces the S21.1 paired battery's post legs exactly (334/341/383),
+the free cross-check.
+
+Command per cell:
+  SEED=20000 PAIR=<vv|vb|bb> ASCEND=<0..5> TB_SIM_SHARDS=4 node packages/bots/dist/sim.js 500
+
+The grid (win %, act-death profile, act-3 lethality of arrivals, pair
+HP/combat by act, overall link-fire, knot fights/run, knot-2/knot-1):
+
+| cell | win% | died a1 | died a2 | a3 lethality | HP/c a1 | HP/c a2 | HP/c a3 | link-fire | knots/run | knot ratio |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A0 vv | 66.8 | 16.2% | 16.4% |  0.9% (3/337)  | 22.9 | 27.1 | 44.5 | 47.7% | 3.49 | 1.28 |
+| A0 vb | 68.2 |  0.8% | 28.6% |  3.4% (12/353) | 22.5 | 32.8 | 56.1 | 56.4% | 3.70 | 1.22 |
+| A0 bb | 76.6 |  0.2% | 22.4% |  1.0% (4/387)  | 22.9 | 34.8 | 60.6 | 52.9% | 3.86 | 1.29 |
+| A1 vv | 63.8 | 17.4% | 18.6% |  0.3% (1/320)  | 24.5 | 27.9 | 47.9 | 47.5% | 3.40 | 1.25 |
+| A1 vb | 56.6 |  1.8% | 39.2% |  4.1% (12/295) | 24.9 | 35.3 | 57.3 | 55.6% | 3.61 | 1.22 |
+| A1 bb | 64.0 |  0.2% | 33.6% |  3.3% (11/331) | 25.6 | 38.1 | 62.1 | 52.7% | 3.75 | 1.22 |
+| A2 vv | 50.6 | 25.2% | 21.6% |  4.9% (13/266) | 27.9 | 31.1 | 50.9 | 46.7% | 3.17 | 1.19 |
+| A2 vb | 43.4 |  5.2% | 49.6% |  4.0% (9/226)  | 29.3 | 38.5 | 61.2 | 54.5% | 3.38 | 1.23 |
+| A2 bb | 43.4 |  1.4% | 53.0% |  4.8% (11/228) | 30.0 | 42.7 | 67.5 | 51.2% | 3.43 | 1.22 |
+| A3 vv | 54.2 | 28.0% | 14.8% |  5.2% (15/286) | 28.2 | 30.1 | 50.5 | 46.9% | 3.18 | 1.25 |
+| A3 vb | 45.6 |  5.8% | 45.6% |  6.2% (15/243) | 29.4 | 38.7 | 63.9 | 54.5% | 3.45 | 1.23 |
+| A3 bb | 46.6 |  1.2% | 50.2% |  4.1% (10/243) | 29.8 | 42.4 | 69.3 | 51.4% | 3.52 | 1.24 |
+| A4 vv | 54.4 | 27.8% | 14.6% |  5.6% (16/288) | 28.2 | 30.0 | 50.8 | 46.9% | 3.19 | 1.26 |
+| A4 vb | 45.6 |  6.0% | 45.6% |  5.8% (14/242) | 29.5 | 38.7 | 63.4 | 54.5% | 3.45 | 1.22 |
+| A4 bb | 46.0 |  1.2% | 50.2% |  5.3% (13/243) | 29.8 | 42.4 | 69.2 | 51.4% | 3.52 | 1.24 |
+| A5 vv | 45.8 | 28.6% | 23.6% |  4.2% (10/239) | 27.6 | 30.8 | 49.5 | 46.3% | 3.13 | 1.24 |
+| A5 vb | 27.0 | 12.2% | 57.4% | 11.2% (17/152) | 29.8 | 38.0 | 63.1 | 53.3% | 3.19 | 1.26 |
+| A5 bb | 29.4 |  3.4% | 64.0% |  9.8% (16/163) | 29.9 | 41.1 | 65.2 | 50.4% | 3.38 | 1.19 |
+
+sha256 of full stdout per cell:
+| a0-vv | 17ff91ca1942418580a1cdad03f2c6991e8ce25e164b1c90603e6b6b0f6852d1 |
+| a0-vb | dce812b9b3273ab559274944ecf92376d5a78d94bad664f64887a4d140c23930 |
+| a0-bb | 2cb39fa76b21be3b7c2be907801df2be86ffba359e2f03a61e76f4aab5a9ae4e |
+| a1-vv | d7031dc8a3df895b6840c2189413206cc6fe02e7e6b69049655e9f289363eef5 |
+| a1-vb | 13e7c4f6b2ed3838430891fdbc270ca63b27103eb7450389da5c295acccb6e99 |
+| a1-bb | 56dbef4109b2bb0e0661b8ee66cad69f1d820468256313d4d6188d0f82fc6bdc |
+| a2-vv | 77b715c25fd2463f5d3dc24f5c536aa9dd1857e46a8743fbbca79c0d44f16798 |
+| a2-vb | f9cf1b5db50e245fd78dd1973acc617f92884034525cf0906bfac8b15465ed64 |
+| a2-bb | 4db17eb4cecfdc52d7a18774d9d6ab23ccd1b7d44936b6faa60ea2eb9ea441b1 |
+| a3-vv | 29fb91bb6c33db43b55c217aa62745c76625382a5e8adbad98e3a67990c34ea3 |
+| a3-vb | 2f4f07dee61d91687763d57e975efbdef20c4eeea8e86873fcb9ea572fcb2eea |
+| a3-bb | fcfb0a58fb3b7fb7f5e3b16e3fa4d939a7c19292260156cb1ece85ad144d544d |
+| a4-vv | 044eb3bba6dc49b514224c1b5b1c2e617de94fc9fc9eedd1fa64e14e03235e9b |
+| a4-vb | d04736ca86d005de00049bf7d3e4e062118a47071e610d07b991b3647fb60876 |
+| a4-bb | 6fb3af7addf5128de7dadf599eb720306a5d4df770b43569bb53ee7c7b4f9048 |
+| a5-vv | 2a6dc0a2758621fd79e23c16221c66a252a15f7564ea95356226883e58963b75 |
+| a5-vb | 346384189109930a349a25d7f5effd2a5433c9a74f579240827d4ffb59eea3ca |
+| a5-bb | d75659aa5b4de98660f764d860ebfd2b393c76e23082805a0efa750b3a8b11d9 |
+
+THE THREE DELIVERABLES (Part 3, read before ruling):
+
+1. THE CURVE. The S18-era cliff (A2 at ~17) is NOT real on this canon —
+   A2 reads 43–51; the whole ladder floated up with the S20 canon flip,
+   as OQ#66 suspected it might. A2 is the ladder's first real step
+   (−13 to −21 pts from A1) — a wall, not a cliff. The ladder is NOT
+   monotone: A2→A3 rises on every pairing (below), and A3→A4 is flat
+   everywhere (±0.6).
+
+2. THE A3 QUESTION: the inversion is REAL and now UNIVERSAL. A3 reads
+   ABOVE A2 on all three pairings — vv 50.6→54.2 (+3.6), vb 43.4→45.6
+   (+2.2), bb 43.4→46.6 (+3.2). Same sign on three paired-seed
+   comparisons; knot fights/run rises in step (3.17→3.18 / 3.38→3.45 /
+   3.43→3.52): the extra elite is fought, and its crossing arrives with
+   the S16-D3 pick rewards (plus relic, covet charge, gold) attached —
+   the OQ#66 mechanism, confirmed on the shipped canon. Per-seed paired
+   read in the S21-STATUS Part 4 table.
+
+3. THE A4/A5 TAIL (first read on a canon with tracks + the nudge):
+   A4 is a NO-OP against bot play — A3→A4 deltas +0.2 / 0.0 / −0.6,
+   inside noise on every pairing. This is the known bot blindspot
+   (OQ#64: bots don't fray — they husband the shared pool), so the
+   pierce-fray rung's teeth are UNREADABLE by this instrument; the A4
+   human read stays with the fray-relic pile. REPORTED, no ruling
+   demanded. A5 (rest-trim) is the ladder's biggest tooth and monotone:
+   −8.6 / −18.6 / −16.6 from A4, act-3 lethality roughly doubling
+   (vb 5.8→11.2, bb 5.3→9.8) — rest-starved boards arrive at act 3
+   thin. Direction healthy for a final rung; numbers stay PROVISIONAL
+   per ascension.ts's own header.
+
+Texture rows worth the record: act-1 HP/combat rises A0→A2 with the
+dmg rung then saturates (~28–30 — the A2 dose lands where it should);
+the vv act-1 death share is the mirror's floor watch at every rung
+(16→28% A0→A5); knot contact NEVER reads zero (bots route through
+knots at every rung — OQ#68's human question stands); the knot-2/
+knot-1 floor holds ≥1.19 across all 18 cells.
