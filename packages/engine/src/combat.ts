@@ -313,8 +313,14 @@ export function silencesFirstLinkActive(enemies: readonly { hp: number; defId: s
 }
 
 export function computeLinksFired(state: GameState, chain: ChainSlot[]): boolean[] {
+  // S21.1 (ruled, designer 2026-07-07 — the OQ#69 residual): the GROWN def,
+  // completing the S20.1 alignment — legality, preview, resolution, and now
+  // NATURAL fire all agree. A tier-granted link (a mutated grower echo whose
+  // only Link is growth — the cards Reclaim creates) fires on its condition
+  // like any other; "fires only when forced" is not a rule a player can be
+  // told with a straight face.
   return computeLinksFiredFrom(
-    chain.map((slot) => effectiveDef(mustFind(state, slot))),
+    chain.map((slot) => grownDef(state, mustFind(state, slot), slot.owner)),
     chain.map((slot) => slot.owner),
     (state.combat?.severedTurns ?? 0) > 0, // Unraveled (§6)
     silencesFirstLinkActive(state.combat?.enemies),
