@@ -809,6 +809,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     nothing authored: (g-a) detonate-side rider (inside the ≤2 law);
     (g-b) draw hook on the existing partner-link trigger; (g-c) cost 2→1.
     Next audit/design session rules or discards. **CLOSED as ruled.**
+    **g-row RULED (2026-07-07, S21-D5 by designer question): g-a — the
+    detonate-side rider.** Second hook, first Detonation each turn
+    re-blooms 2 Hex to ALL, inside the ≤2 law (flat, per-turn-capped,
+    covenant-CI-checked); identity hook untouched. Paired battery: all
+    movement attributes to gravebloom picks (vv ±0, vb −2 of 500; bb
+    byte-identical — no vess seat); bots barely value it, the real read
+    is the human table. Card text updated with the mechanics; St-g1
+    signature row in S21-STATUS. **EXECUTED.**
 
 61. **braided_censer effect trim (the S17 §12 stratified +5.4
     residual).** **RULED (2026-07-06, S18-D5): PARKED with a named
