@@ -12,7 +12,7 @@ import { initialState, reduce } from '../src/reducer';
 function braidView(seed: number, you: 'p1' | 'p2'): BotView {
   const s0 = initialState(seed, { p1: 'vess', p2: 'bram' });
   const s: GameState = reduce(s0, {
-    type: 'START_RUN', seed, tracks: true, rites: true, knotwork: true,
+    type: 'START_RUN', seed, tracks: true, rites: true,
   });
   s.phase = 'map'; // skip the rites offer screen — routing is the subject
   const counts = { p1: { hand: 0, draw: 0 }, p2: { hand: 0, draw: 0 } };
@@ -24,7 +24,7 @@ function braidView(seed: number, you: 'p1' | 'p2'): BotView {
 function crossingView(knotsCut: number): BotView {
   const s0 = initialState(5, { p1: 'vess', p2: 'bram' });
   const s: GameState = reduce(s0, {
-    type: 'START_RUN', seed: 5, tracks: true, rites: true, knotwork: true,
+    type: 'START_RUN', seed: 5, tracks: true, rites: true,
   });
   s.phase = 'map';
   const nodes: MapNode[] = [

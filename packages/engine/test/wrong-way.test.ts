@@ -87,9 +87,14 @@ describe('the wrong-way event (S8.4)', () => {
     expect(mapsWithWw).toBeLessThan(SEEDS / 2);
     // below normal weight (0.5x nominal; allow sampling noise)
     expect(wwCount).toBeLessThan(avgNormal * 0.8);
-    // the 2:1 clue:normal contract survives the weight-table doubling
+    // the clue-elevation contract survives (floor unchanged). The old 2.9
+    // ceiling was a LANE-era read of the flat B6 weight table; the braid
+    // deals the truth strand clue-scaled BY DESIGN (S11.11-4
+    // clueWeightScale), and the braid read is ~3.6 — ceiling re-banked
+    // descriptively in the S21.5 (OQ#65) suite audit, elevation still
+    // bounded (a runaway table would blow past it).
     expect(avgClue / avgNormal).toBeGreaterThan(1.4);
-    expect(avgClue / avgNormal).toBeLessThan(2.9);
+    expect(avgClue / avgNormal).toBeLessThan(4.5);
   });
 
   it('dedup: a seen wrong-way event never re-enters a later map pool', () => {

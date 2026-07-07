@@ -862,8 +862,8 @@ export class GameServer {
           tracks: envFlag('TB_TRACKS', true),
           // S7: the rites flag crosses here too (pure engine never reads env)
           rites: envFlag('TB_RITES', true),
-          // S11.8 (Wave B) → S20.1: the braid IS the shipped game (S15)
-          knotwork: envFlag('TB_KNOTWORK', true),
+          // S21.5 (OQ#65): the lane generator is deleted — every run is a
+          // braid run; TB_KNOTWORK is no longer read anywhere
           // S8.7: Witness voice register — max of the seats' codex claims
           codexPct: this.codexPct(ctx.room),
           // S11.4: codex-keyed event doors — UNION of the seats' proven

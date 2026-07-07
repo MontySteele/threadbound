@@ -74,11 +74,11 @@ describe('S15.2A: the Seamripper is reachable where the ruling placed it', () =>
     expect(ENCOUNTER_POOLS[2].elite).toContain('a2_knot_rippers');
   });
 
-  for (const knotwork of [false, true]) {
-    it(`the normal comp appears in act-2 ${knotwork ? 'braid' : 'classic'} maps across a seed sweep`, () => {
+  {
+    it('the normal comp appears in act-2 braid maps across a seed sweep (the lane rows left at S21.5/OQ#65)', () => {
       const seen = new Set<string>();
       for (let seed = 1000; seed < 1060; seed++) {
-        const { map } = generateActMap(seed, 2, false, false, [], [], knotwork);
+        const { map } = generateActMap(seed, 2, false, false, [], []);
         for (const n of map.nodes) if (n.encounterId) seen.add(n.encounterId);
       }
       expect(seen.has('a2_ripper_eater')).toBe(true);

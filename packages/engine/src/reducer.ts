@@ -222,13 +222,13 @@ function apply(state: GameState, action: Action): void {
           state.codexProven = [...action.codexProven];
         }
       }
-      // S11.8: the braid flag rides the tracks pattern — set BEFORE the map
-      // roll so both acts generate on the flagged path
-      if (action.knotwork) state.knotwork = true;
+      // S21.5 (OQ#65, ruled): the braid is the game — the flag is no longer
+      // an input (the lane generator is deleted); state.knotwork stays set
+      // for the client/bot surfaces that read it (strand routing, redaction)
+      state.knotwork = true;
       const gen = generateActMap(
         state.rng, 1, ascensionMods(ascension).extraElite, !!action.tracks, [],
         action.rites ? [state.players.p1.character, state.players.p2.character] : [],
-        !!action.knotwork,
       );
       state.rng = gen.rng;
       state.map = gen.map;
@@ -1556,7 +1556,6 @@ function advanceAct(state: GameState): void {
       state.rng, 2, ascensionMods(state.ascension).extraElite, !!state.tracks,
       [...(state.truth?.seenClueEvents ?? []), ...(state.ritesState?.seenEvents ?? []), ...(state.seenRareEvents ?? [])],
       state.rites ? [state.players.p1.character, state.players.p2.character] : [],
-      !!state.knotwork, // S11.8: act 2 stays on the braid
     );
     state.rng = gen.rng;
     state.map = gen.map;

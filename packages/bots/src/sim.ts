@@ -149,10 +149,12 @@ const DRAFT_V2 = process.env.TB_BOT_DRAFT_V2 !== '0'; // S13.6: default ON (D7 f
 const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 
 // the flags that cross START_RUN (server: envFlag; socket-free: same reader)
-// S20.1 (ruled, supersedes OQ#59): all three default ON — the canonical
-// battery environment IS the shipped game; `=0` escapes are archaeology
-const FLAGS = { tracks: envFlag('TB_TRACKS', true), rites: envFlag('TB_RITES', true), knotwork: envFlag('TB_KNOTWORK', true) };
-const KNOT = FLAGS.knotwork;
+// S20.1 (ruled, supersedes OQ#59): defaults ON — the canonical battery
+// environment IS the shipped game; `=0` escapes are archaeology. S21.5
+// (OQ#65): TB_KNOTWORK is dead — the lane generator is deleted and every
+// run is a braid run (KNOT stays a const so labels read honestly).
+const FLAGS = { tracks: envFlag('TB_TRACKS', true), rites: envFlag('TB_RITES', true) };
+const KNOT = true;
 
 /** one battery entry: run index (1-based over the whole battery) + result */
 interface Played {
@@ -447,7 +449,7 @@ export function printSummary(results: RunResult[]): void {
   };
   const CANONICAL_BOARD =
     results.length >= 2000 && BASE_SEED === 20000 && ASCEND === 0
-    && FLAGS.rites && FLAGS.tracks && FLAGS.knotwork
+    && FLAGS.rites && FLAGS.tracks
     && !SOLO && !SOCKET && !SKIP_PICKS && PICK_CAP === undefined && !ALL_KNOTS && DRAFT_V2;
   const anchor = S21_ANCHORS[PAIR];
   const gates: Gate[] = [

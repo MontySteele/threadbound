@@ -23,12 +23,12 @@ import { CONTENT_VERSION } from '@threadbound/engine';
 import { buildSha } from './build';
 import { GameServer, proxyTrustFromEnv, envFlag } from './lib';
 
-// S20.1 (ruled, supersedes OQ#59 and the S10a require.main shim): rites,
-// narrative tracks, and the knotwork braid are the GLOBAL DEFAULT — the
-// envFlag call sites in lib.ts read default-true, so `npm run server` is
-// the game with no env prefix, importers included. TB_RITES=0 / TB_TRACKS=0
-// / TB_KNOTWORK=0 remain as archaeology escapes (the pre-S15 lane map, the
-// no-rites phase shape).
+// S20.1 (ruled, supersedes OQ#59 and the S10a require.main shim): rites and
+// narrative tracks are the GLOBAL DEFAULT — the envFlag call sites in
+// lib.ts read default-true, so `npm run server` is the game with no env
+// prefix, importers included. TB_RITES=0 / TB_TRACKS=0 remain as
+// archaeology escapes (the no-rites phase shape). S21.5 (OQ#65): the lane
+// generator is DELETED — TB_KNOTWORK is dead; the braid is the game.
 
 // `npm run server --human-session` doesn't reach argv — npm swallows unknown
 // flags into npm_config_* env. Accept all three spellings.
@@ -57,9 +57,10 @@ const game = new GameServer({
 game.listen().then((port) => {
   console.log(`Threadbound server listening on http://localhost:${port}`);
   console.log(`build ${buildSha()} · content ${CONTENT_VERSION}`); // S6.1
-  // flag echo — a "no death-rite screen" / "lane map" report is diagnosed
-  // from the banner (S20.1: all three default ON; =0 is archaeology)
-  console.log(`flags: rites ${envFlag('TB_RITES', true) ? 'on' : 'off'} · tracks ${envFlag('TB_TRACKS', true) ? 'on' : 'off'} · knotwork ${envFlag('TB_KNOTWORK', true) ? 'on' : 'off'}`);
+  // flag echo — a "no death-rite screen" report is diagnosed from the
+  // banner (S20.1: defaults ON; =0 is archaeology). knotwork left the
+  // banner at S21.5: the braid is not a flag, it is the game (OQ#65).
+  console.log(`flags: rites ${envFlag('TB_RITES', true) ? 'on' : 'off'} · tracks ${envFlag('TB_TRACKS', true) ? 'on' : 'off'}`);
   if (humanSession) console.log('human-session telemetry enabled (M3-A1)');
   if (process.env.TB_DRAIN === '1') console.log('DRAIN: no new rooms; existing rooms play on (S6.2)');
 });

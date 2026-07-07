@@ -49,10 +49,16 @@ describe('S16-D7: anti-streak single-enemy binding', () => {
       s.bindsByPlayer = t.bindsByPlayer;
       s.rng = t.rng;
     }
-    // after the coin-flip debut, the counter forces strict alternation
-    expect(seen[1]).not.toBe(seen[0]);
-    expect(seen[2]).not.toBe(seen[1]);
-    expect(seen[3]).not.toBe(seen[2]);
+    // The rule's real guarantee: a tied counter keeps the rolled coin, so
+    // two same-seat singles in a row can happen (debut + tie) — but never
+    // THREE (two in a row puts the counter 2 apart; the next is forced).
+    // The old strict-alternation read passed on lane-era rng luck; the
+    // S21.5 (OQ#65) audit re-pins the invariant the mechanism actually
+    // provides. Debut counts: with 4 fights, no window of 3 may match.
+    for (let i = 0; i + 2 < seen.length; i++) {
+      expect(!(seen[i] === seen[i + 1] && seen[i + 1] === seen[i + 2]),
+        `3-streak at fights ${i}..${i + 2}: ${seen.join(',')}`).toBe(true);
+    }
   });
 
   it('multi-enemy fights split exactly as before and never touch the counter', () => {

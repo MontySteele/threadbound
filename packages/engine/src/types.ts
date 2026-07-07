@@ -875,9 +875,10 @@ export interface GameState {
   /** S7: rites run flag (server reads TB_RITES and passes it through
    *  START_RUN). Absent — not false — when unflagged (tracks pattern). */
   rites?: true;
-  /** S11.8 (Wave B): the braid run flag (server reads TB_KNOTWORK, tracks
-   *  pattern — absent when unflagged, so flag-off state is byte-identical
-   *  and the current generator remains the unflagged path). */
+  /** S11.8 (Wave B) braid flag. S21.5 (OQ#65): the lane generator is
+   *  deleted, so every run is a braid run — the reducer sets this
+   *  unconditionally at START_RUN; it stays in state for the client/bot
+   *  surfaces that read it (strand routing, redaction). */
   knotwork?: true;
   /** S7 rites run state; present only when rites is set */
   ritesState?: RitesState;
@@ -1085,7 +1086,7 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; knotwork?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }

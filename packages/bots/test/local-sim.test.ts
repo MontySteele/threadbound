@@ -20,7 +20,7 @@ import { playRunLocal } from '../src/local';
 import { shardPlan } from '../src/sim';
 
 const CHARS = { p1: 'vess', p2: 'bram' } as const;
-const NO_FLAGS = { tracks: false, rites: false, knotwork: false };
+const NO_FLAGS = { tracks: false, rites: false }; // knotwork left the flag set at S21.5 (OQ#65)
 
 describe('S16.0a socket-free determinism (gate 1)', () => {
   it('same seed twice → byte-identical RunResult (telemetry included)', () => {
@@ -33,7 +33,7 @@ describe('S16.0a socket-free determinism (gate 1)', () => {
   it('same seed twice on the braid, probe knobs on → byte-identical', () => {
     const opts = {
       seed: 987, characters: CHARS, ascension: 0,
-      flags: { tracks: false, rites: false, knotwork: true },
+      flags: { tracks: false, rites: false },
       policy: { allKnots: true },
     };
     const a = playRunLocal(opts);
@@ -71,7 +71,6 @@ describe('S16.0b shard partition', () => {
     const env = {
       PATH: process.env.PATH,
       SEED: '7300',
-      TB_KNOTWORK: '1', // the braid is the shipped game — exercise the real config
     } as NodeJS.ProcessEnv;
     const run = (shards: string): string =>
       execFileSync(process.execPath, [sim, '4'], { env: { ...env, TB_SIM_SHARDS: shards } })

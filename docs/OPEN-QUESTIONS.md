@@ -857,6 +857,21 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     in S20 (engine deletion is out of this sprint's scope beyond the
     flip itself). The 45–55 braid band this entry derived is itself
     superseded on the new canon — see OQ#70.
+    **RULED + EXECUTED (2026-07-07, S21.5/D5): the lane generator is
+    DELETED.** Own commit; both parity instruments byte-identical after
+    (the braid canon provably cannot see it — no re-bank owed). The
+    suite audit surfaced ten lane-pinned tests, dispositions on the
+    record in S21-STATUS: the S11.1 composition-CI family (lib + test +
+    script) measured only the deleted generator and left with it (the
+    braid's own CI lives in s11-braid.test.ts); the tracks-covenant
+    golden regenerated in-commit (flag-off runs are braid runs now);
+    the S16-D7 anti-streak pin re-pinned to the invariant the mechanism
+    actually provides (no 3-streak; strict alternation was lane-rng
+    luck); the wrong-way clue:normal ceiling re-banked descriptively
+    (the braid's truth strand is clue-scaled by design); lane rows
+    dropped from the elite-sampling/pierce sweeps; lifecycle pins keep
+    their transport coverage on the braid as ruled. TB_KNOTWORK is dead
+    env; README says so. **CLOSED.**
 
 66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
     philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%

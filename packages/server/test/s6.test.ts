@@ -18,7 +18,6 @@ import { GameServer, GameServerOptions, Room, clientIp, proxyTrustFromEnv } from
 // baseline is pinned explicitly, not assumed.
 process.env.TB_RITES = '0';
 process.env.TB_TRACKS = '0';
-process.env.TB_KNOTWORK = '0';
 
 const servers: GameServer[] = [];
 const clients: Client[] = [];

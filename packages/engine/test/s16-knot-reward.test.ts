@@ -42,7 +42,7 @@ describe('S16-D3 pinning: both-seat card offers at every knot, both topologies',
   it('braid knots (every crossing, acts 1 and 2) offer both seats a pick', () => {
     for (const seed of [11, 47, 210]) {
       let s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }),
-        { type: 'START_RUN', seed, knotwork: true });
+        { type: 'START_RUN', seed });
       for (const knot of s.map.nodes.filter((n) => n.kind === 'elite')) {
         expectBothSeatOffers(winAt(structuredClone(s), knot), `seed ${seed} act1 knot L${knot.layer}`);
       }
@@ -54,7 +54,7 @@ describe('S16-D3 pinning: both-seat card offers at every knot, both topologies',
     }
   });
 
-  it('classic-topology elites offer both seats a pick', () => {
+  it('default START_RUN (no flags) offers both seats a pick at elites — the braid is the game (S21.5)', () => {
     for (const seed of [11, 47, 210]) {
       const s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }), { type: 'START_RUN', seed });
       const elite = s.map.nodes.find((n) => n.kind === 'elite')!;
@@ -65,7 +65,7 @@ describe('S16-D3 pinning: both-seat card offers at every knot, both topologies',
   it('non-knot combat rewards keep the same both-seat shape (nothing regressed to strand-local)', () => {
     const seed = 47;
     const s = reduce(initialState(seed, { p1: 'vess', p2: 'bram' }),
-      { type: 'START_RUN', seed, knotwork: true });
+      { type: 'START_RUN', seed });
     const combat = s.map.nodes.find((n) => n.kind === 'combat')!;
     expectBothSeatOffers(winAt(structuredClone(s), combat), 'braid combat node');
   });
