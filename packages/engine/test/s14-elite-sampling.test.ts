@@ -9,10 +9,10 @@ import { ENCOUNTER_POOLS, KNOT_SUBPOOLS } from '../src/content/encounters';
 
 const SEEDS = Array.from({ length: 60 }, (_, i) => 1000 + i);
 
-function elitesAcrossSeeds(act: 1 | 2, knotwork: boolean): Set<string> {
+function elitesAcrossSeeds(act: 1 | 2): Set<string> {
   const seen = new Set<string>();
   for (const seed of SEEDS) {
-    const { map } = generateActMap(seed, act, false, false, [], [], knotwork);
+    const { map } = generateActMap(seed, act, false, false, [], []);
     for (const n of map.nodes) {
       if (n.kind === 'elite' && n.encounterId) seen.add(n.encounterId);
     }
@@ -21,15 +21,15 @@ function elitesAcrossSeeds(act: 1 | 2, knotwork: boolean): Set<string> {
 }
 
 describe('S14.2 B1: elite slots sample the pool', () => {
+  // S21.5 (OQ#65): the classic (lane) rows left with the lane generator —
+  // the braid is the only topology.
   for (const act of [1, 2] as const) {
-    for (const knotwork of [false, true]) {
-      it(`act ${act} ${knotwork ? 'braid' : 'classic'}: every pool elite appears at A0 across the seed sweep`, () => {
-        const seen = elitesAcrossSeeds(act, knotwork);
-        for (const id of ENCOUNTER_POOLS[act].elite) {
-          expect(seen.has(id), `${id} unreachable at A0 (${knotwork ? 'braid' : 'classic'})`).toBe(true);
-        }
-      });
-    }
+    it(`act ${act} braid: every pool elite appears at A0 across the seed sweep`, () => {
+      const seen = elitesAcrossSeeds(act);
+      for (const id of ENCOUNTER_POOLS[act].elite) {
+        expect(seen.has(id), `${id} unreachable at A0 (braid)`).toBe(true);
+      }
+    });
   }
 
   it('the draw is seeded and deterministic (pinning: same seed, same order)', () => {
@@ -44,18 +44,17 @@ describe('S14.2 B1: elite slots sample the pool', () => {
     // S16-D4 amendment: braid later-knots draw the act's SUB-POOL (size 2),
     // so at A3 (three crossings) a repeat is arithmetically unavoidable when
     // the debut already spent a sub-pool comp — the D4 ruling supersedes the
-    // variety pin exactly there, and nowhere else. Classic maps keep the
-    // full no-repeat rule; braid maps keep it up to sub-pool exhaustion.
+    // variety pin exactly there, and nowhere else. Braid maps keep the
+    // no-repeat rule up to sub-pool exhaustion. (The classic rows left with
+    // the lane generator, S21.5/OQ#65.)
     for (const seed of SEEDS.slice(0, 20)) {
-      for (const knotwork of [false, true]) {
-        const { map } = generateActMap(seed, 1, true, false, [], [], knotwork);
+      {
+        const { map } = generateActMap(seed, 1, true, false, [], []);
         const ids = map.nodes
           .filter((n) => n.kind === 'elite')
           .sort((a, b) => a.layer - b.layer)
           .map((n) => n.encounterId!);
-        if (!knotwork) {
-          expect(new Set(ids).size, `seed ${seed} classic: repeated elite`).toBe(ids.length);
-        } else {
+        {
           const laterChoices = KNOT_SUBPOOLS[1].filter((id) => id !== ids[0]).length;
           const expected = Math.min(ids.length, 1 + Math.max(1, laterChoices));
           expect(new Set(ids).size, `seed ${seed} braid: distinct elites`).toBe(expected);

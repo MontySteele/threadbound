@@ -21,7 +21,6 @@ process.env.PERSIST = '';
 // raw-Client harnesses never pick a vestment. Pinned, not assumed.
 process.env.TB_RITES = '0';
 process.env.TB_TRACKS = '0';
-process.env.TB_KNOTWORK = '0';
 
 /** Buffers every incoming message so awaited matches can never be missed. */
 class Client {

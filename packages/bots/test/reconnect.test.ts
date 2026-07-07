@@ -45,7 +45,6 @@ describe('reconnection (§11)', () => {
     // The flags default ON now — the baseline is pinned, not assumed.
     process.env.TB_RITES = '0';
     process.env.TB_TRACKS = '0';
-    process.env.TB_KNOTWORK = '0';
     const { server } = await import('@threadbound/server');
     await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
     const addr = server.address();

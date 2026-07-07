@@ -143,9 +143,11 @@ def({
   // Hex growth). Numbers PROVISIONAL until the S13.2 sign-off row.
   id: 'gravebloom', name: 'Gravebloom', character: 'vess', rarity: 'rare', cost: 2, tag: 'Hex',
   exhaust: true,
-  text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. Exhaust.',
+  // S21.5 (g-a): the detonate-side rider joins — text PROVISIONAL until the
+  // St-g1 signature row signs (S21-STATUS Part 5).
+  text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. The first Detonation each turn: the same. Exhaust.',
   base: [{ op: 'power', power: 'gravebloom' }],
-  upgrade: { cost: 1, text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. Exhaust.' },
+  upgrade: { cost: 1, text: 'Power: the first time your partner’s card fires a Link each turn, apply 2 Hex to ALL enemies. The first Detonation each turn: the same. Exhaust.' },
 });
 def({
   id: 'final_word', name: 'Final Word', character: 'vess', rarity: 'rare', cost: 3, tag: 'Strike',

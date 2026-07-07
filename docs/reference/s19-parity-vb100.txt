@@ -7,12 +7,12 @@ sim: TB_SIM_ITEMS=1 — per-run item rows on (S17 pre-audit; additive only)
 run 1: game_over in act 1 — combats won 3, turns 29, cards 223, links 104
 run 2: victory in act 3 — combats won 9, turns 50, cards 382, links 233
 run 3: game_over in act 2 — combats won 7, turns 51, cards 416, links 230
-run 4: game_over in act 3 — combats won 8, turns 47, cards 363, links 185
+run 4: victory in act 3 — combats won 9, turns 47, cards 363, links 185
 run 5: victory in act 3 — combats won 9, turns 49, cards 359, links 193
 run 6: victory in act 3 — combats won 9, turns 45, cards 351, links 212
 run 7: game_over in act 3 — combats won 8, turns 86, cards 638, links 344
 run 8: game_over in act 2 — combats won 6, turns 51, cards 411, links 218
-run 9: victory in act 3 — combats won 9, turns 41, cards 337, links 195
+run 9: victory in act 3 — combats won 9, turns 41, cards 337, links 196
 run 10: game_over in act 2 — combats won 6, turns 39, cards 246, links 138
 run 11: victory in act 3 — combats won 9, turns 55, cards 494, links 299
 run 12: victory in act 3 — combats won 9, turns 42, cards 349, links 216
@@ -21,7 +21,7 @@ run 14: victory in act 3 — combats won 9, turns 63, cards 405, links 222
 run 15: victory in act 3 — combats won 9, turns 45, cards 330, links 185
 run 16: game_over in act 3 — combats won 8, turns 47, cards 346, links 190
 run 17: victory in act 3 — combats won 9, turns 47, cards 363, links 210
-run 18: victory in act 3 — combats won 9, turns 46, cards 314, links 183
+run 18: victory in act 3 — combats won 9, turns 45, cards 301, links 169
 run 19: victory in act 3 — combats won 9, turns 52, cards 468, links 296
 run 20: game_over in act 3 — combats won 8, turns 50, cards 352, links 198
 run 21: victory in act 3 — combats won 9, turns 42, cards 338, links 211
@@ -83,7 +83,7 @@ run 76: victory in act 3 — combats won 9, turns 40, cards 326, links 200
 run 77: victory in act 3 — combats won 9, turns 42, cards 319, links 191
 run 78: victory in act 3 — combats won 9, turns 52, cards 420, links 259
 run 79: game_over in act 2 — combats won 6, turns 39, cards 296, links 146
-run 80: game_over in act 3 — combats won 8, turns 61, cards 418, links 199
+run 80: victory in act 3 — combats won 9, turns 52, cards 371, links 174
 run 81: victory in act 3 — combats won 9, turns 41, cards 302, links 158
 run 82: game_over in act 2 — combats won 7, turns 54, cards 342, links 153
 run 83: game_over in act 2 — combats won 6, turns 41, cards 301, links 162
@@ -107,12 +107,12 @@ run 100: game_over in act 2 — combats won 6, turns 38, cards 298, links 152
 ##TBITEMS##{"run":1,"outcome":"game_over","act":1,"characters":{"p1":"vess","p2":"bram"},"cards":{"widows_arithmetic":[1,0],"slow_burn":[0,1],"shared_sigil":[1,0],"loose_stitch":[0,1],"hollow_seam":[2,0],"splinter":[0,2],"cross_counter":[0,1],"shoulder_through":[1,0]},"plays":{"worn_knife":[6,0],"hatpin":[13,0],"kindle":[0,9],"jab":[0,10],"pinprick":[23,0],"knuckle_crack":[0,15],"patchwork":[32,0],"loose_stitch":[10,12],"second_wind":[0,9],"opener":[0,14],"brace_up":[0,29],"shared_sigil":[11,0],"slow_burn":[0,5],"widows_arithmetic":[10,0],"hollow_seam":[5,0],"splinter":[0,5],"cross_counter":[0,3],"shoulder_through":[2,0]},"relics":["bridegrooms_knot","hungry_whetstone","sealed_reliquary"]}
 ##TBITEMS##{"run":2,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"funeral_lace":[1,0],"followthrough":[0,1],"stoke":[1,0],"seeding_curse":[0,1],"shared_burden":[1,0],"final_bell":[0,1],"slow_burn":[1,0],"twinned_cut":[0,2],"gathering_slack":[1,0],"share_the_fire":[0,1],"litany_of_mending":[1,0],"splinter":[1,1],"tithe_of_thread":[1,0],"spark":[0,1],"spite_stitch":[1,0],"ash_harvest":[0,1],"cinder_cloak":[1,0],"tallow_mark":[1,0],"needles_verdict":[1,0],"roundhouse":[0,1],"lashing_coil":[1,0],"crossguard":[0,1],"seam_split":[0,1],"crossing_blow":[1,0],"rendcall":[0,1],"cinderbreak":[1,0]},"plays":{"brace_up":[0,31],"hatpin":[17,0],"pinprick":[40,0],"kindle":[0,13],"second_wind":[0,15],"jab":[0,18],"patchwork":[23,0],"knuckle_crack":[0,15],"loose_stitch":[17,0],"opener":[0,20],"worn_knife":[5,0],"followthrough":[0,10],"seeding_curse":[0,17],"funeral_lace":[17,0],"final_bell":[0,16],"slow_burn":[3,0],"gathering_slack":[7,0],"litany_of_mending":[3,0],"shared_burden":[12,0],"share_the_fire":[0,8],"twinned_cut":[0,7],"splinter":[5,6],"spark":[0,8],"ash_harvest":[0,5],"cinder_cloak":[4,0],"tallow_mark":[11,0],"needles_verdict":[5,0],"roundhouse":[0,4],"spite_stitch":[3,0],"tithe_of_thread":[4,0],"stoke":[1,0],"crossguard":[0,4],"lashing_coil":[4,0],"crossing_blow":[1,0],"cinderbreak":[2,0],"rendcall":[0,1]},"relics":["ashen_censer","bridegrooms_knot","census_of_wounds","kindling_bundle","knotted_votive","pulsekeepers_ring","saints_marrow","threadspool_reliquary","wedding_knife"]}
 ##TBITEMS##{"run":3,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"unpicking":[1,0],"followthrough":[0,1],"bellows":[1,0],"thousand_pins":[1,0],"banked_coals":[0,1],"spark":[1,0],"seam_split":[1,1],"braided_malice":[1,1],"bellringer":[0,1],"cinder_cloak":[1,0],"black_lattice":[0,1],"saturate":[1,0],"opener":[0,2],"cross_counter":[0,1],"pitchfire":[1,0],"shared_sigil":[1,0],"backdraft":[1,0],"crossing_blow":[0,1],"small_rites":[1,0],"wildfire_heart":[0,1],"stitchblade":[0,1]},"plays":{"worn_knife":[13,0],"loose_stitch":[21,0],"opener":[0,33],"second_wind":[0,16],"hatpin":[13,0],"kindle":[0,9],"brace_up":[0,31],"patchwork":[43,0],"jab":[0,19],"pinprick":[42,0],"knuckle_crack":[0,19],"unpicking":[21,0],"bellows":[13,0],"followthrough":[0,11],"spark":[18,0],"banked_coals":[0,10],"thousand_pins":[13,0],"seam_split":[0,8],"black_lattice":[0,3],"braided_malice":[10,5],"cinder_cloak":[11,0],"bellringer":[0,7],"pitchfire":[8,0],"saturate":[3,0],"cross_counter":[0,3],"backdraft":[3,0],"shared_sigil":[6,0],"crossing_blow":[0,2],"small_rites":[1,0],"stitchblade":[0,1]},"relics":["bridegrooms_knot","hexwrought_locket","knotted_votive","loom_of_two_hands","patient_bookmark","saints_marrow","threadspool_reliquary","tithing_bowl"]}
-##TBITEMS##{"run":4,"outcome":"game_over","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"unbroken_line":[1,1],"rendcall":[0,1],"ashfall":[2,1],"linked_shields":[0,1],"forgefire":[1,2],"tally_of_griefs":[1,0],"fan_the_flames":[0,1],"spindle_step":[0,1],"gravebloom":[2,0],"soot_mark":[2,0],"graverust":[0,1],"thousand_pins":[1,0],"one_two":[0,1],"seeding_curse":[2,0],"second_wind":[0,1],"pinprick":[1,0],"final_bell":[0,1],"crack_the_seal":[1,0],"spark":[1,0],"immovable":[0,1],"unpicking":[0,1]},"plays":{"hatpin":[14,0],"jab":[0,11],"pinprick":[46,0],"knuckle_crack":[0,12],"patchwork":[26,0],"second_wind":[0,20],"brace_up":[0,29],"loose_stitch":[19,0],"opener":[0,14],"worn_knife":[5,0],"kindle":[0,8],"forgefire":[0,6],"ashfall":[26,1],"rendcall":[0,13],"linked_shields":[0,11],"unbroken_line":[5,1],"tally_of_griefs":[12,0],"fan_the_flames":[0,10],"spindle_step":[0,7],"soot_mark":[16,0],"graverust":[0,4],"one_two":[0,4],"thousand_pins":[10,0],"seeding_curse":[10,0],"gravebloom":[5,0],"final_bell":[0,4],"spark":[6,0],"crack_the_seal":[5,0],"unpicking":[0,2],"immovable":[0,1]},"relics":["chord_of_the_choir","cracked_bell","loom_of_two_hands","saints_marrow","scar_votive","tithing_bowl","vigil_lamp","whetstone_psalm"]}
+##TBITEMS##{"run":4,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"unbroken_line":[1,1],"rendcall":[0,1],"ashfall":[2,1],"linked_shields":[0,1],"forgefire":[1,2],"tally_of_griefs":[1,0],"fan_the_flames":[0,1],"spindle_step":[0,1],"gravebloom":[2,0],"soot_mark":[2,0],"graverust":[0,1],"thousand_pins":[1,0],"one_two":[0,1],"seeding_curse":[2,0],"second_wind":[0,1],"pinprick":[1,0],"final_bell":[0,1],"crack_the_seal":[1,0],"spark":[1,0],"immovable":[0,1],"unpicking":[0,1]},"plays":{"hatpin":[14,0],"jab":[0,11],"pinprick":[46,0],"knuckle_crack":[0,12],"patchwork":[26,0],"second_wind":[0,20],"brace_up":[0,29],"loose_stitch":[19,0],"opener":[0,14],"worn_knife":[5,0],"kindle":[0,8],"forgefire":[0,6],"ashfall":[26,1],"rendcall":[0,13],"linked_shields":[0,11],"unbroken_line":[5,1],"tally_of_griefs":[12,0],"fan_the_flames":[0,10],"spindle_step":[0,7],"soot_mark":[16,0],"graverust":[0,4],"one_two":[0,4],"thousand_pins":[10,0],"seeding_curse":[10,0],"gravebloom":[5,0],"final_bell":[0,4],"spark":[6,0],"crack_the_seal":[5,0],"unpicking":[0,2],"immovable":[0,1]},"relics":["chord_of_the_choir","cracked_bell","loom_of_two_hands","pulsekeepers_ring","saints_marrow","scar_votive","tithing_bowl","vigil_lamp","whetstone_psalm"]}
 ##TBITEMS##{"run":5,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"waxbound_oath":[1,0],"body_blow":[0,2],"burr_shell":[0,1],"funeral_lace":[1,0],"splinter":[0,1],"linked_shields":[1,0],"small_rites":[0,1],"pale_unmaking":[1,0],"candle_watch":[0,1],"spark":[2,0],"knotward_veil":[0,1],"selvage":[1,0],"cinderbreak":[0,1],"unbroken_line":[0,1],"needlework":[1,0],"cinderfall":[0,1],"withering":[1,0],"quick_words":[0,1],"shared_sigil":[1,0],"unpicking":[0,1],"thousand_pins":[1,0],"bellringer":[0,1],"tallow_mark":[1,0]},"plays":{"pinprick":[38,0],"loose_stitch":[16,0],"hatpin":[22,0],"second_wind":[0,16],"brace_up":[0,24],"patchwork":[25,0],"kindle":[0,11],"jab":[0,12],"opener":[0,18],"worn_knife":[13,0],"knuckle_crack":[0,10],"body_blow":[0,8],"burr_shell":[0,7],"waxbound_oath":[12,0],"funeral_lace":[8,0],"small_rites":[0,10],"splinter":[0,10],"spark":[23,0],"candle_watch":[0,7],"pale_unmaking":[11,0],"knotward_veil":[0,10],"linked_shields":[8,0],"unbroken_line":[0,1],"cinderbreak":[0,8],"cinderfall":[0,6],"needlework":[3,0],"selvage":[1,0],"withering":[4,0],"quick_words":[0,4],"shared_sigil":[6,0],"unpicking":[0,5],"tallow_mark":[2,0]},"relics":["ashen_censer","bridegrooms_knot","covetous_psalter","ember_coal","hexwrought_locket","iron_girdle","knotted_votive","needlecase_of_saint_morrow","saints_marrow","sealed_reliquary","steadfast_icon","tithing_bowl","twin_phylactery"]}
 ##TBITEMS##{"run":6,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"needles_verdict":[1,0],"ashfall":[0,1],"brand":[1,0],"tithe_of_thread":[0,1],"two_as_one":[1,0],"breaker":[0,1],"shoulder_through":[1,0],"borrowed_hour":[1,0],"followthrough":[0,1],"forgefire":[1,0],"martyrs_knot":[1,0],"relentless":[0,1],"litany_of_mending":[1,0],"threadlight":[0,1],"unpicking":[1,0],"pummel":[0,1],"small_rites":[0,1],"needlework":[1,0],"cinderbreak":[0,2],"rend_the_weave":[1,0],"kindle":[0,1],"soot_mark":[1,0],"shared_sigil":[1,0]},"plays":{"worn_knife":[9,0],"jab":[0,29],"hatpin":[6,0],"second_wind":[0,14],"pinprick":[36,0],"patchwork":[23,0],"brace_up":[0,25],"knuckle_crack":[0,13],"loose_stitch":[16,0],"opener":[0,18],"kindle":[0,21],"brand":[11,0],"needles_verdict":[15,0],"ashfall":[0,7],"tithe_of_thread":[0,5],"two_as_one":[9,0],"shoulder_through":[8,0],"borrowed_hour":[10,0],"followthrough":[0,7],"martyrs_knot":[5,0],"breaker":[0,5],"threadlight":[0,9],"pummel":[0,6],"relentless":[0,4],"forgefire":[2,0],"litany_of_mending":[5,0],"unpicking":[7,0],"small_rites":[0,4],"needlework":[5,0],"cinderbreak":[0,9],"rend_the_weave":[4,0],"soot_mark":[2,0],"shared_sigil":[2,0]},"relics":["ashen_censer","braided_censer","bridegrooms_knot","hungry_whetstone","iron_girdle","kindling_bundle","patient_bookmark","scar_votive","steadfast_icon","twin_phylactery","wedding_knife"]}
 ##TBITEMS##{"run":7,"outcome":"game_over","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"withering":[2,0],"twinned_cut":[0,1],"quick_words":[0,1],"one_two":[0,1],"square_up":[1,0],"spite_stitch":[0,1],"graverust":[2,0],"slow_burn":[1,1],"quickening":[0,1],"crossguard":[0,1],"drumbeat":[1,0],"pale_unmaking":[2,0],"final_bell":[0,1],"wildfire_heart":[1,0],"thornward":[1,0],"spark":[0,1],"cinder_cloak":[1,0],"cinderbreak":[0,2],"unpicking":[0,1],"threadlight":[1,0],"gravebloom":[1,0],"widows_arithmetic":[1,0],"hammerfall":[0,1]},"plays":{"pinprick":[65,0],"jab":[0,21],"patchwork":[75,0],"worn_knife":[20,0],"kindle":[0,14],"hatpin":[22,0],"second_wind":[0,19],"brace_up":[0,66],"knuckle_crack":[0,28],"loose_stitch":[32,0],"opener":[0,31],"twinned_cut":[0,13],"withering":[49,0],"quick_words":[0,15],"spite_stitch":[0,13],"one_two":[0,11],"square_up":[20,0],"quickening":[0,18],"slow_burn":[1,6],"graverust":[20,0],"crossguard":[0,16],"drumbeat":[5,0],"final_bell":[0,8],"wildfire_heart":[1,0],"pale_unmaking":[7,0],"spark":[0,11],"thornward":[6,0],"cinder_cloak":[6,0],"unpicking":[0,9],"cinderbreak":[0,6],"threadlight":[1,0],"widows_arithmetic":[1,0],"hammerfall":[0,2]},"relics":["ashen_censer","bridegrooms_knot","census_of_wounds","cracked_bell","drawn_curtain","iron_girdle","needlecase_of_saint_morrow","saints_marrow","threadspool_reliquary"]}
 ##TBITEMS##{"run":8,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"festering_knot":[1,0],"ashfall":[1,1],"spark":[1,0],"wardknot":[0,1],"pinprick":[1,0],"hammerfall":[0,2],"quiet_mending":[1,0],"brand":[1,0],"spindle_step":[0,1],"small_rites":[1,0],"bellows":[0,1],"spitespun_mantle":[0,1],"tallow_mark":[1,0],"body_blow":[0,1],"forearm_wall":[1,0],"seeding_curse":[1,0],"cinderbreak":[0,1],"lashing_coil":[0,1]},"plays":{"jab":[0,14],"loose_stitch":[21,0],"opener":[0,18],"worn_knife":[12,0],"hatpin":[23,0],"kindle":[0,9],"brace_up":[0,34],"patchwork":[42,0],"pinprick":[63,0],"knuckle_crack":[0,20],"spark":[20,0],"festering_knot":[19,0],"second_wind":[0,9],"wardknot":[0,16],"ashfall":[2,7],"hammerfall":[0,19],"spindle_step":[0,4],"quiet_mending":[4,0],"brand":[11,0],"bellows":[0,7],"small_rites":[10,0],"spitespun_mantle":[0,1],"body_blow":[0,2],"tallow_mark":[10,0],"forearm_wall":[9,0],"seeding_curse":[2,0],"cinderbreak":[0,2],"lashing_coil":[0,1]},"relics":["ashen_censer","bridegrooms_knot","needlecase_of_saint_morrow","patient_bookmark","sealed_reliquary","whetstone_psalm"]}
-##TBITEMS##{"run":9,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"pinprick":[1,0],"call_and_answer":[0,1],"seam_split":[0,1],"crack_the_seal":[1,0],"rendcall":[0,1],"spark":[1,0],"patience":[0,1],"gravebloom":[2,0],"stoke":[0,1],"stitchblade":[0,1],"eye_of_the_loom":[1,0],"cinderbreak":[0,3],"avalanche":[1,0],"tallow_mark":[1,0],"linked_shields":[0,1],"tithe_of_thread":[1,0],"immovable":[0,1],"thousand_pins":[1,0],"square_up":[1,0],"crossguard":[1,0]},"plays":{"opener":[0,18],"hatpin":[15,0],"patchwork":[28,0],"jab":[0,15],"pinprick":[53,0],"knuckle_crack":[0,11],"kindle":[0,12],"brace_up":[0,27],"loose_stitch":[17,0],"second_wind":[0,10],"worn_knife":[11,0],"seam_split":[0,10],"call_and_answer":[0,4],"crack_the_seal":[11,0],"spark":[15,0],"patience":[0,13],"rendcall":[0,10],"gravebloom":[4,0],"stitchblade":[0,4],"cinderbreak":[0,10],"eye_of_the_loom":[6,0],"tallow_mark":[8,0],"linked_shields":[0,5],"avalanche":[6,0],"immovable":[0,6],"stoke":[0,2],"thousand_pins":[4,0],"tithe_of_thread":[2,0]},"relics":["braided_censer","bridegrooms_knot","census_of_wounds","covetous_psalter","drawn_curtain","hexwrought_locket","hungry_whetstone","kindling_bundle","knotted_votive","sealed_reliquary","tithing_bowl"]}
+##TBITEMS##{"run":9,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"pinprick":[1,0],"call_and_answer":[0,1],"seam_split":[0,1],"crack_the_seal":[1,0],"rendcall":[0,1],"spark":[1,0],"patience":[0,1],"gravebloom":[2,0],"stoke":[0,1],"stitchblade":[0,1],"eye_of_the_loom":[1,0],"cinderbreak":[0,3],"avalanche":[1,0],"tallow_mark":[1,0],"linked_shields":[0,1],"tithe_of_thread":[1,0],"immovable":[0,1],"thousand_pins":[1,0],"square_up":[1,0],"crossguard":[1,0]},"plays":{"opener":[0,18],"hatpin":[15,0],"patchwork":[28,0],"jab":[0,15],"pinprick":[53,0],"knuckle_crack":[0,11],"kindle":[0,12],"brace_up":[0,27],"loose_stitch":[17,0],"second_wind":[0,10],"worn_knife":[11,0],"seam_split":[0,10],"call_and_answer":[0,4],"crack_the_seal":[11,0],"spark":[15,0],"patience":[0,13],"rendcall":[0,10],"gravebloom":[4,0],"stitchblade":[0,4],"cinderbreak":[0,10],"eye_of_the_loom":[7,0],"tallow_mark":[8,0],"linked_shields":[0,5],"avalanche":[6,0],"immovable":[0,6],"stoke":[0,2],"thousand_pins":[3,0],"tithe_of_thread":[2,0]},"relics":["braided_censer","bridegrooms_knot","census_of_wounds","covetous_psalter","drawn_curtain","hexwrought_locket","hungry_whetstone","kindling_bundle","knotted_votive","sealed_reliquary","tithing_bowl"]}
 ##TBITEMS##{"run":10,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"patient_knife":[1,0],"avalanche":[0,1],"hammerfall":[1,0],"lashing_coil":[0,1],"two_as_one":[1,0],"pummel":[0,1],"threadlight":[0,1],"forgefire":[0,1],"spite_stitch":[1,0],"crossguard":[0,2],"loose_stitch":[0,1],"crack_the_seal":[1,0],"counterargument":[0,1],"soot_mark":[1,0],"seeding_curse":[1,0],"hold_the_line":[1,0],"needlework":[1,0],"rendcall":[0,1],"measured_cut":[0,1]},"plays":{"jab":[0,16],"loose_stitch":[13,9],"patchwork":[19,0],"brace_up":[0,20],"worn_knife":[7,0],"kindle":[0,10],"hatpin":[12,0],"pinprick":[22,0],"knuckle_crack":[0,11],"second_wind":[0,10],"opener":[0,16],"hammerfall":[5,0],"avalanche":[0,10],"lashing_coil":[0,5],"patient_knife":[4,0],"pummel":[0,8],"threadlight":[0,10],"two_as_one":[6,0],"spite_stitch":[3,0],"crossguard":[0,12],"forgefire":[0,3],"counterargument":[0,8],"hold_the_line":[2,0],"seeding_curse":[1,0],"crack_the_seal":[1,0],"rendcall":[0,2],"measured_cut":[0,1]},"relics":["covetous_psalter","hexwrought_locket","saints_marrow","scar_votive","threadspool_reliquary","wedding_knife"]}
 ##TBITEMS##{"run":11,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"loom_of_hours":[1,0],"litany_of_mending":[1,1],"forearm_wall":[2,0],"cinch":[0,2],"unpicking":[2,0],"followthrough":[0,1],"patient_breath":[0,1],"twinned_cut":[0,1],"cinder_cloak":[1,0],"candle_watch":[0,1],"measured_cut":[1,0],"rendcall":[0,1],"shared_sigil":[1,0],"relentless":[0,1],"share_the_fire":[0,1],"spark":[1,0],"hollow_seam":[1,0],"stamp_out":[0,1],"seeding_curse":[1,0],"call_and_answer":[0,1],"needlework":[1,0]},"plays":{"patchwork":[33,0],"jab":[0,26],"loose_stitch":[19,0],"brace_up":[0,25],"hatpin":[33,0],"pinprick":[41,0],"worn_knife":[15,0],"second_wind":[0,17],"opener":[0,22],"knuckle_crack":[0,13],"kindle":[0,14],"loom_of_hours":[5,0],"cinch":[0,22],"forearm_wall":[33,0],"litany_of_mending":[13,17],"patient_breath":[0,17],"followthrough":[0,11],"unpicking":[21,0],"cinder_cloak":[16,0],"candle_watch":[0,11],"twinned_cut":[0,10],"measured_cut":[9,0],"shared_sigil":[10,0],"rendcall":[0,9],"relentless":[0,5],"share_the_fire":[0,7],"spark":[6,0],"hollow_seam":[4,0],"stamp_out":[0,4],"needlework":[3,0],"seeding_curse":[3,0]},"relics":["census_of_wounds","covetous_psalter","cracked_bell","drawn_curtain","iron_girdle","kindling_bundle","pulsekeepers_ring","sealed_reliquary","steadfast_icon","threadspool_reliquary","vigil_lamp"]}
 ##TBITEMS##{"run":12,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"small_rites":[1,0],"rendcall":[0,1],"ashfall":[1,0],"stitchblade":[0,3],"widows_arithmetic":[1,0],"stamp_out":[1,1],"shared_burden":[1,0],"loose_stitch":[0,1],"inkwell_curse":[1,0],"relentless":[0,1],"eye_for_an_opening":[1,0],"graverust":[1,0],"ash_harvest":[0,1],"festering_knot":[1,0],"litany_of_mending":[0,1],"wind_up":[2,0],"seeding_curse":[2,0],"one_two":[0,1],"wildfire_heart":[0,1],"unpicking":[1,0],"cinderfall":[0,1],"two_as_one":[1,0]},"plays":{"hatpin":[13,0],"jab":[0,15],"pinprick":[33,0],"knuckle_crack":[0,11],"worn_knife":[7,0],"kindle":[0,14],"patchwork":[28,0],"brace_up":[0,16],"second_wind":[0,13],"opener":[0,16],"loose_stitch":[16,12],"stitchblade":[0,15],"small_rites":[13,0],"ashfall":[13,0],"rendcall":[0,13],"shared_burden":[11,0],"widows_arithmetic":[13,0],"relentless":[0,3],"stamp_out":[3,10],"inkwell_curse":[6,0],"ash_harvest":[0,3],"festering_knot":[3,0],"eye_for_an_opening":[2,0],"wind_up":[14,0],"litany_of_mending":[0,6],"graverust":[3,0],"seeding_curse":[12,0],"one_two":[0,3],"wildfire_heart":[0,2],"unpicking":[3,0],"cinderfall":[0,2],"two_as_one":[2,0]},"relics":["covetous_psalter","hexwrought_locket","iron_girdle","saints_marrow","scar_votive","steadfast_icon","threadspool_reliquary","vigil_lamp","wedding_knife","whetstone_psalm"]}
@@ -121,7 +121,7 @@ run 100: game_over in act 2 — combats won 6, turns 38, cards 298, links 152
 ##TBITEMS##{"run":15,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"thousand_pins":[1,0],"patience":[0,1],"linked_shields":[1,0],"twinned_cut":[0,2],"spite_stitch":[2,0],"cinderfall":[0,1],"cinderbreak":[1,1],"small_rites":[1,0],"followthrough":[0,1],"waxbound_oath":[0,1],"carrion_lace":[1,0],"eye_for_an_opening":[0,1],"stand_fast":[1,0],"withering":[1,0],"ash_harvest":[0,1],"final_word":[0,1],"seeding_curse":[1,0],"crossguard":[0,1],"ember_jab":[0,1],"patient_knife":[1,0]},"plays":{"pinprick":[38,0],"jab":[0,14],"loose_stitch":[19,0],"patchwork":[22,0],"worn_knife":[10,0],"kindle":[0,11],"hatpin":[11,0],"second_wind":[0,12],"opener":[0,15],"brace_up":[0,19],"knuckle_crack":[0,12],"patience":[0,17],"twinned_cut":[0,12],"thousand_pins":[12,0],"linked_shields":[8,0],"cinderbreak":[8,2],"cinderfall":[0,13],"followthrough":[0,3],"spite_stitch":[9,0],"small_rites":[6,0],"waxbound_oath":[0,6],"eye_for_an_opening":[0,4],"carrion_lace":[2,0],"withering":[8,0],"ash_harvest":[0,7],"stand_fast":[6,0],"final_word":[0,7],"crossguard":[0,3],"seeding_curse":[6,0],"ember_jab":[0,5],"patient_knife":[3,0]},"relics":["ashen_censer","bridegrooms_knot","covetous_psalter","hexwrought_locket","hungry_whetstone","iron_girdle","kindling_bundle","knotted_votive","sealed_reliquary","tithing_bowl","twin_phylactery","vigil_lamp"]}
 ##TBITEMS##{"run":16,"outcome":"game_over","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"withering":[1,0],"tallow_mark":[0,1],"wind_up":[1,1],"stolen_breath":[0,1],"funeral_lace":[1,0],"held_breath":[0,1],"soot_mark":[1,0],"waxbound_oath":[0,1],"quiet_mending":[1,0],"cinderbreak":[0,1],"spark":[1,0],"needle_wall":[0,1],"small_rites":[1,0],"pummel":[0,1],"ashfall":[1,0],"needlework":[1,0],"rendcall":[0,1],"cinch":[0,1],"thousand_pins":[2,0],"bellringer":[0,1],"selvage":[1,0],"hammerfall":[0,1],"black_lattice":[0,1],"thornward":[2,0],"hollow_seam":[1,0]},"plays":{"jab":[0,17],"loose_stitch":[17,0],"hatpin":[17,0],"pinprick":[35,0],"brace_up":[0,32],"patchwork":[9,0],"kindle":[0,9],"worn_knife":[6,0],"second_wind":[0,13],"opener":[0,18],"knuckle_crack":[0,11],"tallow_mark":[0,15],"stolen_breath":[0,8],"withering":[7,0],"wind_up":[13,4],"funeral_lace":[12,0],"waxbound_oath":[0,9],"held_breath":[0,10],"spark":[9,0],"soot_mark":[4,0],"needle_wall":[0,9],"quiet_mending":[4,0],"cinderbreak":[0,9],"ashfall":[6,0],"small_rites":[5,0],"pummel":[0,3],"cinch":[0,6],"rendcall":[0,8],"needlework":[5,0],"bellringer":[0,3],"thousand_pins":[4,0],"hammerfall":[0,4],"black_lattice":[0,2],"selvage":[1,0],"thornward":[2,0]},"relics":["bridegrooms_knot","census_of_wounds","covetous_psalter","iron_girdle","needlecase_of_saint_morrow","pulsekeepers_ring","steadfast_icon","vigil_lamp"]}
 ##TBITEMS##{"run":17,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"pale_unmaking":[1,0],"followthrough":[0,1],"banked_coals":[1,1],"tally_of_griefs":[1,0],"forearm_wall":[1,0],"needlework":[1,0],"twinned_cut":[0,1],"patience":[1,0],"martyrs_knot":[0,1],"thousand_pins":[1,0],"brace":[0,1],"second_wind":[1,0],"stitchblade":[0,2],"lashing_coil":[1,0],"roundhouse":[0,1],"patient_knife":[1,0],"threadlight":[1,0],"crossing_blow":[0,1],"eye_for_an_opening":[1,0],"quickening":[1,0],"bellmetal":[0,1],"knotward_veil":[1,0],"ash_harvest":[0,1]},"plays":{"hatpin":[10,0],"brace_up":[0,26],"jab":[0,19],"loose_stitch":[18,0],"pinprick":[40,0],"worn_knife":[6,0],"second_wind":[4,10],"opener":[0,13],"kindle":[0,10],"patchwork":[28,0],"knuckle_crack":[0,16],"followthrough":[0,11],"pale_unmaking":[18,0],"banked_coals":[13,6],"forearm_wall":[8,0],"tally_of_griefs":[8,0],"patience":[17,0],"martyrs_knot":[0,8],"needlework":[6,0],"twinned_cut":[0,7],"thousand_pins":[10,0],"stitchblade":[0,11],"brace":[0,5],"roundhouse":[0,4],"patient_knife":[6,0],"lashing_coil":[4,0],"crossing_blow":[0,6],"threadlight":[8,0],"quickening":[3,0],"eye_for_an_opening":[2,0],"knotward_veil":[2,0]},"relics":["bridegrooms_knot","cracked_bell","hexwrought_locket","kindling_bundle","patient_bookmark","pulsekeepers_ring","threadspool_reliquary","vigil_lamp","wedding_knife","whetstone_psalm"]}
-##TBITEMS##{"run":18,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"seeding_curse":[1,0],"stamp_out":[0,1],"ash_harvest":[1,0],"linked_shields":[0,1],"funeral_lace":[2,0],"cinderbreak":[0,3],"stitchblade":[0,2],"crack_the_seal":[0,1],"ember_jab":[0,1],"needles_verdict":[1,0],"body_blow":[1,0],"loom_of_hours":[0,1],"pale_unmaking":[1,0],"brand":[1,0],"gravebloom":[2,0],"eye_for_an_opening":[1,0],"twinned_cut":[0,1],"withering":[1,0],"relentless":[0,1]},"plays":{"brace_up":[0,24],"jab":[0,20],"patchwork":[21,0],"worn_knife":[8,0],"hatpin":[12,0],"second_wind":[0,10],"opener":[0,16],"pinprick":[33,0],"loose_stitch":[17,0],"kindle":[0,11],"knuckle_crack":[0,10],"seeding_curse":[16,0],"stamp_out":[0,13],"linked_shields":[0,8],"ash_harvest":[9,0],"funeral_lace":[19,0],"cinderbreak":[0,22],"stitchblade":[0,13],"ember_jab":[0,10],"crack_the_seal":[0,8],"needles_verdict":[2,0],"body_blow":[2,0],"eye_for_an_opening":[1,0],"pale_unmaking":[4,0],"twinned_cut":[0,1],"brand":[2,0],"gravebloom":[1,0],"withering":[1,0]},"relics":["ashen_censer","bridegrooms_knot","covetous_psalter","drawn_curtain","hexwrought_locket","iron_girdle","loom_of_two_hands","scar_votive","threadspool_reliquary","vigil_lamp"]}
+##TBITEMS##{"run":18,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"seeding_curse":[1,0],"stamp_out":[0,1],"ash_harvest":[1,0],"linked_shields":[0,1],"funeral_lace":[2,0],"cinderbreak":[0,3],"stitchblade":[0,2],"crack_the_seal":[0,1],"ember_jab":[0,1],"needles_verdict":[1,0],"body_blow":[1,0],"loom_of_hours":[0,1],"pale_unmaking":[1,0],"brand":[1,0],"gravebloom":[2,0],"eye_for_an_opening":[1,0],"twinned_cut":[0,1],"two_as_one":[1,0],"immovable":[0,1],"cinch":[0,1]},"plays":{"brace_up":[0,22],"jab":[0,19],"patchwork":[20,0],"worn_knife":[8,0],"hatpin":[12,0],"second_wind":[0,9],"opener":[0,16],"pinprick":[34,0],"loose_stitch":[17,0],"kindle":[0,11],"knuckle_crack":[0,9],"seeding_curse":[15,0],"stamp_out":[0,13],"linked_shields":[0,7],"ash_harvest":[9,0],"funeral_lace":[19,0],"cinderbreak":[0,17],"stitchblade":[0,13],"ember_jab":[0,10],"crack_the_seal":[0,8],"needles_verdict":[2,0],"body_blow":[2,0],"eye_for_an_opening":[2,0],"pale_unmaking":[3,0],"twinned_cut":[0,1],"brand":[1,0],"gravebloom":[1,0],"immovable":[0,1]},"relics":["ashen_censer","bridegrooms_knot","census_of_wounds","covetous_psalter","drawn_curtain","hexwrought_locket","scar_votive","sealed_reliquary","threadspool_reliquary","whetstone_psalm"]}
 ##TBITEMS##{"run":19,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"patient_breath":[1,0],"stokers_due":[0,1],"soot_mark":[1,0],"patience":[2,0],"cinderbreak":[0,1],"shared_burden":[0,1],"pale_unmaking":[1,0],"forearm_wall":[0,1],"crossguard":[1,0],"thousand_pins":[0,1],"splinter":[0,1],"shared_sigil":[2,0],"quickening":[1,0],"ember_jab":[0,1],"stitchblade":[0,1],"two_as_one":[2,0],"hammerfall":[0,1],"firewatch":[1,0],"eye_of_the_loom":[0,1],"unpicking":[1,0],"body_blow":[0,1],"cross_counter":[0,1],"brace":[1,0],"black_lattice":[1,0]},"plays":{"loose_stitch":[23,0],"pinprick":[48,0],"patchwork":[38,0],"jab":[0,18],"kindle":[0,10],"worn_knife":[11,0],"second_wind":[0,13],"hatpin":[22,0],"knuckle_crack":[0,15],"opener":[0,21],"brace_up":[0,33],"soot_mark":[14,0],"patient_breath":[15,0],"cinderbreak":[0,12],"stokers_due":[0,4],"patience":[30,0],"shared_burden":[0,13],"pale_unmaking":[16,0],"crossguard":[14,0],"forearm_wall":[0,9],"thousand_pins":[0,5],"shared_sigil":[17,0],"stitchblade":[0,4],"ember_jab":[0,8],"splinter":[0,6],"quickening":[9,0],"hammerfall":[0,5],"two_as_one":[9,0],"eye_of_the_loom":[0,8],"unpicking":[9,0],"firewatch":[4,0],"brace":[3,0],"black_lattice":[1,0],"body_blow":[0,1]},"relics":["ashen_censer","census_of_wounds","covetous_psalter","drawn_curtain","hungry_whetstone","knotted_votive","patient_bookmark","scar_votive"]}
 ##TBITEMS##{"run":20,"outcome":"game_over","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"small_rites":[1,0],"brand":[0,1],"seam_split":[0,2],"pale_unmaking":[1,0],"ember_jab":[0,1],"shared_burden":[0,1],"rend_the_weave":[1,0],"soot_mark":[0,1],"quiet_mending":[0,1],"crack_the_seal":[1,1],"one_two":[0,1],"spark":[2,0],"thornward":[1,0],"stamp_out":[0,1],"crossguard":[1,0],"stitchblade":[1,0],"cinch":[1,0],"counterargument":[0,1],"dig_in":[1,0],"crossing_blow":[1,0],"widows_arithmetic":[1,0],"final_bell":[0,1],"selvage":[0,1],"thousand_pins":[1,0]},"plays":{"patchwork":[23,0],"jab":[0,16],"brace_up":[0,26],"hatpin":[21,0],"pinprick":[36,0],"knuckle_crack":[0,11],"second_wind":[0,10],"opener":[0,17],"loose_stitch":[17,0],"worn_knife":[8,0],"kindle":[0,9],"brand":[0,10],"small_rites":[9,0],"seam_split":[0,17],"pale_unmaking":[12,0],"ember_jab":[0,15],"rend_the_weave":[6,0],"shared_burden":[0,12],"spark":[17,0],"crack_the_seal":[8,6],"one_two":[0,3],"crossguard":[6,0],"soot_mark":[0,4],"thornward":[6,0],"stamp_out":[0,7],"quiet_mending":[0,4],"crossing_blow":[1,0],"dig_in":[5,0],"counterargument":[0,3],"selvage":[0,1],"thousand_pins":[2,0],"widows_arithmetic":[1,0],"final_bell":[0,2],"stitchblade":[1,0]},"relics":["census_of_wounds","covetous_psalter","cracked_bell","hexwrought_locket","kindling_bundle","patient_bookmark","saints_marrow","sealed_reliquary","steadfast_icon","tithing_bowl","wedding_knife"]}
 ##TBITEMS##{"run":21,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"withering":[1,0],"crossing_blow":[0,1],"crossguard":[1,0],"martyrs_knot":[1,0],"cinderbreak":[0,1],"rendcall":[1,0],"knotward_veil":[0,1],"measured_cut":[1,0],"splinter":[0,1],"loose_stitch":[0,1],"shared_sigil":[1,0],"one_two":[0,2],"patience":[1,1],"quiet_mending":[0,1],"carrion_lace":[1,0],"ashfall":[1,0],"waxbound_oath":[0,1],"cinch":[1,0],"unpicking":[1,0],"twinned_cut":[0,2],"seam_split":[0,1],"small_rites":[1,0],"final_bell":[0,1],"spark":[1,0],"thornward":[1,0],"thousand_pins":[1,0]},"plays":{"jab":[0,9],"hatpin":[16,0],"patchwork":[26,0],"knuckle_crack":[0,9],"loose_stitch":[13,13],"opener":[0,19],"second_wind":[0,13],"pinprick":[31,0],"kindle":[0,14],"worn_knife":[12,0],"brace_up":[0,19],"withering":[9,0],"crossing_blow":[0,16],"crossguard":[11,0],"rendcall":[10,0],"knotward_veil":[0,7],"martyrs_knot":[8,0],"cinderbreak":[0,9],"splinter":[0,7],"quiet_mending":[0,4],"patience":[8,5],"shared_sigil":[6,0],"measured_cut":[6,0],"ashfall":[7,0],"waxbound_oath":[0,3],"carrion_lace":[5,0],"cinch":[4,0],"one_two":[0,3],"unpicking":[5,0],"thornward":[3,0],"final_bell":[0,2],"spark":[2,0],"thousand_pins":[2,0],"seam_split":[0,2]},"relics":["covetous_psalter","cracked_bell","hungry_whetstone","kindling_bundle","loom_of_two_hands","needlecase_of_saint_morrow","patient_bookmark","saints_marrow","tithing_bowl","vigil_lamp","wedding_knife"]}
@@ -183,7 +183,7 @@ run 100: game_over in act 2 — combats won 6, turns 38, cards 298, links 152
 ##TBITEMS##{"run":77,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"crossing_blow":[2,0],"cinderbreak":[0,2],"rendcall":[1,0],"wardknot":[0,1],"shared_sigil":[1,0],"second_wind":[1,0],"unpicking":[2,0],"stokers_due":[1,1],"crossguard":[1,0],"graverust":[0,1],"pyre_vault":[0,1],"two_as_one":[0,1],"forgefire":[0,1],"cinch":[0,1],"saturate":[1,0],"crack_the_seal":[0,1],"tallow_mark":[1,0],"ember_jab":[0,1],"cinder_cloak":[1,0],"unbroken_line":[0,1],"hollow_seam":[1,0],"cross_counter":[0,1],"spite_stitch":[1,0]},"plays":{"patchwork":[25,0],"brace_up":[0,25],"jab":[0,10],"hatpin":[20,0],"loose_stitch":[16,0],"kindle":[0,11],"worn_knife":[13,0],"second_wind":[5,11],"opener":[0,14],"pinprick":[33,0],"knuckle_crack":[0,10],"cinderbreak":[0,16],"rendcall":[14,0],"wardknot":[0,9],"crossing_blow":[11,0],"shared_sigil":[9,0],"crossguard":[8,0],"graverust":[0,6],"unpicking":[18,0],"pyre_vault":[0,4],"two_as_one":[0,7],"cinch":[0,3],"saturate":[4,0],"crack_the_seal":[0,2],"ember_jab":[0,2],"tallow_mark":[4,0],"stokers_due":[0,1],"cinder_cloak":[4,0],"hollow_seam":[2,0],"spite_stitch":[2,0]},"relics":["ashen_censer","drawn_curtain","hexwrought_locket","hungry_whetstone","knotted_votive","needlecase_of_saint_morrow","patient_bookmark","pulsekeepers_ring","saints_marrow","steadfast_icon","threadspool_reliquary","whetstone_psalm"]}
 ##TBITEMS##{"run":78,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"two_as_one":[1,0],"roundhouse":[0,1],"one_two":[1,1],"spite_stitch":[0,1],"patient_knife":[1,0],"banked_coals":[1,0],"candle_watch":[0,1],"seeding_curse":[1,0],"second_wind":[0,1],"ashfall":[1,1],"crack_the_seal":[0,1],"unpicking":[1,0],"forearm_wall":[0,1],"loom_of_hours":[1,0],"stamp_out":[0,1],"thornward":[2,0],"cinderbreak":[0,1],"pitchfire":[1,0],"measured_cut":[0,1],"saturate":[1,0],"eye_for_an_opening":[0,1],"hold_the_line":[1,0],"keepsake":[1,0],"spark":[1,0],"stitchblade":[0,1]},"plays":{"pinprick":[38,0],"patchwork":[30,0],"brace_up":[0,28],"hatpin":[17,0],"second_wind":[0,26],"jab":[0,14],"knuckle_crack":[0,13],"loose_stitch":[20,0],"opener":[0,18],"worn_knife":[9,0],"kindle":[0,12],"spite_stitch":[0,13],"two_as_one":[15,0],"one_two":[5,6],"roundhouse":[0,15],"banked_coals":[8,0],"patient_knife":[13,0],"candle_watch":[0,12],"ashfall":[12,2],"seeding_curse":[14,0],"crack_the_seal":[0,14],"unpicking":[12,0],"forearm_wall":[0,7],"stamp_out":[0,9],"thornward":[11,0],"pitchfire":[6,0],"measured_cut":[0,2],"cinderbreak":[0,5],"saturate":[3,0],"eye_for_an_opening":[0,1],"hold_the_line":[5,0],"stitchblade":[0,2],"spark":[2,0],"keepsake":[1,0]},"relics":["ashen_censer","bridegrooms_knot","covetous_psalter","ember_coal","hexwrought_locket","knotted_votive","needlecase_of_saint_morrow","threadspool_reliquary","twin_phylactery","wedding_knife"]}
 ##TBITEMS##{"run":79,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"unpicking":[2,0],"stamp_out":[0,1],"twinned_cut":[1,0],"mendthread":[0,1],"braided_malice":[1,0],"one_two":[0,2],"forgefire":[1,0],"graverust":[0,1],"unbroken_line":[1,0],"bellringer":[0,1],"tallow_mark":[1,0],"immovable":[0,1],"soot_mark":[1,0],"seam_split":[0,1],"thornward":[1,0],"stoke":[0,1]},"plays":{"brace_up":[0,20],"patchwork":[36,0],"jab":[0,20],"loose_stitch":[15,0],"opener":[0,16],"worn_knife":[13,0],"kindle":[0,10],"knuckle_crack":[0,14],"pinprick":[28,0],"hatpin":[21,0],"second_wind":[0,13],"unpicking":[19,0],"mendthread":[0,8],"twinned_cut":[8,0],"stamp_out":[0,10],"braided_malice":[8,0],"one_two":[0,6],"forgefire":[2,0],"graverust":[0,8],"unbroken_line":[3,0],"bellringer":[0,3],"soot_mark":[3,0],"immovable":[0,5],"tallow_mark":[4,0],"seam_split":[0,2],"thornward":[1,0]},"relics":["ashen_censer","census_of_wounds","hexwrought_locket","knotted_votive","tithing_bowl","whetstone_psalm"]}
-##TBITEMS##{"run":80,"outcome":"game_over","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"spite_stitch":[1,0],"shared_burden":[0,1],"brace":[1,0],"seeding_curse":[1,0],"call_and_answer":[0,1],"candle_watch":[1,0],"black_lattice":[0,1],"small_rites":[1,0],"bellmetal":[0,2],"aftershock":[2,0],"patient_knife":[0,1],"funeral_lace":[2,0],"cross_counter":[0,1],"soot_mark":[1,0],"gravebloom":[0,1],"crack_the_seal":[1,0],"relentless":[0,1],"counterargument":[0,1],"thornward":[1,0],"body_blow":[0,1],"selvage":[0,1],"ashfall":[1,0],"seam_split":[0,1],"hammerfall":[0,1]},"plays":{"opener":[0,28],"patchwork":[32,0],"jab":[0,24],"brace_up":[0,42],"worn_knife":[15,0],"pinprick":[44,0],"hatpin":[20,0],"knuckle_crack":[0,19],"loose_stitch":[16,0],"second_wind":[0,19],"kindle":[0,7],"brace":[16,0],"shared_burden":[0,22],"spite_stitch":[14,0],"black_lattice":[0,3],"call_and_answer":[0,5],"seeding_curse":[13,0],"candle_watch":[9,0],"small_rites":[9,0],"patient_knife":[0,10],"bellmetal":[0,4],"aftershock":[4,0],"funeral_lace":[6,0],"cross_counter":[0,7],"crack_the_seal":[9,0],"soot_mark":[4,0],"gravebloom":[0,3],"counterargument":[0,3],"thornward":[3,0],"relentless":[0,3],"body_blow":[0,2],"hammerfall":[0,2],"selvage":[0,1]},"relics":["bridegrooms_knot","covetous_psalter","cracked_bell","drawn_curtain","ember_coal","iron_girdle","needlecase_of_saint_morrow"]}
+##TBITEMS##{"run":80,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"spite_stitch":[1,0],"shared_burden":[0,1],"brace":[1,0],"seeding_curse":[1,0],"call_and_answer":[0,1],"candle_watch":[1,0],"black_lattice":[0,1],"small_rites":[1,0],"bellmetal":[0,1],"aftershock":[1,0],"patient_knife":[0,1],"funeral_lace":[2,0],"cross_counter":[0,1],"soot_mark":[1,0],"gravebloom":[0,1],"crack_the_seal":[1,0],"relentless":[0,1],"counterargument":[0,1],"selvage":[1,0],"avalanche":[0,1],"splinter":[0,1],"widows_arithmetic":[1,0],"kindle":[0,1]},"plays":{"opener":[0,21],"patchwork":[29,0],"jab":[0,23],"brace_up":[0,38],"worn_knife":[14,0],"pinprick":[44,0],"hatpin":[20,0],"knuckle_crack":[0,17],"loose_stitch":[18,0],"second_wind":[0,15],"kindle":[0,7],"brace":[17,0],"shared_burden":[0,16],"spite_stitch":[13,0],"black_lattice":[0,2],"call_and_answer":[0,2],"seeding_curse":[13,0],"candle_watch":[7,0],"small_rites":[8,0],"patient_knife":[0,9],"bellmetal":[0,2],"aftershock":[4,0],"funeral_lace":[8,0],"cross_counter":[0,4],"crack_the_seal":[6,0],"soot_mark":[3,0],"gravebloom":[0,2],"avalanche":[0,4],"splinter":[0,1],"relentless":[0,2],"counterargument":[0,1],"widows_arithmetic":[1,0]},"relics":["bridegrooms_knot","census_of_wounds","cracked_bell","drawn_curtain","ember_coal","iron_girdle","needlecase_of_saint_morrow","sealed_reliquary","whetstone_psalm"]}
 ##TBITEMS##{"run":81,"outcome":"victory","act":3,"characters":{"p1":"vess","p2":"bram"},"cards":{"patient_knife":[2,0],"cross_counter":[0,2],"ashfall":[2,0],"pale_unmaking":[1,0],"bellringer":[0,1],"gravebloom":[0,1],"withering":[1,0],"roundhouse":[0,1],"brand":[1,1],"final_word":[0,1],"tally_of_griefs":[1,0],"tallow_mark":[1,0],"spitespun_mantle":[0,1],"festering_knot":[1,0],"square_up":[0,1],"splinter":[0,1],"thousand_pins":[2,0],"share_the_fire":[0,1],"call_and_answer":[0,1],"dig_in":[0,1],"pinprick":[1,0],"thornward":[1,0]},"plays":{"brace_up":[0,20],"hatpin":[13,0],"pinprick":[34,0],"second_wind":[0,11],"opener":[0,17],"patchwork":[25,0],"jab":[0,12],"knuckle_crack":[0,10],"loose_stitch":[17,0],"worn_knife":[11,0],"kindle":[0,6],"patient_knife":[13,0],"ashfall":[14,0],"cross_counter":[0,9],"bellringer":[0,3],"pale_unmaking":[14,0],"gravebloom":[0,3],"roundhouse":[0,6],"withering":[10,0],"final_word":[0,5],"brand":[6,1],"tallow_mark":[11,0],"tally_of_griefs":[3,0],"square_up":[0,5],"spitespun_mantle":[0,4],"splinter":[0,4],"thousand_pins":[6,0],"festering_knot":[2,0],"share_the_fire":[0,4],"call_and_answer":[0,2],"thornward":[1,0]},"relics":["bridegrooms_knot","census_of_wounds","chord_of_the_choir","cracked_bell","hungry_whetstone","kindling_bundle","knotted_votive","patient_bookmark","sealed_reliquary","threadspool_reliquary","tithing_bowl"]}
 ##TBITEMS##{"run":82,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"keepsake":[1,0],"ash_harvest":[0,1],"firewatch":[1,0],"crossing_blow":[1,0],"avalanche":[0,1],"one_two":[1,0],"needlework":[1,0],"body_blow":[0,1],"seam_split":[0,1],"funeral_lace":[1,0],"cross_counter":[0,1],"aftershock":[2,0],"needle_wall":[0,1],"saturate":[1,0],"roundhouse":[0,1],"burr_shell":[0,1],"withering":[1,0],"cinderbreak":[0,2],"pitchfire":[1,0],"hollow_seam":[1,0]},"plays":{"loose_stitch":[22,0],"jab":[0,11],"pinprick":[42,0],"patchwork":[53,0],"brace_up":[0,30],"hatpin":[13,0],"second_wind":[0,15],"opener":[0,22],"worn_knife":[15,0],"kindle":[0,11],"knuckle_crack":[0,15],"firewatch":[8,0],"ash_harvest":[0,10],"keepsake":[3,0],"avalanche":[0,9],"crossing_blow":[10,0],"one_two":[4,0],"needlework":[7,0],"seam_split":[0,3],"cross_counter":[0,3],"roundhouse":[0,5],"saturate":[6,0],"needle_wall":[0,6],"withering":[2,0],"body_blow":[0,2],"pitchfire":[2,0],"cinderbreak":[0,3],"burr_shell":[0,6],"funeral_lace":[3,0],"hollow_seam":[1,0]},"relics":["census_of_wounds","drawn_curtain","ember_coal","iron_girdle","pulsekeepers_ring","scar_votive","whetstone_psalm"]}
 ##TBITEMS##{"run":83,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"unpicking":[2,0],"stamp_out":[0,1],"crack_the_seal":[1,1],"small_rites":[1,1],"stokers_due":[0,1],"waxbound_oath":[0,1],"eye_of_the_loom":[1,0],"roundhouse":[0,1],"ashfall":[2,0],"shared_sigil":[1,0],"relentless":[0,1],"spark":[1,0],"crossing_blow":[1,0],"wind_up":[0,1],"soot_mark":[1,0],"stitchblade":[0,1],"forearm_wall":[0,1]},"plays":{"patchwork":[24,0],"jab":[0,11],"pinprick":[31,0],"hatpin":[21,0],"second_wind":[0,10],"opener":[0,15],"loose_stitch":[15,0],"brace_up":[0,24],"knuckle_crack":[0,11],"worn_knife":[15,0],"kindle":[0,12],"unpicking":[26,0],"crack_the_seal":[3,9],"stamp_out":[0,10],"small_rites":[12,2],"stokers_due":[0,2],"waxbound_oath":[0,5],"ashfall":[9,0],"eye_of_the_loom":[8,0],"roundhouse":[0,3],"shared_sigil":[6,0],"spark":[7,0],"wind_up":[0,3],"crossing_blow":[3,0],"soot_mark":[3,0],"stitchblade":[0,1]},"relics":["census_of_wounds","cracked_bell","patient_bookmark","steadfast_icon","threadspool_reliquary","vigil_lamp"]}
@@ -206,18 +206,21 @@ run 100: game_over in act 2 — combats won 6, turns 38, cards 298, links 152
 ##TBITEMS##{"run":100,"outcome":"game_over","act":2,"characters":{"p1":"vess","p2":"bram"},"cards":{"graverust":[1,0],"stamp_out":[0,1],"stitchblade":[0,1],"saturate":[1,0],"cross_counter":[0,1],"ashfall":[1,0],"candle_watch":[0,1],"thousand_pins":[1,0],"call_and_answer":[0,1],"quick_words":[0,1],"patience":[1,0],"firewatch":[0,1],"brand":[1,0],"funeral_lace":[1,0],"cinderbreak":[0,1],"tallow_mark":[1,0],"patient_knife":[0,1],"shared_sigil":[1,0],"pyre_vault":[0,1]},"plays":{"knuckle_crack":[0,13],"pinprick":[32,0],"hatpin":[18,0],"brace_up":[0,24],"patchwork":[43,0],"worn_knife":[11,0],"second_wind":[0,8],"jab":[0,18],"loose_stitch":[16,0],"opener":[0,16],"kindle":[0,9],"graverust":[6,0],"stamp_out":[0,11],"stitchblade":[0,7],"ashfall":[9,0],"cross_counter":[0,8],"saturate":[7,0],"candle_watch":[0,8],"quick_words":[0,7],"call_and_answer":[0,2],"thousand_pins":[7,0],"patience":[6,0],"firewatch":[0,1],"tallow_mark":[4,0],"funeral_lace":[2,0],"patient_knife":[0,1],"cinderbreak":[0,1],"brand":[2,0],"shared_sigil":[1,0]},"relics":["cracked_bell","drawn_curtain","hexwrought_locket","kindling_bundle","threadspool_reliquary","wedding_knife"]}
 
 ================ TELEMETRY SUMMARY (M2 Part C) ================
-runs: 100  |  victories: 54 (54%)  |  combats won: 781
+runs: 100  |  victories: 56 (56%)  |  combats won: 783
 furthest acts: {"1":2,"2":31,"3":67}
-turns: 4676  |  cards played: 35990  |  overall link-fire: 55.7%
+turns: 4666  |  cards played: 35930  |  overall link-fire: 55.7%
 act 1: 399 combats, link-fire 49.8%, HP lost/combat 24.4
-act 2: 361 combats, link-fire 60.3%
+act 2: 361 combats, link-fire 60.3%, HP lost/combat 32.9
+act 3: 67 combats, link-fire 62.4%, HP lost/combat 72.9
+act deaths: a1 2.0% a2 31.0% of 100 runs | act-3 lethality: 11 of 67 arrivals = 16.4% (REPORTED — S21.2 baseline; band waits on human data)
+knot contact (OQ#68 watch): 3.64 knot fights/run | zero-contact runs 0.0%
 ---------------- HP LOST BY ENCOUNTER (pair HP / combat) ----------------
-  finale_boss              n= 67  hp/combat 73.3  !! outlier
-  a2_boss                  n= 73  hp/combat 49.1
-  a2_elite_bellkeeper      n= 72  hp/combat 44.2
+  finale_boss              n= 67  hp/combat 72.9  !! outlier
+  a2_boss                  n= 73  hp/combat 48.8
+  a2_elite_bellkeeper      n= 72  hp/combat 44.1
   a1_boss                  n= 99  hp/combat 41.4
-  a2_bell_wretch           n= 24  hp/combat 32.0
   a2_knot_rippers          n= 72  hp/combat 31.4
+  a2_bell_wretch           n= 24  hp/combat 31.4
   a2_elite_cantor          n= 22  hp/combat 28.5
   a1_elite_warden          n= 85  hp/combat 24.8
   a1_elite_sexton          n= 85  hp/combat 22.6
@@ -230,77 +233,77 @@ act 2: 361 combats, link-fire 60.3%
   a2_mote_pair             n= 35  hp/combat 10.1
   a1_tithe_carried         n= 27  hp/combat 8.3
   a1_wisp_leech            n= 31  hp/combat 7.7
-  (mean over n>=5 encounters: 26.4)
+  (mean over n>=5 encounters: 26.3)
 ---------------- S14.1 PER-CARD ATTRIBUTION (B23) ----------------
-top-10 by plays: pinprick(4081), patchwork(3088), brace_up(2747), loose_stitch(2056), opener(1952), hatpin(1749), jab(1591), knuckle_crack(1369), second_wind(1300), kindle(1140)
-bottom-10 by plays: black_lattice(28), call_and_answer(27), loom_of_hours(26), selvage(25), stoke(23), spindle_step(19), stokers_due(16), hold_the_line(15), aftershock(12), backdraft(8)
-  card pinprick                 plays 4081 picks  23 winning-decks 54
-  card patchwork                plays 3088 picks   0 winning-decks 0
-  card brace_up                 plays 2747 picks   0 winning-decks 48
-  card loose_stitch             plays 2056 picks  16 winning-decks 54
-  card opener                   plays 1952 picks  11 winning-decks 54
+top-10 by plays: pinprick(4082), patchwork(3084), brace_up(2741), loose_stitch(2058), opener(1945), hatpin(1749), jab(1589), knuckle_crack(1366), second_wind(1295), kindle(1140)
+bottom-10 by plays: black_lattice(27), loom_of_hours(26), selvage(24), call_and_answer(24), stoke(23), spindle_step(19), stokers_due(16), hold_the_line(15), aftershock(12), backdraft(8)
+  card pinprick                 plays 4082 picks  23 winning-decks 56
+  card patchwork                plays 3084 picks   0 winning-decks 0
+  card brace_up                 plays 2741 picks   0 winning-decks 50
+  card loose_stitch             plays 2058 picks  16 winning-decks 56
+  card opener                   plays 1945 picks  11 winning-decks 56
   card hatpin                   plays 1749 picks   0 winning-decks 0
-  card jab                      plays 1591 picks   0 winning-decks 0
-  card knuckle_crack            plays 1369 picks   0 winning-decks 0
-  card second_wind              plays 1300 picks  17 winning-decks 54
-  card kindle                   plays 1140 picks   5 winning-decks 54
-  card worn_knife               plays 1137 picks   0 winning-decks 0
-  card spark                    plays  474 picks  46 winning-decks 25
-  card seeding_curse            plays  390 picks  47 winning-decks 23
-  card cinderbreak              plays  324 picks  56 winning-decks 24
-  card crack_the_seal           plays  322 picks  44 winning-decks 20
+  card jab                      plays 1589 picks   0 winning-decks 0
+  card knuckle_crack            plays 1366 picks   0 winning-decks 0
+  card second_wind              plays 1295 picks  17 winning-decks 56
+  card kindle                   plays 1140 picks   6 winning-decks 56
+  card worn_knife               plays 1136 picks   0 winning-decks 0
+  card spark                    plays  474 picks  46 winning-decks 26
+  card seeding_curse            plays  389 picks  47 winning-decks 25
+  card cinderbreak              plays  319 picks  56 winning-decks 24
+  card crack_the_seal           plays  319 picks  44 winning-decks 22
   card tallow_mark              plays  293 picks  31 winning-decks 16
-  card ashfall                  plays  285 picks  40 winning-decks 14
-  card unpicking                plays  261 picks  28 winning-decks 15
+  card ashfall                  plays  285 picks  39 winning-decks 15
+  card unpicking                plays  261 picks  28 winning-decks 16
   card crossing_blow            plays  256 picks  42 winning-decks 22
-  card thousand_pins            plays  251 picks  41 winning-decks 18
-  card rendcall                 plays  242 picks  30 winning-decks 18
-  card small_rites              plays  240 picks  36 winning-decks 17
-  card withering                plays  239 picks  24 winning-decks 11
+  card thousand_pins            plays  250 picks  41 winning-decks 19
+  card rendcall                 plays  242 picks  30 winning-decks 19
+  card small_rites              plays  239 picks  36 winning-decks 18
+  card withering                plays  238 picks  23 winning-decks 10
   card shared_sigil             plays  229 picks  32 winning-decks 15
   card stitchblade              plays  219 picks  41 winning-decks 19
   card patience                 plays  219 picks  21 winning-decks 14
-  card thornward                plays  214 picks  33 winning-decks 17
-  card splinter                 plays  198 picks  40 winning-decks 18
-  card two_as_one               plays  193 picks  37 winning-decks 17
-  card hammerfall               plays  191 picks  33 winning-decks 13
+  card thornward                plays  211 picks  32 winning-decks 17
+  card splinter                 plays  199 picks  41 winning-decks 19
+  card two_as_one               plays  193 picks  38 winning-decks 18
+  card hammerfall               plays  189 picks  32 winning-decks 13
   card twinned_cut              plays  187 picks  44 winning-decks 20
   card crossguard               plays  187 picks  21 winning-decks 14
-  card eye_of_the_loom          plays  181 picks  18 winning-decks 12
-  card shared_burden            plays  180 picks  16 winning-decks 8
-  card one_two                  plays  175 picks  39 winning-decks 18
+  card eye_of_the_loom          plays  182 picks  18 winning-decks 12
+  card one_two                  plays  175 picks  39 winning-decks 19
+  card shared_burden            plays  174 picks  16 winning-decks 9
   card wind_up                  plays  171 picks  17 winning-decks 9
+  card funeral_lace             plays  169 picks  23 winning-decks 15
   card share_the_fire           plays  169 picks  20 winning-decks 13
-  card spite_stitch             plays  168 picks  31 winning-decks 14
-  card pale_unmaking            plays  168 picks  22 winning-decks 14
-  card funeral_lace             plays  167 picks  23 winning-decks 14
-  card soot_mark                plays  167 picks  28 winning-decks 10
+  card spite_stitch             plays  167 picks  31 winning-decks 15
+  card pale_unmaking            plays  167 picks  22 winning-decks 14
+  card soot_mark                plays  166 picks  28 winning-decks 12
   card roundhouse               plays  159 picks  24 winning-decks 14
-  card patient_knife            plays  149 picks  20 winning-decks 10
+  card patient_knife            plays  148 picks  20 winning-decks 11
   card followthrough            plays  147 picks  29 winning-decks 16
   card needlework               plays  147 picks  31 winning-decks 16
   card borrowed_hour            plays  146 picks  15 winning-decks 9
-  card widows_arithmetic        plays  143 picks  19 winning-decks 10
+  card widows_arithmetic        plays  144 picks  20 winning-decks 11
   card hollow_seam              plays  142 picks  26 winning-decks 16
   card needles_verdict          plays  140 picks  18 winning-decks 15
-  card candle_watch             plays  139 picks  20 winning-decks 13
+  card candle_watch             plays  137 picks  20 winning-decks 14
   card stamp_out                plays  134 picks  17 winning-decks 9
   card cinder_cloak             plays  130 picks  16 winning-decks 9
-  card brand                    plays  130 picks  24 winning-decks 13
   card forearm_wall             plays  130 picks  17 winning-decks 10
-  card seam_split               plays  126 picks  37 winning-decks 20
+  card brand                    plays  129 picks  24 winning-decks 13
+  card seam_split               plays  126 picks  36 winning-decks 20
   card saturate                 plays  126 picks  19 winning-decks 8
-  card cinch                    plays  121 picks  21 winning-decks 11
-  card body_blow                plays  114 picks  29 winning-decks 20
+  card cinch                    plays  121 picks  22 winning-decks 12
   card mendthread               plays  114 picks  14 winning-decks 6
+  card body_blow                plays  112 picks  28 winning-decks 20
   card cinderfall               plays  111 picks  16 winning-decks 7
   card threadlight              plays  103 picks  10 winning-decks 8
-  card final_bell               plays  101 picks  16 winning-decks 11
+  card final_bell               plays  101 picks  16 winning-decks 12
   card banked_coals             plays  100 picks  13 winning-decks 6
-  card cross_counter            plays   96 picks  19 winning-decks 8
+  card avalanche                plays   97 picks  13 winning-decks 8
   card bellringer               plays   95 picks  31 winning-decks 13
-  card graverust                plays   95 picks  20 winning-decks 10
-  card avalanche                plays   93 picks  12 winning-decks 7
+  card graverust                plays   95 picks  20 winning-decks 11
+  card cross_counter            plays   93 picks  19 winning-decks 9
   card litany_of_mending        plays   92 picks  14 winning-decks 11
   card pitchfire                plays   91 picks  11 winning-decks 5
   card braided_malice           plays   89 picks  12 winning-decks 3
@@ -310,16 +313,16 @@ bottom-10 by plays: black_lattice(28), call_and_answer(27), loom_of_hours(26), s
   card rend_the_weave           plays   83 picks  14 winning-decks 11
   card festering_knot           plays   83 picks  18 winning-decks 12
   card ember_jab                plays   81 picks  10 winning-decks 7
-  card brace                    plays   79 picks  12 winning-decks 8
+  card brace                    plays   80 picks  12 winning-decks 9
   card dig_in                   plays   78 picks  11 winning-decks 7
-  card fan_the_flames           plays   77 picks  12 winning-decks 6
+  card fan_the_flames           plays   77 picks  12 winning-decks 7
   card needle_wall              plays   76 picks   8 winning-decks 4
   card measured_cut             plays   75 picks  17 winning-decks 9
   card square_up                plays   74 picks  11 winning-decks 9
   card wardknot                 plays   74 picks   8 winning-decks 6
   card ash_harvest              plays   73 picks  15 winning-decks 12
   card haymaker                 plays   73 picks  12 winning-decks 7
-  card immovable                plays   70 picks  12 winning-decks 6
+  card immovable                plays   71 picks  13 winning-decks 8
   card gathering_slack          plays   65 picks  10 winning-decks 8
   card tithe_of_thread          plays   64 picks  12 winning-decks 7
   card quickening               plays   63 picks  11 winning-decks 6
@@ -329,29 +332,29 @@ bottom-10 by plays: black_lattice(28), call_and_answer(27), loom_of_hours(26), s
   card inkwell_curse            plays   61 picks  18 winning-decks 9
   card final_word               plays   61 picks  11 winning-decks 9
   card drumbeat                 plays   60 picks   7 winning-decks 3
-  card forgefire                plays   58 picks  21 winning-decks 9
-  card linked_shields           plays   56 picks  10 winning-decks 6
-  card relentless               plays   56 picks  20 winning-decks 14
+  card forgefire                plays   58 picks  21 winning-decks 10
+  card linked_shields           plays   55 picks  10 winning-decks 7
+  card relentless               plays   55 picks  19 winning-decks 14
   card inheritance              plays   55 picks   5 winning-decks 3
   card stolen_breath            plays   54 picks  11 winning-decks 8
   card shroudwork               plays   53 picks   8 winning-decks 7
-  card bellmetal                plays   51 picks  23 winning-decks 13
   card martyrs_knot             plays   50 picks   8 winning-decks 4
   card shoulder_through         plays   49 picks   5 winning-decks 4
-  card tally_of_griefs          plays   49 picks   8 winning-decks 4
+  card tally_of_griefs          plays   49 picks   8 winning-decks 5
+  card bellmetal                plays   49 picks  22 winning-decks 14
   card bellows                  plays   47 picks  10 winning-decks 3
   card knotward_veil            plays   47 picks   7 winning-decks 4
   card pyre_vault               plays   46 picks  14 winning-decks 7
-  card counterargument          plays   45 picks  10 winning-decks 5
   card patient_breath           plays   45 picks   4 winning-decks 3
   card quick_words              plays   43 picks   6 winning-decks 1
-  card gravebloom               plays   42 picks  24 winning-decks 9
-  card unbroken_line            plays   41 picks  21 winning-decks 8
+  card counterargument          plays   43 picks  10 winning-decks 6
+  card unbroken_line            plays   41 picks  21 winning-decks 9
+  card gravebloom               plays   41 picks  24 winning-decks 11
   card carrion_lace             plays   40 picks  10 winning-decks 7
   card held_breath              plays   38 picks   4 winning-decks 1
   card wildfire_heart           plays   36 picks  19 winning-decks 10
   card quiet_mending            plays   36 picks   8 winning-decks 5
-  card eye_for_an_opening       plays   35 picks  18 winning-decks 12
+  card eye_for_an_opening       plays   36 picks  18 winning-decks 12
   card slow_burn                plays   34 picks  10 winning-decks 5
   card stand_fast               plays   34 picks   5 winning-decks 3
   card drawn_breath             plays   34 picks   3 winning-decks 1
@@ -359,43 +362,43 @@ bottom-10 by plays: black_lattice(28), call_and_answer(27), loom_of_hours(26), s
   card keepsake                 plays   32 picks  10 winning-decks 7
   card spitespun_mantle         plays   31 picks  11 winning-decks 5
   card votive_thread            plays   31 picks   4 winning-decks 1
-  card black_lattice            plays   28 picks  12 winning-decks 7
-  card call_and_answer          plays   27 picks  16 winning-decks 8
+  card black_lattice            plays   27 picks  12 winning-decks 8
   card loom_of_hours            plays   26 picks  15 winning-decks 9
-  card selvage                  plays   25 picks  13 winning-decks 6
+  card selvage                  plays   24 picks  13 winning-decks 7
+  card call_and_answer          plays   24 picks  16 winning-decks 9
   card stoke                    plays   23 picks  15 winning-decks 9
-  card spindle_step             plays   19 picks   3 winning-decks 0
+  card spindle_step             plays   19 picks   3 winning-decks 1
   card stokers_due              plays   16 picks  12 winning-decks 6
   card hold_the_line            plays   15 picks   4 winning-decks 2
-  card aftershock               plays   12 picks  10 winning-decks 4
+  card aftershock               plays   12 picks   9 winning-decks 5
   card backdraft                plays    8 picks   6 winning-decks 2
 never-picked cards (0/129 of the acquirable pool): none
 picked-but-never-played: none
-relic acquisition sources: {"drop":364,"treasure":208,"boss":219,"shop":42,"event":20}
+relic acquisition sources: {"drop":364,"treasure":208,"boss":221,"shop":43,"event":20}
 never-acquired relics (0/28): none
-Resonance ignitions: 3652  |  streak tags: {"Strike":6847,"Surge":2965,"Hex":4888,"Guard":2524,"Rite":1090}
-damage by tag: {"HexScaling":19899,"Strike":83714,"Hex":60814}  |  Hex share: 49.1%
-detonations: 2590  |  avg stacks per detonation: 5.65
-p1 (vess): damage 63729 | block 34410 | link-fires 10753 | falls 53 | covets taken from partner 419
-p2 (bram): damage 100698 | block 28373 | link-fires 9300 | falls 53 | covets taken from partner 396
-Worn Knife: 1137 plays | mean damage 9.05
-thread: spent/combat 3.70 | spend mix {"pulse":1359,"reclaim":0,"sever":43,"steady":255} | regen wasted at cap/combat 4.89
-forced links (Pulse): 1251 (6.2% of fires) | Resonances needing one: 978/3652
-B22 reclaim ratio: 0 reclaims / 2367 card acquisitions = 0.0% (REPORTED — S20-R1; the <25% band predates the nudge-on canon)
-gold: mean income/run 511.4 ({"combat":5581,"elite":18960,"boss":16833,"event":1470,"treasure":8298}) | mean residual 156.0 | removals/player/run p1 2.62 / p2 0.83 | removal spend 73.8% of total spend
+Resonance ignitions: 3648  |  streak tags: {"Strike":6840,"Surge":2964,"Hex":4877,"Guard":2514,"Rite":1091}
+damage by tag: {"HexScaling":19869,"Strike":83667,"Hex":61172}  |  Hex share: 49.2%
+detonations: 2589  |  avg stacks per detonation: 5.69
+p1 (vess): damage 63867 | block 34323 | link-fires 10737 | falls 50 | covets taken from partner 417
+p2 (bram): damage 100841 | block 28269 | link-fires 9278 | falls 53 | covets taken from partner 396
+Worn Knife: 1136 plays | mean damage 9.05
+thread: spent/combat 3.69 | spend mix {"pulse":1357,"reclaim":0,"sever":43,"steady":253} | regen wasted at cap/combat 4.88
+forced links (Pulse): 1250 (6.2% of fires) | Resonances needing one: 977/3648
+B22 reclaim ratio: 0 reclaims / 2365 card acquisitions = 0.0% (2d drift wire: ±10 of S21-R1 anchor 59.2; binds at the canonical board)
+gold: mean income/run 513.1 ({"combat":5581,"elite":18969,"boss":16989,"event":1470,"treasure":8298}) | mean residual 157.8 | removals/player/run p1 2.62 / p2 0.82 | removal spend 73.6% of total spend
 Pulsekeeper's Ring discounts fired: 23
 ---------------- S13.1c ECONOMY (per act) ----------------
   act 1: p1 take 100% (397/397) deck +6.70/−0.55 | p2 take 100% (397/397) deck +6.72/−0.11 | relics/run 4.25
-  act 2: p1 take 100% (329/330) deck +5.05/−4.21 | p2 take 100% (329/330) deck +4.62/−3.47 | relics/run 3.32
-  act 3: p1 take n/a% (0/0) deck +0.51/−1.09 | p2 take n/a% (0/0) deck +0.07/−0.64 | relics/run 0.96
-OQ#59 economy: relics/run wins 10.2 vs losses 6.6 | deck/run wins 33.7 vs losses 33.5 | combats/run wins 9.0 vs losses 6.4
-S11.2 escalation calibration: kill 1: 23.5 HP (n=192) | kill 2: 28.1 HP (n=172) — knot-2/knot-1 ratio 1.19 (S18-D4 regression floor: >=1.2 on the probe leg)
+  act 2: p1 take 100% (330/330) deck +5.04/−4.21 | p2 take 100% (329/330) deck +4.62/−3.47 | relics/run 3.32
+  act 3: p1 take n/a% (0/0) deck +0.51/−1.09 | p2 take n/a% (0/0) deck +0.06/−0.63 | relics/run 0.99
+OQ#59 economy: relics/run wins 10.2 vs losses 6.5 | deck/run wins 33.7 vs losses 33.4 | combats/run wins 9.0 vs losses 6.3
+S11.2 escalation calibration: kill 1: 23.5 HP (n=192) | kill 2: 28.0 HP (n=172) — knot-2/knot-1 ratio 1.19 (S18-D4 regression floor: >=1.2 on the probe leg)
 ---------------- GATES ----------------
-PASS  win rate (REPORTED — S20-R1: bands owed re-derivation on the new canon; vb braid A0)  →  54%
+PASS  win rate (REPORTED — S21-R1 wires bind at the canonical n=2000 board; vb braid A0)  →  56%
 PASS  avg HP lost per Act 1 combat ≥ 8  →  24.4
 PASS  Act 1 link-fire ≥ 30%  →  49.8%
 FAIL  Act 2 link-fire 40–60%  →  60.3%
 PASS  no tag > 50% of resonance streaks  →  37%
-PASS  Hex damage share (REPORTED — S20-R1; was the vb 25–45 gate, §14.10 + S5)  →  49.1%
+PASS  Hex damage share (REPORTED — 2c binds at the canonical n=2000 board)  →  49.2%
 GATES PENDING PART A RECALIBRATION — do not tune off this number before the human-uplift bands exist (M3 Part A)
 ===============================================================

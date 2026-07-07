@@ -68,9 +68,10 @@ describe('aggregate-human.mjs (review fixes, run via child_process)', () => {
     expect(out).toMatch(/PASS {2}Hex damage share \(telemetry only/);
   });
 
-  it('--pair vb applies the Hex band gate to vb-only data', () => {
+  it('--pair vb reports Hex share against the S21-R1 anchor (band retired at S21.2/2c)', () => {
     const out = aggregate(mkFixtures(true), '--pair', 'vb');
-    expect(out).toContain('Hex damage share 25–45% (vb gate, §14.10 + S5)');
+    expect(out).toContain('Hex damage share (human vb — reported; S21-R1 bot anchor 46.3)');
+    expect(out).toMatch(/PASS {2}Hex damage share \(human vb/);
     expect(out).toContain('runs: 1'); // the vv run is filtered out
     expect(out).toContain('completion: 1 finished / 1 started (100%)');
   });

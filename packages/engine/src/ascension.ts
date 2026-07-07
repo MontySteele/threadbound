@@ -44,7 +44,10 @@ export function ascensionMods(level: number): AscensionMods {
 export const ASCENSION_RUNGS: Record<number, string> = {
   1: 'enemies have +10% HP',
   2: 'enemies hit +10% harder',
-  3: 'one more elite per act',
+  // S21.4 (A3-a, ruled on the survey): the extra crossing pays no card
+  // picks — the copy says so (truth law; the old line implied a knot like
+  // any other). PROVISIONAL pending the S21 Part 5 signature row.
+  3: 'one more elite per act — a toll: its crossing pays no card picks',
   // S15.2B: copy RATIFIED (D5 row 8 — S16-D1) — the rung's new teeth stated
   4: 'the Thread frays on its last point — and Fray bites past Block',
   5: 'rest sites heal 20% instead of 30%',

@@ -1,4 +1,5 @@
-// S11.8 (Wave B) — the braid generator, flag-gated TB_KNOTWORK. Two
+// S11.8 (Wave B) — the braid generator (flag-gated TB_KNOTWORK until
+// S21.5/OQ#65 deleted the lane — the braid is now the only topology). Two
 // currency-keyed strands crossing at knots; the only way across the weave
 // is through a snarl. Strand composition is data (content/strand-targets);
 // the unflagged path is untouched by construction (the flag branches
@@ -158,7 +159,7 @@ describe('S11.8 braid runs hold invariants (fuzz smoke — the full Wave B fuzz 
       const die = new Die(seed * 7919);
       let s = reduce(
         initialState(seed, { p1: 'vess', p2: 'bram' }),
-        { type: 'START_RUN', seed, tracks: true, rites: true, knotwork: true },
+        { type: 'START_RUN', seed, tracks: true, rites: true },
       );
       for (let step = 0; step < 800; step++) {
         if (s.phase === 'victory' || s.phase === 'game_over') break;
@@ -175,15 +176,17 @@ describe('S11.8 braid runs hold invariants (fuzz smoke — the full Wave B fuzz 
   });
 });
 
-describe('S11.8 flag plumbing', () => {
-  it('START_RUN knotwork sets the flag and generates a braid act 1; unflagged runs carry neither', () => {
+describe('S11.8 flag plumbing (S21.5/OQ#65: the braid is the game)', () => {
+  it('every START_RUN sets the braid flag and generates a braid act 1 — flags or none', () => {
     const s0 = initialState(91, { p1: 'vess', p2: 'bram' });
-    const s = reduce(s0, { type: 'START_RUN', seed: 91, tracks: true, rites: true, knotwork: true });
+    const s = reduce(s0, { type: 'START_RUN', seed: 91, tracks: true, rites: true });
     expect(s.knotwork).toBe(true);
     expect(s.map.nodes.some((n) => n.strand)).toBe(true);
+    // the lane generator is DELETED (S21.5/OQ#65): an unflagged run is a
+    // braid run too — knotwork is state the clients read, not an input
     const u0 = initialState(92, { p1: 'vess', p2: 'bram' });
     const u = reduce(u0, { type: 'START_RUN', seed: 92 });
-    expect(u.knotwork).toBeUndefined();
-    expect(u.map.nodes.every((n) => n.strand === undefined)).toBe(true);
+    expect(u.knotwork).toBe(true);
+    expect(u.map.nodes.some((n) => n.strand)).toBe(true);
   });
 });

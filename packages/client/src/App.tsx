@@ -683,8 +683,12 @@ function HowToPlay({ onClose }: { onClose: () => void }): JSX.Element {
           seat.{DISCORD_READY && <> Looking for a partner? Try <code>#looking-for-thread</code> on the Discord below.</>}
         </p>
         <p className="muted">
-          <b>Your first fight teaches itself:</b> a short guide walks you through staging cards,
-          Links, and the Thread the first time you descend on this browser.
+          {/* St-h1 reword (S21.5, ruled 2026-07-07 with the solo qualifier —
+              the pre-screen found the S19.6 pointer machinery is solo-only;
+              co-op first-timers get the First-Chain overlay instead, which
+              this overlay no longer over-claims as a walkthrough): */}
+          <b>Descending alone?</b> The Witness offers a few pointers during each run’s first
+          act — Links, the Thread, and the leash explain themselves as they come up.
         </p>
         <p className="muted">
           <b>Keys:</b> <b>d</b> deck · <b>f</b> fullscreen · gamepads work everywhere.

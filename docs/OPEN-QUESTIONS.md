@@ -809,6 +809,14 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     nothing authored: (g-a) detonate-side rider (inside the ≤2 law);
     (g-b) draw hook on the existing partner-link trigger; (g-c) cost 2→1.
     Next audit/design session rules or discards. **CLOSED as ruled.**
+    **g-row RULED (2026-07-07, S21-D5 by designer question): g-a — the
+    detonate-side rider.** Second hook, first Detonation each turn
+    re-blooms 2 Hex to ALL, inside the ≤2 law (flat, per-turn-capped,
+    covenant-CI-checked); identity hook untouched. Paired battery: all
+    movement attributes to gravebloom picks (vv ±0, vb −2 of 500; bb
+    byte-identical — no vess seat); bots barely value it, the real read
+    is the human table. Card text updated with the mechanics; St-g1
+    signature row in S21-STATUS. **EXECUTED.**
 
 61. **braided_censer effect trim (the S17 §12 stratified +5.4
     residual).** **RULED (2026-07-06, S18-D5): PARKED with a named
@@ -857,6 +865,21 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     in S20 (engine deletion is out of this sprint's scope beyond the
     flip itself). The 45–55 braid band this entry derived is itself
     superseded on the new canon — see OQ#70.
+    **RULED + EXECUTED (2026-07-07, S21.5/D5): the lane generator is
+    DELETED.** Own commit; both parity instruments byte-identical after
+    (the braid canon provably cannot see it — no re-bank owed). The
+    suite audit surfaced ten lane-pinned tests, dispositions on the
+    record in S21-STATUS: the S11.1 composition-CI family (lib + test +
+    script) measured only the deleted generator and left with it (the
+    braid's own CI lives in s11-braid.test.ts); the tracks-covenant
+    golden regenerated in-commit (flag-off runs are braid runs now);
+    the S16-D7 anti-streak pin re-pinned to the invariant the mechanism
+    actually provides (no 3-streak; strict alternation was lane-rng
+    luck); the wrong-way clue:normal ceiling re-banked descriptively
+    (the braid's truth strand is clue-scaled by design); lane rows
+    dropped from the elite-sampling/pierce sweeps; lifecycle pins keep
+    their transport coverage on the braid as ruled. TB_KNOTWORK is dead
+    env; README says so. **CLOSED.**
 
 66. **A3 tooth inversion (S18 fold-in read, reported per the S15 Part-3.3
     philosophy).** On the S18 final build, bb reads A2 17.5% → A3 20.0%
@@ -867,6 +890,23 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     ascension-implementation roadmap item inherits this as its first
     calibration input; every ascension number remains PROVISIONAL by
     design (ascension.ts header). No S18 scope grew. **FILED.**
+    **READ + RULED (2026-07-07, S21.3/S21.4).** The full-grid survey on
+    the new canon (docs/reference/s21-ladder-survey.txt) answered both
+    halves: the S18-era A2/A3 cliff (~17–22) is NOT real on this canon
+    (A2 reads 43–51 — the ladder floated with the S20 flip; A2-b as
+    recommended: no tune, the read is filed); the A3 inversion IS real
+    and now UNIVERSAL (A3 above A2 on all three pairings, paired
+    per-seed net +18/+11/+16 of 500). **A3-a executed as recommended:
+    the A3 extra crossing (CROSSING_LAYER_A3) pays NO card picks — a
+    toll, not a knot; S16-D3's both-seat picks stay scoped to the base
+    crossings; relic/covet/gold untouched; A0–A2 byte-identical by
+    construction (parity PASS unchanged). Rung-3 copy retexted
+    PROVISIONAL ("one more elite per act — a toll: its crossing pays no
+    card picks"), signature row in S21-STATUS. A4 read as a bot no-op
+    (OQ#64 blindspot — bots don't fray): REPORTED, unreadable by this
+    instrument, human data rules it. A5 monotone and toothy (−9/−19/−17)
+    — direction healthy, numbers stay PROVISIONAL. **CLOSED as ruled;
+    the ladder's human calibration remains the roadmap item.**
 
 67. **Co-op texture gate (1e) half-collision (S18 exit battery,
     stop-and-report fired).** vb kept the link-fire lead (55.6 vs vv
@@ -905,6 +945,15 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     so a mutated grower's tier link fires only when FORCED, never
     naturally — a consistent rule, but worth an explicit ruling at the
     next design session. **CLOSED as ruled; residual OPEN.**
+    **RESIDUAL RULED (2026-07-07, S21-D1): align `computeLinksFired` on
+    grownDef** — the grown card IS the card all the way down (legality,
+    preview, resolution, and natural fire agree; the S20.1 alignment
+    completed). Paired same-seed battery n=500 ×3: every changed run
+    attributes to rite_descant/rite_votive plays, zero non-grower
+    movement; board-level drift −0.2/−0.15/+0.2 pts. Regression test pins
+    the tier-granted echo link both directions. LOUD ruled re-bank per
+    the S20-R1 convention (S21-R1, docs/reference/s21-p2000-bank.txt).
+    **CLOSED entirely.**
 
 70. **Band re-derivation owed on the S20-R1 board (re-bank re-read,
     stop-and-report fired).** On the all-flags-on canon the board
@@ -917,3 +966,20 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     the S7.8 nudge now rides every canonical battery). Deriving fresh
     bands on the S20-R1 anchor set is the NEXT DESIGN SESSION's first
     instrument item. **OPEN — owed a session.**
+    **CLOSED (2026-07-07, S21.2/D2 — the owed session).** Bands derived
+    descriptively on the S21-R1 anchor set (docs/reference/
+    s21-p2000-bank.txt; the anchor moved off S20-R1 by the ruled S21.1
+    instrument event, paired attribution on record). The set: (2a) gate 2
+    bb−vb ±8 RE-AFFIRMED as intent (reads +6.8); (2b) pair win tripwires
+    ±5 of anchor per pairing at the canonical n=2000 same-seed board —
+    drift alarms, not quality claims (anchors vv 66.9 / vb 69.6 /
+    bb 76.4); (2c) vb Hex share 46.3 ±8 (reads 46.3; the old 25–45 was a
+    lane-era read; mirrors stay telemetry); (2d) B22 reclaim <25% RETIRED
+    — successor drift wire ±10 of anchor per pairing (vv 57.7 / vb 59.2 /
+    bb 63.6); (2e) act-3 lethality JOINS the canonical report, baselines
+    vv 1.0% / vb 2.5% / bb 2.3% of arrivals, NO band until the S18-D3
+    texture target is re-ruled on human data; (2f) difficulty NOT
+    re-dosed — the board is confounded and bot-read; FILED to the first
+    human read with the S18-D3 texture framing attached (the human
+    aggregator now prints the lethality line it will be read from).
+    Wires encoded in sim.ts, binding ONLY at the canonical board form.

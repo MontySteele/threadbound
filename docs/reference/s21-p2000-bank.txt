@@ -1,0 +1,67 @@
+S21-R1 — the canonical anchor re-bank (sprint doc Parts 1–2; the OQ#70 board)
+==============================================================================
+
+Successor anchor set to S20-R1 (docs/reference/s20-p2000-bank.txt). The
+re-bank is RULED, not drift: two instrument events landed ahead of it —
+(1) S21.1, natural link fire on grownDef (the OQ#69 residual, D1), whose
+paired same-seed attribution is on the record below; (2) S21.2, act-3
+lethality / act-death profile / knot contact joining the canonical
+report (stdout gains four summary lines; run rows unchanged). Build:
+the S21.2 instruments commit ("act-3 lethality + act-death profile +
+knot contact join the canonical report") over the S21.1 engine change.
+
+Command per leg (socket-free, deterministic per seed; run twice this
+session — all three legs BYTE-IDENTICAL across invocations, fresh
+container, npm-install-then-reproduce-both-parity-banks verified first):
+  SEED=20000 PAIR=<vv|vb|bb> TB_SIM_SHARDS=4 node packages/bots/dist/sim.js 2000
+
+Board (seeds 20001–22000, n=2000 ×3, braid+rites+tracks A0, draft v2,
+reclaim nudge on):
+
+| leg | win % | died a1 | died a2 | act-3 lethality (of arrivals) | act-1 pair HP/combat | overall link-fire | thread/combat | knot-2/knot-1 | Hex share | B22 reclaim |
+|-----|-------|---------|---------|-------------------------------|----------------------|-------------------|---------------|---------------|-----------|-------------|
+| vv  | 66.9 (1338/2000) | 16.8% | 15.7% | 14 of 1352 = 1.0% | 23.5 | 47.2% | 5.79 | 1.28 | 81.7% | 57.7% |
+| vb  | 69.6 (1391/2000) |  0.7% | 28.1% | 35 of 1426 = 2.5% | 22.2 | 56.4% | 7.35 | 1.25 | 46.3% | 59.2% |
+| bb  | 76.4 (1527/2000) |  0.1% | 21.8% | 36 of 1563 = 2.3% | 23.2 | 53.1% | 7.70 | 1.25 |  8.0% | 63.6% |
+
+sha256 of full stdout per leg:
+| vv | 9c63ff523b586e39cc22a7cbbb97bf0dee1d3290905b363e4368e1a71ae574c5 |
+| vb | 938559b3ad64e8690080bebb40567b987738b527e44730dc240296567cb723f4 |
+| bb | be3e00910ca40f00db5057dbdce389ba364f424d02eeea9c9eb33a0653227148 |
+
+Paired attribution vs S20-R1 (same seeds, the S21.1 change is the only
+engine movement): vv 1342→1338 (−0.2 pts), vb 1394→1391 (−0.15), bb
+1523→1527 (+0.2). The n=500 per-seed pairing (S16-R1 form) attributed
+every changed run to rite_descant/rite_votive plays — the grower path,
+as the ruling predicted; board movement is inside any tripwire.
+
+THE BAND SET (S21.2 / D2, ruled as proposed — the OQ#70 closure; bands
+are TRIPWIRES around the shipped canon, not targets; targets wait for
+human data):
+
+- 2a gate 2 (bb−vb within ±8, re-affirmed intent): 76.4 − 69.6 = +6.8 — IN.
+- 2b pair win tripwires (±5 of this board's anchor, per pairing, at
+  n=2000 same-seed): anchors vv 66.9 / vb 69.6 / bb 76.4. Drift alarms,
+  not quality claims; anchors re-bank only on ruled instrument events.
+- 2c vb Hex share: 46.3 ±8 (the ruled anchor; the old 25–45 was a
+  lane-era read): reads 46.3 — IN, dead center. Mirror shares stay
+  telemetry (vv 81.7 structural hex mirror, bb 8.0 no hex engine).
+- 2d B22 reclaim: old <25% band RETIRED (it measured nudge-off fleets);
+  successor drift wire ±10 of anchor per pairing: vv 57.7 / vb 59.2 /
+  bb 63.6.
+- 2e act-3 lethality: JOINS the canonical report; baselines above are
+  the first read. NO band until the S18-D3 texture target is re-ruled
+  on human data.
+- 2f difficulty: NOT re-dosed. The 67–76 board is confounded (two
+  environment moves at S20) and bot-read; the question is FILED to the
+  first human read with the S18-D3 texture framing attached.
+
+Carried wires, re-read on this board (all IN):
+- knot-2/knot-1 ≥ 1.2 (S18-D4 floor): 1.28 / 1.25 / 1.25.
+- co-op texture link-fire lead (1e as re-derived): vb 56.4 vs vv 47.2 /
+  bb 53.1 (thread/combat REPORTED per OQ#67: vb 7.35 / bb 7.70).
+- vv floor watch (1c): act-1 deaths 16.8% — anchor re-arms at 21.8%.
+- HP tripwires (1d, floor ≥16): 22.2–23.5.
+- knot contact (OQ#68 watch, first canonical read): vv 3.47 / vb 3.74 /
+  bb 3.85 knot fights/run; zero-contact 0.0% on every leg (bots route
+  through knots; the human read is the open question).

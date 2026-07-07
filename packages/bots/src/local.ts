@@ -26,7 +26,7 @@ import { RunResult } from './bot';
 export interface LocalRunFlags {
   tracks: boolean;
   rites: boolean;
-  knotwork: boolean;
+  // knotwork left the flag set at S21.5 (OQ#65): the braid is the game
 }
 
 export interface LocalRunOptions {
@@ -64,7 +64,6 @@ export function playRunLocal(opts: LocalRunOptions): RunResult {
     unlockedCards: [],
     tracks: opts.flags.tracks,
     rites: opts.flags.rites,
-    knotwork: opts.flags.knotwork,
   } as Action);
 
   const policies: Record<PlayerId, BotPolicy> = {

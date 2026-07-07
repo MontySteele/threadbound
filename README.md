@@ -100,20 +100,25 @@ npm run client        # vite dev server (proxies ws to :8080)
 
 ### Archaeology flags (`=0` escapes)
 
-Since S20.1 the shipped configuration is the default: `TB_RITES`,
-`TB_TRACKS`, and `TB_KNOTWORK` are all ON when unset, for the server and
-the bot fleet alike. The old baselines survive only as explicit opt-outs
-for archaeology — comparing against pre-S15 behavior, or reproducing an
-old battery:
+Since S20.1 the shipped configuration is the default: `TB_RITES` and
+`TB_TRACKS` are ON when unset, for the server and the bot fleet alike.
+The old baselines survive only as explicit opt-outs for archaeology —
+comparing against pre-S15 behavior, or reproducing an old battery:
 
 | flag | `=0` restores |
 |---|---|
-| `TB_KNOTWORK=0` | the pre-S15 lane map generator (unbanded since S18/OQ#65) |
 | `TB_RITES=0` | no vestry phase, no death/birth rites, no growth tallies |
 | `TB_TRACKS=0` | no narrative truth system (no Tapestry, shrine, gated events) |
 
 None of these belong on a hosted build; they exist so history stays
 reproducible.
+
+**The lane is gone; the braid is the game.** `TB_KNOTWORK` died at
+S21.5 (OQ#65, ruled 2026-07-07): the pre-S15 lane map generator was
+deleted outright — it had been explicit-only dead config since the
+S20.1 canon flip, and its bands were archaeology. Lane-era anchors
+remain readable in `docs/archive/S18-STATUS.md` Part 8; setting
+`TB_KNOTWORK` today does nothing.
 
 Architecture (§11): `packages/engine` (pure deterministic reducer — all rules
 live here), `packages/server` (Node + ws, authoritative), `packages/client`
