@@ -210,7 +210,10 @@ runs: 100  |  victories: 67 (67%)  |  combats won: 805
 furthest acts: {"1":1,"2":30,"3":69}
 turns: 4784  |  cards played: 38207  |  overall link-fire: 56.4%
 act 1: 400 combats, link-fire 51.1%, HP lost/combat 22.3
-act 2: 369 combats, link-fire 59.7%
+act 2: 369 combats, link-fire 59.7%, HP lost/combat 33.1
+act 3: 69 combats, link-fire 64.8%, HP lost/combat 56.0
+act deaths: a1 1.0% a2 30.0% of 100 runs | act-3 lethality: 2 of 69 arrivals = 2.9% (REPORTED — S21.2 baseline; band waits on human data)
+knot contact (OQ#68 watch): 3.71 knot fights/run | zero-contact runs 0.0%
 ---------------- HP LOST BY ENCOUNTER (pair HP / combat) ----------------
   finale_boss              n= 69  hp/combat 56.0  !! outlier
   a2_boss                  n= 77  hp/combat 49.4  !! outlier

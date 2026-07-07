@@ -459,7 +459,34 @@ export function printSummary(results: RunResult[]): void {
   console.log(`furthest acts: ${JSON.stringify(results.reduce((m, r) => ((m[r.act] = (m[r.act] ?? 0) + 1), m), {} as Record<number, number>))}`);
   console.log(`turns: ${sum((r) => r.telemetry.turns)}  |  cards played: ${cards}  |  overall link-fire: ${cards ? ((100 * links) / cards).toFixed(1) : 0}%`);
   console.log(`act 1: ${act1.combats} combats, link-fire ${act1LinkRate.toFixed(1)}%, HP lost/combat ${hpPerA1Combat.toFixed(1)}`);
-  console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
+  // S21.2 (D2 rows 2e + Part 3 instruments, ruled 2026-07-07): HP/combat by
+  // act and the act-death profile join the canonical report — the ladder
+  // survey reads per-cell texture straight off this summary.
+  const act3 = actAgg[3] ?? { cards: 0, links: 0, combats: 0, hpLost: 0 };
+  const act3LinkRate = act3.cards ? (100 * act3.links) / act3.cards : 0;
+  console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%, HP lost/combat ${act2.combats ? (act2.hpLost / act2.combats).toFixed(1) : 'n/a'}`);
+  console.log(`act 3: ${act3.combats} combats, link-fire ${act3.cards ? `${act3LinkRate.toFixed(1)}%` : 'n/a'}, HP lost/combat ${act3.combats ? (act3.hpLost / act3.combats).toFixed(1) : 'n/a'}`);
+  {
+    const nRuns = Math.max(1, results.length);
+    const diedIn = (act: number) => results.filter((r) => r.outcome !== 'victory' && r.act === act).length;
+    const arrivals3 = results.filter((r) => r.act >= 3).length;
+    // 2e (ruled): act-3 lethality is canonical from S21 forward. First read
+    // is the baseline; NO band until the S18-D3 texture target is re-ruled
+    // on human data (the 2f filing).
+    console.log(
+      `act deaths: a1 ${((100 * diedIn(1)) / nRuns).toFixed(1)}% a2 ${((100 * diedIn(2)) / nRuns).toFixed(1)}% of ${results.length} runs | ` +
+      `act-3 lethality: ${diedIn(3)} of ${arrivals3} arrivals = ${arrivals3 ? ((100 * diedIn(3)) / arrivals3).toFixed(1) : 'n/a'}% ` +
+      `(REPORTED — S21.2 baseline; band waits on human data)`,
+    );
+    // OQ#68's free instrument: knot contact — bypassing a knot is legal by
+    // design (S11.8), so the rate is a WATCH row for the human-read session
+    const knotFights = sum((r) => (r.telemetry.eliteFights ?? []).length);
+    const zeroContact = results.filter((r) => (r.telemetry.eliteFights ?? []).length === 0).length;
+    console.log(
+      `knot contact (OQ#68 watch): ${(knotFights / nRuns).toFixed(2)} knot fights/run | ` +
+      `zero-contact runs ${((100 * zeroContact) / nRuns).toFixed(1)}%`,
+    );
+  }
   // Comfort pass: per-encounter difficulty attribution. Sorted by pair HP
   // lost per combat; !! flags entries > 2x the mean of encounters with >= 5
   // samples (the S10a battery gate-4 read).
