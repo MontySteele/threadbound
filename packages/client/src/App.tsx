@@ -12,7 +12,7 @@ import {
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
-import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, saveProfile, setTelemetryConsent } from './profile';
+import { exportProfile, importProfile, loadProfile, mergeProfiles, recordClear, recordDeclaration, saveProfile, setTelemetryConsent } from './profile';
 import { CHAR_NAME } from './chars';
 import { GLYPH, linkBody } from './keywords';
 import { controller, GLYPHS } from './gamepad';
@@ -26,6 +26,7 @@ import { Tutorial } from './Tutorial';
 import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
+import { EyeScene } from './Eye';
 import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { CodexButton } from './Codex';
 import { RunSummary } from './Summary';
@@ -37,8 +38,11 @@ const PCOLOR: Record<PlayerId, string> = { p1: 'var(--p1)', p2: 'var(--p2)' };
 // the end screens mounts the Witness rail — the voice has ONE place mid-run.
 // The lobby greeting and the Summary epitaph stay inline (pre/post-run scene
 // text; the title is never narrated per S20.2).
-const RAIL_PHASES = ['rites', 'map', 'combat', 'reward', 'event', 'rest', 'covet_treasure', 'shop', 'loom'];
-const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid' };
+// S22.1: 'eye' mounts the rail too — the Witness may speak ONE recognition
+// line there (its own register-gated Part 6 row; pool empty until signed).
+const RAIL_PHASES = ['rites', 'map', 'combat', 'reward', 'event', 'rest', 'covet_treasure', 'shop', 'loom', 'eye'];
+// act 4's name is the ratified gazetteer's own (lore bible §6) — not a new string
+const ACT_NAME: Record<number, string> = { 1: 'Act 1 — The Undercroft', 2: 'Act 2 — The Hollow Choir', 3: 'The Last Braid', 4: 'The Loom’s Floor' };
 const NODE_ICON: Record<string, string> = {
   combat: '⚔', elite: '☠', boss: '♛', event: '?', rest: '♨', shop: '⚖', treasure: '✦', loom: '◉',
 };
@@ -260,12 +264,32 @@ export default function App(): JSX.Element {
     prevBoardLen.current = len;
   }, [state?.truth]);
 
-  // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest
+  // S2.2: per-act CSS atmosphere — class on <body>, tokens do the rest.
+  // S22.3 (B6 discipline — palette tokens are not art): act 4 is the palette
+  // break; the DAWN begins at the Cradle (position >= 1), not at victory —
+  // the pair heals in the first light the descent has ever shown, before
+  // the hardest fight (Part 3). It stays for the ending.
   useEffect(() => {
     const act = state && state.phase !== 'lobby' ? state.map.act : 0;
-    document.body.classList.remove('act-1', 'act-2', 'act-3');
+    document.body.classList.remove('act-1', 'act-2', 'act-3', 'act-4', 'dawn');
     if (act) document.body.classList.add(`act-${act}`);
-  }, [state?.map.act, state?.phase]);
+    if (act === 4 && (state!.map.position >= 1 || state!.phase === 'victory')) {
+      document.body.classList.add('dawn');
+    }
+  }, [state?.map.act, state?.phase, state?.map.position]);
+
+  // S22.1 (D1b): the declaration is the codex's final entry — recorded to
+  // THIS browser's profile when the pair's answer lands (recordDeclaration
+  // is conservative: it writes only onto a complete book; a partner whose
+  // own codex is unfinished records nothing — the Eye will come to them).
+  // The refreshed claim is re-sent so later runs open the floor directly.
+  const declarationSent = useRef(false);
+  useEffect(() => {
+    if (!state?.codexDeclared || declarationSent.current) return;
+    declarationSent.current = true;
+    recordDeclaration(state.codexDeclared);
+    netRef.current?.updateProfile();
+  }, [state?.codexDeclared]);
 
   const net = netRef.current;
 
@@ -950,11 +974,16 @@ function Phase({ state, net, partnerOn, hpOffsets }: {
       return <Shop state={state} net={net} />;
     case 'loom':
       return <LoomEye state={state} net={net} />;
+    case 'eye':
+      return <EyeScene state={state} net={net} />;
     case 'victory':
       return (
         <div className="center end-screen end-victory">
           <TitleCord left={state.players.p1.character} right={state.botSeat ? 'witness' : state.players.p2.character} />
-          <h2>The Unraveled lies still.</h2>
+          {/* S22.5: the act-4 ending's real surface is the Summary epitaph
+              (Part 5); its headline row is PROVISIONAL (Part 6 — the ending
+              table). The act-3 headline is the shipped line, untouched. */}
+          <h2>{state.map.act === 4 ? 'The rite completes. The first thing it carries goes up.' : 'The Unraveled lies still.'}</h2>
           <RunSummary state={state} won={true} />
           <p className="muted">A full clear — screenshot this for the calibration pile.</p>
           <MicroSurvey net={net} runKey={String(state.seed)} />
@@ -1307,7 +1336,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             >
               {medallion ? (
                 <NodeMedallion kind={n.kind as NodeKindId} variant={n.variant as 'toll' | 'covet' | undefined}
-                  act={map.act as 1 | 2 | 3} size={n.kind === 'boss' ? sz(66) : n.kind === 'elite' ? sz(58) : sz(50)}
+                  act={map.act} size={n.kind === 'boss' ? sz(66) : n.kind === 'elite' ? sz(58) : sz(50)}
                   className="node-medallion" />
               ) : (
                 <span>{NODE_ICON[n.kind]}</span>
@@ -1334,6 +1363,16 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             </button>
           );
         })}
+        {/* S22.2: after the declaration the act-3 map gains its last node —
+            the way down continues where it never did before. Its caption is
+            a Part 6 row and STALLS; until it signs, the door is a wordless
+            mark past the boss. */}
+        {map.act === 3 && state.act4Open && (() => {
+          const boss = map.nodes.find((n) => n.kind === 'boss');
+          if (!boss) return null;
+          const p = pos(boss);
+          return <span className="act4-door" style={{ left: p.x, top: p.y - ROW * 0.55 }}>▼</span>;
+        })()}
       </div>
       </div>
       <Log log={state.log} state={state} />

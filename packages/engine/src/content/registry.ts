@@ -17,6 +17,7 @@ import { CLUE_EVENTS } from './clue-events';
 import { RITE_CARDS } from './rites';
 import { CHARACTER_EVENTS } from './character-events';
 import { WRONG_WAY_EVENTS } from './wrong-way';
+import { ACT4_EVENTS } from './act4';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
@@ -123,7 +124,9 @@ for (const def of Object.values(ENEMIES)) {
 // ---- events -------------------------------------------------------------------
 
 export const EVENTS: Record<string, EventDef> = { ...M1_EVENTS };
-for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS, ...WRONG_WAY_EVENTS]) {
+// S22.3: act-4 events register for lookup only — eventsForAct never deals
+// them (act 4 matches no pool filter), so every braid queue is untouched
+for (const ev of [...M2_EVENTS, ...CLUE_EVENTS, ...CHARACTER_EVENTS, ...WRONG_WAY_EVENTS, ...ACT4_EVENTS]) {
   if (EVENTS[ev.id]) throw new Error(`duplicate event id ${ev.id}`);
   EVENTS[ev.id] = ev;
 }

@@ -125,3 +125,66 @@ for (const a of ANSWERS) {
 export function answersFor(questionId: string): AnswerDef[] {
   return ANSWERS.filter((a) => a.questionId === questionId);
 }
+
+// ---------------------------------------------------------------------------
+// S22.1 — the completion criterion (D1: lore-bible open ruling #6, taken)
+// ---------------------------------------------------------------------------
+
+/** A question CLOSES when every answer in its pool has been adjudicated —
+ *  proven true in some run, or eliminated in some run — across the profile's
+ *  history. The codex COMPLETES when every question in the deduction set is
+ *  closed. Defined over the SET, never hardcoded counts (S22 hard scope: if
+ *  q_who leaves the deduction set, nothing here breaks). Pure and
+ *  client-safe: closure reads only the public ontology. */
+export function questionClosed(questionId: string, adjudicated: ReadonlySet<string>): boolean {
+  return answersFor(questionId).every((a) => adjudicated.has(a.id));
+}
+
+export function codexCompleteFor(truths: readonly string[], eliminations: readonly string[]): boolean {
+  const adjudicated = new Set([...truths, ...eliminations]);
+  return QUESTIONS.every((q) => questionClosed(q.id, adjudicated));
+}
+
+// ---------------------------------------------------------------------------
+// S22.1 — the fifth question (D1b, RULED as amended: an interposed scene)
+// ---------------------------------------------------------------------------
+// NOT a deduction question and NOT in QUESTIONS: it never enters the combo
+// table, the fragment maps, codexPct's denominator, or the shrine — the
+// deduction machinery INVERTED (declared by the pair, never deduced). The
+// question wording is D1b's own ruling, verbatim ("asked at the end by the
+// thing they have been describing"); the ANSWER POOL and each answer's
+// codex final-entry text are S22 Part 6 rows — ALL PROSE PROVISIONAL until
+// the fifth-question table signs (themes are §8's, ruled: which figure's
+// costume, and what its wearer carried down — debt, penance, grief, zeal).
+
+export const FIFTH_QUESTION = { id: 'q_fifth', text: 'Who are you?' } as const;
+
+export const FIFTH_ANSWERS: AnswerDef[] = [
+  {
+    questionId: 'q_fifth', id: 'a_fifth_debt',
+    text: 'Debtors — we came down owing, and meant to pay.',
+    codexTruthEntry: 'The pair who held the pen came down owing. The book is the payment.',
+  },
+  {
+    questionId: 'q_fifth', id: 'a_fifth_penance',
+    text: 'Penitents — we came down carrying what we did.',
+    codexTruthEntry: 'The pair who held the pen came down to answer for something. The book is the answering.',
+  },
+  {
+    questionId: 'q_fifth', id: 'a_fifth_grief',
+    text: 'Mourners — we came down carrying someone.',
+    codexTruthEntry: 'The pair who held the pen came down carrying someone. The book is where they set them down.',
+  },
+  {
+    questionId: 'q_fifth', id: 'a_fifth_zeal',
+    text: 'Zealots — we came down certain, and we are certain still.',
+    codexTruthEntry: 'The pair who held the pen came down certain. The book is what the certainty made.',
+  },
+];
+
+export const FIFTH_ANSWERS_BY_ID: Record<string, AnswerDef> = {};
+for (const a of FIFTH_ANSWERS) {
+  if (FIFTH_ANSWERS_BY_ID[a.id]) throw new Error(`duplicate fifth answer id ${a.id}`);
+  if (ANSWERS_BY_ID[a.id]) throw new Error(`fifth answer ${a.id} collides with the deduction set`);
+  FIFTH_ANSWERS_BY_ID[a.id] = a;
+}

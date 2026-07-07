@@ -51,6 +51,8 @@ const ACT_ACCENTS: Record<number, string[]> = {
   1: ['#d4af6f', '#d4756f', '#c7b9a2', '#e0a060'],
   2: ['#b98fd4', '#b9a8d4', '#7fd4ff'],
   3: ['#ff8a5c', '#d4756f', '#ffd470'],
+  // S22.3: the Loom's floor — the dawn (palette tokens only; B6 untouched)
+  4: ['#ffd9a0', '#a9c9d6', '#f0e2c0'],
 };
 
 // ---- shared primitive: harmonic closed path ---------------------------------
@@ -323,7 +325,7 @@ function brand(r: Rand, bx: number, by: number, bR: number, acc: string): { ring
  *    size < 48           additionally drop frame ticks + brand spokes
  *                        (brand ring + accent knot stay); the thread never
  *                        LODs away — it is the set's signature. */
-export function markSvg(id: string, tier: GrammarTier, act: 1 | 2 | 3, size: number, hue?: string): string {
+export function markSvg(id: string, tier: GrammarTier, act: 1 | 2 | 3 | 4, size: number, hue?: string): string {
   const lodFull = size >= 72; // grain, boss inscription ring
   const lodMid = size >= 48; // frame ticks, brand spokes
 
@@ -412,7 +414,7 @@ export function MarkDefs(): JSX.Element {
 export interface MarkProps {
   id: string;
   tier: Tier;
-  act: 1 | 2 | 3;
+  act: 1 | 2 | 3 | 4;
   size?: number;
   hue?: string;
   className?: string;
@@ -452,7 +454,7 @@ export type NodeVariantId = 'toll' | 'covet' | undefined;
 
 /** inner markup of a medallion's <svg> (viewBox 0 0 64 64) — exported for
  *  the style screen and any future snapshot gate */
-export function nodeMedallionSvg(kind: NodeKindId, variant: NodeVariantId, act: 1 | 2 | 3): string {
+export function nodeMedallionSvg(kind: NodeKindId, variant: NodeVariantId, act: 1 | 2 | 3 | 4): string {
   const key = `node_${kind}${variant ? `_${variant}` : ''}`;
   const r = new Rand(hash32(key));
   const pool = ACT_ACCENTS[act] || ACT_ACCENTS[1];
@@ -527,7 +529,7 @@ export function nodeMedallionSvg(kind: NodeKindId, variant: NodeVariantId, act: 
 export interface NodeMedallionProps {
   kind: NodeKindId;
   variant?: 'toll' | 'covet';
-  act: 1 | 2 | 3;
+  act: 1 | 2 | 3 | 4;
   size?: number;
   className?: string;
 }

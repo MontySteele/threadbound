@@ -4,7 +4,10 @@
 // everything here as a CLAIM and clamps (§11) — this file is bookkeeping,
 // not authority.
 
-import { AnswerDef, ANSWERS, ANSWERS_BY_ID, CharacterId, RiteUnlocks, ritesFor } from '@threadbound/engine';
+import {
+  AnswerDef, ANSWERS, ANSWERS_BY_ID, CharacterId, FIFTH_ANSWERS_BY_ID, RiteUnlocks,
+  codexCompleteFor, ritesFor,
+} from '@threadbound/engine';
 
 export interface Profile {
   version: 2;
@@ -18,9 +21,16 @@ export interface Profile {
   unlockedCards: string[];
   ascensionUnlocked: Record<CharacterId, number>;
   /** S6.8 codex — answer IDS (not prose), permanent, insertion-ordered.
-   *  truths: proven TRUE at a Loom's Eye verdict; eliminations: asserted
-   *  answers proven FALSE (engaged-but-wrong still advances the meta). */
-  codex: { truths: string[]; eliminations: string[] };
+   *  truths: proven TRUE at a Loom's Eye verdict; eliminations: answers
+   *  adjudicated FALSE at a verdict — asserted-and-wrong (engaged-but-wrong
+   *  still advances the meta) AND, since S22.1 (D1), the shrine's pooled
+   *  strike-outs (the shrine is where eliminations materialize, S6.4
+   *  ruling 6, so it is where they bank — "eliminated in some run" is
+   *  adjudication; wrong answers are cartography).
+   *  declared (S22.1/D1b): the fifth question's answer id — the codex's
+   *  final entry, recorded once when this profile's own codex is complete
+   *  and the pair declares at the Eye. */
+  codex: { truths: string[]; eliminations: string[]; declared?: string };
   /** S9a rite unlocks per role. Seeded state: ALL current rites (the S7
    *  ruling — no gating tonight; the field exists and the offer reads it).
    *  A pair plays with the UNION of both profiles' unlocks; credit accrues
@@ -92,6 +102,13 @@ function normalize(raw: unknown): Profile {
   const codex = r.codex as Record<string, unknown> | undefined;
   p.codex.truths = validAnswerIds(codex?.truths);
   p.codex.eliminations = validAnswerIds(codex?.eliminations);
+  // S22.1: the declared final entry — kept only when it is a real fifth
+  // answer AND the stored codex it rides on is complete (a declaration
+  // cannot be pasted onto an unfinished book)
+  if (typeof codex?.declared === 'string' && codex.declared in FIFTH_ANSWERS_BY_ID
+    && codexCompleteFor(p.codex.truths, p.codex.eliminations)) {
+    p.codex.declared = codex.declared;
+  }
   // S9a: rite unlocks. A profile predating the field keeps the seeded
   // all-unlocked default from emptyProfile; a stored field is kept as the
   // intersection with the role's real rite set (unknown ids drop).
@@ -205,6 +222,12 @@ export function mergeProfiles(a: Profile, b: Profile): Profile {
   // codex union — never removes; base order first, then incoming novelties
   out.codex.truths = [...new Set([...a.codex.truths, ...b.codex.truths])];
   out.codex.eliminations = [...new Set([...a.codex.eliminations, ...b.codex.eliminations])];
+  // S22.1: the declaration merges like everything else — never downgrades;
+  // this device's entry wins where both declared
+  const declared = a.codex.declared ?? b.codex.declared;
+  if (declared && codexCompleteFor(out.codex.truths, out.codex.eliminations)) {
+    out.codex.declared = declared;
+  }
   // S9a rite unlocks — same union rule
   for (const c of ['vess', 'bram'] as CharacterId[]) {
     out.unlocks[c] = {
@@ -260,6 +283,27 @@ export function codexEntries(): { truths: AnswerDef[]; eliminations: AnswerDef[]
   };
 }
 
+/** S22.1 (D1 — lore-bible open ruling #6, taken): completion is
+ *  per-question closure over the deduction SET, computed profile-side (D2).
+ *  Pure passthrough to the engine's client-safe helper. */
+export function codexComplete(p: Profile = loadProfile()): boolean {
+  return codexCompleteFor(p.codex.truths, p.codex.eliminations);
+}
+
+/** S22.1 (D1b): record the pair's declared answer — the codex's final
+ *  entry. Written once, only onto a complete book (the conservative
+ *  reading, flagged in S22-STATUS: a partner whose own codex is not yet
+ *  complete declares at the table but records nothing — the Eye will come
+ *  to them when their own book closes). */
+export function recordDeclaration(answerId: string): void {
+  const p = loadProfile();
+  if (p.codex.declared) return;
+  if (!(answerId in FIFTH_ANSWERS_BY_ID)) return;
+  if (!codexComplete(p)) return;
+  p.codex.declared = answerId;
+  saveProfile(p);
+}
+
 /** S8.7 voice arc: this profile's codex fill as a percentage of the PUBLIC
  *  ontology (ANSWERS length — ids only, no prose crosses the wire). Truths
  *  and eliminations both count: wrong answers are cartography too (§5). */
@@ -284,6 +328,8 @@ export function profileClaim(): {
   installId?: string;
   telemetryConsent: boolean | null;
   codexPct: number;
+  codexComplete: boolean;
+  codexDeclared?: string;
   riteUnlocks: RiteUnlocks;
 } {
   const p = loadProfile();
@@ -293,6 +339,11 @@ export function profileClaim(): {
     ...(p.telemetryConsent === true ? { installId: p.installId } : {}),
     telemetryConsent: p.telemetryConsent,
     codexPct: codexPct(p),
+    // S22.2 (D2): completion rides the claim beside codexPct; the server
+    // clamps (pct-100 coherence) and applies the host convention. The
+    // declared final entry rides with it once made.
+    codexComplete: codexComplete(p),
+    ...(p.codex.declared ? { codexDeclared: p.codex.declared } : {}),
     // S9a: wire shape matches the engine's RiteUnlocks (death/birth keys)
     riteUnlocks: {
       vess: { death: p.unlocks.vess.deathRites, birth: p.unlocks.vess.birthRites },

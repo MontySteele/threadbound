@@ -16,12 +16,12 @@ import {
   resolveTurn, runHooks, startCombat, startTurn,
 } from './combat';
 import { ASCENSION_MAX, ascensionMods, scaleIntent } from './ascension';
-import { generateActMap, generateFinaleMap, pickableNodes } from './map';
+import { generateAct4Map, generateActMap, generateFinaleMap, pickableNodes } from './map';
 import { CROSSING_LAYER_A3 } from './content/strand-targets';
 import { FRAGMENTS_BY_ID, rollTruth, serveBoundWitness, serveFragments } from './content/truth';
 import { rollLiveMechanics } from './content/faces';
 import { RITES_BY_ID, unlockedRites } from './content/rites';
-import { ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
+import { ANSWERS_BY_ID, FIFTH_ANSWERS_BY_ID, QUESTIONS, QUESTIONS_BY_ID, answersFor } from './content/questions';
 import { rngInt } from './rng';
 import { maybeSaySolo, maybeSayWitness, sayWitness } from './witness-draw';
 
@@ -222,6 +222,22 @@ function apply(state: GameState, action: Action): void {
         if (action.codexProven && action.codexProven.length > 0) {
           state.codexProven = [...action.codexProven];
         }
+        // S22.2 (D2): act-4 access — the HOST's clamped claim (the server
+        // enforces the host convention and the pct-100 coherence clamp;
+        // claims are not authority). Absent — never false — when unclaimed,
+        // so canon batteries and goldens serialize byte-identically by
+        // construction (no bot asserts it: instrument law, Part 7).
+        if (action.codexComplete) {
+          state.codexComplete = true;
+          // already declared on a past run → the door is simply open; the
+          // Eye does not manifest twice ("post-completion runs keep Act 4
+          // open", D5). An undeclared completion leaves the scene pending —
+          // it fires at the run's first map landing (maybeManifestEye).
+          if (action.codexDeclared && FIFTH_ANSWERS_BY_ID[action.codexDeclared]) {
+            state.codexDeclared = action.codexDeclared;
+            state.act4Open = true;
+          }
+        }
       }
       // S21.5 (OQ#65, ruled): the braid is the game — the flag is no longer
       // an input (the lane generator is deleted); state.knotwork stays set
@@ -308,7 +324,59 @@ function apply(state: GameState, action: Action): void {
         };
       }
       state.phase = action.rites ? 'rites' : 'map';
+      // S22.1 (D1b): an end-of-run closing fires the scene at the NEXT run's
+      // first landing — the Eye waiting at the first step down
+      if (state.phase === 'map') maybeManifestEye(state);
       if (ascension > 0) state.log.push({ e: 'info', detail: `Ascension ${ascension} — the Undercroft leans in.` });
+      return;
+    }
+
+    case 'CODEX_COMPLETE': {
+      // S22.2: SERVER-AUTHORED — the host's clamped claim newly reads
+      // complete mid-run (the closing verdict just recorded client-side and
+      // the refreshed claim crossed the wire). The server rejects this type
+      // from client sockets; idempotent by the guard below.
+      if (state.codexComplete || state.phase === 'lobby') return;
+      if (state.phase === 'game_over' || state.phase === 'victory') return;
+      state.codexComplete = true;
+      // "the first time the pair stands on a map screen with a complete
+      // codex, the descent halts" — already standing there: halt now.
+      if (state.phase === 'map') maybeManifestEye(state);
+      return;
+    }
+
+    case 'EYE_DECLARE': {
+      // S22.1 (D1b): the deduction machinery inverted — not deduced from
+      // fragments but DECLARED by the pair, together. Both seats must pick
+      // the same answer (the map's own convention); mismatch resets both.
+      assert(state.phase === 'eye' && state.eye, 'the Eye is not open');
+      assert(FIFTH_ANSWERS_BY_ID[action.answerId], 'that is not an answer the Machine can record');
+      state.eye!.picks[action.player] = action.answerId;
+      // solo: the Witness speaks with the human's voice here too (S1.2
+      // etiquette — the shrine-confirm pattern)
+      if (state.botSeat && action.player !== state.botSeat) {
+        state.eye!.picks[state.botSeat] = action.answerId;
+      }
+      const { p1, p2 } = state.eye!.picks;
+      if (p1 !== null && p2 !== null) {
+        if (p1 === p2) {
+          state.codexDeclared = p1;
+          state.act4Open = true;
+          delete state.eye;
+          state.phase = 'map';
+          // the interposed scene IS the announcement (held-reveal
+          // discipline, Part 2); after the declaration the act-3 map gains
+          // its last node — the way down continues. The top-register
+          // announce pool is a Part 6 row: the key is reserved and ships
+          // EMPTY, so this no-ops (and moves no rng) until the table signs.
+          sayWitness(state, 'act4_announce');
+        } else {
+          state.eye!.picks = { p1: null, p2: null };
+          // both-seats-agree UX copy — S22 Part 6 fifth-question row,
+          // PROVISIONAL (mechanical, states only what the machinery does)
+          state.log.push({ e: 'info', detail: 'You answered differently. It waits. Answer as one.' });
+        }
+      }
       return;
     }
 
@@ -563,6 +631,8 @@ function apply(state: GameState, action: Action): void {
         if (bothVested) {
           rs.offer = null;
           state.phase = 'map';
+          // S22.1: the first step down of a completed-but-undeclared run
+          maybeManifestEye(state);
         }
         return;
       }
@@ -947,6 +1017,10 @@ function apply(state: GameState, action: Action): void {
           advanceAct(state);
         } else {
           state.phase = 'map';
+          // S22.1 (D1b): a mid-run closing verdict fires the scene THIS run
+          // — the first map screen after the claim crossed is where the
+          // descent halts (typically the ADVANCE out of the act-3 shrine).
+          maybeManifestEye(state);
         }
       }
       return;
@@ -959,6 +1033,20 @@ function apply(state: GameState, action: Action): void {
 function requireCombat(state: GameState) {
   assert(state.phase === 'combat' && state.combat, 'not in combat');
   return state.combat!;
+}
+
+/** S22.1 (D1b, RULED with amendment — a narrative event, unmissable): the
+ *  first time the pair stands on a map screen with a complete codex, the
+ *  descent halts and the Loom's Eye manifests where they are — the Machine
+ *  reaching out now that it can finally describe itself. NOT a node; cannot
+ *  be routed around. Called at every transition INTO the map phase; a no-op
+ *  unless the completion is claimed and the declaration is still unmade, so
+ *  every unclaimed run (every battery — no bot asserts the claim) takes the
+ *  existing path byte-identically. */
+function maybeManifestEye(state: GameState): void {
+  if (!state.codexComplete || state.codexDeclared || state.eye) return;
+  state.eye = { picks: { p1: null, p2: null } };
+  state.phase = 'eye';
 }
 
 function currentNode(state: GameState): MapNode | undefined {
@@ -1112,6 +1200,17 @@ function resolveLoomVerdict(state: GameState): void {
       const asserted = shrine.sheet[q.id];
       if (!asserted) continue;
       (verdict[q.id] === 'true' ? codex.truths : codex.eliminations).push(asserted);
+    }
+    // S22.1 (D1): shrine-struck answers are recorded eliminations too —
+    // "eliminated in some run" is adjudication (a pair that deduces
+    // efficiently eliminates more than it proves; a criterion that ignored
+    // the strike-outs would contradict the codex). The shrine is where
+    // eliminations materialize (S6.4 ruling 6), so it is where they bank.
+    // Mirrors the client's recordCodex rule exactly (LoomEye.tsx).
+    for (const q of QUESTIONS) {
+      for (const answerId of Object.keys(shrine.struck[q.id] ?? {})) {
+        if (!codex.eliminations.includes(answerId)) codex.eliminations.push(answerId);
+      }
     }
     state.telemetry.truth.codexWrites = codex;
   }
@@ -1567,7 +1666,28 @@ function advanceAct(state: GameState): void {
     state.map = generateFinaleMap(!!state.tracks);
     state.phase = 'map';
     sayWitness(state, 'finale_start');
+    // S22.1: a completion claimed while act 2 was still underway manifests
+    // at the finale's first map screen (the next place the pair stands)
+    maybeManifestEye(state);
+  } else if (state.map.act === 3 && state.act4Open) {
+    // S22.3 (D3): the way down continues where it never did before. NO
+    // between-acts heal — the Cradle is the heal, placed deliberately
+    // before the cruelest fight (the kindest thing the game ever does).
+    state.map = generateAct4Map();
+    state.phase = 'map';
+    // top-register pool for the descent past the old floor — Part 6 row;
+    // reserved key, ships EMPTY (no-op, no rng) until the table signs
+    sayWitness(state, 'act4_descent');
   } else {
+    // S22.2 pre-completion push (the ratified lore beat): the act-3
+    // finale's far edge still ends the run — one Witness line acknowledging
+    // the floor that isn't there. Fires at most once per run (pool
+    // no-repeat), only past a codexPct floor (the early game should not
+    // explain the ending exists; 70 = the quiet-register era). The pool is
+    // a Part 6 row: reserved key, ships EMPTY (no-op, no rng) until signed.
+    if (state.map.act === 3 && (state.codexPct ?? 0) >= 70) {
+      sayWitness(state, 'act4_door_dark');
+    }
     state.phase = 'victory';
     state.telemetry.goldResidual = state.gold; // S4.1
     recordTruthProvability(state); // OQ#57 instrument
@@ -1579,7 +1699,12 @@ function advanceAct(state: GameState): void {
         cardCell(state.telemetry.cards.winningDeck, inst.defId)[pid]++;
       }
     }
-    sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
+    // S22.5: the act-4 ending speaks from its own pool — the top-register
+    // farewell whose ambiguity is load-bearing (dissolution POSED, never
+    // answered). Part 6's hardest rows: reserved key, ships EMPTY until
+    // signed (the ending is written last, by design).
+    if (state.map.act === 4) sayWitness(state, 'act4_farewell');
+    else sayWitness(state, state.botSeat ? 'solo_victory' : 'victory_screen');
   }
 }
 
@@ -1690,8 +1815,11 @@ function afterResolution(state: GameState): void {
 
     endCombatCleanup(state);
 
-    if (state.map.act === 3 && node.kind === 'boss') {
-      // The Unraveled is down. The braid holds.
+    if ((state.map.act === 3 || state.map.act === 4) && node.kind === 'boss') {
+      // Act 3: The Unraveled is down — the braid holds (victory, or the way
+      // down when the door is open). Act 4: the Caretaker is still — the
+      // jammed rite completes (S22.5; the ending machinery is the existing
+      // victory path; its strings are Part 6 rows and stall).
       advanceAct(state);
       return;
     }

@@ -18,6 +18,7 @@ export type Phase =
   | 'reward'
   | 'event'
   | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
+  | 'eye' // S22.1 (D1b): the interposed Eye scene — the fifth question, unmissable
   | 'rest'
   | 'shop' // M2-B4
   | 'covet_treasure' // S11.7: the covet cache — one-of-two, flagged maps only
@@ -448,7 +449,9 @@ export interface EventOptionDef {
 export interface EventDef {
   id: string;
   name: string;
-  act: 1 | 2 | 0; // 0 = either act
+  /** 0 = either braid act; 4 = the Loom's floor (S22.3 — never pooled:
+   *  eventsForAct matches 1|2|0 only; act-4 events ride fixed map data) */
+  act: 1 | 2 | 0 | 4;
   crossed: boolean;
   /** crossed events: 60% consequence / 40% comedy (M2-B5) */
   tone?: 'consequence' | 'comedy';
@@ -631,7 +634,7 @@ export interface MapNode {
 }
 
 export interface MapState {
-  act: 1 | 2 | 3;
+  act: 1 | 2 | 3 | 4;
   nodes: MapNode[];
   /** current node id, or -1 before the first pick of the act */
   position: number;
@@ -896,6 +899,26 @@ export interface GameState {
    *  Created on the first such fight (multi-enemy split behavior and its
    *  state shape are untouched). */
   bindsByPlayer?: Record<PlayerId, number>;
+  /** S22.2 (D2): the HOST profile's codex is COMPLETE (per-question closure
+   *  over the deduction set — S22.1/D1), claimed at START_RUN or mid-run by
+   *  the server-authored CODEX_COMPLETE action after the server clamps the
+   *  claim (claims-not-authority; the host's claim opens the floor, the
+   *  partner rides). Absent — never false — when unclaimed, so every canon
+   *  battery and golden serializes byte-identically (no bot asserts it:
+   *  instrument law, S22 Part 7). */
+  codexComplete?: true;
+  /** S22.1 (D1b): the fifth question's declared answer id — recorded once,
+   *  profile-scale (the codex's final entry), claimed back at START_RUN on
+   *  later runs. Present only after a declaration; keys the Caretaker's
+   *  first face (Part 4 pillar 4). */
+  codexDeclared?: string;
+  /** S22.1 (D1b): the interposed Eye scene — present only while the scene
+   *  is up (the descent halted, the Machine asking). */
+  eye?: EyeState;
+  /** S22.2: the way down continues — the act-3 finale's boss now advances
+   *  to act 4 instead of ending the run. Set by the declaration (mid-run
+   *  closure) or at START_RUN when the claim already carries a declaration. */
+  act4Open?: true;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -916,6 +939,16 @@ export interface GameState {
   witnessSaid: string[];
   log: GameEvent[];
   telemetry: Telemetry;
+}
+
+/** S22.1 (D1b): the fifth question's table state — the deduction machinery
+ *  inverted: nothing is deduced; the pair DECLARES, together. Both seats
+ *  must pick the same answer (the map's own convention — mismatch resets
+ *  both picks, like NODE_PICK); agreement records the declaration and
+ *  closes the scene. No shrine, no stake, no verdict: the Machine is not
+ *  testing them, it is asking. */
+export interface EyeState {
+  picks: Record<PlayerId, string | null>;
 }
 
 /** S11.7: the covet cache's table state. Spoils use the plain treasure's
@@ -1086,7 +1119,9 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
+  /** codexComplete/codexDeclared: S22.2 host claim, server-clamped — the
+   *  completion opens the fifth question (or, already declared, act 4). */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[]; codexComplete?: boolean; codexDeclared?: string }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }
@@ -1125,6 +1160,15 @@ export type Action =
   /** both must confirm the same filled state; the verdict resolves when the
    *  second confirmation lands */
   | { type: 'LOOM_CONFIRM'; player: PlayerId; confirm: boolean }
+  /** S22.2: SERVER-AUTHORED — the host seat's clamped claim newly reads
+   *  codexComplete mid-run (a closing verdict just recorded client-side and
+   *  the refreshed claim crossed). The server rejects this type from client
+   *  sockets (host convention: the HOST's claim opens the floor). */
+  | { type: 'CODEX_COMPLETE' }
+  /** S22.1 (D1b): a seat's pick at the interposed Eye scene. Both seats must
+   *  pick the same answer (the map's own convention; mismatch resets both);
+   *  agreement records the declaration, opens act 4, returns to the map. */
+  | { type: 'EYE_DECLARE'; player: PlayerId; answerId: string }
   | { type: 'ADVANCE'; player: PlayerId }
   /** abandon the run — both must confirm; even quitting is co-op */
   | { type: 'CONCEDE'; player: PlayerId; confirm: boolean };

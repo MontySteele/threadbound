@@ -10,14 +10,19 @@
 // (questions/answers) plus this browser's profile codex ids.
 
 import React, { useState } from 'react';
-import { ANSWERS, QUESTIONS } from '@threadbound/engine';
-import { loadProfile } from './profile';
+import { ANSWERS, FIFTH_ANSWERS_BY_ID, FIFTH_QUESTION, QUESTIONS } from '@threadbound/engine';
+import { codexComplete, loadProfile } from './profile';
 
 export function CodexScreen({ onClose }: { onClose: () => void }): JSX.Element {
   const p = loadProfile();
   const truths = new Set(p.codex.truths);
   const elims = new Set(p.codex.eliminations);
   const known = new Set([...p.codex.truths, ...p.codex.eliminations]).size;
+  // S22.5: the codex screen's final state — complete, with the last entry
+  // in the pair's own declared words (D1b). Complete-but-undeclared shows
+  // the completion and holds the last slot open: the Eye is coming.
+  const complete = codexComplete(p);
+  const declared = p.codex.declared ? FIFTH_ANSWERS_BY_ID[p.codex.declared] : undefined;
   return (
     <div className="deck-overlay codex-overlay" onClick={onClose}>
       <div className="deck-panel codex-panel" onClick={(e) => e.stopPropagation()}>
@@ -28,7 +33,9 @@ export function CodexScreen({ onClose }: { onClose: () => void }): JSX.Element {
         <p className="muted">
           {known === 0
             ? 'Nothing is proven yet. The Undercroft keeps its answers until a Loom’s Eye verdict.'
-            : `${known} of ${ANSWERS.length} answers proven, across every descent from this frame.`}
+            : complete
+              ? `Every question is closed — ${known} of ${ANSWERS.length} answers mapped, true ground and lesion’s edge alike.`
+              : `${known} of ${ANSWERS.length} answers proven, across every descent from this frame.`}
         </p>
         {QUESTIONS.map((q) => {
           const answers = ANSWERS.filter((a) => a.questionId === q.id);
@@ -54,6 +61,22 @@ export function CodexScreen({ onClose }: { onClose: () => void }): JSX.Element {
             </div>
           );
         })}
+        {/* S22.1 (D1b): the fifth question — declared, never deduced. The
+            group appears only once the book is otherwise complete (held
+            reveal: the early game does not explain the ending exists). */}
+        {complete && (
+          <div className="codex-group codex-final">
+            <h4>
+              {FIFTH_QUESTION.text}
+              <span className="muted codex-count">asked by the thing the book describes</span>
+            </h4>
+            {declared ? (
+              <div className="codex-entry codex-truth codex-declared">✦ {declared.codexTruthEntry}</div>
+            ) : (
+              <div className="codex-entry codex-slot">▢ It has not asked yet. Descend.</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

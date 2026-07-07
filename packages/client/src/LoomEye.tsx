@@ -25,6 +25,15 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
   // S6.8 codex write — exactly once, when the verdict first appears on this
   // screen. truths = asserted ids proven true; eliminations = proven false
   // (engaged-but-wrong still advances the meta, ruling 4).
+  // S22.1 (D1): the shrine's pooled STRIKE-OUTS bank as eliminations too —
+  // "eliminated in some run" is adjudication (completion is per-question
+  // closure, and a pair that deduces efficiently eliminates more than it
+  // proves; the criterion must read the strike-outs or it contradicts the
+  // codex). The shrine is where eliminations materialize (ruling 6), so it
+  // is where they bank; the reducer's codexWrites telemetry mirrors this
+  // rule exactly. After the write the refreshed claim is re-sent: a verdict
+  // that CLOSES the book must reach the server mid-run, because the Eye
+  // fires THIS run (D1b's first timing).
   const codexWritten = useRef(false);
   useEffect(() => {
     if (!shrine?.verdict || codexWritten.current) return;
@@ -37,7 +46,13 @@ export function LoomEye({ state, net }: { state: ClientState; net: Net }): JSX.E
       if (shrine.verdict[q.id] === 'true') truths.push(asserted);
       else if (shrine.verdict[q.id] === 'false') eliminations.push(asserted);
     }
+    for (const q of QUESTIONS) {
+      for (const answerId of Object.keys(shrine.struck[q.id] ?? {})) {
+        if (!eliminations.includes(answerId)) eliminations.push(answerId);
+      }
+    }
     recordCodex(truths, eliminations);
+    net.updateProfile();
   }, [shrine?.verdict]);
 
   if (!shrine) return null; // no shrine projection — nothing to render

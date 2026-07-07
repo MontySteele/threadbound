@@ -15,6 +15,7 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
+import { FIFTH_ANSWERS } from './content/questions';
 import { unlockedRites } from './content/rites';
 import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, silencesFirstLinkActive } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
@@ -258,6 +259,17 @@ export class BotPolicy {
           return view.advanceReady[you] ? null : { type: 'ADVANCE', player: you };
         }
         return shrine.confirmed[you] ? null : { type: 'LOOM_CONFIRM', player: you, confirm: true };
+      }
+      case 'eye': {
+        // S22.1: the interposed fifth question. Solo: the human declares and
+        // the engine mirrors this seat (the shrine-confirm pattern). Sims
+        // (TB_SIM_CODEX_COMPLETE batteries only — no bot ever CLAIMS the
+        // completion) declare the first answer, deterministically: the fleet
+        // must SURVIVE the surface, not roleplay it (Part 7, Phase B).
+        if (this.mode === 'solo') return null;
+        const eye = view.eye;
+        if (!eye || eye.picks[you] !== null) return null;
+        return { type: 'EYE_DECLARE', player: you, answerId: FIFTH_ANSWERS[0].id };
       }
       default:
         return null; // lobby / victory / game_over — nothing to decide
