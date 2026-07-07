@@ -433,8 +433,27 @@ export function printSummary(results: RunResult[]): void {
   // win band converts to REPORTED-not-banded; re-derivation of fresh bands
   // is a design-session item, not this instrument's to invent. Anchor board
   // banked in docs/reference/s20-p2000-bank.txt.
+  // S21.2 (D2, ruled 2026-07-07 — the OQ#70 closure): the owed bands, on
+  // the S21-R1 anchor set (docs/reference/s21-p2000-bank.txt). TRIPWIRES
+  // around the shipped canon, not targets — targets wait for human data.
+  // The win and reclaim wires BIND only at the canonical board form (the
+  // same-seed n=2000 braid A0 base-config battery that re-banks anchors,
+  // 2b's own words); every other battery stays REPORTED with the anchor
+  // printed for reference. Anchors move only on ruled instrument events.
+  const S21_ANCHORS: Record<string, { win: number; reclaim: number }> = {
+    vv: { win: 66.9, reclaim: 57.7 },
+    vb: { win: 69.6, reclaim: 59.2 },
+    bb: { win: 76.4, reclaim: 63.6 },
+  };
+  const CANONICAL_BOARD =
+    results.length >= 2000 && BASE_SEED === 20000 && ASCEND === 0
+    && FLAGS.rites && FLAGS.tracks && FLAGS.knotwork
+    && !SOLO && !SOCKET && !SKIP_PICKS && PICK_CAP === undefined && !ALL_KNOTS && DRAFT_V2;
+  const anchor = S21_ANCHORS[PAIR];
   const gates: Gate[] = [
-    { name: `win rate (REPORTED — S20-R1: bands owed re-derivation on the new canon; ${PAIR}${KNOT ? ' braid' : ' default'} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
+    CANONICAL_BOARD && anchor
+      ? { name: `win rate (2b tripwire: ±5 of S21-R1 anchor ${anchor.win} — drift alarm, not a quality claim; ${PAIR} braid A0)`, value: `${winRate.toFixed(1)}%`, pass: Math.abs(winRate - anchor.win) <= 5 }
+      : { name: `win rate (REPORTED — S21-R1 wires bind at the canonical n=2000 board; ${PAIR}${KNOT ? ' braid' : ' default'} A${ASCEND})`, value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -451,7 +470,13 @@ export function printSummary(results: RunResult[]): void {
     // hex-flavored by construction) and read as telemetry, not gates.
     // S20-R1 (ruled): the vb 25–45 band read 46.3 (marginally OUT) on the
     // new canon — REPORTED with the win band, same re-derivation item.
-    { name: `Hex damage share (REPORTED — S20-R1; ${PAIR === 'vb' ? 'was the vb 25–45 gate, §14.10 + S5' : `telemetry only for ${PAIR}, S5 gate-4 amendment`})`, value: `${hexShare.toFixed(1)}%`, pass: true },
+    // S21.2 row 2c (ruled): re-derived descriptively — vb 46.3 ±8 on the
+    // S21-R1 anchor (the old 25–45 was a lane-era read). Binds with the
+    // other wires at the canonical board; mirrors stay telemetry (S5
+    // gate-4 amendment: a hex mirror's share is structural).
+    CANONICAL_BOARD && PAIR === 'vb'
+      ? { name: 'Hex damage share (2c: vb anchor 46.3 ±8 on S21-R1)', value: `${hexShare.toFixed(1)}%`, pass: Math.abs(hexShare - 46.3) <= 8 }
+      : { name: `Hex damage share (REPORTED — ${PAIR === 'vb' ? '2c binds at the canonical n=2000 board' : `telemetry only for ${PAIR}, S5 gate-4 amendment`})`, value: `${hexShare.toFixed(1)}%`, pass: true },
   ];
 
   console.log('\n================ TELEMETRY SUMMARY (M2 Part C) ================');
@@ -598,12 +623,23 @@ export function printSummary(results: RunResult[]): void {
   // buys, rite vestments: everything through addCardToDeck since S14.1)
   // S20-R1 (ruled): the <25% gate-3 band was calibrated on rites-off fleets
   // where the S7.8 reclaim nudge never ran; the nudge now rides every
-  // canonical battery, so the band measures the instrument, not the game —
-  // REPORTED, re-derivation owed with the other bands.
+  // canonical battery, so the band measured the instrument, not the game.
+  // S21.2 row 2d (ruled): RETIRED in that old form; the successor is a
+  // drift wire — reclaim ratio within ±10 of the S21-R1 anchor, per
+  // pairing, binding at the canonical board like the other wires. A drift
+  // wire, not a design claim.
+  const reclaimRatio = acquisitions ? (100 * (spendMix.reclaim ?? 0)) / acquisitions : 0;
   console.log(
     `B22 reclaim ratio: ${spendMix.reclaim ?? 0} reclaims / ${acquisitions} card acquisitions = ` +
-    `${acquisitions ? ((100 * (spendMix.reclaim ?? 0)) / acquisitions).toFixed(1) : 'n/a'}% (REPORTED — S20-R1; the <25% band predates the nudge-on canon)`,
+    `${acquisitions ? reclaimRatio.toFixed(1) : 'n/a'}% (2d drift wire: ±10 of S21-R1 anchor${anchor ? ` ${anchor.reclaim}` : ''}; binds at the canonical board)`,
   );
+  if (CANONICAL_BOARD && anchor && acquisitions) {
+    gates.push({
+      name: `B22 reclaim drift wire (2d: ±10 of S21-R1 anchor ${anchor.reclaim} — ${PAIR})`,
+      value: `${reclaimRatio.toFixed(1)}%`,
+      pass: Math.abs(reclaimRatio - anchor.reclaim) <= 10,
+    });
+  }
 
   // ---- S4.1 gold economy ------------------------------------------------------
   const n = Math.max(1, results.length);

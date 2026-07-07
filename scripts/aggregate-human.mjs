@@ -128,7 +128,7 @@ for (const [sha, results] of [...groups.entries()].sort()) {
     // S14-R1: the 40–55 band is a BOT instrument (vb, A0, default topology);
     // human win rates are reported, never banded — human data RULES the
     // bands (OQ#14), not the reverse. The old ≤40% M2 gate retired with R1.
-    { name: 'win rate (human — reported, not banded; S14-R1)', value: `${winRate.toFixed(0)}%`, pass: true },
+    { name: 'win rate (human — reported, not banded; S21-R1 wires are bot tripwires, OQ#14)', value: `${winRate.toFixed(0)}%`, pass: true },
     { name: 'avg HP lost per Act 1 combat ≥ 8', value: hpPerA1Combat.toFixed(1), pass: hpPerA1Combat >= 8 },
     { name: 'Act 1 link-fire ≥ 30%', value: `${act1LinkRate.toFixed(1)}%`, pass: act1LinkRate >= 30 },
     {
@@ -137,8 +137,12 @@ for (const [sha, results] of [...groups.entries()].sort()) {
       pass: act2.cards > 0 && act2LinkRate >= 40 && act2LinkRate <= 60,
     },
     { name: 'no tag > 50% of resonance streaks', value: `${(100 * maxResTagShare).toFixed(0)}%`, pass: maxResTagShare <= 0.5 },
+    // S21.2 row 2c: the 25–45 band was a lane-era read, retired at S20-R1;
+    // the re-derived 46.3±8 wire is a BOT tripwire on the canonical board.
+    // Human hex share is telemetry on every pair — reported with the
+    // anchor for reference.
     hexGated
-      ? { name: 'Hex damage share 25–45% (vb gate, §14.10 + S5)', value: `${hexShare.toFixed(1)}%`, pass: hexShare >= 25 && hexShare <= 45 }
+      ? { name: 'Hex damage share (human vb — reported; S21-R1 bot anchor 46.3)', value: `${hexShare.toFixed(1)}%`, pass: true }
       : { name: `Hex damage share (telemetry only for ${PAIR ?? 'mixed pairs'}, S5 gate-4 amendment)`, value: `${hexShare.toFixed(1)}%`, pass: true },
   ];
 
@@ -149,7 +153,24 @@ for (const [sha, results] of [...groups.entries()].sort()) {
   console.log(`furthest acts: ${JSON.stringify(results.reduce((m, r) => ((m[r.act] = (m[r.act] ?? 0) + 1), m), {}))}`);
   console.log(`turns: ${sum(results, (r) => t(r).turns)}  |  cards played: ${cards}  |  overall link-fire: ${cards ? ((100 * links) / cards).toFixed(1) : 0}%`);
   console.log(`act 1: ${act1.combats} combats, link-fire ${act1LinkRate.toFixed(1)}%, HP lost/combat ${hpPerA1Combat.toFixed(1)}`);
-  console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%`);
+  // S21.2 mirror (2e): HP/combat by act, the act-death profile, and act-3
+  // lethality — the 2f filing routes the FIRST HUMAN lethality read through
+  // this aggregator, so the canonical lines exist here from S21 forward.
+  // Human rows are REPORTED, never banded (OQ#14: human data rules bands,
+  // not the reverse).
+  {
+    const act3 = actAgg[3] ?? { cards: 0, links: 0, combats: 0, hpLost: 0 };
+    const act3LinkRate = act3.cards ? (100 * act3.links) / act3.cards : 0;
+    console.log(`act 2: ${act2.combats} combats, link-fire ${act2LinkRate.toFixed(1)}%, HP lost/combat ${act2.combats ? (act2.hpLost / act2.combats).toFixed(1) : 'n/a'}`);
+    console.log(`act 3: ${act3.combats} combats, link-fire ${act3.cards ? `${act3LinkRate.toFixed(1)}%` : 'n/a'}, HP lost/combat ${act3.combats ? (act3.hpLost / act3.combats).toFixed(1) : 'n/a'}`);
+    const diedIn = (act) => results.filter((r) => r.outcome !== 'victory' && r.act === act).length;
+    const arrivals3 = results.filter((r) => r.act >= 3).length;
+    console.log(
+      `act deaths: a1 ${((100 * diedIn(1)) / results.length).toFixed(1)}% a2 ${((100 * diedIn(2)) / results.length).toFixed(1)}% of ${results.length} runs | ` +
+      `act-3 lethality: ${diedIn(3)} of ${arrivals3} arrivals = ${arrivals3 ? ((100 * diedIn(3)) / arrivals3).toFixed(1) : 'n/a'}% ` +
+      `(human read — the 2f/S18-D3 texture question reads HERE first)`,
+    );
+  }
   // Comfort pass mirror (review sweep): per-encounter difficulty attribution,
   // same table as sim.ts incl. the >2x-mean outlier flag (the S10a gate-4
   // read). Printed only when files carry encounterStats — pre-comfort files

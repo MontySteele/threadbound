@@ -392,7 +392,7 @@ p2 (bram): damage 100305 | block 35957 | link-fires 10406 | falls 34 | covets ta
 Worn Knife: 1088 plays | mean damage 8.95
 thread: spent/combat 7.47 | spend mix {"pulse":1381,"reclaim":1563,"sever":54,"steady":255} | regen wasted at cap/combat 3.52
 forced links (Pulse): 1254 (5.8% of fires) | Resonances needing one: 988/3897
-B22 reclaim ratio: 1563 reclaims / 2517 card acquisitions = 62.1% (REPORTED — S20-R1; the <25% band predates the nudge-on canon)
+B22 reclaim ratio: 1563 reclaims / 2517 card acquisitions = 62.1% (2d drift wire: ±10 of S21-R1 anchor 59.2; binds at the canonical board)
 gold: mean income/run 525.6 ({"combat":5381,"elite":19457,"boss":18280,"event":2451,"treasure":6991}) | mean residual 176.6 | removals/player/run p1 2.61 / p2 1.00 | removal spend 78.5% of total spend
 Pulsekeeper's Ring discounts fired: 22
 ---------------- S7.8 RITES READOUTS ----------------
@@ -411,11 +411,11 @@ OQ#59 economy: relics/run wins 10.7 vs losses 5.8 | deck/run wins 34.7 vs losses
 S9c rite-card play rate: 29.5 plays/run (3.66 per combat won, n=100 runs)
 S11.2 escalation calibration: kill 1: 22.7 HP (n=194) | kill 2: 27.0 HP (n=177) — knot-2/knot-1 ratio 1.19 (S18-D4 regression floor: >=1.2 on the probe leg)
 ---------------- GATES ----------------
-PASS  win rate (REPORTED — S20-R1: bands owed re-derivation on the new canon; vb braid A0)  →  67%
+PASS  win rate (REPORTED — S21-R1 wires bind at the canonical n=2000 board; vb braid A0)  →  67%
 PASS  avg HP lost per Act 1 combat ≥ 8  →  22.3
 PASS  Act 1 link-fire ≥ 30%  →  51.1%
 PASS  Act 2 link-fire 40–60%  →  59.7%
 PASS  no tag > 50% of resonance streaks  →  37%
-PASS  Hex damage share (REPORTED — S20-R1; was the vb 25–45 gate, §14.10 + S5)  →  44.8%
+PASS  Hex damage share (REPORTED — 2c binds at the canonical n=2000 board)  →  44.8%
 ALL GATES PASS
 ===============================================================

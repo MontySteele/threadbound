@@ -905,6 +905,15 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     so a mutated grower's tier link fires only when FORCED, never
     naturally — a consistent rule, but worth an explicit ruling at the
     next design session. **CLOSED as ruled; residual OPEN.**
+    **RESIDUAL RULED (2026-07-07, S21-D1): align `computeLinksFired` on
+    grownDef** — the grown card IS the card all the way down (legality,
+    preview, resolution, and natural fire agree; the S20.1 alignment
+    completed). Paired same-seed battery n=500 ×3: every changed run
+    attributes to rite_descant/rite_votive plays, zero non-grower
+    movement; board-level drift −0.2/−0.15/+0.2 pts. Regression test pins
+    the tier-granted echo link both directions. LOUD ruled re-bank per
+    the S20-R1 convention (S21-R1, docs/reference/s21-p2000-bank.txt).
+    **CLOSED entirely.**
 
 70. **Band re-derivation owed on the S20-R1 board (re-bank re-read,
     stop-and-report fired).** On the all-flags-on canon the board
@@ -917,3 +926,20 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     the S7.8 nudge now rides every canonical battery). Deriving fresh
     bands on the S20-R1 anchor set is the NEXT DESIGN SESSION's first
     instrument item. **OPEN — owed a session.**
+    **CLOSED (2026-07-07, S21.2/D2 — the owed session).** Bands derived
+    descriptively on the S21-R1 anchor set (docs/reference/
+    s21-p2000-bank.txt; the anchor moved off S20-R1 by the ruled S21.1
+    instrument event, paired attribution on record). The set: (2a) gate 2
+    bb−vb ±8 RE-AFFIRMED as intent (reads +6.8); (2b) pair win tripwires
+    ±5 of anchor per pairing at the canonical n=2000 same-seed board —
+    drift alarms, not quality claims (anchors vv 66.9 / vb 69.6 /
+    bb 76.4); (2c) vb Hex share 46.3 ±8 (reads 46.3; the old 25–45 was a
+    lane-era read; mirrors stay telemetry); (2d) B22 reclaim <25% RETIRED
+    — successor drift wire ±10 of anchor per pairing (vv 57.7 / vb 59.2 /
+    bb 63.6); (2e) act-3 lethality JOINS the canonical report, baselines
+    vv 1.0% / vb 2.5% / bb 2.3% of arrivals, NO band until the S18-D3
+    texture target is re-ruled on human data; (2f) difficulty NOT
+    re-dosed — the board is confounded and bot-read; FILED to the first
+    human read with the S18-D3 texture framing attached (the human
+    aggregator now prints the lethality line it will be read from).
+    Wires encoded in sim.ts, binding ONLY at the canonical board form.
