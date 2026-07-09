@@ -702,7 +702,16 @@ describe('slice telemetry (S6.8)', () => {
     expect(tt.struckAtShrine).toBeGreaterThanOrEqual(0);
     // spec 'codex writes': asserted-true answers land in truths
     expect(tt.codexWrites!.truths).toContain(tuple.q_who);
-    expect(tt.codexWrites!.eliminations).toEqual([]);
+    // S22.1 (D1, supersedes the empty-eliminations pin): shrine-struck
+    // answers bank as eliminations — "eliminated in some run" is
+    // adjudication under the ruled completion criterion. This run's two
+    // pinned fragments struck exactly their two eliminations; nothing was
+    // asserted false, so the write is precisely the struck set.
+    const struckHere = Object.values(s.truth!.shrine!.struck).flatMap((byAns) => Object.keys(byAns));
+    expect(tt.codexWrites!.eliminations.sort()).toEqual([...new Set(struckHere)].sort());
+    expect(tt.codexWrites!.eliminations.length).toBeGreaterThan(0);
+    expect(tt.codexWrites!.eliminations).not.toContain(tuple.q_what);
+    expect(tt.codexWrites!.eliminations).not.toContain(tuple.q_why);
   });
 
   it('codex writes: a false assertion lands in eliminations (review fix — spec S6.8)', () => {

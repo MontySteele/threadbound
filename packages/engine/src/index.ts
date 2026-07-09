@@ -17,6 +17,8 @@ export {
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
   // S9d: stateless growth (the tally)
   applyGrowth, grownDef, growthStep, tallyAxisValue, opClause, primaryMagnitude,
+  // S22.4: the Caretaker's Restoration window (client card rendering)
+  restorationHolds,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // nt-slice §11 extension: the truth surface meant for clients is the
@@ -29,6 +31,9 @@ export type { ClientTruthView, ClientShrineView, TruthStub } from './truth-view'
 // projection time (text never crosses screens — ruling 5)
 export { scoutView } from './scout';
 export { QUESTIONS, ANSWERS, QUESTIONS_BY_ID, ANSWERS_BY_ID, answersFor } from './content/questions';
+// S22.1: the completion criterion (client-safe — completion is computed
+// profile-side, D2) and the fifth question's declaration pool (D1b)
+export { codexCompleteFor, questionClosed, FIFTH_QUESTION, FIFTH_ANSWERS, FIFTH_ANSWERS_BY_ID } from './content/questions';
 export {
   CARDS, ENEMIES, EVENTS, RELICS_BY_ID, ALL_RELICS, LOCKED_CARDS, eventsForAct,
   PT1_ENEMY_HP_SCALE, PT1_ENEMY_DMG_SCALE,

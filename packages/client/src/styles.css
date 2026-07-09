@@ -25,6 +25,20 @@ body::after { /* vignette */
 body.act-1 { --act-sky: #16120e; --act-glow: #2a221422; }   /* the Undercroft: lamplit earth */
 body.act-2 { --act-sky: #121016; --act-glow: #221a2e2e; }   /* the Hollow Choir: bruised violet */
 body.act-3 { --act-sky: #170f10; --act-glow: #33161628; }   /* the Last Braid: ember dark */
+/* S22.3: the Loom's floor. The palette BREAKS the game's own gradient —
+   act tokens only, B6 untouched (palette tokens are not art, law 10).
+   Arrival is the darkest pre-dawn the descent has shown ... */
+body.act-4 { --act-sky: #0d0d12; --act-glow: #1c202a2e; }
+/* ... and the DAWN begins at the Cradle, not at victory (Part 3): the glow
+   turns the gradient over — light from BELOW, for the first time. */
+body.act-4.dawn { --act-sky: #1a2030; --act-glow: #ffd9a03a; }
+body.act-4.dawn::before {
+  background:
+    radial-gradient(ellipse at 50% 115%, var(--act-glow) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% -10%, #0006 0%, transparent 55%),
+    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff03 5px 6px),
+    linear-gradient(0deg, var(--act-sky) 0%, var(--ink) 70%);
+}
 h1, h2, h3, .title, .cname, .ename, .witness, .prose { font-family: var(--font-display); }
 button {
   background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
@@ -584,6 +598,79 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .loom-verdict-true .loom-verdict-mark { color: var(--thread-gold);
   text-shadow: 0 0 14px color-mix(in srgb, var(--thread-gold) 40%, transparent); }
 .loom-verdict-false .loom-verdict-mark { color: var(--danger); }
+
+/* ---- S22-R1: the Overture (the title crawl) ---- */
+/* plays over the existing title field/vignette (B6 untouched) and softens
+   into the screen beneath at the end — the crawl becomes the title screen */
+.overture {
+  position: fixed; inset: 0; z-index: 60; overflow: hidden; cursor: pointer;
+  /* near-opaque: the title FIELD carries through, its text does not — the
+     reveal is the resolve at the end, not a bleed-through mid-read */
+  background: color-mix(in srgb, var(--ink) 98%, transparent);
+  transition: opacity 1.2s;
+}
+.overture-out { opacity: 0; }
+.overture-scroll {
+  /* the first stanza is already entering as the field dims — no dead air */
+  position: absolute; left: 50%; top: 82%; width: min(680px, 88vw);
+  transform: translateX(-50%);
+  animation-name: overture-crawl; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes overture-crawl {
+  from { transform: translate(-50%, 0); }
+  to { transform: translate(-50%, calc(-100% - 100vh)); }
+}
+.overture p {
+  font-family: var(--font-display); font-size: 1.3em; line-height: 1.8;
+  text-align: center; white-space: pre-line; color: var(--text);
+  /* wide-set stanzas: the viewport is a window on the crawl, never the
+     whole read at once */
+  margin: 9em 0;
+}
+.overture p.overture-final {
+  color: var(--thread-gold);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--thread-gold) 30%, transparent);
+}
+/* O-4: reduced motion — a paced fade sequence, same lines, same skip */
+.overture-fade {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 0 6vw; animation: overture-fade-in 1.2s ease both;
+}
+@keyframes overture-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .overture-fade { animation: none; }
+  .overture { transition: none; }
+}
+.overture-skip {
+  position: absolute; right: 18px; bottom: 16px; z-index: 61;
+  opacity: 0.8; cursor: pointer;
+}
+
+/* ---- S22.1: the interposed Eye scene (the fifth question) ---- */
+.eye-scene { max-width: 720px; cursor: pointer; }
+.eye-beat {
+  font-family: var(--font-display); font-size: 1.06em; line-height: 1.6; color: var(--text);
+  margin: 14px 0; animation: eye-beat-in 1.4s ease both;
+}
+@keyframes eye-beat-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .eye-beat { animation: none; } }
+.eye-question {
+  font-size: 2em; letter-spacing: 0.22em; margin: 22px 0 14px;
+  color: var(--thread-gold); text-shadow: 0 0 26px color-mix(in srgb, var(--thread-gold) 40%, transparent);
+}
+.eye-answers { display: flex; flex-direction: column; gap: 10px; max-width: 560px; margin: 0 auto 12px; }
+.eye-chip { cursor: pointer; font-size: 1em; padding: 10px 16px; }
+.eye-picked { border-color: var(--thread-gold); color: var(--thread-gold);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--thread-gold) 30%, transparent); }
+.eye-partner-picked { outline: 1px dashed var(--p2); outline-offset: 3px; }
+
+/* S22.2: the act-3 map's last node — the way down continues (caption row
+   stalls; the mark is wordless until it signs) */
+.act4-door {
+  position: absolute; transform: translate(-50%, -50%); pointer-events: none;
+  color: var(--thread-gold); opacity: 0.75; font-size: 1.2em;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--thread-gold) 45%, transparent);
+}
 
 .game-title { font-size: 2.6em; letter-spacing: 0.4em; margin-bottom: 4px; text-shadow: 0 0 24px color-mix(in srgb, var(--thread) 30%, transparent); }
 .title-cord { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 14px; }

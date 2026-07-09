@@ -9,6 +9,11 @@
 //                  per seed by construction — same seed twice → byte-identical
 //                  telemetry (pinned, S16.0c). The S16-R1 instrument rule
 //                  (paired same-seed reads) exists because of this path.
+//   TB_SIM_CODEX_COMPLETE=1  (S22 Part 7) the ruled act-4 battery mode:
+//                  the fleet claims completion, declares at the Eye, and
+//                  walks the Loom's floor. Explicitly NOT default; excluded
+//                  from the canonical board form; its act-4 leg is REPORTED,
+//                  never banded. Socket-free path only.
 //   TB_SIM_SOCKET=1  the WS path (the pre-S16 instrument): real server + real
 //                  websockets in this process. REMAINS the protocol/covenant
 //                  instrument; the S14-R5 noise law (pooled n≥200; ±7–10
@@ -155,6 +160,14 @@ const ALL_KNOTS = process.env.TB_BOT_ALL_KNOTS === '1'; // S15.3 probe
 // run is a braid run (KNOT stays a const so labels read honestly).
 const FLAGS = { tracks: envFlag('TB_TRACKS', true), rites: envFlag('TB_RITES', true) };
 const KNOT = true;
+// S22 Part 7 (instrument law): the ruled act-4 battery mode — the fleet
+// claims completion, declares at the Eye (bot-policy picks the first
+// answer, deterministically), and walks the Loom's floor. EXPLICITLY NOT
+// DEFAULT: no bot asserts the claim otherwise, the canonical board form
+// excludes it, and its act-4 leg is REPORTED-not-banded (numbers
+// provisional by declaration — the ascension-header law). Socket-free
+// path only (the WS path's seats claim nothing; profiles are claims).
+const CODEX_COMPLETE = process.env.TB_SIM_CODEX_COMPLETE === '1';
 
 /** one battery entry: run index (1-based over the whole battery) + result */
 interface Played {
@@ -292,7 +305,7 @@ function playAllLocal(printLive: boolean): Played[] {
         seed: BASE_SEED + run,
         characters: PAIR_CHARS,
         ascension: ASCEND,
-        flags: FLAGS,
+        flags: { ...FLAGS, ...(CODEX_COMPLETE ? { codexComplete: true } : {}) },
         policy: {
           seekEvents: SEEK_EVENTS, reclaimNudge: RECLAIM_NUDGE,
           skipPicks: SKIP_PICKS, pickCap: PICK_CAP, allKnots: ALL_KNOTS, draftV2: DRAFT_V2,
@@ -450,7 +463,8 @@ export function printSummary(results: RunResult[]): void {
   const CANONICAL_BOARD =
     results.length >= 2000 && BASE_SEED === 20000 && ASCEND === 0
     && FLAGS.rites && FLAGS.tracks
-    && !SOLO && !SOCKET && !SKIP_PICKS && PICK_CAP === undefined && !ALL_KNOTS && DRAFT_V2;
+    && !SOLO && !SOCKET && !SKIP_PICKS && PICK_CAP === undefined && !ALL_KNOTS && DRAFT_V2
+    && !CODEX_COMPLETE; // S22: the act-4 mode is never the canonical board
   const anchor = S21_ANCHORS[PAIR];
   const gates: Gate[] = [
     CANONICAL_BOARD && anchor
@@ -505,6 +519,17 @@ export function printSummary(results: RunResult[]): void {
       `act-3 lethality: ${diedIn(3)} of ${arrivals3} arrivals = ${arrivals3 ? ((100 * diedIn(3)) / arrivals3).toFixed(1) : 'n/a'}% ` +
       `(REPORTED — S21.2 baseline; band waits on human data)`,
     );
+    // S22 Part 7 Phase B: the REPORTED act-4 leg — printed only when the
+    // battery runs the ruled mode, never banded (provisional by declaration)
+    if (CODEX_COMPLETE) {
+      const arrivals4 = results.filter((r) => r.act >= 4).length;
+      const wins4 = results.filter((r) => r.outcome === 'victory' && r.act >= 4).length;
+      const died4 = results.filter((r) => r.outcome !== 'victory' && r.act === 4).length;
+      console.log(
+        `act 4 (TB_SIM_CODEX_COMPLETE — REPORTED, no band): ${arrivals4} arrivals of ${results.length}, ` +
+        `Caretaker down ${wins4}, floor un-rendered ${died4} (${arrivals4 ? ((100 * died4) / arrivals4).toFixed(1) : 'n/a'}% of arrivals)`,
+      );
+    }
     // OQ#68's free instrument: knot contact — bypassing a knot is legal by
     // design (S11.8), so the rate is a WATCH row for the human-read session
     const knotFights = sum((r) => (r.telemetry.eliteFights ?? []).length);

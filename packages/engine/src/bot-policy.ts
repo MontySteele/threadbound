@@ -15,8 +15,9 @@
 
 import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
+import { FIFTH_ANSWERS } from './content/questions';
 import { unlockedRites } from './content/rites';
-import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, silencesFirstLinkActive } from './combat';
+import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, restorationHolds, silencesFirstLinkActive } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -93,6 +94,11 @@ function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
     p.deck.find((c) => c.instanceId === instanceId) ??
     p.combatCards.find((c) => c.instanceId === instanceId);
   const def = CARDS[inst!.defId];
+  // S22.4: while the Caretaker's Restoration holds, the policy must read
+  // the SAME base def the reducer's legality reads — the OQ#69 lesson: a
+  // def-read that disagrees with legality livelocks the fleet (a bot
+  // Pulsing a link the engine says does not exist right now, forever).
+  if (restorationHolds(view)) return def;
   // S9d: growers show the bot their grown numbers — first-pass policy
   // simply values the number in front of it (routing toward axes is
   // S11.9's problem, explicitly out of scope here)
@@ -258,6 +264,17 @@ export class BotPolicy {
           return view.advanceReady[you] ? null : { type: 'ADVANCE', player: you };
         }
         return shrine.confirmed[you] ? null : { type: 'LOOM_CONFIRM', player: you, confirm: true };
+      }
+      case 'eye': {
+        // S22.1: the interposed fifth question. Solo: the human declares and
+        // the engine mirrors this seat (the shrine-confirm pattern). Sims
+        // (TB_SIM_CODEX_COMPLETE batteries only — no bot ever CLAIMS the
+        // completion) declare the first answer, deterministically: the fleet
+        // must SURVIVE the surface, not roleplay it (Part 7, Phase B).
+        if (this.mode === 'solo') return null;
+        const eye = view.eye;
+        if (!eye || eye.picks[you] !== null) return null;
+        return { type: 'EYE_DECLARE', player: you, answerId: FIFTH_ANSWERS[0].id };
       }
       default:
         return null; // lobby / victory / game_over — nothing to decide

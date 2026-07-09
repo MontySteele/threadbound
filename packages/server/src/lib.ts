@@ -35,6 +35,17 @@ export interface ProfileClaim {
    *  over seats (S4 rule); ids are validated engine-side against the content
    *  set, and everything ships unlocked, so a forged claim gains nothing. */
   riteUnlocks?: RiteUnlocks;
+  /** S22.2 (D2): the profile's codex is COMPLETE — per-question closure
+   *  (S22.1/D1), computed profile-side. The HOST's claim opens the act-4
+   *  floor; the partner rides (S16-D6 symmetry). Coherence-clamped at
+   *  sanitize time: completion means every answer adjudicated, so a
+   *  complete claim that does not also claim codexPct 100 is dropped. A
+   *  forged claim opens a door, never rules — the standing posture. */
+  codexComplete?: boolean;
+  /** S22.1 (D1b): the fifth question's declared answer id, once the pair
+   *  has answered — the codex's final entry. Only kept beside a complete
+   *  claim; the id is validated engine-side against the fifth pool. */
+  codexDeclared?: string;
 }
 
 export interface Seat {
@@ -589,6 +600,16 @@ export class GameServer {
     if (Array.isArray(r.codexProven)) {
       claim.codexProven = r.codexProven.filter((x: unknown) => typeof x === 'string').slice(0, 64);
     }
+    // S22.2: the completion claim — coherence clamp: per-question closure
+    // implies every answer adjudicated implies codexPct exactly 100, so a
+    // "complete" claim beside any lesser pct is dropped here. The declared
+    // answer rides only beside a kept completion (id validated engine-side).
+    if (r.codexComplete === true && claim.codexPct === 100) {
+      claim.codexComplete = true;
+      if (typeof r.codexDeclared === 'string' && r.codexDeclared.length <= 64) {
+        claim.codexDeclared = r.codexDeclared;
+      }
+    }
     // S9a: rite unlocks — shape-checked here, id-validated engine-side
     const ru = r.riteUnlocks as Record<string, { death?: unknown; birth?: unknown }> | undefined;
     if (ru && typeof ru === 'object') {
@@ -656,6 +677,38 @@ export class GameServer {
     const host = room.seats.p1;
     if (!host || host.bot) return 0;
     return host.claim?.ascensionUnlocked?.[host.character] ?? 0;
+  }
+
+  /** S22.2 (D2, ruled: host claim — S16-D6 symmetry): the HOST's completed
+   *  codex opens the act-4 floor; the partner rides (a fresh player
+   *  descending with a veteran sees Act 4 the way they already play with
+   *  the veteran's rites; credit accrues to both, the union precedent's
+   *  spirit). It is the HOST's codex the Machine has been reading; solo
+   *  hosts read the same rule. Bots claim nothing — every battery is
+   *  claim-off by construction (instrument law, S22 Part 7). */
+  private hostCodexComplete(room: Room): boolean {
+    const host = room.seats.p1;
+    return !!host && !host.bot && host.claim?.codexComplete === true;
+  }
+
+  /** The host's declared fifth answer — only read beside a complete claim
+   *  (sanitizeClaim already enforces that pairing). */
+  private hostCodexDeclared(room: Room): string | undefined {
+    const host = room.seats.p1;
+    if (!host || host.bot || host.claim?.codexComplete !== true) return undefined;
+    return host.claim?.codexDeclared;
+  }
+
+  /** S22.1 (D1b): a mid-run closing verdict fires the scene THAT run — the
+   *  client records the codex at the verdict and re-sends its claim; when
+   *  the HOST's clamped claim newly reads complete mid-run, the server
+   *  authors CODEX_COMPLETE into the action log (idempotent engine-side).
+   *  Checked after every claim refresh (profile / hello / join). */
+  private maybeCodexComplete(room: Room): void {
+    const st = room.state;
+    if (['lobby', 'game_over', 'victory'].includes(st.phase)) return;
+    if (st.codexComplete || !this.hostCodexComplete(room)) return;
+    this.applyAction(room, null, { type: 'CODEX_COMPLETE' });
   }
 
   /** S4.5 union rule: the run's pool is the union of both players' unlocked
@@ -826,6 +879,8 @@ export class GameServer {
           seat.claim = this.sanitizeClaim(msg.profile);
           // review fix: a reconnect can carry a consent flip too
           this.maybeRetractStartStamp(entry.room);
+          // S22.1: a reconnect can carry a newly-complete host codex too
+          this.maybeCodexComplete(entry.room);
         }
         ctx.room = entry.room;
         ctx.pid = entry.pid;
@@ -873,6 +928,11 @@ export class GameServer {
           // S9a: rite pool = union of the seats' claimed unlocks (absent =
           // everything; all rites ship unlocked tonight)
           ...(envFlag('TB_RITES', true) ? { riteUnlocks: this.riteUnlockUnion(ctx.room) } : {}),
+          // S22.2 (D2): act-4 access — the HOST's clamped completion claim
+          // opens the floor; a prior declaration rides with it. Absent keys
+          // (never false) when unclaimed — every battery stays byte-stable.
+          ...(this.hostCodexComplete(ctx.room) ? { codexComplete: true } : {}),
+          ...(this.hostCodexDeclared(ctx.room) ? { codexDeclared: this.hostCodexDeclared(ctx.room) } : {}),
         });
         // S6.4: run start stamp — the completion-rate denominator (a run
         // abandoned mid-way never writes an end-of-run file). Consented only.
@@ -971,6 +1031,10 @@ export class GameServer {
         if (seat && !seat.bot) seat.claim = this.sanitizeClaim(msg.profile);
         // review fix: an opt-out mid-run retracts the run's start stamp
         this.maybeRetractStartStamp(ctx.room);
+        // S22.1: the client re-sends its claim after every codex write — a
+        // claim that newly completes the HOST's codex mid-run manifests the
+        // Eye this run (D1b's first timing)
+        this.maybeCodexComplete(ctx.room);
         return;
       }
 
@@ -987,6 +1051,12 @@ export class GameServer {
         const action = msg.action as Action;
         if (!action || typeof action.type !== 'string') return this.send(socket, { type: 'error', message: 'bad action' });
         if (action.type === 'START_RUN') return this.send(socket, { type: 'error', message: 'use start' });
+        // S22.2: CODEX_COMPLETE is server-authored only — the host
+        // convention (the HOST's clamped claim opens the floor) must not be
+        // bypassable by either socket sending the action directly
+        if (action.type === 'CODEX_COMPLETE') {
+          return this.send(socket, { type: 'error', message: 'the Machine speaks for itself — send your claim' });
+        }
         // S4.4: ascension votes are clamped to the room's unlocked max —
         // profiles are claims, the server never trusts them
         // S7.7 (OQ#44, ruled): the rung is HOST-ONLY — the room creator's

@@ -4,9 +4,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   Profile,
-  codexEntries, emptyProfile, exportProfile, importProfile, loadProfile,
-  mergeProfiles, profileClaim, recordClear, recordCodex, saveProfile, setTelemetryConsent,
+  codexComplete, codexEntries, emptyProfile, exportProfile, importProfile, loadProfile,
+  mergeProfiles, profileClaim, recordClear, recordCodex, recordDeclaration, saveProfile, setTelemetryConsent,
 } from '../src/profile';
+import { ANSWERS, FIFTH_ANSWERS } from '@threadbound/engine';
 
 /** installId is random per emptyProfile() — compare progress fields only. */
 const progress = (p: Profile) => {
@@ -236,5 +237,74 @@ describe('S9a rite unlocks (profile storage + union rule)', () => {
     const claim = profileClaim();
     expect(claim.riteUnlocks.vess.death).toEqual(['dr_shroud']);
     expect(claim.riteUnlocks.bram.birth).toEqual(a.unlocks.bram.birthRites);
+  });
+});
+
+describe('S22.1/S22.2 — completion, the declaration, and the claim', () => {
+  const allIds = () => ANSWERS.map((a) => a.id);
+
+  it('codexComplete reads per-question closure; the claim carries it with pct 100', () => {
+    const p = emptyProfile();
+    p.codex.truths = allIds().slice(0, 3);
+    p.codex.eliminations = allIds().slice(3);
+    saveProfile(p);
+    expect(codexComplete()).toBe(true);
+    const c = profileClaim();
+    expect(c.codexComplete).toBe(true);
+    expect(c.codexPct).toBe(100);
+    // one missing answer holds the book open — and the claim honest
+    const q = emptyProfile();
+    q.codex.eliminations = allIds().slice(1);
+    saveProfile(q);
+    expect(codexComplete()).toBe(false);
+    expect(profileClaim().codexComplete).toBe(false);
+  });
+
+  it('recordDeclaration writes once, only onto a complete book, only fifth answers', () => {
+    const p = emptyProfile();
+    p.codex.eliminations = allIds().slice(1);
+    saveProfile(p);
+    recordDeclaration(FIFTH_ANSWERS[0].id); // incomplete book — refused
+    expect(loadProfile().codex.declared).toBeUndefined();
+
+    const full = emptyProfile();
+    full.codex.eliminations = allIds();
+    saveProfile(full);
+    recordDeclaration('a_kin'); // deduction id — refused
+    expect(loadProfile().codex.declared).toBeUndefined();
+    recordDeclaration(FIFTH_ANSWERS[0].id);
+    expect(loadProfile().codex.declared).toBe(FIFTH_ANSWERS[0].id);
+    recordDeclaration(FIFTH_ANSWERS[1].id); // written exactly once
+    expect(loadProfile().codex.declared).toBe(FIFTH_ANSWERS[0].id);
+    expect(profileClaim().codexDeclared).toBe(FIFTH_ANSWERS[0].id);
+  });
+
+  it('normalize drops a declaration pasted onto an unfinished or garbage codex', () => {
+    const p = emptyProfile();
+    p.codex.eliminations = allIds().slice(1);
+    (p.codex as Record<string, unknown>).declared = FIFTH_ANSWERS[0].id;
+    localStorage.setItem('tb_profile', JSON.stringify(p));
+    expect(loadProfile().codex.declared).toBeUndefined();
+
+    const full = emptyProfile();
+    full.codex.eliminations = allIds();
+    (full.codex as Record<string, unknown>).declared = 'not_an_answer';
+    localStorage.setItem('tb_profile', JSON.stringify(full));
+    expect(loadProfile().codex.declared).toBeUndefined();
+
+    (full.codex as Record<string, unknown>).declared = FIFTH_ANSWERS[2].id;
+    localStorage.setItem('tb_profile', JSON.stringify(full));
+    expect(loadProfile().codex.declared).toBe(FIFTH_ANSWERS[2].id);
+  });
+
+  it('merge keeps the declaration when the merged book supports it', () => {
+    const a = emptyProfile();
+    const b = emptyProfile();
+    a.codex.truths = allIds().slice(0, 5);
+    b.codex.eliminations = allIds().slice(5);
+    b.codex.declared = FIFTH_ANSWERS[3].id; // only valid post-merge
+    // b alone is incomplete, so normalize would drop it — merge re-derives
+    const m = mergeProfiles(a, b);
+    expect(m.codex.declared).toBe(FIFTH_ANSWERS[3].id);
   });
 });

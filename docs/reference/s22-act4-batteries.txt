@@ -1,0 +1,36 @@
+# S22 Phase B — the REPORTED act-4 leg (TB_SIM_CODEX_COMPLETE battery mode)
+# Ruled: S22 Part 7 (instrument law). EXPLICITLY NOT DEFAULT — no bot asserts
+# the completion claim outside this mode; the canonical board form excludes it;
+# every number below is PROVISIONAL BY DECLARATION (the ascension-header law).
+# The fleet claims completion, DECLARES AT THE EYE itself (bot-policy picks the
+# first answer, deterministically), and walks the Loom's floor.
+# Command: TB_SIM_CODEX_COMPLETE=1 PAIR=<pair> node packages/bots/dist/sim.js 50
+# (seeds 1001-1050; socket-free path; A0; run at S22 Phase B landing, 2026-07-07)
+#
+# Determinism: the vb leg was run twice — byte-identical (sha256 below).
+# Zero stalls in 150 runs across the three legs. The one pre-fix stall class
+# (bot defOf reading grown defs through a Restoration window the reducer read
+# at base — the OQ#69 livelock shape) is fixed in-commit and pinned.
+
+== PAIR=vv ==
+runs: 50  |  victories: 37 (74%)  |  combats won: 425
+furthest acts: {"1":8,"2":4,"3":1,"4":37}
+act deaths: a1 16.0% a2 8.0% of 50 runs | act-3 lethality: 1 of 38 arrivals = 2.6% (REPORTED — S21.2 baseline; band waits on human data)
+act 4 (TB_SIM_CODEX_COMPLETE — REPORTED, no band): 37 arrivals of 50, Caretaker down 37, floor un-rendered 0 (0.0% of arrivals)
+sha256: d4d3a84d8eddd419a32ab556c5f5d0a3fbf750c2229284c38ff7517d4a42ec66
+
+== PAIR=vb ==
+runs: 50  |  victories: 39 (78%)  |  combats won: 463
+furthest acts: {"2":9,"3":2,"4":39}
+act deaths: a1 0.0% a2 18.0% of 50 runs | act-3 lethality: 2 of 41 arrivals = 4.9% (REPORTED — S21.2 baseline; band waits on human data)
+act 4 (TB_SIM_CODEX_COMPLETE — REPORTED, no band): 39 arrivals of 50, Caretaker down 39, floor un-rendered 0 (0.0% of arrivals)
+sha256: 4293a3b2e04bddb6a0b0424fe31049e18a3814b6d8de5af6139efa46fa2afcc4
+
+== PAIR=bb ==
+runs: 50  |  victories: 37 (74%)  |  combats won: 454
+furthest acts: {"2":12,"4":38}
+act deaths: a1 0.0% a2 24.0% of 50 runs | act-3 lethality: 0 of 38 arrivals = 0.0% (REPORTED — S21.2 baseline; band waits on human data)
+act 4 (TB_SIM_CODEX_COMPLETE — REPORTED, no band): 38 arrivals of 50, Caretaker down 37, floor un-rendered 1 (2.6% of arrivals)
+sha256: f2dc46dffc2e007424b2de3bbb0e78d89dc9d4d3842a6b5bdd4914f48b3989dd
+
+vb repeat-invocation sha256 (byte-identical): 4293a3b2e04bddb6a0b0424fe31049e18a3814b6d8de5af6139efa46fa2afcc4

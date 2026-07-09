@@ -18,6 +18,7 @@ export type Phase =
   | 'reward'
   | 'event'
   | 'loom' // nt-slice: the Loom's Eye shrine (flagged Act 3 only)
+  | 'eye' // S22.1 (D1b): the interposed Eye scene — the fifth question, unmissable
   | 'rest'
   | 'shop' // M2-B4
   | 'covet_treasure' // S11.7: the covet cache — one-of-two, flagged maps only
@@ -305,6 +306,20 @@ export type EnemyIntent =
   | { kind: 'debuff_weak'; amount: number }
   | { kind: 'debuff_vulnerable'; amount: number }
   | { kind: 'sever'; } // moves its own binding to the other player (binding manipulation)
+  // ---- S22.4 the Caretaker (act 4 only) --------------------------------------
+  /** Restoration (pillar 1): next player turn, the pair's DRIFT reads as
+   *  first cut — grown rites at base, mutation echoes as the card they
+   *  were, upgrades without their plus — for effects, links, and previews
+   *  alike (the grownDef machinery driven in reverse, one turn at a time).
+   *  Staging costs are untouched and no line may claim otherwise (truth
+   *  law). Each RUN truth named this descent cancels one Restoration
+   *  before it lands (pillar 3 — the ward). */
+  | { kind: 'restore' }
+  /** Purge (pillar 2): the first `count` cards of the pair's next resolved
+   *  chain are EXILED — they do not resolve, and they leave the run (the
+   *  deck for a deck card, the combat for an echo). Run-scale cruelty,
+   *  never meta-scale; counterable by staging order. */
+  | { kind: 'purge'; count: number }
   /** S10a The Unstrung: a genuine dilemma reading the Chain — if the pair
    *  Resonates this turn it Frays both (pending); if they hold the harmony
    *  back it attacks its bound player amount×2. Fully telegraphed. */
@@ -313,7 +328,8 @@ export type EnemyIntent =
 export interface EnemyDef {
   id: string;
   name: string;
-  act: 1 | 2 | 3;
+  /** 4 = the Loom's floor (S22.4) — never enters an act pool */
+  act: 1 | 2 | 3 | 4;
   elite?: boolean;
   boss?: boolean;
   hp: [number, number];
@@ -352,6 +368,13 @@ export interface EnemyDef {
   /** S10a legibility rule: the co-op hook stated in the intent UI, always
    *  visible — mechanics are read, not discovered by autopsy */
   mechanicLine?: string;
+  /** S22.4: the Caretaker — the preservation reflex. Binds to NEITHER
+   *  player (it does not acknowledge the pair as parts of the Machine;
+   *  it stays fully targetable — the inversion is in ITS regard, not
+   *  yours), and at half its blood it turns to the purge (phase2Script;
+   *  the phase turn also spends the Witness's one scripted Pulse,
+   *  pillar 5). Only act-4 content carries this. */
+  caretaker?: { phase2Script: EnemyIntent[] };
   flavor: string;
 }
 
@@ -375,6 +398,9 @@ export interface EnemyState {
   nameOverride?: string; // real face name, when earned at the shrine
   telegraph?: string | null; // whispered one turn before a hidden mechanic's first firing
   revealedMechanics?: string[]; // reveal lines earned at the shrine
+  /** S22.4: the Caretaker crossed its phase turn — what cannot be restored
+   *  is deleted (present only in act-4 fights). */
+  phase2?: true;
 }
 
 // ---------------------------------------------------------------------------
@@ -448,7 +474,9 @@ export interface EventOptionDef {
 export interface EventDef {
   id: string;
   name: string;
-  act: 1 | 2 | 0; // 0 = either act
+  /** 0 = either braid act; 4 = the Loom's floor (S22.3 — never pooled:
+   *  eventsForAct matches 1|2|0 only; act-4 events ride fixed map data) */
+  act: 1 | 2 | 0 | 4;
   crossed: boolean;
   /** crossed events: 60% consequence / 40% comedy (M2-B5) */
   tone?: 'consequence' | 'comedy';
@@ -631,7 +659,7 @@ export interface MapNode {
 }
 
 export interface MapState {
-  act: 1 | 2 | 3;
+  act: 1 | 2 | 3 | 4;
   nodes: MapNode[];
   /** current node id, or -1 before the first pick of the act */
   position: number;
@@ -741,6 +769,18 @@ export interface CombatState {
   resonatedLastTurn?: boolean;
   /** S10a Pall Warden: owner of the last card in the last resolved chain */
   lastChainOwner?: PlayerId;
+  // ---- S22.4 the Caretaker (all keys exist ONLY in act-4 fights, so every
+  // pre-S22 combat's shape/hash/goldens are untouched by construction) ----
+  /** pillar 3: run-truth wards remaining — each cancels one Restoration */
+  wards?: number;
+  /** pillar 1: the player turn during which the pair's drift reads as
+   *  first cut (grownDef returns the base def while turn === restoredTurn) */
+  restoredTurn?: number;
+  /** pillar 2: cards to exile from the front of the next resolved chain */
+  purgeNext?: number;
+  /** pillar 5: the Witness's one scripted Pulse, spent on the pair's next
+   *  resolution (their earliest dead Link fires, free, once per encounter) */
+  witnessPulseNext?: true;
 }
 
 export interface RewardState {
@@ -896,6 +936,26 @@ export interface GameState {
    *  Created on the first such fight (multi-enemy split behavior and its
    *  state shape are untouched). */
   bindsByPlayer?: Record<PlayerId, number>;
+  /** S22.2 (D2): the HOST profile's codex is COMPLETE (per-question closure
+   *  over the deduction set — S22.1/D1), claimed at START_RUN or mid-run by
+   *  the server-authored CODEX_COMPLETE action after the server clamps the
+   *  claim (claims-not-authority; the host's claim opens the floor, the
+   *  partner rides). Absent — never false — when unclaimed, so every canon
+   *  battery and golden serializes byte-identically (no bot asserts it:
+   *  instrument law, S22 Part 7). */
+  codexComplete?: true;
+  /** S22.1 (D1b): the fifth question's declared answer id — recorded once,
+   *  profile-scale (the codex's final entry), claimed back at START_RUN on
+   *  later runs. Present only after a declaration; keys the Caretaker's
+   *  first face (Part 4 pillar 4). */
+  codexDeclared?: string;
+  /** S22.1 (D1b): the interposed Eye scene — present only while the scene
+   *  is up (the descent halted, the Machine asking). */
+  eye?: EyeState;
+  /** S22.2: the way down continues — the act-3 finale's boss now advances
+   *  to act 4 instead of ending the run. Set by the declaration (mid-run
+   *  closure) or at START_RUN when the claim already carries a declaration. */
+  act4Open?: true;
   /** event grants banked for the next combat's opening Thread */
   pendingThread: number;
   thread: number;
@@ -916,6 +976,16 @@ export interface GameState {
   witnessSaid: string[];
   log: GameEvent[];
   telemetry: Telemetry;
+}
+
+/** S22.1 (D1b): the fifth question's table state — the deduction machinery
+ *  inverted: nothing is deduced; the pair DECLARES, together. Both seats
+ *  must pick the same answer (the map's own convention — mismatch resets
+ *  both picks, like NODE_PICK); agreement records the declaration and
+ *  closes the scene. No shrine, no stake, no verdict: the Machine is not
+ *  testing them, it is asking. */
+export interface EyeState {
+  picks: Record<PlayerId, string | null>;
 }
 
 /** S11.7: the covet cache's table state. Spoils use the plain treasure's
@@ -1086,7 +1156,9 @@ export type Action =
   /** tracks: nt-slice narrative truth flag — server-set from TB_TRACKS */
   /** riteUnlocks: S9a union of both profiles' rite unlocks (server-built,
    *  same union rule as unlockedCards). Omitted = everything. */
-  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[] }
+  /** codexComplete/codexDeclared: S22.2 host claim, server-clamped — the
+   *  completion opens the fifth question (or, already declared, act 4). */
+  | { type: 'START_RUN'; seed: number; unlockedCards?: string[]; tracks?: boolean; rites?: boolean; codexPct?: number; riteUnlocks?: RiteUnlocks; codexProven?: string[]; codexComplete?: boolean; codexDeclared?: string }
   /** S7.2/S7.4: pick a rite — from the death offer in the rites phase, or
    *  the birth trio when this player's birthChoice is owed at an event */
   | { type: 'RITE_PICK'; player: PlayerId; riteId: string }
@@ -1125,6 +1197,15 @@ export type Action =
   /** both must confirm the same filled state; the verdict resolves when the
    *  second confirmation lands */
   | { type: 'LOOM_CONFIRM'; player: PlayerId; confirm: boolean }
+  /** S22.2: SERVER-AUTHORED — the host seat's clamped claim newly reads
+   *  codexComplete mid-run (a closing verdict just recorded client-side and
+   *  the refreshed claim crossed). The server rejects this type from client
+   *  sockets (host convention: the HOST's claim opens the floor). */
+  | { type: 'CODEX_COMPLETE' }
+  /** S22.1 (D1b): a seat's pick at the interposed Eye scene. Both seats must
+   *  pick the same answer (the map's own convention; mismatch resets both);
+   *  agreement records the declaration, opens act 4, returns to the map. */
+  | { type: 'EYE_DECLARE'; player: PlayerId; answerId: string }
   | { type: 'ADVANCE'; player: PlayerId }
   /** abandon the run — both must confirm; even quitting is co-op */
   | { type: 'CONCEDE'; player: PlayerId; confirm: boolean };

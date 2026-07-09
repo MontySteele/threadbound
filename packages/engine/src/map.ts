@@ -291,6 +291,25 @@ export function generateFinaleMap(tracks = false): MapState {
   return { act: 3, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 };
 }
 
+/** S22.3 (D3): Act 4 — the Loom's floor. The braid's two warps converge and
+ *  BRAID INTO ONE: a single-strand floor, three nodes, no choices on the map
+ *  (the choosing is over; the declaration was the last fork). A fixed
+ *  authored floor — no fills, no RNG beyond the encounter's own. Reachable
+ *  only behind the completion gate (state.act4Open, S22.2/D2 host claim).
+ *  1. The Threshold — a passage node, not a fight (the wrong-way traffic
+ *     crosses the pair at last, visibly ascending).
+ *  2. The Cradle — a rest node under the palette break: the dawn begins
+ *     HERE, not at victory, before the hardest fight.
+ *  3. The Caretaker — the encounter (S22.4). */
+export function generateAct4Map(): MapState {
+  const nodes: MapNode[] = [
+    { id: 0, kind: 'event', edges: [1], layer: 0, lane: 0, eventId: 'act4_threshold' },
+    { id: 1, kind: 'rest', edges: [2], layer: 1, lane: 0 },
+    { id: 2, kind: 'boss', edges: [], layer: 2, lane: 0, encounterId: 'caretaker' },
+  ];
+  return { act: 4, nodes, position: -1, picks: { p1: null, p2: null }, mismatchStreak: 0, knotsCut: 0 };
+}
+
 /** Nodes currently pickable: layer-0 entries at position -1, else current edges. */
 export function pickableNodes(map: MapState): number[] {
   if (map.position === -1) return map.nodes.filter((n) => n.layer === 0).map((n) => n.id);

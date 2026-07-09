@@ -59,4 +59,12 @@ export const MOTIFS: Record<string, Motif> = {
 
   // ---- S15.2A (D5 row 9, RATIFIED — S16-D1) ----------------------------------
   seamripper: { arch: 'crawler', tool: true }, // a slider carrying a point — low, under the seams
+
+  // ---- S22.4 (PROVISIONAL — the Caretaker's table row; signs with Part 6) ----
+  // The twin-reflex thesis in the vocabulary's own grammar: the Witness is
+  // an 'eye', and its rival is the SAME archetype — two reflexes of one
+  // patient (§4; every two-faced boss is a small Witness-versus-Caretaker).
+  // Boss tier, act-4 accents, and the id's own seeded rings differentiate;
+  // a map edit, never a grammar edit (S12 rule).
+  the_caretaker: { arch: 'eye', big: true },
 };

@@ -61,6 +61,10 @@ enc({ id: 'a2_knot_rippers', enemies: ['seamripper', 'seamripper'], tier: 'elite
 // ---- Finale: The Last Braid ----------------------------------------------------
 enc({ id: 'finale_boss', enemies: ['the_unraveled'], tier: 'boss' });
 
+// ---- Act 4: the Loom's floor (S22.4) — named by the fixed authored floor
+// only (map.ts generateAct4Map); deliberately in NO pool.
+enc({ id: 'caretaker', enemies: ['the_caretaker'], tier: 'boss' });
+
 // S10a pool growth: act-2 easy 2→4; both normal pools +2; +1 elite per act.
 // Act-1 easy also +1 (the table put Tithe-Taker/Half-Carried in that pool —
 // they need a gentle debut even though the summary line elided the growth).
