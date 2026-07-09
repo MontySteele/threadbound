@@ -599,6 +599,53 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
   text-shadow: 0 0 14px color-mix(in srgb, var(--thread-gold) 40%, transparent); }
 .loom-verdict-false .loom-verdict-mark { color: var(--danger); }
 
+/* ---- S22-R1: the Overture (the title crawl) ---- */
+/* plays over the existing title field/vignette (B6 untouched) and softens
+   into the screen beneath at the end — the crawl becomes the title screen */
+.overture {
+  position: fixed; inset: 0; z-index: 60; overflow: hidden; cursor: pointer;
+  /* near-opaque: the title FIELD carries through, its text does not — the
+     reveal is the resolve at the end, not a bleed-through mid-read */
+  background: color-mix(in srgb, var(--ink) 98%, transparent);
+  transition: opacity 1.2s;
+}
+.overture-out { opacity: 0; }
+.overture-scroll {
+  /* the first stanza is already entering as the field dims — no dead air */
+  position: absolute; left: 50%; top: 82%; width: min(680px, 88vw);
+  transform: translateX(-50%);
+  animation-name: overture-crawl; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes overture-crawl {
+  from { transform: translate(-50%, 0); }
+  to { transform: translate(-50%, calc(-100% - 100vh)); }
+}
+.overture p {
+  font-family: var(--font-display); font-size: 1.3em; line-height: 1.8;
+  text-align: center; white-space: pre-line; color: var(--text);
+  /* wide-set stanzas: the viewport is a window on the crawl, never the
+     whole read at once */
+  margin: 9em 0;
+}
+.overture p.overture-final {
+  color: var(--thread-gold);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--thread-gold) 30%, transparent);
+}
+/* O-4: reduced motion — a paced fade sequence, same lines, same skip */
+.overture-fade {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 0 6vw; animation: overture-fade-in 1.2s ease both;
+}
+@keyframes overture-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .overture-fade { animation: none; }
+  .overture { transition: none; }
+}
+.overture-skip {
+  position: absolute; right: 18px; bottom: 16px; z-index: 61;
+  opacity: 0.8; cursor: pointer;
+}
+
 /* ---- S22.1: the interposed Eye scene (the fifth question) ---- */
 .eye-scene { max-width: 720px; cursor: pointer; }
 .eye-beat {

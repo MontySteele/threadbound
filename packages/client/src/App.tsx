@@ -8,7 +8,7 @@ import {
   ASCENSION_MAX, ASCENSION_RUNGS, ascensionMods,
   applyGrowth, computeForcedLinks, computeLinksFired, computePlannedBlock, computePlannedDamage, computeResonanceSlots, effectiveDef,
   eventEffectClause, eventOptionAvailable, eventOptionDeepens, eventStageAt,
-  hasPassive, reclaimEchoShape, removalPrice,
+  hasPassive, reclaimEchoShape, removalPrice, restorationHolds,
 } from '@threadbound/engine';
 import { ClientState, Net, ServerStatus } from './net';
 import { VERSION_STAMP } from './build';
@@ -27,6 +27,7 @@ import { DeckOverlay } from './DeckOverlay';
 import { TapestryOverlay } from './TapestryOverlay';
 import { LoomEye } from './LoomEye';
 import { EyeScene } from './Eye';
+import { Overture, OVERTURE_SEEN_KEY } from './Overture';
 import { BirthRiteTrio, RiteOffer, RitePips, seatName } from './Rites';
 import { CodexButton } from './Codex';
 import { RunSummary } from './Summary';
@@ -56,9 +57,13 @@ function inst(state: ClientState, owner: PlayerId, id: string): CardInstance | u
 
 function defFor(state: ClientState, owner: PlayerId, id: string): CardDef {
   const i = inst(state, owner, id);
+  if (!i) return { name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef;
+  // S22.4: while the Caretaker's Restoration holds, drift renders as first
+  // cut — the same rule grownDef resolves with, so the card body never lies
+  if (restorationHolds(state) && CARDS[i.defId]) return CARDS[i.defId];
   // S9d: growers render their grown numbers everywhere (applyGrowth is a
   // pass-through for non-growers and unflagged runs)
-  return i ? applyGrowth(effectiveDef(i), state.tallies, owner) : ({ name: '?', text: '', cost: 0, tag: 'Strike', base: [] } as unknown as CardDef);
+  return applyGrowth(effectiveDef(i), state.tallies, owner);
 }
 
 /** Display name for an enemy instance. When the same enemy NAME appears more
@@ -747,6 +752,37 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
   // auto-open ONCE per browser; never while the consent card has the floor
   const needConsent = !!status?.telemetryActive && loadProfile().telemetryConsent === null;
   const [howto, setHowto] = useState(() => !howtoSeen());
+  // S22-R1 O-1: the Overture auto-plays once per browser; a skip or a
+  // completion marks it seen either way (endOverture). The how-to overlay
+  // waits its turn behind it on a truly fresh browser.
+  const [overture, setOverture] = useState(() => !localStorage.getItem(OVERTURE_SEEN_KEY));
+  const [attract, setAttract] = useState(false);
+  const endOverture = () => {
+    localStorage.setItem(OVERTURE_SEEN_KEY, '1');
+    setOverture(false);
+    setAttract(false);
+  };
+  // S22-R1 O-2: the attract loop — TITLE screen only, 150s of inactivity,
+  // never over an open mode panel (lobby/join flow), the how-to overlay,
+  // or the consent card. Any input resets the clock.
+  const overtureUp = (overture || attract) && !needConsent;
+  useEffect(() => {
+    if (overtureUp || mode !== null || howto || needConsent) return;
+    let t = setTimeout(() => setAttract(true), 150_000);
+    const reset = () => {
+      clearTimeout(t);
+      t = setTimeout(() => setAttract(true), 150_000);
+    };
+    window.addEventListener('pointerdown', reset);
+    window.addEventListener('keydown', reset);
+    window.addEventListener('gp-input', reset);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('pointerdown', reset);
+      window.removeEventListener('keydown', reset);
+      window.removeEventListener('gp-input', reset);
+    };
+  }, [overtureUp, mode, howto, needConsent]);
   return (
     <div className="center home">
       <h1 className="game-title">THREADBOUND</h1>
@@ -833,7 +869,10 @@ function Home({ net, error, status }: { net: Net; error: string; status: ServerS
           <a href={DISCORD_URL} target="_blank" rel="noreferrer">community + feedback (Discord)</a>
         </>}
       </p>
-      {howto && !needConsent && <HowToPlay onClose={() => setHowto(false)} />}
+      {howto && !needConsent && !overtureUp && <HowToPlay onClose={() => setHowto(false)} />}
+      {/* S22-R1: the crawl plays over the existing title field (B6 untouched)
+          and resolves into the screen beneath it — line 5 IS the epigraph */}
+      {overtureUp && <Overture attract={attract && !overture} onDone={endOverture} />}
     </div>
   );
 }
@@ -1400,6 +1439,9 @@ const TELEGRAPH: Record<string, string> = {
   block: 'tel-guard', block_all: 'tel-guard',
   buff_strength: 'tel-buff', buff_strength_all: 'tel-buff',
   debuff_weak: 'tel-debuff', debuff_vulnerable: 'tel-debuff', sever: 'tel-debuff',
+  // S22.4: the Caretaker — the revert wears the debuff tint; the purge wears
+  // the pierce tint (the one other thing Block can't answer)
+  restore: 'tel-debuff', purge: 'tel-pierce',
 };
 
 function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOffsets: Record<string, number> | null }): JSX.Element {
@@ -1981,6 +2023,9 @@ function intentText(intent: any, strength: number, weak = 0): string {
     case 'sever': return `${GLYPH.sever} moves its tether`;
     // S10a The Unstrung: the dilemma is the intent — both branches shown
     case 'read_chain': return `reads the Chain — Resonate: FRAY ${intent.fray} · hold back: ⚔ ${s(intent.amount)}×2${w}`;
+    // S22.4 — the Caretaker states its work plainly (truth law)
+    case 'restore': return '⟲ RESTORATION — next turn your grown, reclaimed, and upgraded cards resolve as first cut';
+    case 'purge': return `✂ PURGE — the first ${intent.count === 1 ? 'card' : `${intent.count} cards`} of your next chain leaves the run`;
     default: return '?';
   }
 }
