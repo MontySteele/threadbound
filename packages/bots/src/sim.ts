@@ -9,6 +9,11 @@
 //                  per seed by construction — same seed twice → byte-identical
 //                  telemetry (pinned, S16.0c). The S16-R1 instrument rule
 //                  (paired same-seed reads) exists because of this path.
+//   TB_SIM_CODEX_COMPLETE=1  (S22 Part 7) the ruled act-4 battery mode:
+//                  the fleet claims completion, declares at the Eye, and
+//                  walks the Loom's floor. Explicitly NOT default; excluded
+//                  from the canonical board form; its act-4 leg is REPORTED,
+//                  never banded. Socket-free path only.
 //   TB_SIM_SOCKET=1  the WS path (the pre-S16 instrument): real server + real
 //                  websockets in this process. REMAINS the protocol/covenant
 //                  instrument; the S14-R5 noise law (pooled n≥200; ±7–10

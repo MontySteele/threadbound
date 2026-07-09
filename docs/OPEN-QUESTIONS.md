@@ -983,3 +983,38 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     human read with the S18-D3 texture framing attached (the human
     aggregator now prints the lethality line it will be read from).
     Wires encoded in sim.ts, binding ONLY at the canonical board form.
+
+## S22 The Loom's Floor (2026-07-09, docs/S22-STATUS.md carries the evidence)
+
+71. **Lore-bible open ruling #6 CLOSED (S22-D1, ruled in the charter):
+    codex completion = per-question closure**, executed. Consequence
+    taken WITH the ruling, needing a yes/no: "eliminated in some run" is
+    adjudication, so the codex write at the Loom's Eye verdict now banks
+    the shrine's pooled STRIKE-OUTS as eliminations alongside
+    asserted-false answers (D1's own rationale — a pair that deduces
+    efficiently eliminates more than it proves; a criterion reading only
+    assertions would make completion a deliberate-wrong-answer grind).
+    Side effect on the record: codexPct — the Witness register key —
+    climbs faster for pairs who reach shrines; the voice arc inherits
+    the criterion's recording rule. The S6.8 empty-eliminations test pin
+    superseded with attribution (truth.test.ts). **RULED + EXECUTED;
+    the recording-rule consequence OPEN for designer confirmation.**
+
+72. **The client never sends `codexProven` in its claim** (found during
+    the S22.2 claim work): profileClaim() has carried codexPct since
+    S8.7 but never the proven-answer ids, so the S11.4 codex-keyed event
+    doors (`requires.codexProven`) cannot open in production — only in
+    tests and bot harnesses that hand-build claims. A one-line fix, but
+    it CHANGES LIVE BEHAVIOR (veteran profiles would start opening
+    doors), so it was logged, not landed (no S22 D-row covers it).
+    **OPEN — designer; the fix is trivial once ruled.**
+
+73. **Whose profile records the declaration (S22-D1b conservative
+    reading, flagged):** the fifth question's answer writes to a profile
+    only when THAT profile's own codex is complete — a partner with an
+    unfinished book declares at the table but records nothing; the Eye
+    comes to them when their own book closes (per-profile gestation).
+    The union-precedent alternative (both profiles record; the partner's
+    codex shows a final entry on an unfinished book) was NOT taken.
+    Merge/normalize enforce the same invariant. **OPEN — designer may
+    re-rule toward union; the conservative reading ships.**
