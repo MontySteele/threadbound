@@ -1156,6 +1156,9 @@ function describeIntent(it: EnemyIntent): string {
     case 'debuff_vulnerable': return `${it.amount} Vulnerable`;
     case 'sever': return 'a severing of its binding';
     case 'read_chain': return `a reading of your Chain — Fray if you Resonate, ${it.amount}×2 damage if you hold back`; // S10a
+    // S22.4 — the Caretaker's signature intents, stated plainly (truth law)
+    case 'restore': return 'a Restoration — next turn what you grew, reclaimed, and upgraded resolves as first cut';
+    case 'purge': return `a Purge — the first ${it.count === 1 ? 'card' : `${it.count} cards`} of your next chain leaves the run`;
   }
 }
 

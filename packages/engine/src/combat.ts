@@ -14,6 +14,7 @@ import {
 } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { FACE_BY_ANSWER, mechanicFireTurns } from './content/faces';
+import { CARETAKER_FACES } from './content/caretaker';
 import { ascensionMods, scaleIntent } from './ascension';
 import { maybeSaySolo, sayWitness } from './witness-draw';
 
@@ -140,7 +141,21 @@ function renderBase(ops: EffectOp[]): string {
  *  (and tally-less unflagged runs, where growers cannot exist) pass through
  *  untouched. */
 export function grownDef(state: GameState, inst: CardInstance, holder: PlayerId): CardDef {
+  // S22.4 pillar 1 (Restoration): while the restored turn holds, the pair's
+  // DRIFT reads as first cut — the grown rite at base, the mutation echo as
+  // the card it was, the upgrade without its plus. The grownDef machinery
+  // driven in reverse, one turn at a time: every surface that resolves,
+  // previews, or fires links through grownDef agrees (the OQ#69 alignment
+  // is what makes this implementable AND legible). Staging costs read
+  // effectiveDef and are deliberately untouched — no line claims them.
+  if (restorationHolds(state) && CARDS[inst.defId]) return CARDS[inst.defId];
   return applyGrowth(effectiveDef(inst), state.tallies, holder);
+}
+
+/** S22.4: is the Caretaker's Restoration in force right now? Shared by the
+ *  engine (grownDef) and the client's card rendering. */
+export function restorationHolds(state: Pick<GameState, 'combat'>): boolean {
+  return state.combat != null && state.combat.restoredTurn === state.combat.turn;
 }
 
 /** The growth application itself, shared by grownDef, the bot's defOf, and
@@ -1008,6 +1023,33 @@ export function resolveTurn(state: GameState): void {
   // M2-A1: snapshot hands at commit; survivors discard at end of resolution
   combat.handSnapshot = { p1: [...state.players.p1.hand], p2: [...state.players.p2.hand] };
 
+  // S22.4 pillar 2: the telegraphed Purge lands FIRST — the front of the
+  // committed chain is exiled before anything resolves. Run-scale cruelty,
+  // never meta-scale: a deck card leaves the run's deck; an echo leaves the
+  // combat. Energy stays spent; pulses aimed at a purged card are dropped
+  // (the UNSTAGE contract). Counterable by staging order — the intent said
+  // exactly this a full turn ago.
+  if ((combat.purgeNext ?? 0) > 0) {
+    const n = Math.min(combat.purgeNext!, combat.chain.length);
+    const purged = combat.chain.splice(0, n);
+    delete combat.purgeNext;
+    for (const slot of purged) {
+      const owner = state.players[slot.owner];
+      const inst = findInstance(owner, slot.cardInstanceId);
+      const name = inst ? effectiveDef(inst).name : 'a card';
+      const di = owner.deck.findIndex((c) => c.instanceId === slot.cardInstanceId);
+      if (di >= 0) owner.deck.splice(di, 1);
+      else {
+        const ci = owner.combatCards.findIndex((c) => c.instanceId === slot.cardInstanceId);
+        if (ci >= 0) owner.combatCards.splice(ci, 1);
+      }
+      combat.threadActions = combat.threadActions.filter(
+        (t) => !(t.kind === 'pulse' && t.targetId === slot.cardInstanceId),
+      );
+      state.log.push({ e: 'info', detail: `The purge takes ${owner.character}'s ${name} — it does not resolve, and it leaves the run.` });
+    }
+  }
+
   // 1. Thread actions in declaration order (§5) — none exist while severed/Fallen
   // (blocked at declaration; the list is already empty in those states).
   for (const ta of combat.threadActions) {
@@ -1130,6 +1172,25 @@ export function resolveTurn(state: GameState): void {
   const chain = combat.chain;
   const natural = computeLinksFired(state, chain);
   const forcedSlots = computeForcedLinks(state, chain, natural);
+  // S22.4 pillar 5: the Witness intervenes once, at the phase turn — the
+  // repair reflex spends the verb it taught: one Pulse, free, on the pair's
+  // best dead link (the EARLIEST — deterministic, no RNG; the whole
+  // downstream chain stands on the front). Its sign-off-gated line is a
+  // Part 6 row: the pool ships EMPTY and the mechanical record below is
+  // the log's, not the Witness's voice.
+  if (combat.witnessPulseNext) {
+    delete combat.witnessPulseNext;
+    const idx = chain.findIndex((slot, i) => {
+      if (natural[i] || forcedSlots[i]) return false;
+      return !!grownDef(state, mustFind(state, slot), slot.owner).link;
+    });
+    if (idx >= 0) {
+      forcedSlots[idx] = true; // the card loop below counts the forced fire
+      const name = grownDef(state, mustFind(state, chain[idx]), chain[idx].owner).name;
+      state.log.push({ e: 'info', detail: `The Witness pulses ${name} — its Link fires no matter what precedes it. It paid nothing. It would have paid anything.` });
+      sayWitness(state, 'witness_intervention');
+    }
+  }
   const fired = natural.map((f, i) => f || forcedSlots[i]);
   const resonanceSlots = computeResonanceSlots(chain, fired, (slot) => grownDef(state, mustFind(state, slot), slot.owner));
   combat.lastSoloRun = longestSoloRun(chain);
@@ -1417,13 +1478,30 @@ export function resolveTurn(state: GameState): void {
     if (enemy.weak > 0) enemy.weak--;
     if (enemy.vulnerable > 0) enemy.vulnerable--;
     const def = ENEMIES[enemy.defId];
-    enemy.scriptIndex = (enemy.scriptIndex + 1) % def.script.length;
+    // S22.4: past the phase turn the Caretaker walks its purge script
+    const script = enemy.phase2 && def.caretaker ? def.caretaker.phase2Script : def.script;
+    enemy.scriptIndex = (enemy.scriptIndex + 1) % script.length;
     // S4.4 A2: intents are stored scaled, so every displayed number is the
     // truth the hit will use (same contract as the §14.8 registry scales)
-    enemy.intent = scaleIntent(def.script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
+    enemy.intent = scaleIntent(script[enemy.scriptIndex], ascensionMods(state.ascension).dmgScale * (1 + (state.combat?.escalation ?? 0)));
     // nt-slice S6.5: the face's live mechanics override the script on their
     // fixed turns; hidden ones whisper one turn before their first firing
     applyBossMechanicIntent(state, enemy, combat.turn + 1);
+  }
+
+  // S22.4: the phase turn — checked AFTER the enemy phase, so the turn the
+  // pair crossed the line still played out exactly as telegraphed. What
+  // cannot be restored is deleted: the script turns to the purge, and the
+  // Witness's one scripted intervention (pillar 5) arms for the pair's
+  // next resolution. The phase-turn LINE is a Part 6 row (PROVISIONAL).
+  for (const enemy of livingEnemies(state)) {
+    const cdef = ENEMIES[enemy.defId];
+    if (!cdef.caretaker || enemy.phase2 || enemy.hp > enemy.maxHp / 2) continue;
+    enemy.phase2 = true;
+    combat.witnessPulseNext = true;
+    enemy.scriptIndex = 0;
+    enemy.intent = scaleIntent(cdef.caretaker.phase2Script[0], ascensionMods(state.ascension).dmgScale * (1 + (combat.escalation ?? 0)));
+    state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: 'the phase turns — what cannot be restored will be deleted' });
   }
 }
 
@@ -1556,6 +1634,30 @@ function enemyAct(state: GameState, enemy: EnemyState): void {
       bound.pendingStatus.vulnerable += intent.amount;
       state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `applies ${intent.amount} Vulnerable to ${bound.id} (next turn)` });
       break;
+    case 'restore': {
+      // S22.4 pillar 1/3: Restoration, unless a run-truth ward answers it —
+      // "what is fully described cannot be restored to a lie". Wards are
+      // counted at combat start from THIS run's named truths (the profile
+      // codex opens the door; the RUN earns the fight).
+      const combat = state.combat!;
+      if ((combat.wards ?? 0) > 0) {
+        combat.wards!--;
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `reaches for the original — a truth named this descent holds; the Restoration fails (${combat.wards} ward${combat.wards === 1 ? '' : 's'} left)` });
+      } else {
+        combat.restoredTurn = combat.turn + 1;
+        state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: 'restores the original — next turn, what you grew, reclaimed, and upgraded resolves as it was first cut' });
+      }
+      break;
+    }
+    case 'purge': {
+      // S22.4 pillar 2: what cannot be restored is deleted — the front of
+      // the pair's next resolved chain is exiled (run-scale, telegraphed,
+      // counterable by staging order).
+      const combat = state.combat!;
+      combat.purgeNext = (combat.purgeNext ?? 0) + intent.count;
+      state.log.push({ e: 'enemy_action', enemy: enemy.id, detail: `raises the purge — the first ${combat.purgeNext === 1 ? 'card' : `${combat.purgeNext} cards`} of your next chain will be deleted from the run` });
+      break;
+    }
     case 'sever': {
       // binding manipulation (M2-B3): the enemy moves its own tether
       if (enemy.boundTo !== null) {
@@ -1651,6 +1753,11 @@ export function startTurn(state: GameState): void {
   state.telemetry.turns++;
   combat.steadyShield = 0;
   combat.hookOnceFired = []; // PT2/OQ#29: oncePerTurn hooks recharge
+  // S22.4: a spent Restoration window leaves no residue (the key exists
+  // only in act-4 fights; equality with the CURRENT turn is the window)
+  if (combat.restoredTurn !== undefined && combat.restoredTurn < combat.turn) {
+    delete combat.restoredTurn;
+  }
 
   // Unraveled sever countdown → reignition at full 10 (§6)
   if (combat.severedTurns > 0) {
@@ -1749,8 +1856,11 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
   // assignments only); a tie keeps the rolled coin. The `first` roll is
   // consumed either way (parity habit) — the rng stream is byte-identical;
   // multi-enemy split behavior is untouched.
+  // S22.4: the Caretaker binds to NEITHER seat — it neither takes a bind
+  // assignment nor counts toward the anti-streak ledger
   const singleEliteBoss = enemyDefIds.length === 1
-    && (ENEMIES[enemyDefIds[0]]?.elite || ENEMIES[enemyDefIds[0]]?.boss);
+    && (ENEMIES[enemyDefIds[0]]?.elite || ENEMIES[enemyDefIds[0]]?.boss)
+    && !ENEMIES[enemyDefIds[0]]?.caretaker;
   let antiStreak: PlayerId | null = null;
   if (singleEliteBoss) {
     const binds = (state.bindsByPlayer ??= { p1: 0, p2: 0 });
@@ -1774,7 +1884,9 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
       defId,
       hp, maxHp: hp,
       block: 0, hex: 0, weak: 0, vulnerable: 0, stun: 0, strength: 0,
-      boundTo: isChorusOdd ? null : antiStreak ?? ((i + first.value) % 2 === 0 ? 'p1' : 'p2'),
+      // S22.4: the Caretaker does not acknowledge the pair — bound to
+      // neither, yet fully targetable (the inversion is in ITS regard)
+      boundTo: def.caretaker ? null : isChorusOdd ? null : antiStreak ?? ((i + first.value) % 2 === 0 ? 'p1' : 'p2'),
       untargetable: !!isChorusOdd,
       scriptIndex: start.value,
       intent: scaleIntent(def.script[start.value], dmgScale),
@@ -1807,6 +1919,27 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     }
   }
 
+  // S22.4 pillars 3–4: the run's named truths stand as wards, and the
+  // declared fifth answer picks the first face and opening pattern (the
+  // q_what→bossFace plumbing at meta-scale). The profile codex does NOT
+  // buff the fight — only THIS run's verdict counts.
+  let wards = 0;
+  for (const es of enemies) {
+    const cdef = ENEMIES[es.defId];
+    if (!cdef.caretaker) continue;
+    wards = Object.values(state.truth?.shrine?.verdict ?? {}).filter((v) => v === 'true').length;
+    if (wards > 0) {
+      state.log.push({ e: 'info', detail: `${wards} truth${wards === 1 ? '' : 's'} named this descent stand${wards === 1 ? 's' : ''} as ward${wards === 1 ? '' : 's'} — each cancels one Restoration before it lands.` });
+    }
+    const face = state.codexDeclared ? CARETAKER_FACES[state.codexDeclared] : undefined;
+    if (face) {
+      es.scriptIndex = face.opening;
+      es.intent = scaleIntent(cdef.script[face.opening], dmgScale);
+      es.nameOverride = face.title;
+      es.revealedMechanics = [face.mechanicLine];
+    }
+  }
+
   // chorus pool: all members share the lowest rolled HP so the bar reads true
   const chorusMembers = enemies.filter((e) => ENEMIES[e.defId]?.chorus);
   if (chorusMembers.length > 0) {
@@ -1828,6 +1961,8 @@ export function startCombat(state: GameState, enemyDefIds: string[]): void {
     hookOnceFired: [],
     // S11.2: carried so per-turn intent rescaling keeps the tightened DMG
     ...(esc > 0 ? { escalation: esc } : {}),
+    // S22.4 pillar 3: present only at the Caretaker (act-4 fights)
+    ...(wards > 0 ? { wards } : {}),
   };
   state.thread = 6; // §5
   state.phase = 'combat';

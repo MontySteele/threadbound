@@ -17,7 +17,7 @@ import { Action, CardDef, EventOptionDef, GameState, PlayerId } from './types';
 import { CARDS, EVENTS } from './content/registry';
 import { FIFTH_ANSWERS } from './content/questions';
 import { unlockedRites } from './content/rites';
-import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, silencesFirstLinkActive } from './combat';
+import { applyGrowth, computeLinksFiredFrom, computeResonanceSlots, escalationFactor, restorationHolds, silencesFirstLinkActive } from './combat';
 import { eventOptionAvailable, eventStageAt, removalPrice } from './reducer';
 import { ClientTruthView } from './truth-view';
 
@@ -94,6 +94,11 @@ function defOf(view: BotView, owner: PlayerId, instanceId: string): CardDef {
     p.deck.find((c) => c.instanceId === instanceId) ??
     p.combatCards.find((c) => c.instanceId === instanceId);
   const def = CARDS[inst!.defId];
+  // S22.4: while the Caretaker's Restoration holds, the policy must read
+  // the SAME base def the reducer's legality reads — the OQ#69 lesson: a
+  // def-read that disagrees with legality livelocks the fleet (a bot
+  // Pulsing a link the engine says does not exist right now, forever).
+  if (restorationHolds(view)) return def;
   // S9d: growers show the bot their grown numbers — first-pass policy
   // simply values the number in front of it (routing toward axes is
   // S11.9's problem, explicitly out of scope here)

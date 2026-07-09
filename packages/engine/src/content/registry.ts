@@ -18,6 +18,7 @@ import { RITE_CARDS } from './rites';
 import { CHARACTER_EVENTS } from './character-events';
 import { WRONG_WAY_EVENTS } from './wrong-way';
 import { ACT4_EVENTS } from './act4';
+import { CARETAKER } from './caretaker';
 
 // ---- cards: M2 pools + overlays (mutations/upgrades for M1 cards) ----------
 
@@ -48,7 +49,10 @@ export const LOCKED_CARDS: Set<string> = new Set();
 // ---- enemies ----------------------------------------------------------------
 
 export const ENEMIES: Record<string, EnemyDef> = { ...M1_ENEMIES };
-for (const e of [...M2_ENEMIES, ...S10_ENEMIES, ...S15_ENEMIES]) {
+// S22.4: the Caretaker registers for lookup only — act 4 has no pools; the
+// fixed floor names its encounter directly, so every act 1–3 draw and its
+// rng stream are untouched by construction.
+for (const e of [...M2_ENEMIES, ...S10_ENEMIES, ...S15_ENEMIES, CARETAKER]) {
   if (ENEMIES[e.id]) throw new Error(`duplicate enemy id ${e.id}`);
   ENEMIES[e.id] = e;
 }
@@ -106,9 +110,8 @@ export const MAP_EVENT_PCT = Math.round(envScale('TB_MAP_EVENT_PCT', 32));
 export const ELITE_ESCALATION_SCALE = envScale('TB_ELITE_ESCALATION', 1);
 
 const dmg = (n: number): number => Math.round(n * PT1_ENEMY_DMG_SCALE);
-for (const def of Object.values(ENEMIES)) {
-  def.hp = [Math.round(def.hp[0] * PT1_ENEMY_HP_SCALE), Math.round(def.hp[1] * PT1_ENEMY_HP_SCALE)];
-  def.script = def.script.map((it) => {
+const scaleScript = (script: import('../types').EnemyIntent[]): import('../types').EnemyIntent[] =>
+  script.map((it) => {
     switch (it.kind) {
       case 'attack': return { ...it, amount: dmg(it.amount) };
       case 'attack_all': return { ...it, amount: dmg(it.amount) };
@@ -119,6 +122,12 @@ for (const def of Object.values(ENEMIES)) {
       default: return it;
     }
   });
+for (const def of Object.values(ENEMIES)) {
+  def.hp = [Math.round(def.hp[0] * PT1_ENEMY_HP_SCALE), Math.round(def.hp[1] * PT1_ENEMY_HP_SCALE)];
+  def.script = scaleScript(def.script);
+  // S22.4: the Caretaker's phase-2 script rides the same global scales —
+  // one anchor, no per-def edits (the §14.8 contract)
+  if (def.caretaker) def.caretaker.phase2Script = scaleScript(def.caretaker.phase2Script);
 }
 
 // ---- events -------------------------------------------------------------------

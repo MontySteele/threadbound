@@ -27,6 +27,11 @@ export interface LocalRunFlags {
   tracks: boolean;
   rites: boolean;
   // knotwork left the flag set at S21.5 (OQ#65): the braid is the game
+  /** S22 Part 7 (instrument law): the act-4 battery mode — the ONLY way a
+   *  battery ever asserts the completion claim (TB_SIM_CODEX_COMPLETE,
+   *  explicitly not default). The fleet declares at the Eye itself, so the
+   *  fifth-question surface is exercised, not bypassed. */
+  codexComplete?: boolean;
 }
 
 export interface LocalRunOptions {
@@ -64,6 +69,9 @@ export function playRunLocal(opts: LocalRunOptions): RunResult {
     unlockedCards: [],
     tracks: opts.flags.tracks,
     rites: opts.flags.rites,
+    // S22: the act-4 battery mode claims completion (never a default; the
+    // canonical board form excludes it in sim.ts)
+    ...(opts.flags.codexComplete ? { codexComplete: true } : {}),
   } as Action);
 
   const policies: Record<PlayerId, BotPolicy> = {

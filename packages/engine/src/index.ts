@@ -17,6 +17,8 @@ export {
   computeLinksFired, computeResonanceSlots, computeForcedLinks, computePlannedBlock, computePlannedDamage, longestSoloRun, DETONATION_DAMAGE,
   // S9d: stateless growth (the tally)
   applyGrowth, grownDef, growthStep, tallyAxisValue, opClause, primaryMagnitude,
+  // S22.4: the Caretaker's Restoration window (client card rendering)
+  restorationHolds,
 } from './combat';
 export { generateActMap, generateFinaleMap, pickableNodes } from './map';
 // nt-slice §11 extension: the truth surface meant for clients is the

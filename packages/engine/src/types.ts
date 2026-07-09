@@ -306,6 +306,20 @@ export type EnemyIntent =
   | { kind: 'debuff_weak'; amount: number }
   | { kind: 'debuff_vulnerable'; amount: number }
   | { kind: 'sever'; } // moves its own binding to the other player (binding manipulation)
+  // ---- S22.4 the Caretaker (act 4 only) --------------------------------------
+  /** Restoration (pillar 1): next player turn, the pair's DRIFT reads as
+   *  first cut — grown rites at base, mutation echoes as the card they
+   *  were, upgrades without their plus — for effects, links, and previews
+   *  alike (the grownDef machinery driven in reverse, one turn at a time).
+   *  Staging costs are untouched and no line may claim otherwise (truth
+   *  law). Each RUN truth named this descent cancels one Restoration
+   *  before it lands (pillar 3 — the ward). */
+  | { kind: 'restore' }
+  /** Purge (pillar 2): the first `count` cards of the pair's next resolved
+   *  chain are EXILED — they do not resolve, and they leave the run (the
+   *  deck for a deck card, the combat for an echo). Run-scale cruelty,
+   *  never meta-scale; counterable by staging order. */
+  | { kind: 'purge'; count: number }
   /** S10a The Unstrung: a genuine dilemma reading the Chain — if the pair
    *  Resonates this turn it Frays both (pending); if they hold the harmony
    *  back it attacks its bound player amount×2. Fully telegraphed. */
@@ -314,7 +328,8 @@ export type EnemyIntent =
 export interface EnemyDef {
   id: string;
   name: string;
-  act: 1 | 2 | 3;
+  /** 4 = the Loom's floor (S22.4) — never enters an act pool */
+  act: 1 | 2 | 3 | 4;
   elite?: boolean;
   boss?: boolean;
   hp: [number, number];
@@ -353,6 +368,13 @@ export interface EnemyDef {
   /** S10a legibility rule: the co-op hook stated in the intent UI, always
    *  visible — mechanics are read, not discovered by autopsy */
   mechanicLine?: string;
+  /** S22.4: the Caretaker — the preservation reflex. Binds to NEITHER
+   *  player (it does not acknowledge the pair as parts of the Machine;
+   *  it stays fully targetable — the inversion is in ITS regard, not
+   *  yours), and at half its blood it turns to the purge (phase2Script;
+   *  the phase turn also spends the Witness's one scripted Pulse,
+   *  pillar 5). Only act-4 content carries this. */
+  caretaker?: { phase2Script: EnemyIntent[] };
   flavor: string;
 }
 
@@ -376,6 +398,9 @@ export interface EnemyState {
   nameOverride?: string; // real face name, when earned at the shrine
   telegraph?: string | null; // whispered one turn before a hidden mechanic's first firing
   revealedMechanics?: string[]; // reveal lines earned at the shrine
+  /** S22.4: the Caretaker crossed its phase turn — what cannot be restored
+   *  is deleted (present only in act-4 fights). */
+  phase2?: true;
 }
 
 // ---------------------------------------------------------------------------
@@ -744,6 +769,18 @@ export interface CombatState {
   resonatedLastTurn?: boolean;
   /** S10a Pall Warden: owner of the last card in the last resolved chain */
   lastChainOwner?: PlayerId;
+  // ---- S22.4 the Caretaker (all keys exist ONLY in act-4 fights, so every
+  // pre-S22 combat's shape/hash/goldens are untouched by construction) ----
+  /** pillar 3: run-truth wards remaining — each cancels one Restoration */
+  wards?: number;
+  /** pillar 1: the player turn during which the pair's drift reads as
+   *  first cut (grownDef returns the base def while turn === restoredTurn) */
+  restoredTurn?: number;
+  /** pillar 2: cards to exile from the front of the next resolved chain */
+  purgeNext?: number;
+  /** pillar 5: the Witness's one scripted Pulse, spent on the pair's next
+   *  resolution (their earliest dead Link fires, free, once per encounter) */
+  witnessPulseNext?: true;
 }
 
 export interface RewardState {
