@@ -161,7 +161,9 @@ export function StyleScreen(): JSX.Element {
         {['cinder_husk', 'mourner', 'the_unraveled', 'chorister_mid'].map((id, i) => {
           const def = ENEMIES[id];
           return (
-            <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`} style={{ borderColor: i % 2 ? 'var(--p2)' : 'var(--p1)' }}>
+            <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`}
+              /* S23: seat hue rides the bottom tether edge (--bound-hue) */
+              style={{ '--bound-hue': i % 2 ? 'var(--p2)' : 'var(--p1)' } as React.CSSProperties}>
               <Mark id={id} tier={tierOf(def)} act={def.act} size={def.boss ? 104 : def.elite ? 82 : 64} className="enemy-sigil" />
               <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar"><div className="hpfill" style={{ width: '62%' }} /></div>
