@@ -1,26 +1,54 @@
-/* B0 — Threadbound design tokens. Everything visual reads from these.
-   Dark-parchment ground, two player hues, one ignition hue. */
+/* B0 → S23 — Threadbound design tokens. Everything visual reads from these.
+   S23 (design pass, ruled 2026-07-10): the screen is TWO WORLDS —
+   THE DARK above the seam (enemies: cool, bruised, silhouettes whose only
+   heat is their intent) and THE TABLE below it (the pair: warm, lamplit,
+   engraved parchment). The Chain is the seam where they meet; the Thread
+   is the light. Palette tokens are not art (law 10); B6 untouched. */
+
+/* S23: one vendored display face — EB Garamond (OFL, see fonts/OFL.txt),
+   latin subset, variable weight, ~43KB. Typography is chrome, not art.
+   Georgia remains the fallback so nothing breaks unbundled. */
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('./fonts/EBGaramond-latin-var.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  /* ground */
-  --ink: #14110f;
-  --ink-2: #1a1612;
-  --panel: #1f1a14;
-  --panel-2: #262017;
-  --line: #4a3f31;
-  --line-soft: #322a20;
+  /* ---- THE DARK (the enemy half; also the braid field) ---- */
+  --dark: #0d0c12;
+  --dark-panel: #12111ad9;
+  --dark-panel-2: #16141f;
+  --dark-line: #262433;
+  --cool-text: #b8b4c8;
+  --cool-dim: #767288;
 
-  /* text */
-  --text: #d8cfc0;
-  --text-dim: #8a7f6e;
-  --text-faint: #5c5347;
+  /* ---- THE TABLE (the players' half) — ground ---- */
+  --ink: #171310;
+  --ink-2: #1d1712;
+  --panel: #241d15;
+  --panel-2: #2b2318;
+  --line: #4d4133;
+  --line-soft: #372e22;
 
-  /* player hues (PCOLOR) */
+  /* gold leaf: the table's craft metal (frames, costs, seams) */
+  --gilt: #8a7248;
+  --gilt-hi: #c9a86b;
+
+  /* ---- text ---- */
+  --text: #e2d7c4;
+  --text-dim: #a08f76;
+  --text-faint: #6a5d4c;
+
+  /* player hues (PCOLOR) — reserved for seats; nothing else wears them.
+     (The S14 B7 note stands: the sigil tier-2 cyan is the one holdout.) */
   --p1: #7fd4ff;
   --p2: #ffb070;
 
   /* semantic hues */
-  --ignite: #ff8a5c;       /* Resonance */
+  --ignite: #ff8248;       /* Resonance — hotter than pre-S23 (#ff8a5c) */
   --thread: #d4af6f;       /* Thread / links */
   --hex: #b98fd4;
   --strike: #d4756f;
@@ -33,20 +61,31 @@
   --kindled: #ffd470;
   --thread-gold: var(--thread); /* the Witness channel on the Tapestry (nt slice, ruling 8) */
   --witness: #b9a8d4;      /* the Witness's voice (lavender; gold is its Tapestry channel) */
-  --enemy-warm: #e0a060;   /* enemy intents / targets / crossed choices */
+  --enemy-warm: #e89a58;   /* enemy intents / targets / crossed choices — the only
+                              heat above the seam. Deliberately NOT --p2 (seat hues
+                              stay reserved; the B7 discipline). */
   --pierce: #f0e6da;       /* S15.2A: the pierce telegraph — bone-bright,
-                              deliberately outside every faction hue (and off
-                              the seat cyans; the B7 palette question stands) */
+                              deliberately outside every faction hue */
 
-  /* type: serif for names/Witness, system workhorse for UI */
-  --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  /* type: display serif for names/numerals/Witness, system workhorse for UI */
+  --font-display: 'EB Garamond', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --font-ui: 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
 
+  /* S23 lettering discipline: engraved labels are small-caps + letterspaced.
+     Applied via .smallcaps-label composition in styles.css. */
+  --label-track: 0.14em;
+
   /* shape & rhythm */
-  --radius: 3px;
+  --radius: 2px;           /* was 3 — crisper plaques */
   --gap: 8px;
   --card-w: 158px;
   --card-w-sm: 128px;
+
+  /* S23 material system — every raised surface composes these */
+  --edge-hi: #f0e0c010;                       /* top-light on raised panels */
+  --frame-gilt: inset 0 0 0 2.5px #8a724826;  /* the table's inner gilt line */
+  --shadow-panel: 0 3px 14px #000000a0;       /* lamplit drop */
+  --shadow-deep: 0 8px 30px #000000cc;        /* the dark's heavier drop */
 
   /* focus ring (controller + keyboard) */
   --focus: #ffd470;

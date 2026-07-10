@@ -31,6 +31,7 @@ const TIERS: Tier[] = ['normal', 'elite', 'boss', 'character'];
 
 const ACT_LABEL: Record<number, string> = {
   1: 'Act 1 — the Undercroft', 2: 'Act 2 — the Hollow Choir', 3: 'Act 3 — the Last Braid',
+  4: 'Act 4 — the Loom’s Floor', // S22.4 registered the Caretaker (lookup-only)
 };
 
 function MarkCell({ label, tier, children }: { label: string; tier?: string; children: React.ReactNode }): JSX.Element {
@@ -43,13 +44,17 @@ function MarkCell({ label, tier, children }: { label: string; tier?: string; chi
   );
 }
 
-/** The full registry set (grouped by act) plus the characters, at one size. */
+/** The full registry set (grouped by act) plus the characters, at one size.
+ *  S23 fix: S22.4 registered the act-4 Caretaker into ENEMIES (lookup-only),
+ *  which crashed this row's act 1–3 buckets — /?style white-screened on
+ *  main. Buckets are now built from the registry's own acts. */
 function FullSetRow({ size }: { size: number }): JSX.Element {
-  const byAct: Record<number, Array<[string, EnemyDef]>> = { 1: [], 2: [], 3: [] };
-  for (const [id, def] of Object.entries(ENEMIES)) byAct[def.act].push([id, def]);
+  const byAct: Record<number, Array<[string, EnemyDef]>> = {};
+  for (const [id, def] of Object.entries(ENEMIES)) (byAct[def.act] ??= []).push([id, def]);
+  const acts = Object.keys(byAct).map(Number).sort((a, b) => a - b);
   return (
     <>
-      {[1, 2, 3].map((act) => (
+      {acts.map((act) => (
         <div key={act}>
           <h4 className="mark-group">{ACT_LABEL[act]} <span className="muted">({size}px)</span></h4>
           <div className="mark-grid">
@@ -156,7 +161,9 @@ export function StyleScreen(): JSX.Element {
         {['cinder_husk', 'mourner', 'the_unraveled', 'chorister_mid'].map((id, i) => {
           const def = ENEMIES[id];
           return (
-            <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`} style={{ borderColor: i % 2 ? 'var(--p2)' : 'var(--p1)' }}>
+            <div key={id} className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${def.unraveled ? 'sigil-fraying' : ''} ${i === 3 ? 'untargetable' : ''}`}
+              /* S23: seat hue rides the bottom tether edge (--bound-hue) */
+              style={{ '--bound-hue': i % 2 ? 'var(--p2)' : 'var(--p1)' } as React.CSSProperties}>
               <Mark id={id} tier={tierOf(def)} act={def.act} size={def.boss ? 104 : def.elite ? 82 : 64} className="enemy-sigil" />
               <div className="ename">{def.name}{def.elite ? ' ☠' : def.boss ? ' ♛' : ''}</div>
               <div className="hpbar"><div className="hpfill" style={{ width: '62%' }} /></div>

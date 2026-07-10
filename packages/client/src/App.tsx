@@ -1604,7 +1604,10 @@ function Combat({ state, net, hpOffsets }: { state: ClientState; net: Net; hpOff
               data-gp={e.hp > 0 && !e.untargetable ? 'ENEMIES' : undefined}
               data-inspect={`enemy:${e.defId}`}
               className={`enemy ${def.boss ? 'boss' : ''} ${def.elite ? 'elite' : ''} ${fraying ? 'sigil-fraying' : ''} ${ehp <= 0 ? 'dead' : ''} ${e.untargetable ? 'untargetable' : ''} ${pendingCard || pendingSever ? 'targetable' : ''} ${TELEGRAPH[e.intent.kind] ?? ''}`}
-              style={{ borderColor: e.boundTo ? PCOLOR[e.boundTo] : 'var(--line)', animationDelay: `${(i * 0.7) % 2}s` }}
+              /* S23: the Binding wears the seat hue on the BOTTOM edge only —
+                 the tether reaches down toward the pair; the frame stays in
+                 the dark's cool line (styles.css .enemy). Display-only. */
+              style={{ '--bound-hue': e.boundTo ? PCOLOR[e.boundTo] : 'var(--dark-line)', animationDelay: `${(i * 0.7) % 2}s` } as React.CSSProperties}
               onClick={() => e.hp > 0 && !e.untargetable && onEnemyClick(e.id)}
             >
               <Mark id={e.defId} tier={def.boss ? 'boss' : def.elite ? 'elite' : 'normal'} act={def.act} size={sigilSize} className="enemy-sigil" />
@@ -1780,13 +1783,18 @@ function PStat({ state, pid, plannedBlock, partnerHandOpen, setPartnerHandOpen, 
   const p = state.players[pid];
   const hp = displayHp(hpOffsets ?? null, pid, p.hp, p.maxHp);
   return (
-    <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`} style={{ borderColor: PCOLOR[pid] }}>
+    <div data-fxid={pid} className={`pstat ${p.fallen ? 'fallen' : ''}`}
+      /* S23: seat hue rides a selvage stripe (--seat-hue, left edge); the
+         frame itself stays table-warm (styles.css .pstat). Display-only. */
+      style={{ '--seat-hue': PCOLOR[pid] } as React.CSSProperties}>
       <b style={{ color: PCOLOR[pid] }}>{CHAR_NAME[p.character]}</b> {pid === you && '(you)'}
       <RitePips state={state} pid={pid} />{/* S7.3: glanceable on flagged runs only */}
       {pid === state.botSeat && <span className="muted"> · the Witness</span>}
       {p.fallen && <b className="fray" data-inspect="kw:fallen"> — FALLEN</b>}
       <div>
-        HP {hp}/{p.maxHp}
+        {/* S23: the pair's HP is the table's largest lettering — value in a
+            display-face span; same words, same numbers (legibility law) */}
+        HP <span className="hp-big">{hp}</span><span className="hp-of">/{p.maxHp}</span>
         {/* live Block is structurally 0 while planning — show the staged plan */}
         <span data-inspect="kw:block-planned"> · {GLYPH.block} {(plannedBlock ?? 0) > 0
           ? <b className="planned-block">{plannedBlock} planned</b>
@@ -1909,7 +1917,9 @@ function ChainTrack({ state, fired, forced, resonance, net, pendingPulse, onPuls
             )}
             <div
               className={`chaincard ${lit ? 'fires' : ''} ${resonance.has(i) ? 'resonates' : ''} ${reorderable(i) ? 'draggable' : ''} ${dragId === slot.cardInstanceId ? 'dragging' : ''} ${dropAt === i ? 'drop-left' : ''} ${dropAt === chain.length && i === chain.length - 1 ? 'drop-right' : ''}`}
-              style={{ borderColor: PCOLOR[slot.owner] }}
+              /* S23: ownership as a selvage stripe (left edge) via --seat-hue;
+                 the frame stays table-warm (styles.css .chaincard). */
+              style={{ '--seat-hue': PCOLOR[slot.owner] } as React.CSSProperties}
               draggable={reorderable(i)}
               onDragStart={(e) => { setDragId(slot.cardInstanceId); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', slot.cardInstanceId); }}
               onDragOver={(e) => onCardDragOver(e, i)}

@@ -7,46 +7,78 @@ body { margin: 0; background: var(--ink); color: var(--text); font-family: var(-
 @media (min-width: 1600px) { body { font-size: 17px; } }
 a { color: var(--thread); } /* S20.2: no browser-blue on the parchment */
 
-/* ---- per-act atmosphere (S2.2): CSS-only — gradient ground, parchment
-   grain, vignette. Nothing here that fights a future commissioned pass. ---- */
+/* ---- per-act atmosphere (S2.2 → S23): CSS-only — gradient ground,
+   parchment grain, vignette. Nothing here that fights a future
+   commissioned pass. ----
+   S23 two-worlds ground: THE DARK presses down from above (the act sky —
+   this is the half that shifts per act) and LAMPLIGHT pools up from below,
+   strongest at the table edge where the pair sits. The seam sits at ~58%,
+   where the Chain lives on the combat screen. */
 body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% -10%, var(--act-glow, transparent) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 115%, #000 0%, transparent 45%),
-    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff03 5px 6px),
-    linear-gradient(180deg, var(--act-sky, var(--ink)) 0%, var(--ink) 60%);
+    /* lamplight rising from the table */
+    radial-gradient(ellipse 68% 26% at 50% 66%, #d4af6f14 0%, transparent 62%),
+    radial-gradient(ellipse 52% 20% at 50% 102%, #d4af6f0a 0%, transparent 60%),
+    /* the dark pressing down */
+    radial-gradient(ellipse 66% 32% at 50% -12%, var(--act-glow, #1a162677) 0%, transparent 65%),
+    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff02 5px 6px),
+    linear-gradient(180deg, var(--act-sky, var(--dark)) 0%, #121017 32%, #191410 58%, var(--ink) 78%, #14100d 100%);
   transition: background 1.2s;
 }
-body::after { /* vignette */
+body::after { /* vignette — heavier than pre-S23; the room ends in shadow */
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  box-shadow: inset 0 0 18vmin 4vmin #000a;
+  box-shadow: inset 0 0 22vmin 6vmin #000c;
 }
-body.act-1 { --act-sky: #16120e; --act-glow: #2a221422; }   /* the Undercroft: lamplit earth */
-body.act-2 { --act-sky: #121016; --act-glow: #221a2e2e; }   /* the Hollow Choir: bruised violet */
-body.act-3 { --act-sky: #170f10; --act-glow: #33161628; }   /* the Last Braid: ember dark */
+body.act-1 { --act-sky: #100e12; --act-glow: #2a221430; }   /* the Undercroft: lamplit earth under a cold ceiling */
+body.act-2 { --act-sky: #110f18; --act-glow: #221a2e3e; }   /* the Hollow Choir: bruised violet */
+body.act-3 { --act-sky: #140e12; --act-glow: #33161636; }   /* the Last Braid: ember dark */
 /* S22.3: the Loom's floor. The palette BREAKS the game's own gradient —
    act tokens only, B6 untouched (palette tokens are not art, law 10).
    Arrival is the darkest pre-dawn the descent has shown ... */
-body.act-4 { --act-sky: #0d0d12; --act-glow: #1c202a2e; }
+body.act-4 { --act-sky: #0b0b10; --act-glow: #1c202a3e; }
 /* ... and the DAWN begins at the Cradle, not at victory (Part 3): the glow
-   turns the gradient over — light from BELOW, for the first time. */
+   turns the gradient over — light from BELOW, for the first time. Under the
+   S23 two-worlds ground this reads even harder: the dawn takes the table's
+   lamplight and floods it upward into the dark's half. */
 body.act-4.dawn { --act-sky: #1a2030; --act-glow: #ffd9a03a; }
 body.act-4.dawn::before {
   background:
     radial-gradient(ellipse at 50% 115%, var(--act-glow) 0%, transparent 60%),
     radial-gradient(ellipse at 50% -10%, #0006 0%, transparent 55%),
-    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff03 5px 6px),
+    repeating-linear-gradient(106deg, transparent 0 5px, #ffffff02 5px 6px),
     linear-gradient(0deg, var(--act-sky) 0%, var(--ink) 70%);
 }
 h1, h2, h3, .title, .cname, .ename, .witness, .prose { font-family: var(--font-display); }
+/* S23 lettering discipline: engraved labels wear small-caps + tracking.
+   One composition, many wearers (legibility unchanged — same words). */
+.chain-label, .ctag, .bound, .deck-section, .tutorial-step, .rail-speaker,
+.loom-stake-label, .mark-label, .cord-state-label, .summary-verdict,
+.pick-tag { font-variant: small-caps; letter-spacing: var(--label-track); }
+/* S23 buttons: engraved plates — top-lit, sunken on press */
 button {
-  background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2) 0%, #1e1812 100%);
+  color: var(--text-dim); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px 12px; cursor: pointer; font-family: var(--font-ui); font-size: 0.95em;
+  box-shadow: inset 0 1px 0 var(--edge-hi), 0 2px 6px #00000080;
 }
-button:hover:not(:disabled) { background: #322a1f; border-color: #6a5c47; }
+button:hover:not(:disabled) { color: var(--text); background: linear-gradient(180deg, #322a1f 0%, #241d15 100%); border-color: var(--gilt); }
+button:active:not(:disabled) { box-shadow: inset 0 2px 6px #00000080; }
 button:disabled { opacity: 0.35; cursor: default; }
 button.big { font-size: 1.05em; padding: 10px 22px; margin: 6px; }
+/* the one commit button in combat: Ready carries the ember (S23) */
+button[data-gp-action='ready'] {
+  font-family: var(--font-display); font-variant: small-caps; letter-spacing: 0.18em;
+  font-size: 1.12em; padding: 10px 34px; color: #ffe2b8;
+  background: radial-gradient(ellipse at 50% 130%, #4d2c14 0%, #241b10 68%);
+  border-color: #9a6a34;
+  box-shadow: inset 0 0 0 1px #c9a86b2e, inset 0 -8px 20px #ff824818, 0 0 22px #d4af6f2a, 0 2px 8px #000000a0;
+  text-shadow: 0 0 12px #ffb07066;
+}
+button[data-gp-action='ready']:hover:not(:disabled) {
+  background: radial-gradient(ellipse at 50% 130%, #5d3618 0%, #2a2013 68%);
+  border-color: #b98a4e;
+}
 input, select {
   background: var(--ink-2); color: var(--text); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; font-family: var(--font-ui);
@@ -55,7 +87,7 @@ input[type='range'] { accent-color: var(--thread); }
 
 .app { max-width: 1500px; margin: 0 auto; padding: 8px 16px 24px; }
 header { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding: 6px 0; font-size: 0.9em; align-items: center; }
-.title { letter-spacing: 0.3em; font-weight: bold; }
+.title { letter-spacing: 0.34em; font-weight: bold; font-variant: small-caps; color: var(--gilt-hi); }
 .header-right { display: flex; gap: 10px; align-items: center; }
 .on { color: var(--good); } .off { color: var(--strike); }
 .center { max-width: 780px; margin: 26px auto; text-align: center; }
@@ -65,7 +97,12 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-picks { font-size: 1.08em; }
 .home .panel { margin: 14px auto; }
 .home-sigils { display: flex; justify-content: center; align-items: center; gap: 20px; margin: 8px 0; }
-.panel { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 12px; margin: 8px 0; }
+/* S23: the table's standard panel — warm, top-lit, gilt inner line */
+.panel {
+  background: linear-gradient(178deg, var(--panel-2) 0%, var(--panel) 46%, #1e1811 100%);
+  border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 12px; margin: 8px 0;
+  box-shadow: var(--frame-gilt), inset 0 1px 0 var(--edge-hi), var(--shadow-panel);
+}
 .muted { color: var(--text-dim); }
 .error { background: var(--danger-bg); color: #f0b0a8; padding: 6px 10px; margin: 6px 0; border-radius: var(--radius); }
 .hint { background: #243024; padding: 6px 10px; margin: 4px 0; border-radius: var(--radius); display: flex; gap: 10px; align-items: center; justify-content: center; }
@@ -108,14 +145,16 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .mapwrap.act-3 { filter: saturate(1.08); }
 /* S20.3 item 5: the field — the map sits IN something. A barely-there loom
    texture + radial vignette, CSS only; restraint row: nothing moves. */
+/* S23: the braid hangs in THE DARK — the field cools toward the act sky
+   and the gold thread reads brighter against it. Loom texture unchanged. */
 .mapwrap.braid-field {
   background:
-    radial-gradient(ellipse at 50% 38%, #d4af6f07 0%, transparent 62%),
-    repeating-linear-gradient(0deg, transparent 0 23px, #d8cfc003 23px 24px),
-    repeating-linear-gradient(90deg, transparent 0 23px, #d8cfc003 23px 24px),
-    radial-gradient(ellipse at 50% 50%, #1a1612cc 0%, #14110f00 78%);
+    radial-gradient(ellipse at 50% 38%, #d4af6f09 0%, transparent 62%),
+    repeating-linear-gradient(0deg, transparent 0 23px, #b8b4c803 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, #b8b4c803 23px 24px),
+    radial-gradient(ellipse at 50% 50%, #14121ccc 0%, #0d0c1200 78%);
   border-radius: 8px;
-  box-shadow: inset 0 0 60px 18px #00000055;
+  box-shadow: inset 0 0 70px 20px #00000066;
 }
 .map-cords { position: absolute; inset: 0; }
 /* strokes ride the map's scale knob (--map-scale, set by MapView from the
@@ -183,19 +222,30 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   max-width: calc(150px * var(--map-scale, 1)); margin-top: 2px;
 }
 
-/* ---- enemies (B5) ---- */
+/* ---- enemies (B5 → S23): silhouettes in the dark ----
+   S23 two-worlds: enemies stop being warm parchment cards. Cool translucent
+   panels, pale names, sigils lit rather than frames; the only heat above
+   the seam is their intent. The Binding tether is the seat hue on the
+   BOTTOM edge (via --bound-hue), reaching down toward the pair. */
 .enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }
 .enemy {
-  position: relative; border: 2px solid; border-radius: var(--radius); padding: 8px 12px; min-width: 178px;
-  background: var(--panel); animation: idle-bob 3.2s ease-in-out infinite;
+  position: relative; border: 1px solid var(--dark-line); border-radius: var(--radius); padding: 10px 12px 8px; min-width: 178px;
+  background: linear-gradient(180deg, var(--dark-panel) 0%, #100e16d9 100%);
+  border-bottom: 2px solid var(--bound-hue, var(--dark-line));
+  box-shadow: var(--shadow-deep), 0 10px 18px -12px var(--bound-hue, transparent);
+  animation: idle-bob 3.2s ease-in-out infinite;
+  color: var(--cool-text);
 }
+.enemy .enemy-sigil { filter: drop-shadow(0 0 7px #8a7fd426); }
 @keyframes idle-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 .enemy.dead { opacity: 0.22; animation: none; }
 /* S2.2 boss presence: weightier frames; the Unraveled's sigil frays and
    parts while its sever phase holds */
-.enemy.elite { min-width: 196px; }
-.enemy.boss { min-width: 224px; padding: 12px 16px; border-width: 3px; }
-.enemy.boss .ename { font-size: 1.15em; letter-spacing: 0.06em; }
+.enemy.elite { min-width: 196px; border-color: #322e44; }
+.enemy.elite .enemy-sigil { filter: drop-shadow(0 0 9px #d4af6f33); }
+.enemy.boss { min-width: 224px; padding: 14px 16px 10px; border-width: 1px; border-bottom-width: 3px;
+  box-shadow: var(--shadow-deep), 0 0 34px #1a162688, 0 12px 22px -12px var(--bound-hue, transparent); }
+.enemy.boss .ename { font-size: 1.2em; letter-spacing: 0.06em; }
 .enemy.sigil-fraying .enemy-sigil { animation: sigil-fray 1.6s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--danger)); }
 @keyframes sigil-fray {
   0%, 100% { transform: translateX(0) scaleX(1); opacity: 1; }
@@ -217,17 +267,20 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .thread-anim { animation: thread-bead-walk 7s linear infinite; }
 @keyframes thread-bead-walk { to { stroke-dashoffset: -32; } }
 @media (prefers-reduced-motion: reduce) { .thread-anim { animation: none; } }
-.ename { font-weight: bold; }
-.hpbar { position: relative; height: 5px; background: var(--ink-2); border-radius: 3px; margin: 3px 0; overflow: hidden; }
-.hpfill { height: 100%; background: linear-gradient(90deg, var(--strike), #e8a07a); transition: width 0.4s; }
+.ename { font-weight: bold; font-size: 1.08em; }
+.hpbar { position: relative; height: 5px; background: #0a090e; border-radius: 3px; margin: 3px 0; overflow: hidden; }
+.hpfill { height: 100%; background: linear-gradient(90deg, #8e332b, var(--strike)); box-shadow: 0 0 7px #d4756f44; transition: width 0.4s; }
 /* PT3: predicted HP loss from the staged chain (sits over the doomed chunk) */
 .hppreview { position: absolute; top: 0; height: 100%; background: repeating-linear-gradient(45deg, #ff5a5a, #ff5a5a 3px, #b83030 3px, #b83030 6px); opacity: 0.85; }
-.dmg-forecast { color: #ff8a8a; font-weight: 600; }
+.dmg-forecast { color: #ff8a8a; font-weight: 600; text-shadow: 0 0 10px #ff5a4a44; }
 .dmg-lethal { color: #ff5a5a; }
 .chipblock { color: var(--guard); }
-.intent { color: var(--enemy-warm); margin-top: 4px; font-weight: 600; }
-.bound { font-size: 0.78em; margin-top: 4px; }
+/* their heat is the only heat up there (S23) */
+.intent { color: var(--enemy-warm); margin-top: 4px; font-weight: 600; font-size: 1.06em; text-shadow: 0 0 13px #ff824842; }
+.bound { font-size: 0.74em; margin-top: 4px; }
 .statuses span { background: var(--panel-2); border-radius: var(--radius); padding: 1px 6px; margin-right: 4px; font-size: 0.78em; }
+.enemy .statuses span { background: #0f0e15; border: 1px solid var(--dark-line); color: var(--cool-text); }
+.enemy .muted { color: var(--cool-dim); }
 .fray { color: var(--strike); } .ready { color: var(--good); } .kindled { color: var(--kindled); }
 .planned-block { color: var(--guard); }
 .hexmotes { position: relative; height: 14px; display: flex; gap: 3px; justify-content: center; align-items: center; }
@@ -256,15 +309,49 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .fx-number.n-block { color: var(--guard); font-size: 1.1em; }
 @keyframes float-up { 0% { opacity: 0; transform: translateY(6px) scale(0.8); } 15% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
 
-/* ---- chain (B4) ---- */
+/* ---- chain (B4 → S23): the seam where the two worlds meet ----
+   The Chain is the literal center of the game (§10) and now reads like it:
+   the panel goes transparent and a lit WARP THREAD runs the full track
+   behind the cards — the sentence is strung on the Thread itself. Staged
+   cards are the players' — warm plaques hung into the dark, each wearing
+   its owner's hue as a selvage stripe (via --seat-hue). */
 .chain {
-  background: var(--ink-2); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 8px; margin: 6px 0; display: flex; gap: 2px; align-items: center; min-height: 112px; overflow-x: auto;
+  position: relative;
+  background: transparent; border: none; border-radius: var(--radius);
+  padding: 12px 8px 8px; margin: 6px 0; display: flex; gap: 2px; align-items: center; min-height: 112px; overflow-x: auto;
 }
-.chain-label { writing-mode: vertical-lr; letter-spacing: 0.2em; color: var(--text-faint); font-size: 0.7em; margin-right: 6px; }
-.chaincard { border: 2px solid; border-radius: var(--radius); padding: 4px; position: relative; flex-shrink: 0; }
-.chaincard.fires { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); }
-.chaincard.resonates { box-shadow: 0 0 18px color-mix(in srgb, var(--ignite) 70%, transparent); }
+.chain::before { /* the warp — z-stacked behind the cards, through the arcs */
+  content: ''; position: absolute; left: 0; right: 0; top: 56px; height: 2px; z-index: 0;
+  background: linear-gradient(90deg, transparent, #d4af6f66 6%, #d4af6f66 94%, transparent);
+  box-shadow: 0 0 10px #d4af6f3a, 0 -14px 30px -6px #d4af6f10;
+  pointer-events: none;
+}
+.chain-label { writing-mode: vertical-lr; letter-spacing: 0.2em; color: color-mix(in srgb, var(--gilt-hi) 70%, var(--text-faint)); font-size: 0.7em; margin-right: 6px; }
+.chaincard {
+  border: 1px solid var(--line); border-left: 3px solid var(--seat-hue, var(--line));
+  border-radius: var(--radius); padding: 4px; position: relative; flex-shrink: 0; z-index: 1;
+  background: linear-gradient(178deg, #292116 0%, #221b13 100%);
+  box-shadow: inset 0 1px 0 var(--edge-hi), 0 5px 18px #000000b0;
+}
+/* the chaincard IS the plaque — the staged card inside goes frameless so
+   the track doesn't double-frame. Rares and vestments keep their signed
+   treatments (S13.4 / S9c.2): those frames still read inside the plaque. */
+.chaincard .card { background: transparent; border-color: transparent; box-shadow: none; }
+.chaincard .card.r-rare, .chaincard .card.rite-card, .chaincard .card.upgraded { border-color: inherit; }
+.chaincard .card.r-rare {
+  border-color: color-mix(in srgb, var(--thread) 85%, #fff 12%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--thread) 50%, transparent);
+}
+.chaincard .card.rite-card {
+  border-color: var(--witness);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--witness) 55%, transparent);
+}
+.chaincard .card.upgraded { border-color: var(--kindled); }
+.chaincard.fires { box-shadow: inset 0 1px 0 var(--edge-hi), 0 0 12px color-mix(in srgb, var(--thread) 45%, transparent), 0 5px 18px #000000b0; }
+.chaincard.resonates {
+  border-color: color-mix(in srgb, var(--ignite) 55%, var(--line));
+  box-shadow: inset 0 1px 0 #ff824822, 0 0 26px color-mix(in srgb, var(--ignite) 45%, transparent), 0 5px 18px #000000b0;
+}
 /* PT3: mouse drag-to-reorder */
 .chaincard.draggable { cursor: grab; }
 .chaincard.draggable:active { cursor: grabbing; }
@@ -293,11 +380,15 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .target { font-size: 0.75em; color: var(--enemy-warm); }
 .reorder button { padding: 0 6px; font-size: 0.8em; }
 
-/* ---- thread cord (B3) ---- */
+/* ---- thread cord (B3 → S23): the braid of light at the boundary ----
+   The title object earns its name: heavier stroke, doubled glow — the
+   brightest continuous thing on the combat screen. States unchanged. */
 .cord { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 0; }
 .cord-portrait { flex-shrink: 0; }
 .cord-mid { position: relative; }
-.cord-line { stroke: var(--thread); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--thread) 60%, transparent)); transition: all 0.5s; }
+.cord-line { stroke: var(--thread); stroke-width: 3;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--thread) 75%, transparent)) drop-shadow(0 0 14px color-mix(in srgb, var(--thread) 30%, transparent));
+  transition: all 0.5s; }
 .cord.slack .cord-line { stroke: var(--text-faint); filter: none; }
 .cord.severed .cord-line { stroke: var(--danger); }
 .cord-severed-mark { fill: var(--danger); font-size: 14px; }
@@ -318,9 +409,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .declared { display: inline-flex; gap: 2px; }
 .severed { background: var(--danger-bg); color: #f0b0a8; padding: 8px 12px; margin: 6px 0; letter-spacing: 0.06em; text-align: center; border-radius: var(--radius); }
 
-/* ---- players / hand / cards ---- */
+/* ---- players / hand / cards (S23: the lamplit table) ---- */
 .players { display: flex; gap: 12px; margin: 6px 0; }
-.pstat { border: 1px solid; border-radius: var(--radius); padding: 6px 10px; flex: 1; background: var(--panel); position: relative; }
+.pstat {
+  border: 1px solid var(--line); border-left: 3px solid var(--seat-hue, var(--line));
+  border-radius: var(--radius); padding: 8px 12px; flex: 1; position: relative;
+  background: linear-gradient(178deg, var(--panel-2) 0%, var(--panel) 46%, #1e1811 100%);
+  box-shadow: var(--frame-gilt), inset 0 1px 0 var(--edge-hi), var(--shadow-panel);
+}
+/* the pair's numbers are the table's largest lettering (S23) */
+.hp-big { font-family: var(--font-display); font-size: 1.7em; font-weight: bold; color: #efe3cb;
+  text-shadow: 0 1px 0 #000, 0 0 18px #d4af6f1c; line-height: 1; }
+.hp-of { color: var(--text-dim); }
 /* combat fits one screen: the player panels ARE the cord's endpoints */
 .combat-table { display: flex; gap: 10px; align-items: center; margin: 4px 0; }
 .combat-table .cord { margin: 0; flex-shrink: 0; }
@@ -340,11 +440,14 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   z-index: 6; transform: translateY(-8px);
   box-shadow: 0 6px 16px #000c;
 }
+/* S23 card anatomy: a plaque, not a div — top-lit material, nameplate seam
+   (.cardtop), gilt cost gem, stitched link clause. Zones, not decoration. */
 .card {
-  width: var(--card-w); background: linear-gradient(170deg, var(--panel-2), var(--panel)); border: 1px solid var(--line);
+  width: var(--card-w); background: linear-gradient(178deg, #292116 0%, #221b13 100%); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; cursor: pointer; text-align: left; font-size: 0.85em;
   transition: transform 0.12s, box-shadow 0.12s;
   position: relative;
+  box-shadow: inset 0 1px 0 var(--edge-hi), 0 4px 14px #00000080;
 }
 /* PT3: reclaim list — bounded so >1 row scrolls (pad-reachable) */
 .reclaim-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 168px; overflow-y: auto; margin-top: 6px; }
@@ -363,10 +466,14 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 /* ---- S2.2 card frames: rarity treatments, upgrade gilding, mutation mark.
    Presentation only — every distinction here is already in the rules text. */
 .card.r-common { border-color: var(--line); }
+/* S23: uncommon keeps its cool silvered voice but sits on the table's warm
+   plaque — a silvered frame + name, not a blue panel (the blue fill fought
+   the two-worlds split; enemies own the cool half now). */
 .card.r-uncommon {
   border-color: #5e718a;
-  background: linear-gradient(170deg, #232732, var(--panel));
+  box-shadow: inset 0 0 0 1px #8fa4c022, inset 0 1px 0 var(--edge-hi), 0 4px 14px #00000080;
 }
+.card.r-uncommon:not(.rite-card) .cname { color: #b8c4d8; }
 /* S13.4 rare legibility rider (Gate B screenshot gate; visual direction to
    designer taste, PROVISIONAL): borders alone didn't read — the rare now
    gets the S9c funerary-frame treatment in the Thread's gold: a DOUBLED
@@ -436,12 +543,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   color: var(--kindled); border-color: var(--kindled);
   box-shadow: 0 0 7px color-mix(in srgb, var(--kindled) 55%, transparent);
 }
-.cardtop { display: flex; gap: 6px; align-items: center; }
-.cost { background: var(--ink-2); border: 1px solid var(--line); border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 18px; }
-.cname { font-weight: bold; }
-.ctag { color: var(--text-dim); font-size: 0.85em; }
+/* nameplate seam: engraved rule under the name row (S23) */
+.cardtop { display: flex; gap: 6px; align-items: center; border-bottom: 1px solid #00000088; box-shadow: 0 1px 0 var(--edge-hi); padding-bottom: 4px; }
+.cost {
+  background: radial-gradient(circle at 35% 30%, #3a2f20, #201a12 70%);
+  border: 1px solid var(--gilt); color: var(--gilt-hi); font-family: var(--font-display); font-weight: bold;
+  border-radius: 50%; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 18px;
+  box-shadow: 0 0 6px #d4af6f22, inset 0 1px 1px #f0e0c018;
+}
+.cname { font-weight: bold; font-size: 1.05em; }
+.ctag { color: var(--text-dim); font-size: 0.78em; margin-top: 2px; }
 .ctext { margin: 4px 0; }
-.clink { color: var(--thread); border-top: 1px dotted var(--line); padding-top: 3px; }
+.clink { color: var(--thread); border-top: 1px dotted var(--line); padding-top: 3px; margin-top: 4px; }
 .tag-Hex .ctag { color: var(--hex); } .tag-Strike .ctag { color: var(--strike); }
 .tag-Guard .ctag { color: var(--guard); } .tag-Surge .ctag { color: var(--surge); } .tag-Rite .ctag { color: var(--rite); }
 .actions { display: flex; align-items: center; gap: 12px; justify-content: center; }
@@ -478,14 +591,18 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .inspect-aside { margin-top: 8px; color: var(--witness); font-style: italic; font-family: var(--font-display); font-size: 0.9em; }
 .inspect-hint { margin-top: 6px; color: var(--text-faint); font-size: 0.8em; }
 
-/* ---- resolution theater (B4) ---- */
+/* ---- resolution theater (B4 → S23): the stage gets footlights ---- */
 .theater {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: 70px; z-index: 55; min-width: 380px; max-width: 620px;
-  background: color-mix(in srgb, var(--ink) 92%, transparent); border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(ellipse at 50% 118%, #d4af6f12 0%, transparent 62%),
+    color-mix(in srgb, var(--ink) 94%, transparent);
+  border: 1px solid var(--line); border-radius: var(--radius);
   padding: 10px 16px; cursor: pointer; text-align: center;
+  box-shadow: var(--frame-gilt), var(--shadow-deep);
 }
 .beat { color: var(--text-dim); font-size: 0.85em; padding: 1px 0; transition: color 0.2s; }
-.beat-now { color: var(--text); font-size: 1em; }
+.beat-now { color: var(--text); font-size: 1.06em; font-family: var(--font-display); }
 .beat.b-link.beat-now { color: var(--thread); }
 .beat.b-resonance.beat-now { color: var(--ignite); font-weight: bold; }
 .beat.b-detonate.beat-now { color: var(--hex); }
@@ -672,9 +789,16 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
   text-shadow: 0 0 14px color-mix(in srgb, var(--thread-gold) 45%, transparent);
 }
 
-.game-title { font-size: 2.6em; letter-spacing: 0.4em; margin-bottom: 4px; text-shadow: 0 0 24px color-mix(in srgb, var(--thread) 30%, transparent); }
+/* S23: the wordmark finally gets display presence — the vendored face at
+   size, small-caps, gilt-lit. (The splash-art row still stalls at Part 7 of
+   S20; the type carries the screen until an art pick signs.) */
+.game-title { font-size: 3.4em; letter-spacing: 0.34em; margin-bottom: 4px; font-variant: small-caps;
+  color: #e9dcc0; text-shadow: 0 0 30px color-mix(in srgb, var(--thread) 38%, transparent), 0 2px 0 #000; }
 .title-cord { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 10px 0 14px; }
-.title-frame { width: 100px; height: 100px; border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--ink-2); transition: box-shadow 0.6s, border-color 0.6s; }
+.title-frame { width: 100px; height: 100px; border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 40% 32%, #262017, var(--ink-2) 75%);
+  box-shadow: var(--frame-gilt), 0 3px 14px #00000080;
+  transition: box-shadow 0.6s, border-color 0.6s; }
 .title-frame.filled { border-color: var(--thread); box-shadow: 0 0 18px color-mix(in srgb, var(--thread) 35%, transparent); }
 .title-empty { color: var(--text-faint); font-size: 1.6em; font-family: var(--font-display); }
 .cord-dim { opacity: 0.25; stroke-dasharray: 5 6; }
@@ -702,9 +826,11 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 .witness-rail {
   position: fixed; right: 8px; bottom: 56px; z-index: 44; width: 252px;
   display: flex; flex-direction: column; gap: 4px; padding: 8px 10px;
-  background: color-mix(in srgb, var(--ink) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--witness) 30%, var(--line-soft));
+  /* S23: the Witness speaks from the dark's world — cool panel, lavender seam */
+  background: #14111acc;
+  border: 1px solid #322c42; border-left: 2px solid color-mix(in srgb, var(--witness) 55%, var(--dark-line));
   border-radius: var(--radius); pointer-events: auto; text-align: left;
+  box-shadow: var(--shadow-deep);
 }
 .rail-line { color: var(--witness); font-style: italic; font-family: var(--font-display); font-size: 0.82em; line-height: 1.4; }
 .rail-back { display: flex; flex-direction: column; gap: 3px; max-height: 30vh; overflow-y: auto; }
@@ -761,14 +887,15 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 }
 .home-modes { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 10px 0 2px; }
 .mode-door {
-  min-width: 220px; padding: 14px 26px; font-family: var(--font-display);
-  letter-spacing: 0.12em; font-size: 1.1em;
+  min-width: 240px; padding: 16px 28px; font-family: var(--font-display);
+  letter-spacing: 0.14em; font-size: 1.18em; font-variant: small-caps; color: var(--text);
   border-color: color-mix(in srgb, var(--thread) 45%, var(--line));
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: var(--frame-gilt), inset 0 1px 0 var(--edge-hi), var(--shadow-panel);
 }
 .mode-door:hover:not(:disabled), .mode-door.mode-open {
   border-color: var(--thread);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--thread) 30%, transparent);
+  box-shadow: var(--frame-gilt), inset 0 1px 0 var(--edge-hi), 0 0 20px color-mix(in srgb, var(--thread) 30%, transparent), var(--shadow-panel);
 }
 .mode-panel { max-width: 460px; margin: 10px auto; }
 .mode-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 6px 0; }
