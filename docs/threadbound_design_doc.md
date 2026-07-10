@@ -195,6 +195,11 @@ Sample cards:
 
 ## 10. UI / UX & Visual Direction
 
+> **S23 (2026-07-10):** the visual language is now codified in
+> **`docs/STYLE-GUIDE.md`** (the two-worlds composition: the dark above,
+> the table below, the Chain as the seam). This section remains the
+> design-intent statement; the guide is the implementation law.
+
 - **Layout:** both characters bottom-center side by side, Thread animated between their portraits; enemies arrayed above with binding tethers color-coded per player; the Chain track as a horizontal row of slots between the parties — the literal center of the screen, because it's the center of the game.
 - **Partner legibility:** partner's staged cards render face-up at full fidelity. Hovering any staged card highlights which staged cards would satisfy its Link. A small "link preview" glyph shows live whether each staged Link will currently fire — *the UI does the bookkeeping; the humans do the strategy.*
 - **Card design:** typography-forward dark-parchment frames, tag iconography, color-coded link clause text. No illustration dependency; small generated emblem art per card if quality holds, pure typographic otherwise.

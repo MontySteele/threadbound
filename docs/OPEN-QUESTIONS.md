@@ -1018,3 +1018,45 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     codex shows a final entry on an unfinished book) was NOT taken.
     Merge/normalize enforce the same invariant. **OPEN — designer may
     re-rule toward union; the conservative reading ships.**
+
+---
+
+## S23 — the design pass (2026-07-10, designer rulings in-session)
+
+74. **S23-R1 — visual direction RULED: "the dark above, the table below."**
+    The designer's read of the bare-bones report ("the top half and the
+    bottom half feel too similar — no clean separation in presentation")
+    became the anchor: enemies render as cool silhouettes in THE DARK
+    (their intent line the only heat above the seam); the pair's half is
+    THE TABLE (warm lamplit reliquary material); the Chain is the seam,
+    strung on a lit warp. Ruled from four screenshot directions
+    (Reliquary / Loom / Ember Rite / the blend); the blend anchors.
+    Codified in **docs/STYLE-GUIDE.md** (new living doc, top level).
+    Scope ruled WITH it: full client CSS pass, not tokens-only. CSS +
+    enumerated display hooks only (`--seat-hue`, `--bound-hue`, `.hp-big`
+    spans); zero engine, zero strings, zero layout logic; B6 untouched;
+    suite green 460/460 before and after. **RULED + EXECUTED.**
+
+75. **S23-R2 — one vendored display face RULED:** EB Garamond (OFL,
+    latin subset, variable weight, ~44KB woff2, self-hosted at
+    packages/client/src/fonts/ with its license). Names, emotional
+    numerals, headers, the Witness, the wordmark. Fonts read as CHROME,
+    not art — law 10 is about art sets; the designer may re-rule.
+    Georgia remains the stack fallback. **RULED + EXECUTED.**
+
+76. **`/?style` crashed on main since S22.4** (found during the S23
+    survey): the Caretaker registers into ENEMIES as act 4 for
+    lookup-only, and FullSetRow bucketed acts 1–3 literally —
+    `byAct[4].push` threw and the designer's cheapest veto surface
+    white-screened. Fixed in-pass (buckets derive from the registry's
+    own acts; act-4 group labeled "the Loom's Floor"). A reminder with
+    teeth: the style screen has no test pin, so registry-shape changes
+    can kill it silently. **FIXED; a smoke pin for /?style is a
+    candidate row for the next instruments pass.**
+
+77. **S23 deferred deepeners (logged, not rules):** (a) planning-phase
+    targeting threads — faint seat-hue strands from staged cards up to
+    their targets, making "weaving upward" literal (SVG overlay, small
+    client feature, wants its own sign-off); (b) enemy/hand scale
+    asymmetry (pure CSS sizing). Neither needed for the two-worlds split
+    to read; both stall until the designer asks. **PARKED.**
