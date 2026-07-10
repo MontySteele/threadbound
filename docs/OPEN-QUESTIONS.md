@@ -1060,3 +1060,31 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     client feature, wants its own sign-off); (b) enemy/hand scale
     asymmetry (pure CSS sizing). Neither needed for the two-worlds split
     to read; both stall until the designer asks. **PARKED.**
+
+---
+
+## S24 — the centering + braid declutter pass (2026-07-10, designer rulings in-session)
+
+78. **S24-R1 — symmetric rail gutter RULED:** the S20.4 one-sided
+    `padding-right` centered map and combat in the LEFTOVER space,
+    ~146–180px left of the header's own center — the whole game read
+    off-center once the rail landed (designer's report, this session).
+    The gutter goes symmetric (`padding-inline`) on rail-mounting
+    screens; past the app's 1500px cap it tapers away as the viewport's
+    margins absorb the viewport-cornered rail; MapView's `availW`
+    mirrors the CSS numbers and now also budgets the app cap (the old
+    vw-only math let the braid outgrow its clipped column on wide
+    monitors). `.enemies` wraps as the ~1100px-window safety. **RULED +
+    EXECUTED.**
+
+79. **S24-R2 — braid cord declutter RULED** (three riders picked
+    together): the vertical WEAVE (neutral cords leave and arrive
+    vertically — steep, uniform crossings; the hung-thread sag retired
+    on the map), RIM TIES (cords trim at the medallion rims with
+    label-side clearance; ink halos on node lettering), and GRADUATED
+    EMPHASIS (`.cord-far` past one layer ahead; dead cords fade harder
+    and stop rendering more than a layer behind). The warps, the trail,
+    live picks, and every edge/pick rule untouched — presentation only.
+    Codified as STYLE-GUIDE §7. Freebie found in-pass: a stale
+    `.map-picks` 0.95em duplicate at styles.css's tail had silently
+    overridden the S20.3 1.08em step-up — removed. **RULED + EXECUTED.**

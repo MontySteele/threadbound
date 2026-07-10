@@ -164,7 +164,36 @@ properties are the *only* sanctioned way seat color enters chrome.
   on screen. State language unchanged (slack greys, severed bleeds,
   ignition flashes ember).
 
-## 7. Light discipline
+## 7. The braid — map cord grammar
+
+The two warp strands ARE the map's picture; everything else is wiring and
+stays quiet (S20.3 → S24 declutter rulings, 2026-07-10):
+
+- **The weave.** Neutral cords are vertical-tangent cubics: they leave a
+  medallion straight up and arrive at the next from straight below.
+  Crossings turn steep and uniform, and long cross-strand edges hold to
+  their inter-layer band instead of slicing the whole field. The
+  hung-thread sag is retired on the map — legibility outranks the
+  metaphor (the S15 knot lesson).
+- **Rim ties.** Cords trim at the medallion rims, with extra clearance on
+  the arrival side where the node's word lives; an ink halo on node
+  lettering (`.node-word`, `.map-scout`) covers what still passes behind.
+  Lines never converge under an icon.
+- **Graduated emphasis — distance from NOW.** Live picks brightest
+  (2.2px + glow); cords within a layer of the pair at base weight (34%
+  thread); further ahead `.cord-far` (19%, ~1px); bypassed cords dash and
+  fade (0.32) and stop rendering entirely once more than a layer behind —
+  the taut trail already tells that story.
+- **The trail** stays a straight taut line, rim-tied like everything else.
+
+**The rail's gutter (S20.4 → S24):** on rail-mounting screens the stage
+inset is SYMMETRIC, so map and combat sit on the true center under the
+header; the rail lives in the right gutter it already owned. Past the
+app's 1500px cap the gutter tapers away as the viewport's own margins
+absorb the (viewport-cornered) rail. Below 1100px the rail overlays, as
+shipped. MapView's `availW` mirrors the CSS numbers exactly.
+
+## 8. Light discipline
 
 Glow means importance, and the budget is small:
 
@@ -178,7 +207,7 @@ Glow means importance, and the budget is small:
 If a new element wants a glow, it must name which of these it is. Two glows
 of the same family adjacent to each other: dim one.
 
-## 8. What stays true everywhere (the standing laws, restated)
+## 9. What stays true everywhere (the standing laws, restated)
 
 - **Legibility outranks decoration** (S15 knot lesson; S20.3 item 4). If a
   treatment costs node-type recognition, intent readability, or rules-text
@@ -195,7 +224,7 @@ of the same family adjacent to each other: dim one.
 - **Seat hues stay reserved** (§2). The B7 sigil-cyan holdout is the only
   tolerated exception until its human-glance row adjudicates.
 
-## 9. Out of scope for this guide
+## 10. Out of scope for this guide
 
 The sigil vocabulary v2 (its own reference doc + `/?style` rows), the art
 pipeline and any raster art (B6), audio, the Overture's choreography
