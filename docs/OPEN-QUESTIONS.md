@@ -1088,3 +1088,18 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     Codified as STYLE-GUIDE §7. Freebie found in-pass: a stale
     `.map-picks` 0.95em duplicate at styles.css's tail had silently
     overridden the S20.3 1.08em step-up — removed. **RULED + EXECUTED.**
+
+80. **S24-R2 RE-RULED same session (designer veto on the first cut):**
+    the vertical weave + distance fade shipped in the morning pass made
+    the braid tidy and UNREADABLE — cords entering every node vertically
+    all arrive alike, so a route could not be traced, and the .cord-far
+    fade dropped the whole structure to 19% right when an act starts
+    (position -1 puts everything past layer 0 "far"). Navigation
+    outranks tidiness. Re-cut: TAUT DIAGONALS rim to rim (every cord
+    points at its destination), full 34% weight for every reachable
+    route cord (.cord-far retired), rim ties + halos + dead-edge
+    cleanup kept, plus a ROUTE PREVIEW — the hovered / pad-focused node
+    lights its onward cords (.cord-hot; pointer hit-test on the field
+    because disabled buttons swallow mouse events, a .gp-focus
+    MutationObserver for the pad). STYLE-GUIDE §7 rewritten to match.
+    **RE-RULED + EXECUTED.**

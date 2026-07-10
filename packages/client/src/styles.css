@@ -166,16 +166,22 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
    reserved for the unreachable (S20.3 items 1 & 4) */
 .map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
 .map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
-/* S24 graduated emphasis: the braid reads by distance from NOW. Cords more
-   than one layer ahead thin and fade (planning info, not the decision at
-   hand); dead cords fade harder, and MapView stops drawing them entirely
-   once they fall more than a layer behind the pair. */
-.map-cord.cord-far { stroke: color-mix(in srgb, var(--thread) 19%, transparent); stroke-width: calc(1.05px * var(--map-scale, 1)); }
+/* S24 (re-ruled same day — navigation outranks tidiness): every reachable
+   route cord keeps full weight; dead cords fade harder, and MapView stops
+   drawing them entirely once they fall more than a layer behind the pair. */
 .map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.32; }
+/* S24 route preview: the hovered / pad-focused node lights its onward
+   cords — "if we go here, then what". The Thread's gold, one step quieter
+   than the live pick (which stays the brightest read on the field). */
+.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
+.map-cord.cord-dead.cord-hot { opacity: 0.7; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
 .map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
-.mapnode:disabled { opacity: 1; cursor: default; } /* scouting ahead must stay readable */
+/* scouting ahead must stay readable; pointer-events pass THROUGH disabled
+   nodes so the field's route-preview hit-test still sees the pointer (S24 —
+   disabled buttons otherwise swallow pointermove entirely) */
+.mapnode:disabled { opacity: 1; cursor: default; pointer-events: none; }
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */

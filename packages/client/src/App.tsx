@@ -1222,6 +1222,27 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const visited = new Set(trail);
   const trailEdges = new Set(trail.slice(1).map((id, i) => `${trail[i]}-${id}`));
 
+  // ---- S24 route preview: the node under the pointer (or the pad's focus)
+  // lights its onward cords — "if we go here, then what". Presentation only;
+  // picks and reachability rules untouched. Pointer hit-testing happens on
+  // the field itself because non-pickable nodes are disabled buttons, and
+  // disabled buttons swallow mouse events.
+  const [hoverId, setHoverId] = useState<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // gamepad.ts toggles .gp-focus classes directly on the DOM — watch for
+    // it landing on a node and mirror it into the preview
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const read = () => {
+      const el = wrap.querySelector<HTMLElement>('.mapnode.gp-focus');
+      if (el?.dataset.nodeId) setHoverId(Number(el.dataset.nodeId));
+    };
+    const mo = new MutationObserver(read);
+    mo.observe(wrap, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
+
   // ---- reachability: BFS over edges from here — everything else dims ------
   const reachable = new Set<number>();
   {
@@ -1299,6 +1320,19 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       </p>
       <div className="map-scroll">
       <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`}
+        ref={wrapRef}
+        onPointerMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.clientX - rect.left, y = e.clientY - rect.top;
+          let best: number | null = null, bestD = Infinity;
+          for (const n of map.nodes) {
+            const p = pos(n);
+            const d = Math.hypot(p.x - x, p.y - y);
+            if (d < bestD) { bestD = d; best = n.id; }
+          }
+          setHoverId(bestD <= 46 * scale ? best : null);
+        }}
+        onPointerLeave={() => setHoverId(null)}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
           {/* the warps: continuous threads, crossing at the knots — drawn
@@ -1326,23 +1360,24 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
           })}
           {/* the edges: lighter thread segments between strand positions;
               dashing is reserved for the unreachable.
-              S24 declutter pass (designer 2026-07-10, three rulings):
-              (1) the WEAVE — cords leave a medallion straight up and arrive
-                  straight up into the next, vertical-tangent cubics instead
-                  of the sagging diagonals; crossings turn steep and uniform
-                  and long cross-strand edges stop slicing the middle band
-                  (legibility outranks the hung-thread sag — the S15 knot
-                  lesson stands);
+              S24 declutter, RE-RULED same day (designer 2026-07-10 — the
+              first cut's vertical weave + distance fade killed route
+              reading; navigation outranks tidiness):
+              (1) cords are TAUT DIAGONALS, rim to rim — every cord points
+                  at its destination, a strung loom, no sag and no S-curve;
               (2) cords TRIM AT THE RIMS — they no longer converge under the
-                  icons or run through the node lettering (an ink halo on the
-                  labels covers what still passes behind);
-              (3) GRADUATED EMPHASIS — cords more than a layer ahead wear
-                  .cord-far; bypassed cords more than a layer behind stop
-                  rendering (the trail already tells that story). */}
+                  icons or run through the node lettering (an ink halo on
+                  the labels covers what still passes behind);
+              (3) every reachable route cord keeps FULL weight (the .cord-far
+                  distance fade is retired); bypassed cords more than a
+                  layer behind stop rendering (the trail tells that story),
+                  the rest of the dead stay dashed and faded;
+              (4) ROUTE PREVIEW — the hovered / pad-focused node lights its
+                  onward cords (.cord-hot): "if we go here, then what". */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
             // rim trims ride the medallion sizes (+ the word under the icon
-            // on the arrival side — cords come up from below, where the
+            // on the arrival side — cords arrive from below, where the
             // label lives)
             const med = (m: MapNode): number => (m.kind === 'boss' ? 66 : m.kind === 'elite' ? 58 : 50);
             const trimDep = sz(med(n) / 2 + 8);
@@ -1353,42 +1388,24 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const trimArr = sz(med(target) / 2 + 16);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
+              const hot = hoverId !== null && n.id === hoverId && !isTrail;
               // the warp IS this segment's line — only the stateful reads
-              // (taut trail, live pick) draw over it; a neutral cord here
-              // would double the braid
-              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live) return null;
+              // (taut trail, live pick, route preview) draw over it; a
+              // neutral cord here would double the braid
+              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live && !hot) return null;
               const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
               if (dead && n.layer < hereLayer - 1) return null; // history, gone
-              if (isTrail) {
-                // the thread behind you pulls TAUT (straight) and brightens;
-                // it too ties off at the rims
-                const dx = to.x - from.x, dy = to.y - from.y;
-                const L = Math.hypot(dx, dy) || 1;
-                const a = { x: from.x + (dx / L) * trimDep, y: from.y + (dy / L) * trimDep };
-                const b = { x: to.x - (dx / L) * trimArr, y: to.y - (dy / L) * trimArr };
-                return (
-                  <path key={`${n.id}-${toId}`} className="map-cord cord-trail"
-                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
-                );
-              }
-              const far = !live && !dead && n.layer > hereLayer + 1;
-              // the weave: up out of this rim, up into the next (flow runs
-              // bottom-to-top, so from.y > to.y)
-              const a = { x: from.x, y: from.y - trimDep };
-              const b = { x: to.x, y: to.y + trimArr };
-              if (b.y >= a.y) {
-                // degenerate after trims — fall back to a straight tie
-                return (
-                  <path key={`${n.id}-${toId}`}
-                    className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${far ? 'cord-far' : ''}`}
-                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
-                );
-              }
-              const k = Math.max(8, (a.y - b.y) * 0.5);
+              // taut, rim to rim (trims collapse if the cord is too short)
+              const dx = to.x - from.x, dy = to.y - from.y;
+              const L = Math.hypot(dx, dy) || 1;
+              const t0 = L > trimDep + trimArr + 6 ? trimDep : 0;
+              const t1 = L > trimDep + trimArr + 6 ? trimArr : 0;
+              const a = { x: from.x + (dx / L) * t0, y: from.y + (dy / L) * t0 };
+              const b = { x: to.x - (dx / L) * t1, y: to.y - (dy / L) * t1 };
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${far ? 'cord-far' : ''}`}
-                  d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} C ${a.x.toFixed(1)} ${(a.y - k).toFixed(1)} ${b.x.toFixed(1)} ${(b.y + k).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
+                  className={`map-cord ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${hot ? 'cord-hot' : ''}`}
+                  d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
               );
             });
           })}
@@ -1406,6 +1423,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             <button
               key={n.id}
               data-gp="MAP"
+              data-node-id={n.id}
               className={`mapnode medallion-node ${here ? 'here' : ''} ${can ? 'can' : ''} ${wasVisited ? 'visited' : ''} ${unreachable ? 'unreachable' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
               style={{
                 left: x, top: y,

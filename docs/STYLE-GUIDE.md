@@ -167,23 +167,28 @@ properties are the *only* sanctioned way seat color enters chrome.
 ## 7. The braid — map cord grammar
 
 The two warp strands ARE the map's picture; everything else is wiring and
-stays quiet (S20.3 → S24 declutter rulings, 2026-07-10):
+stays quiet — but **navigation outranks tidiness**: a cord's first job is
+to say where it goes (S20.3 → S24 declutter, re-ruled in-session
+2026-07-10 after the first cut's vertical weave + distance fade killed
+route reading):
 
-- **The weave.** Neutral cords are vertical-tangent cubics: they leave a
-  medallion straight up and arrive at the next from straight below.
-  Crossings turn steep and uniform, and long cross-strand edges hold to
-  their inter-layer band instead of slicing the whole field. The
-  hung-thread sag is retired on the map — legibility outranks the
-  metaphor (the S15 knot lesson).
+- **Taut diagonals.** Neutral cords are straight lines, rim to rim —
+  every cord points at its destination, a strung loom. No sag, no
+  S-curve: a curve that enters every node vertically makes all arrivals
+  look alike, and the route can't be traced.
 - **Rim ties.** Cords trim at the medallion rims, with extra clearance on
   the arrival side where the node's word lives; an ink halo on node
   lettering (`.node-word`, `.map-scout`) covers what still passes behind.
   Lines never converge under an icon.
-- **Graduated emphasis — distance from NOW.** Live picks brightest
-  (2.2px + glow); cords within a layer of the pair at base weight (34%
-  thread); further ahead `.cord-far` (19%, ~1px); bypassed cords dash and
-  fade (0.32) and stop rendering entirely once more than a layer behind —
-  the taut trail already tells that story.
+- **Full-weight routes.** Every reachable route cord keeps base weight
+  (34% thread) no matter how far ahead — planning is the map's job.
+  Live picks stay brightest (2.2px + glow). Bypassed cords dash and fade
+  (0.32) and stop rendering entirely once more than a layer behind — the
+  taut trail already tells that story.
+- **Route preview** (`.cord-hot`): the hovered / pad-focused node lights
+  its onward cords in the Thread's gold, one step quieter than the live
+  pick — "if we go here, then what." Display-only (pointer hit-test on
+  the field + a `.gp-focus` observer); picks and reachability untouched.
 - **The trail** stays a straight taut line, rim-tied like everything else.
 
 **The rail's gutter (S20.4 → S24):** on rail-mounting screens the stage
