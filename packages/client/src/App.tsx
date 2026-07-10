@@ -1157,7 +1157,15 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   // the width the rail leaves it and the height under the header, clamped so
   // small screens keep the S20.3 shipped numbers as their floor ------------
   const [vw, vh] = useViewport();
-  const availW = Math.max(560, vw - 300 /* rail */ - 72);
+  // S24: the rail's gutter went SYMMETRIC (styles.css rail-on rules) so the
+  // stage sits on the true center — the braid budgets for BOTH insets, and
+  // for the app's 1500px cap (the old vw-only math let the braid outgrow
+  // its clipped column on wide monitors). Past 1600 the gutter tapers away
+  // as the viewport's own margins absorb the rail. The numbers mirror the
+  // CSS breakpoints exactly; below 1100 the rail overlays and reserves
+  // nothing.
+  const railGutter = vw >= 1600 ? Math.max(0, 360 - (vw - 1500) / 2) : vw >= 1100 ? 292 : 0;
+  const availW = Math.max(560, Math.min(vw, 1500) - 2 * railGutter - 72);
   const availH = Math.max(540, vh - 250 /* header + title + picks */);
   const lanes = braid ? 3.4 : Math.max(...laneCounts.values());
   const COL = Math.round(Math.min(braid ? 330 : 290, Math.max(braid ? 196 : 168, availW / lanes)));
@@ -1317,13 +1325,32 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             );
           })}
           {/* the edges: lighter thread segments between strand positions;
-              dashing is reserved for the unreachable */}
+              dashing is reserved for the unreachable.
+              S24 declutter pass (designer 2026-07-10, three rulings):
+              (1) the WEAVE — cords leave a medallion straight up and arrive
+                  straight up into the next, vertical-tangent cubics instead
+                  of the sagging diagonals; crossings turn steep and uniform
+                  and long cross-strand edges stop slicing the middle band
+                  (legibility outranks the hung-thread sag — the S15 knot
+                  lesson stands);
+              (2) cords TRIM AT THE RIMS — they no longer converge under the
+                  icons or run through the node lettering (an ink halo on the
+                  labels covers what still passes behind);
+              (3) GRADUATED EMPHASIS — cords more than a layer ahead wear
+                  .cord-far; bypassed cords more than a layer behind stop
+                  rendering (the trail already tells that story). */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
+            // rim trims ride the medallion sizes (+ the word under the icon
+            // on the arrival side — cords come up from below, where the
+            // label lives)
+            const med = (m: MapNode): number => (m.kind === 'boss' ? 66 : m.kind === 'elite' ? 58 : 50);
+            const trimDep = sz(med(n) / 2 + 8);
             return n.edges.map((toId) => {
               const target = byId.get(toId);
               if (!target) return null;
               const to = pos(target);
+              const trimArr = sz(med(target) / 2 + 16);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
               // the warp IS this segment's line — only the stateful reads
@@ -1331,20 +1358,37 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               // would double the braid
               if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live) return null;
               const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
+              if (dead && n.layer < hereLayer - 1) return null; // history, gone
               if (isTrail) {
-                // the thread behind you pulls TAUT (straight) and brightens
+                // the thread behind you pulls TAUT (straight) and brightens;
+                // it too ties off at the rims
+                const dx = to.x - from.x, dy = to.y - from.y;
+                const L = Math.hypot(dx, dy) || 1;
+                const a = { x: from.x + (dx / L) * trimDep, y: from.y + (dy / L) * trimDep };
+                const b = { x: to.x - (dx / L) * trimArr, y: to.y - (dy / L) * trimArr };
                 return (
                   <path key={`${n.id}-${toId}`} className="map-cord cord-trail"
-                    d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} fill="none" />
+                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
                 );
               }
-              // a cord sags toward the midpoint — knots ride a hung thread
-              const mx = (from.x + to.x) / 2 + (from.x === to.x ? 0 : (to.x - from.x) * 0.08);
-              const my = (from.y + to.y) / 2 + 10;
+              const far = !live && !dead && n.layer > hereLayer + 1;
+              // the weave: up out of this rim, up into the next (flow runs
+              // bottom-to-top, so from.y > to.y)
+              const a = { x: from.x, y: from.y - trimDep };
+              const b = { x: to.x, y: to.y + trimArr };
+              if (b.y >= a.y) {
+                // degenerate after trims — fall back to a straight tie
+                return (
+                  <path key={`${n.id}-${toId}`}
+                    className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${far ? 'cord-far' : ''}`}
+                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
+                );
+              }
+              const k = Math.max(8, (a.y - b.y) * 0.5);
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''}`}
-                  d={`M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`} fill="none" />
+                  className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${far ? 'cord-far' : ''}`}
+                  d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} C ${a.x.toFixed(1)} ${(a.y - k).toFixed(1)} ${b.x.toFixed(1)} ${(b.y + k).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
               );
             });
           })}
