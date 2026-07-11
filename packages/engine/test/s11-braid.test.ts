@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { IllegalAction, MapNode, MapState } from '../src/types';
 import { initialState, reduce } from '../src/reducer';
 import { generateActMap } from '../src/map';
-import { CROSSING_LAYERS, CROSSING_LAYER_A3 } from '../src/content/strand-targets';
+import { CROSSING_LAYERS, CROSSING_LAYERS_A3 } from '../src/content/strand-targets';
 import { EVENTS, MAP_LAYERS } from '../src/content/registry';
 
 const CHARS = ['vess', 'bram'] as const;
@@ -38,10 +38,10 @@ describe('S11.8 braid structure', () => {
     }
   });
 
-  it('A3 adds a THIRD crossing layer (S11.11-1 recommendation: crossings stay scarce)', () => {
+  it('A3 adds a THIRD crossing layer, respaced every-other (S25/OQ#81: adjacent knots cannot stay planar)', () => {
     const map = braid(81_001, 2, true);
     const layers = map.nodes.filter((n) => n.kind === 'elite').map((n) => n.layer).sort();
-    expect(layers).toEqual([...CROSSING_LAYERS, CROSSING_LAYER_A3].sort());
+    expect(layers).toEqual([...CROSSING_LAYERS_A3].sort());
   });
 
   it('the only way across the weave is through a snarl: strand edges never cross', () => {

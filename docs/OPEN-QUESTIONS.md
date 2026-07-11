@@ -1103,3 +1103,39 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     because disabled buttons swallow mouse events, a .gp-focus
     MutationObserver for the pad). STYLE-GUIDE §7 rewritten to match.
     **RE-RULED + EXECUTED.**
+
+---
+
+## S25 — the planar braid (2026-07-11, designer rulings in-session)
+
+81. **S25 — NO CORDS CROSS, EVER (designer law, ruled after two S24
+    styling passes couldn't untangle what generation tangles):** the
+    braid's embedding is now planar BY CONSTRUCTION, and
+    s25-planar.test.ts (drawn-x mirror of the client, 100 seeds × both
+    acts × A3 on/off) fails any regression. The rulings, in order:
+    (a) **the breath is ONE shared rest** — the two identical rests were
+    a fake pick that could only feed the mismatch penalty, and their
+    both-strands-to-both-rests edges were the map's biggest X;
+    (b) **A3's crossings respace to [1,3,5]** — adjacent knots (the old
+    [2,4]+5) cannot both offer both-strand access planarly; the S11.11-1
+    pending ruling is ruled in this form, and the S21 toll knot stays
+    keyed to layer 5 (still the deepest knot);
+    (c) **only the center-nearest slot enters a knot, and knots release
+    onto each strand's nearest slot** — far-slot cords would cross the
+    strand's own continuation (the widened micro-choice moves one pick
+    earlier);
+    (d) **strand sides are FIXED; the warps pinch at knots instead of
+    X-ing through them** — found by the new test, not the eye: the
+    side-flip forced BYPASS edges to swap sides mid-air, and two paths
+    can only swap sides planarly through a point the bypass skips. The
+    crossing stays real in the rules (strand switch = take the elite).
+    The over/under casing retired with the mid-air X it sold;
+    (e) **the warp threads the widened inner slot beside knots**, making
+    every warp segment a real edge (edge-planarity covers the warps —
+    also test-pinned).
+    ENGINE CHANGE (edges + one node fewer + A3 layers), the first since
+    the visual passes began: suite 464/464 (3 new planar tests + warp
+    pin), tracks-covenant golden regenerated IN the commit per its own
+    protocol, 50-run sim completes (the act-2 link-fire band miss
+    pre-exists on main: 62.1% there / 61.1% here; n=2000 board pending
+    per S21-R1). **RULED + EXECUTED.**

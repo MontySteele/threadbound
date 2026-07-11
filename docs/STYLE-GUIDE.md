@@ -166,6 +166,33 @@ properties are the *only* sanctioned way seat color enters chrome.
 
 ## 7. The braid — map cord grammar
 
+**The planar law (S25/OQ#81, ruled 2026-07-11): no two cords may cross,
+under any circumstance.** This is enforced in GENERATION, not styling —
+map.ts builds an embedding with no crossing edges, and
+s25-planar.test.ts fails any change that reintroduces one. What the law
+ruled into the picture:
+
+- **Strand sides are fixed.** The old side-flip at every crossing forced
+  the bypass edges to swap sides mid-air; two paths can only swap sides
+  planarly through a shared point, which the bypass (by definition)
+  skips. The warps now **pinch at each knot** instead of X-ing through
+  it — the knot visibly *binds* the strands. The crossing stays real in
+  the rules: switching strands still requires taking the elite. (The
+  over/under casing retired with the mid-air crossing it sold.)
+- **Only the center-nearest slot enters a knot**, and a knot releases
+  onto each strand's nearest slot — far-slot knot cords would cross the
+  strand's own continuation.
+- **The breath is ONE shared rest** (the strands literally converge; the
+  second identical rest was a fake pick that could only feed the
+  mismatch penalty, and its edges were the map's biggest X). The warps
+  end there — a single plain cord ascends to the boss.
+- **The warp threads through the widened inner slot beside a knot**, so
+  every warp segment coincides with a real edge and edge-planarity
+  covers the warps too.
+- A3's third crossing respaces to layers 1/3/5 (adjacent knots cannot
+  both offer both-strand access planarly); the toll knot stays the
+  deepest (layer 5).
+
 The two warp strands ARE the map's picture; everything else is wiring and
 stays quiet — but **navigation outranks tidiness**: a cord's first job is
 to say where it goes (S20.3 → S24 declutter, re-ruled in-session

@@ -1147,11 +1147,6 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const laneCounts = new Map<number, number>();
   for (const n of map.nodes) laneCounts.set(n.layer, (laneCounts.get(n.layer) ?? 0) + 1);
   const braid = map.nodes.some((n) => n.strand);
-  // knot layers, ascending — on braid maps the elite IS the crossing
-  const crossings = braid
-    ? [...new Set(map.nodes.filter((n) => n.kind === 'elite').map((n) => n.layer))].sort((a, b) => a - b)
-    : [];
-  const below = (layer: number): number => crossings.filter((c) => c < layer).length;
 
   // ---- geometry rides the viewport (designer 2026-07-06): the braid fills
   // the width the rail leaves it and the height under the header, clamped so
@@ -1176,13 +1171,14 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const W = braid ? Math.round(3.4 * COL) : Math.max(...laneCounts.values()) * COL;
   const H = layerCount * ROW;
   const xC = W / 2;
-  /** which side a strand runs at a given layer — the side FLIPS at every
-   *  crossing below it: that alternation IS the braid */
-  const sideX = (strand: string, layer: number): number => {
-    const flipped = below(layer) % 2 === 1;
-    const left = strand === 'truth' ? !flipped : flipped;
-    return left ? xC - COL : xC + COL;
-  };
+  /** which side a strand runs — S25 (OQ#81, the planar braid): sides are
+   *  FIXED. The old side-flip at every crossing forced the bypass edges to
+   *  swap sides mid-air, and two paths can only swap sides planarly
+   *  THROUGH a shared point — which the bypass, by definition, skips. The
+   *  warps now PINCH at each knot instead of X-ing through it: the knot
+   *  visibly binds the strands. The crossing stays real in the rules
+   *  (switching strands still requires taking the elite). */
+  const sideX = (strand: string): number => (strand === 'truth' ? xC - COL : xC + COL);
   const pos = (n: MapNode): Pt => {
     const y = H - (n.layer + 0.5) * ROW;
     if (!braid) {
@@ -1193,7 +1189,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     if (n.kind === 'elite') return { x: xC, y }; // the knot sits ON the crossing
     if (n.strand) {
       const primary = n.lane === 0 || n.lane === 2;
-      const x = sideX(n.strand, n.layer);
+      const x = sideX(n.strand);
       // widened slot hangs off its strand toward the (crossing-free) center
       return { x: primary ? x : x + (x < xC ? 0.62 * COL : -0.62 * COL), y };
     }
@@ -1271,21 +1267,29 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   if (braid) {
     for (const strand of ['truth', 'power']) {
       const waypoints: MapNode[] = [];
-      for (let layer = 0; layer < layerCount; layer++) {
+      // S25 (the planar braid): the warps end AT the breath — the strands
+      // braid into one, and a single plain cord ascends to the boss (two
+      // warps overlapping on the same final segment read as one strand
+      // winning; neither does)
+      for (let layer = 0; layer < layerCount - 1; layer++) {
         const knot = map.nodes.find((n) => n.kind === 'elite' && n.layer === layer);
         if (knot) { waypoints.push(knot); continue; }
         const own = map.nodes.filter((n) => n.strand === strand && n.layer === layer);
         if (own.length > 0) {
-          waypoints.push(own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0]);
+          // S25 planar law: beside a knot the thread runs through the slot
+          // the knot's EDGES use — the widened INNER — so every warp
+          // segment coincides with a real edge, and edge-planarity covers
+          // the warp too (a knot→primary chord crosses the bypass's
+          // outer→inner cord). Away from knots it hugs its rail (primary).
+          const nearKnot = map.nodes.some((n) => n.kind === 'elite' && Math.abs(n.layer - layer) === 1);
+          const inner = own.find((n) => n.lane === 1 || n.lane === 3);
+          const primary = own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0];
+          waypoints.push(nearKnot && inner ? inner : primary);
           continue;
         }
         const shared = map.nodes.filter((n) => !n.strand && n.layer === layer);
-        if (shared.length > 1) {
-          // the breath: each strand ties off through its near rest
-          const x = sideX(strand, layer);
-          waypoints.push(shared.reduce((a, b) => (Math.abs(pos(a).x - x) <= Math.abs(pos(b).x - x) ? a : b)));
-        } else if (shared.length === 1) {
-          waypoints.push(shared[0]); // the boss: both threads end in one knot
+        if (shared.length > 0) {
+          waypoints.push(shared[0]); // the breath: both threads tie one knot
         }
       }
       warpSegs[strand] = cubicsFrom(waypoints.map(pos));
@@ -1297,11 +1301,6 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       }
     }
   }
-  // over/under alternates per knot: even crossings carry truth over
-  const overAt = (k: number): string => (k % 2 === 0 ? 'truth' : 'power');
-  const knotSegs = (strand: string, layer: number) =>
-    (warpSegs[strand] ?? []).filter((_, i) => (i === layer - 1 || i === layer) && (warpLive[strand]?.[i] ?? true));
-
   return (
     <div className="center map-center">
       <h2>{ACT_NAME[map.act]}</h2>
@@ -1335,28 +1334,15 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         onPointerLeave={() => setHoverId(null)}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
-          {/* the warps: continuous threads, crossing at the knots — drawn
-              only where the run has been or can still go */}
+          {/* the warps: continuous threads PINCHING at the knots (S25 — the
+              over/under casing retired with the mid-air crossing it sold);
+              drawn only where the run has been or can still go */}
           {braid && (['truth', 'power'] as const).map((strand) => {
             const d = pathOf(warpSegs[strand], warpLive[strand]);
             return d ? (
               <path key={`warp-${strand}`} className="warp" d={d}
                 style={{ stroke: STRAND_HUE[strand] }} />
             ) : null;
-          })}
-          {/* the crossings: the over-strand re-draws with an ink casing so
-              one thread visibly passes OVER the other at every knot */}
-          {braid && crossings.map((layer, k) => {
-            const over = overAt(k);
-            const segs = knotSegs(over, layer);
-            if (segs.length === 0) return null;
-            const d = pathOf(segs);
-            return (
-              <g key={`cross-${layer}`}>
-                <path className="warp-casing" d={d} />
-                <path className="warp" d={d} style={{ stroke: STRAND_HUE[over] }} />
-              </g>
-            );
           })}
           {/* the edges: lighter thread segments between strand positions;
               dashing is reserved for the unreachable.
