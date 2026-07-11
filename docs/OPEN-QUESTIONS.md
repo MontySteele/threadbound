@@ -1060,3 +1060,82 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     client feature, wants its own sign-off); (b) enemy/hand scale
     asymmetry (pure CSS sizing). Neither needed for the two-worlds split
     to read; both stall until the designer asks. **PARKED.**
+
+---
+
+## S24 — the centering + braid declutter pass (2026-07-10, designer rulings in-session)
+
+78. **S24-R1 — symmetric rail gutter RULED:** the S20.4 one-sided
+    `padding-right` centered map and combat in the LEFTOVER space,
+    ~146–180px left of the header's own center — the whole game read
+    off-center once the rail landed (designer's report, this session).
+    The gutter goes symmetric (`padding-inline`) on rail-mounting
+    screens; past the app's 1500px cap it tapers away as the viewport's
+    margins absorb the viewport-cornered rail; MapView's `availW`
+    mirrors the CSS numbers and now also budgets the app cap (the old
+    vw-only math let the braid outgrow its clipped column on wide
+    monitors). `.enemies` wraps as the ~1100px-window safety. **RULED +
+    EXECUTED.**
+
+79. **S24-R2 — braid cord declutter RULED** (three riders picked
+    together): the vertical WEAVE (neutral cords leave and arrive
+    vertically — steep, uniform crossings; the hung-thread sag retired
+    on the map), RIM TIES (cords trim at the medallion rims with
+    label-side clearance; ink halos on node lettering), and GRADUATED
+    EMPHASIS (`.cord-far` past one layer ahead; dead cords fade harder
+    and stop rendering more than a layer behind). The warps, the trail,
+    live picks, and every edge/pick rule untouched — presentation only.
+    Codified as STYLE-GUIDE §7. Freebie found in-pass: a stale
+    `.map-picks` 0.95em duplicate at styles.css's tail had silently
+    overridden the S20.3 1.08em step-up — removed. **RULED + EXECUTED.**
+
+80. **S24-R2 RE-RULED same session (designer veto on the first cut):**
+    the vertical weave + distance fade shipped in the morning pass made
+    the braid tidy and UNREADABLE — cords entering every node vertically
+    all arrive alike, so a route could not be traced, and the .cord-far
+    fade dropped the whole structure to 19% right when an act starts
+    (position -1 puts everything past layer 0 "far"). Navigation
+    outranks tidiness. Re-cut: TAUT DIAGONALS rim to rim (every cord
+    points at its destination), full 34% weight for every reachable
+    route cord (.cord-far retired), rim ties + halos + dead-edge
+    cleanup kept, plus a ROUTE PREVIEW — the hovered / pad-focused node
+    lights its onward cords (.cord-hot; pointer hit-test on the field
+    because disabled buttons swallow mouse events, a .gp-focus
+    MutationObserver for the pad). STYLE-GUIDE §7 rewritten to match.
+    **RE-RULED + EXECUTED.**
+
+---
+
+## S25 — the planar braid (2026-07-11, designer rulings in-session)
+
+81. **S25 — NO CORDS CROSS, EVER (designer law, ruled after two S24
+    styling passes couldn't untangle what generation tangles):** the
+    braid's embedding is now planar BY CONSTRUCTION, and
+    s25-planar.test.ts (drawn-x mirror of the client, 100 seeds × both
+    acts × A3 on/off) fails any regression. The rulings, in order:
+    (a) **the breath is ONE shared rest** — the two identical rests were
+    a fake pick that could only feed the mismatch penalty, and their
+    both-strands-to-both-rests edges were the map's biggest X;
+    (b) **A3's crossings respace to [1,3,5]** — adjacent knots (the old
+    [2,4]+5) cannot both offer both-strand access planarly; the S11.11-1
+    pending ruling is ruled in this form, and the S21 toll knot stays
+    keyed to layer 5 (still the deepest knot);
+    (c) **only the center-nearest slot enters a knot, and knots release
+    onto each strand's nearest slot** — far-slot cords would cross the
+    strand's own continuation (the widened micro-choice moves one pick
+    earlier);
+    (d) **strand sides are FIXED; the warps pinch at knots instead of
+    X-ing through them** — found by the new test, not the eye: the
+    side-flip forced BYPASS edges to swap sides mid-air, and two paths
+    can only swap sides planarly through a point the bypass skips. The
+    crossing stays real in the rules (strand switch = take the elite).
+    The over/under casing retired with the mid-air X it sold;
+    (e) **the warp threads the widened inner slot beside knots**, making
+    every warp segment a real edge (edge-planarity covers the warps —
+    also test-pinned).
+    ENGINE CHANGE (edges + one node fewer + A3 layers), the first since
+    the visual passes began: suite 464/464 (3 new planar tests + warp
+    pin), tracks-covenant golden regenerated IN the commit per its own
+    protocol, 50-run sim completes (the act-2 link-fire band miss
+    pre-exists on main: 62.1% there / 61.1% here; n=2000 board pending
+    per S21-R1). **RULED + EXECUTED.**

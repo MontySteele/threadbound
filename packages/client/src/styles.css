@@ -159,18 +159,30 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-cords { position: absolute; inset: 0; }
 /* strokes ride the map's scale knob (--map-scale, set by MapView from the
    viewport) so lines keep their weight when the braid grows */
-/* the warps: the two continuous strands (S20.3 item 1) */
+/* the warps: the two continuous strands (S20.3 item 1; S25 — they pinch at
+   the knots now, so the over/under casing is retired with the mid-air
+   crossing it sold) */
 .warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; stroke-linecap: round; }
-.warp-casing { fill: none; stroke: var(--ink); stroke-width: calc(11px * var(--map-scale, 1)); opacity: 0.95; stroke-linecap: round; }
 /* edges between strand positions: lighter thread segments; dashing is
    reserved for the unreachable (S20.3 items 1 & 4) */
 .map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
 .map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
-.map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.5; }
+/* S24 (re-ruled same day — navigation outranks tidiness): every reachable
+   route cord keeps full weight; dead cords fade harder, and MapView stops
+   drawing them entirely once they fall more than a layer behind the pair. */
+.map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.32; }
+/* S24 route preview: the hovered / pad-focused node lights its onward
+   cords — "if we go here, then what". The Thread's gold, one step quieter
+   than the live pick (which stays the brightest read on the field). */
+.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
+.map-cord.cord-dead.cord-hot { opacity: 0.7; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
 .map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
-.mapnode:disabled { opacity: 1; cursor: default; } /* scouting ahead must stay readable */
+/* scouting ahead must stay readable; pointer-events pass THROUGH disabled
+   nodes so the field's route-preview hit-test still sees the pointer (S24 —
+   disabled buttons otherwise swallow pointermove entirely) */
+.mapnode:disabled { opacity: 1; cursor: default; pointer-events: none; }
 .mapnode.can { box-shadow: 0 0 10px color-mix(in srgb, var(--thread) 45%, transparent); border-color: var(--thread); }
 .mapnode.here { outline: 2px solid var(--text); }
 .mapnode.cleared, .mapnode.cleared:disabled { opacity: 0.3; } /* walked-past only */
@@ -196,7 +208,9 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .medallion-node.mypick.theirpick .node-medallion {
   box-shadow: 0 0 0 2px var(--pick-mine), 0 0 0 4.5px var(--pick-theirs), 0 0 14px var(--pick-theirs);
 }
-.node-word { font-size: 0.78em; letter-spacing: 0.05em; }
+/* S24: an ink halo keeps node lettering readable where a cord still passes
+   behind it (cords now also trim at the medallion rims — see MapView) */
+.node-word { font-size: 0.78em; letter-spacing: 0.05em; text-shadow: 0 0 3px var(--ink), 0 0 6px var(--ink), 0 1px 5px var(--ink); }
 .node-pair { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
 .node-pair svg { border-radius: 50%; background: var(--ink); }
 /* visited beads stay readable on the taut trail; the unreachable dims and
@@ -220,6 +234,7 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   display: block; font-size: 0.7em; font-style: italic; line-height: 1.25;
   color: color-mix(in srgb, var(--thread) 70%, var(--text));
   max-width: calc(150px * var(--map-scale, 1)); margin-top: 2px;
+  text-shadow: 0 0 3px var(--ink), 0 0 6px var(--ink), 0 1px 5px var(--ink); /* S24 halo */
 }
 
 /* ---- enemies (B5 → S23): silhouettes in the dark ----
@@ -227,7 +242,9 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
    panels, pale names, sigils lit rather than frames; the only heat above
    the seam is their intent. The Binding tether is the seat hue on the
    BOTTOM edge (via --bound-hue), reaching down toward the pair. */
-.enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; }
+/* wrap is the S24 safety for the symmetric gutter: a 3-foe row on a
+   ~1100px window folds instead of overflowing the narrower stage */
+.enemies { display: flex; gap: 12px; justify-content: center; margin: 6px 0; flex-wrap: wrap; }
 .enemy {
   position: relative; border: 1px solid var(--dark-line); border-radius: var(--radius); padding: 10px 12px 8px; min-width: 178px;
   background: linear-gradient(180deg, var(--dark-panel) 0%, #100e16d9 100%);
@@ -845,14 +862,27 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
 /* the rail owns a real GUTTER on the screens that mount it (map + combat,
    flagged .app.rail-on) — fixed positioning must never cover the character
    panels (designer 2026-07-06). Scoped to the phase roots so the header
-   doesn't shift between phases. Below 1100px the rail overlays as before. */
+   doesn't shift between phases. Below 1100px the rail overlays as before.
+   S24 (designer 2026-07-10): the gutter goes SYMMETRIC — the one-sided
+   reservation was centering the whole stage in the leftover space, ~146px
+   left of the header's center (map and combat both read off-center). Equal
+   insets put the stage back on the true center; the rail lives in the right
+   gutter it already owned. MapView's availW mirrors these numbers. */
 @media (min-width: 1100px) {
-  .rail-on .combat, .rail-on .center.map-center { padding-right: 292px; }
+  .rail-on .combat, .rail-on .center.map-center { padding-inline: 292px; }
 }
-/* big screens: the rail widens with the rest of the UI */
+/* big screens: the rail widens with the rest of the UI. S24: the gutter
+   TAPERS as the viewport outgrows the app's 1500px cap — the rail is
+   viewport-cornered, so every pixel of viewport margin is clearance the
+   stage no longer pays for. Past ~2220px the rail sits entirely beside the
+   app column and the stage takes the full column, still centered. (A fixed
+   360px symmetric inset left the braid ~750px of a 1500px column — it
+   clipped.) */
 @media (min-width: 1600px) {
   .witness-rail { width: 320px; right: 14px; }
-  .rail-on .combat, .rail-on .center.map-center { padding-right: 360px; }
+  .rail-on .combat, .rail-on .center.map-center {
+    padding-inline: max(0px, calc(360px - (100vw - 1500px) / 2));
+  }
 }
 /* mobile: collapse to the latest line; tap to expand */
 @media (max-width: 700px) {
@@ -861,8 +891,8 @@ button.loom-chip:not(:disabled):hover { border-color: var(--thread-gold); }
   .witness-rail:not(.open) .rail-current { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: none; padding-top: 0; }
 }
 
-/* map pick coordination */
-.map-picks { font-size: 0.95em; }
+/* map pick coordination (S24: the stale 0.95em duplicate here was silently
+   overriding the map header's intended 1.08em step-up — removed) */
 .mapnode.mypick { outline: 3px solid; outline-offset: 2px; }
 .mapnode.theirpick { border-style: solid; }
 .mapnode.agreed { animation: agreed-flash 0.5s; }

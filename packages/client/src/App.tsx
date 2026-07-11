@@ -1147,17 +1147,20 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const laneCounts = new Map<number, number>();
   for (const n of map.nodes) laneCounts.set(n.layer, (laneCounts.get(n.layer) ?? 0) + 1);
   const braid = map.nodes.some((n) => n.strand);
-  // knot layers, ascending — on braid maps the elite IS the crossing
-  const crossings = braid
-    ? [...new Set(map.nodes.filter((n) => n.kind === 'elite').map((n) => n.layer))].sort((a, b) => a - b)
-    : [];
-  const below = (layer: number): number => crossings.filter((c) => c < layer).length;
 
   // ---- geometry rides the viewport (designer 2026-07-06): the braid fills
   // the width the rail leaves it and the height under the header, clamped so
   // small screens keep the S20.3 shipped numbers as their floor ------------
   const [vw, vh] = useViewport();
-  const availW = Math.max(560, vw - 300 /* rail */ - 72);
+  // S24: the rail's gutter went SYMMETRIC (styles.css rail-on rules) so the
+  // stage sits on the true center — the braid budgets for BOTH insets, and
+  // for the app's 1500px cap (the old vw-only math let the braid outgrow
+  // its clipped column on wide monitors). Past 1600 the gutter tapers away
+  // as the viewport's own margins absorb the rail. The numbers mirror the
+  // CSS breakpoints exactly; below 1100 the rail overlays and reserves
+  // nothing.
+  const railGutter = vw >= 1600 ? Math.max(0, 360 - (vw - 1500) / 2) : vw >= 1100 ? 292 : 0;
+  const availW = Math.max(560, Math.min(vw, 1500) - 2 * railGutter - 72);
   const availH = Math.max(540, vh - 250 /* header + title + picks */);
   const lanes = braid ? 3.4 : Math.max(...laneCounts.values());
   const COL = Math.round(Math.min(braid ? 330 : 290, Math.max(braid ? 196 : 168, availW / lanes)));
@@ -1168,13 +1171,14 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const W = braid ? Math.round(3.4 * COL) : Math.max(...laneCounts.values()) * COL;
   const H = layerCount * ROW;
   const xC = W / 2;
-  /** which side a strand runs at a given layer — the side FLIPS at every
-   *  crossing below it: that alternation IS the braid */
-  const sideX = (strand: string, layer: number): number => {
-    const flipped = below(layer) % 2 === 1;
-    const left = strand === 'truth' ? !flipped : flipped;
-    return left ? xC - COL : xC + COL;
-  };
+  /** which side a strand runs — S25 (OQ#81, the planar braid): sides are
+   *  FIXED. The old side-flip at every crossing forced the bypass edges to
+   *  swap sides mid-air, and two paths can only swap sides planarly
+   *  THROUGH a shared point — which the bypass, by definition, skips. The
+   *  warps now PINCH at each knot instead of X-ing through it: the knot
+   *  visibly binds the strands. The crossing stays real in the rules
+   *  (switching strands still requires taking the elite). */
+  const sideX = (strand: string): number => (strand === 'truth' ? xC - COL : xC + COL);
   const pos = (n: MapNode): Pt => {
     const y = H - (n.layer + 0.5) * ROW;
     if (!braid) {
@@ -1185,7 +1189,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     if (n.kind === 'elite') return { x: xC, y }; // the knot sits ON the crossing
     if (n.strand) {
       const primary = n.lane === 0 || n.lane === 2;
-      const x = sideX(n.strand, n.layer);
+      const x = sideX(n.strand);
       // widened slot hangs off its strand toward the (crossing-free) center
       return { x: primary ? x : x + (x < xC ? 0.62 * COL : -0.62 * COL), y };
     }
@@ -1213,6 +1217,27 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   }, [map.position, trailKey]);
   const visited = new Set(trail);
   const trailEdges = new Set(trail.slice(1).map((id, i) => `${trail[i]}-${id}`));
+
+  // ---- S24 route preview: the node under the pointer (or the pad's focus)
+  // lights its onward cords — "if we go here, then what". Presentation only;
+  // picks and reachability rules untouched. Pointer hit-testing happens on
+  // the field itself because non-pickable nodes are disabled buttons, and
+  // disabled buttons swallow mouse events.
+  const [hoverId, setHoverId] = useState<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // gamepad.ts toggles .gp-focus classes directly on the DOM — watch for
+    // it landing on a node and mirror it into the preview
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const read = () => {
+      const el = wrap.querySelector<HTMLElement>('.mapnode.gp-focus');
+      if (el?.dataset.nodeId) setHoverId(Number(el.dataset.nodeId));
+    };
+    const mo = new MutationObserver(read);
+    mo.observe(wrap, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
 
   // ---- reachability: BFS over edges from here — everything else dims ------
   const reachable = new Set<number>();
@@ -1242,21 +1267,29 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   if (braid) {
     for (const strand of ['truth', 'power']) {
       const waypoints: MapNode[] = [];
-      for (let layer = 0; layer < layerCount; layer++) {
+      // S25 (the planar braid): the warps end AT the breath — the strands
+      // braid into one, and a single plain cord ascends to the boss (two
+      // warps overlapping on the same final segment read as one strand
+      // winning; neither does)
+      for (let layer = 0; layer < layerCount - 1; layer++) {
         const knot = map.nodes.find((n) => n.kind === 'elite' && n.layer === layer);
         if (knot) { waypoints.push(knot); continue; }
         const own = map.nodes.filter((n) => n.strand === strand && n.layer === layer);
         if (own.length > 0) {
-          waypoints.push(own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0]);
+          // S25 planar law: beside a knot the thread runs through the slot
+          // the knot's EDGES use — the widened INNER — so every warp
+          // segment coincides with a real edge, and edge-planarity covers
+          // the warp too (a knot→primary chord crosses the bypass's
+          // outer→inner cord). Away from knots it hugs its rail (primary).
+          const nearKnot = map.nodes.some((n) => n.kind === 'elite' && Math.abs(n.layer - layer) === 1);
+          const inner = own.find((n) => n.lane === 1 || n.lane === 3);
+          const primary = own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0];
+          waypoints.push(nearKnot && inner ? inner : primary);
           continue;
         }
         const shared = map.nodes.filter((n) => !n.strand && n.layer === layer);
-        if (shared.length > 1) {
-          // the breath: each strand ties off through its near rest
-          const x = sideX(strand, layer);
-          waypoints.push(shared.reduce((a, b) => (Math.abs(pos(a).x - x) <= Math.abs(pos(b).x - x) ? a : b)));
-        } else if (shared.length === 1) {
-          waypoints.push(shared[0]); // the boss: both threads end in one knot
+        if (shared.length > 0) {
+          waypoints.push(shared[0]); // the breath: both threads tie one knot
         }
       }
       warpSegs[strand] = cubicsFrom(waypoints.map(pos));
@@ -1268,11 +1301,6 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       }
     }
   }
-  // over/under alternates per knot: even crossings carry truth over
-  const overAt = (k: number): string => (k % 2 === 0 ? 'truth' : 'power');
-  const knotSegs = (strand: string, layer: number) =>
-    (warpSegs[strand] ?? []).filter((_, i) => (i === layer - 1 || i === layer) && (warpLive[strand]?.[i] ?? true));
-
   return (
     <div className="center map-center">
       <h2>{ACT_NAME[map.act]}</h2>
@@ -1291,10 +1319,24 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
       </p>
       <div className="map-scroll">
       <div className={`mapwrap act-${map.act} ${braid ? 'braid-field' : ''}`}
+        ref={wrapRef}
+        onPointerMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.clientX - rect.left, y = e.clientY - rect.top;
+          let best: number | null = null, bestD = Infinity;
+          for (const n of map.nodes) {
+            const p = pos(n);
+            const d = Math.hypot(p.x - x, p.y - y);
+            if (d < bestD) { bestD = d; best = n.id; }
+          }
+          setHoverId(bestD <= 46 * scale ? best : null);
+        }}
+        onPointerLeave={() => setHoverId(null)}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
         <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
-          {/* the warps: continuous threads, crossing at the knots — drawn
-              only where the run has been or can still go */}
+          {/* the warps: continuous threads PINCHING at the knots (S25 — the
+              over/under casing retired with the mid-air crossing it sold);
+              drawn only where the run has been or can still go */}
           {braid && (['truth', 'power'] as const).map((strand) => {
             const d = pathOf(warpSegs[strand], warpLive[strand]);
             return d ? (
@@ -1302,49 +1344,54 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
                 style={{ stroke: STRAND_HUE[strand] }} />
             ) : null;
           })}
-          {/* the crossings: the over-strand re-draws with an ink casing so
-              one thread visibly passes OVER the other at every knot */}
-          {braid && crossings.map((layer, k) => {
-            const over = overAt(k);
-            const segs = knotSegs(over, layer);
-            if (segs.length === 0) return null;
-            const d = pathOf(segs);
-            return (
-              <g key={`cross-${layer}`}>
-                <path className="warp-casing" d={d} />
-                <path className="warp" d={d} style={{ stroke: STRAND_HUE[over] }} />
-              </g>
-            );
-          })}
           {/* the edges: lighter thread segments between strand positions;
-              dashing is reserved for the unreachable */}
+              dashing is reserved for the unreachable.
+              S24 declutter, RE-RULED same day (designer 2026-07-10 — the
+              first cut's vertical weave + distance fade killed route
+              reading; navigation outranks tidiness):
+              (1) cords are TAUT DIAGONALS, rim to rim — every cord points
+                  at its destination, a strung loom, no sag and no S-curve;
+              (2) cords TRIM AT THE RIMS — they no longer converge under the
+                  icons or run through the node lettering (an ink halo on
+                  the labels covers what still passes behind);
+              (3) every reachable route cord keeps FULL weight (the .cord-far
+                  distance fade is retired); bypassed cords more than a
+                  layer behind stop rendering (the trail tells that story),
+                  the rest of the dead stay dashed and faded;
+              (4) ROUTE PREVIEW — the hovered / pad-focused node lights its
+                  onward cords (.cord-hot): "if we go here, then what". */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
+            // rim trims ride the medallion sizes (+ the word under the icon
+            // on the arrival side — cords arrive from below, where the
+            // label lives)
+            const med = (m: MapNode): number => (m.kind === 'boss' ? 66 : m.kind === 'elite' ? 58 : 50);
+            const trimDep = sz(med(n) / 2 + 8);
             return n.edges.map((toId) => {
               const target = byId.get(toId);
               if (!target) return null;
               const to = pos(target);
+              const trimArr = sz(med(target) / 2 + 16);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
+              const hot = hoverId !== null && n.id === hoverId && !isTrail;
               // the warp IS this segment's line — only the stateful reads
-              // (taut trail, live pick) draw over it; a neutral cord here
-              // would double the braid
-              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live) return null;
+              // (taut trail, live pick, route preview) draw over it; a
+              // neutral cord here would double the braid
+              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live && !hot) return null;
               const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
-              if (isTrail) {
-                // the thread behind you pulls TAUT (straight) and brightens
-                return (
-                  <path key={`${n.id}-${toId}`} className="map-cord cord-trail"
-                    d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} fill="none" />
-                );
-              }
-              // a cord sags toward the midpoint — knots ride a hung thread
-              const mx = (from.x + to.x) / 2 + (from.x === to.x ? 0 : (to.x - from.x) * 0.08);
-              const my = (from.y + to.y) / 2 + 10;
+              if (dead && n.layer < hereLayer - 1) return null; // history, gone
+              // taut, rim to rim (trims collapse if the cord is too short)
+              const dx = to.x - from.x, dy = to.y - from.y;
+              const L = Math.hypot(dx, dy) || 1;
+              const t0 = L > trimDep + trimArr + 6 ? trimDep : 0;
+              const t1 = L > trimDep + trimArr + 6 ? trimArr : 0;
+              const a = { x: from.x + (dx / L) * t0, y: from.y + (dy / L) * t0 };
+              const b = { x: to.x - (dx / L) * t1, y: to.y - (dy / L) * t1 };
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''}`}
-                  d={`M ${from.x} ${from.y} Q ${mx} ${my} ${to.x} ${to.y}`} fill="none" />
+                  className={`map-cord ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${hot ? 'cord-hot' : ''}`}
+                  d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
               );
             });
           })}
@@ -1362,6 +1409,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
             <button
               key={n.id}
               data-gp="MAP"
+              data-node-id={n.id}
               className={`mapnode medallion-node ${here ? 'here' : ''} ${can ? 'can' : ''} ${wasVisited ? 'visited' : ''} ${unreachable ? 'unreachable' : ''} ${myPick ? 'mypick' : ''} ${theirPick ? 'theirpick' : ''} ${myPick && theirPick ? 'agreed' : ''} ${n.strand ? `strand-${n.strand}` : ''}`}
               style={{
                 left: x, top: y,

@@ -50,8 +50,15 @@ export const STRAND_TARGETS: Record<StrandId, StrandTargets> = {
 
 /** Fixed crossing layers per act (knots ARE the crossings — the only way
  *  across the weave is through a snarl). A3's extra elite adds a third
- *  crossing layer (S11.11-1 recommendation: crossings stay scarce, so the
- *  extra knot gets its OWN layer rather than doubling an existing one —
- *  pending ruling, non-blocking to start). */
+ *  crossing layer.
+ *  S25 (OQ#81, ruled 2026-07-11 — the planar braid): A3's crossings
+ *  RESPACE to every-other-layer. The old [2,4]+5 put two knots on adjacent
+ *  layers, and adjacent knots cannot both offer both-strand access without
+ *  cords crossing — the planar law forbids it. The S11.11-1 pending ruling
+ *  ("crossings stay scarce, own layer each") is now ruled in this form.
+ *  The toll knot (S21) stays keyed to layer 5 — under the respacing it is
+ *  the DEEPEST knot, the same one the old scheme added. */
 export const CROSSING_LAYERS: readonly number[] = [2, 4];
+export const CROSSING_LAYERS_A3: readonly number[] = [1, 3, 5];
+/** the A3 toll knot's layer (reducer reward keying — S21) */
 export const CROSSING_LAYER_A3 = 5;

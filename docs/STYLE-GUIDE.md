@@ -164,7 +164,68 @@ properties are the *only* sanctioned way seat color enters chrome.
   on screen. State language unchanged (slack greys, severed bleeds,
   ignition flashes ember).
 
-## 7. Light discipline
+## 7. The braid — map cord grammar
+
+**The planar law (S25/OQ#81, ruled 2026-07-11): no two cords may cross,
+under any circumstance.** This is enforced in GENERATION, not styling —
+map.ts builds an embedding with no crossing edges, and
+s25-planar.test.ts fails any change that reintroduces one. What the law
+ruled into the picture:
+
+- **Strand sides are fixed.** The old side-flip at every crossing forced
+  the bypass edges to swap sides mid-air; two paths can only swap sides
+  planarly through a shared point, which the bypass (by definition)
+  skips. The warps now **pinch at each knot** instead of X-ing through
+  it — the knot visibly *binds* the strands. The crossing stays real in
+  the rules: switching strands still requires taking the elite. (The
+  over/under casing retired with the mid-air crossing it sold.)
+- **Only the center-nearest slot enters a knot**, and a knot releases
+  onto each strand's nearest slot — far-slot knot cords would cross the
+  strand's own continuation.
+- **The breath is ONE shared rest** (the strands literally converge; the
+  second identical rest was a fake pick that could only feed the
+  mismatch penalty, and its edges were the map's biggest X). The warps
+  end there — a single plain cord ascends to the boss.
+- **The warp threads through the widened inner slot beside a knot**, so
+  every warp segment coincides with a real edge and edge-planarity
+  covers the warps too.
+- A3's third crossing respaces to layers 1/3/5 (adjacent knots cannot
+  both offer both-strand access planarly); the toll knot stays the
+  deepest (layer 5).
+
+The two warp strands ARE the map's picture; everything else is wiring and
+stays quiet — but **navigation outranks tidiness**: a cord's first job is
+to say where it goes (S20.3 → S24 declutter, re-ruled in-session
+2026-07-10 after the first cut's vertical weave + distance fade killed
+route reading):
+
+- **Taut diagonals.** Neutral cords are straight lines, rim to rim —
+  every cord points at its destination, a strung loom. No sag, no
+  S-curve: a curve that enters every node vertically makes all arrivals
+  look alike, and the route can't be traced.
+- **Rim ties.** Cords trim at the medallion rims, with extra clearance on
+  the arrival side where the node's word lives; an ink halo on node
+  lettering (`.node-word`, `.map-scout`) covers what still passes behind.
+  Lines never converge under an icon.
+- **Full-weight routes.** Every reachable route cord keeps base weight
+  (34% thread) no matter how far ahead — planning is the map's job.
+  Live picks stay brightest (2.2px + glow). Bypassed cords dash and fade
+  (0.32) and stop rendering entirely once more than a layer behind — the
+  taut trail already tells that story.
+- **Route preview** (`.cord-hot`): the hovered / pad-focused node lights
+  its onward cords in the Thread's gold, one step quieter than the live
+  pick — "if we go here, then what." Display-only (pointer hit-test on
+  the field + a `.gp-focus` observer); picks and reachability untouched.
+- **The trail** stays a straight taut line, rim-tied like everything else.
+
+**The rail's gutter (S20.4 → S24):** on rail-mounting screens the stage
+inset is SYMMETRIC, so map and combat sit on the true center under the
+header; the rail lives in the right gutter it already owned. Past the
+app's 1500px cap the gutter tapers away as the viewport's own margins
+absorb the (viewport-cornered) rail. Below 1100px the rail overlays, as
+shipped. MapView's `availW` mirrors the CSS numbers exactly.
+
+## 8. Light discipline
 
 Glow means importance, and the budget is small:
 
@@ -178,7 +239,7 @@ Glow means importance, and the budget is small:
 If a new element wants a glow, it must name which of these it is. Two glows
 of the same family adjacent to each other: dim one.
 
-## 8. What stays true everywhere (the standing laws, restated)
+## 9. What stays true everywhere (the standing laws, restated)
 
 - **Legibility outranks decoration** (S15 knot lesson; S20.3 item 4). If a
   treatment costs node-type recognition, intent readability, or rules-text
@@ -195,7 +256,7 @@ of the same family adjacent to each other: dim one.
 - **Seat hues stay reserved** (§2). The B7 sigil-cyan holdout is the only
   tolerated exception until its human-glance row adjudicates.
 
-## 9. Out of scope for this guide
+## 10. Out of scope for this guide
 
 The sigil vocabulary v2 (its own reference doc + `/?style` rows), the art
 pipeline and any raster art (B6), audio, the Overture's choreography

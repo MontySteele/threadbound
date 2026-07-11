@@ -7,7 +7,7 @@ import { MapNode, MapState } from './types';
 import { rngInt, rngShuffle } from './rng';
 import { ENCOUNTER_POOLS, KNOT_SUBPOOLS } from './content/encounters';
 import { ALL_RELICS, MAP_EVENT_PCT, MAP_LAYERS, eventsForAct } from './content/registry';
-import { CROSSING_LAYERS, CROSSING_LAYER_A3, STRAND_TARGETS, StrandId } from './content/strand-targets';
+import { CROSSING_LAYERS, CROSSING_LAYERS_A3, STRAND_TARGETS, StrandId } from './content/strand-targets';
 
 // S7.5: acts 1–2 widened L6→L7, event share 22%→32% (combat absorbs the
 // delta; rest/treasure untouched). Env-overridable via TB_MAP_LAYERS /
@@ -81,9 +81,10 @@ function generateBraidMap(
 ): { map: MapState; rng: number } {
   let rng = rngState;
   const pools = ENCOUNTER_POOLS[act];
-  // A3's third knot gets its OWN crossing layer (S11.11-1 recommendation:
-  // crossings stay scarce — pending ruling, non-blocking to start)
-  const crossings = extraElite ? [...CROSSING_LAYERS, CROSSING_LAYER_A3] : [...CROSSING_LAYERS];
+  // A3's third knot gets its OWN crossing layer; S25 respaces A3 to
+  // every-other-layer (adjacent knots cannot stay planar — see
+  // strand-targets.ts for the OQ#81 ruling)
+  const crossings = extraElite ? [...CROSSING_LAYERS_A3] : [...CROSSING_LAYERS];
   const eventDefs = eventsForAct(act, tracks, riteCharacters).filter(
     (e) => !(e.clue || e.character || e.rare) || !seenGatedEvents.includes(e.id),
   );
@@ -228,18 +229,37 @@ function generateBraidMap(
     if (widen.power === layer) placeSlot('power', layer, 3);
   }
 
-  // the shared breath layer (always plain — S11.7 contract), then the boss
-  const restA = push({ kind: 'rest', layer: LAYERS - 1, lane: 0 });
-  const restB = push({ kind: 'rest', layer: LAYERS - 1, lane: 1 });
+  // the shared breath layer (always plain — S11.7 contract), then the boss.
+  // S25 (OQ#81): ONE rest — the strands literally converge. The second
+  // identical rest was a fake pick (the breath never varies, so choosing
+  // between two plain rests could only feed the mismatch penalty), and its
+  // both-strands-to-both-rests edges were the map's biggest crossing.
+  const breath = push({ kind: 'rest', layer: LAYERS - 1, lane: 0 });
   const boss = push({ kind: 'boss', layer: LAYERS, lane: 0, encounterId: pools.boss });
 
-  // ---- edges ----------------------------------------------------------------
-  // within-strand chains; knots pull from both strands below and release
-  // onto either strand above — the crossing IS the reward
+  // ---- edges (S25: the braid is PLANAR — no two cords cross, drawn) --------
+  // within-strand chains; knots pull from the nearest slot of each strand
+  // below and release onto the nearest slot of each strand above — the
+  // crossing IS the reward, and it happens AT the knot, never mid-air.
+  // The planar law in practice (client draws lanes 0/2 at the sides, 1/3
+  // widened toward the center, knots and the breath at the center):
+  //   - only the slot nearest the weave's center may enter a knot (a far
+  //     slot's knot cord would cross its strand-mate's continuation)
+  //   - a knot releases onto each strand's NEAREST slot (the far slot
+  //     would cross that strand's own continuation)
+  //   - every layer-5 node ties into the one breath rest (edges that share
+  //     an endpoint meet, they never cross)
+  // s25-planar.test.ts asserts the drawn embedding stays crossing-free.
   const strandAt = (strand: StrandId, layer: number): MapNode[] =>
     nodes.filter((n) => n.strand === strand && n.layer === layer);
   const knotAt = (layer: number): MapNode | undefined =>
     nodes.find((n) => n.kind === 'elite' && n.layer === layer);
+  /** the strand's slot nearest the weave's center at a layer: the widened
+   *  inner (lane 1/3) when present, else the strand's single slot */
+  const nearest = (strand: StrandId, layer: number): MapNode => {
+    const own = strandAt(strand, layer);
+    return own.find((m) => m.lane === 1 || m.lane === 3) ?? own[0];
+  };
   for (const n of nodes) {
     if (n === boss) continue;
     if (n.layer === LAYERS - 1) {
@@ -248,17 +268,19 @@ function generateBraidMap(
     }
     const next = n.layer + 1;
     if (next === LAYERS - 1) {
-      n.edges = [restA.id, restB.id]; // strands converge at the breath
+      n.edges = [breath.id]; // strands converge at the breath
       continue;
     }
     if (n.kind === 'elite') {
       // victory grants the crossing: land on EITHER strand next layer
-      n.edges = [...strandAt('truth', next), ...strandAt('power', next)].map((m) => m.id);
+      n.edges = (['truth', 'power'] as StrandId[]).map((s) => nearest(s, next).id);
       continue;
     }
     const own = strandAt(n.strand!, next).map((m) => m.id);
     const knot = knotAt(next);
-    n.edges = knot ? [...own, knot.id] : own;
+    // planar law: only the center-nearest slot may enter the knot
+    const inner = n.lane === 1 || n.lane === 3 || strandAt(n.strand!, n.layer).length === 1;
+    n.edges = knot && inner ? [...own, knot.id] : own;
   }
 
   if (tracks || riteCharacters.length > 0) {
