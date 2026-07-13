@@ -50,6 +50,13 @@
   /* semantic hues */
   --ignite: #ff8248;       /* Resonance — hotter than pre-S23 (#ff8a5c) */
   --thread: #d4af6f;       /* Thread / links */
+  --warp: #7d7060;         /* S26 (OQ#83): the braid rails' ONE undyed warp
+                              material, both strands — between --line and
+                              --text-dim, deliberately below --thread in
+                              saturation and lightness so live/lit/trail
+                              always pop above the rails. Hex gate-tunable
+                              (G1); the SHAPE (one material, not two) is
+                              the ruling. */
   --hex: #b98fd4;
   --strike: #d4756f;
   --guard: #7fd4ff;

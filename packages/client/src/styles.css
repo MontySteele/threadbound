@@ -159,14 +159,16 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-cords { position: absolute; inset: 0; }
 /* strokes ride the map's scale knob (--map-scale, set by MapView from the
    viewport) so lines keep their weight when the braid grows */
-/* the warps: the two continuous strands (S20.3 item 1; S25 — they pinch at
-   the knots now, so the over/under casing is retired with the mid-air
-   crossing it sold) */
-.warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; stroke-linecap: round; }
-/* edges between strand positions: lighter thread segments; dashing is
-   reserved for the unreachable (S20.3 items 1 & 4) */
+/* S26 one-ink-pass (OQ#83): the rail IS the strand — hue/weight are
+   properties of an EDGE, never a second geometry layered on top. The base
+   .map-cord stays the neutral cord (breath→boss; non-braid maps). */
 .map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
-.map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
+/* the rail material: within-strand segments collectively ARE the
+   continuous rail; knot chords + the breath converge sit one step under.
+   Weights PROVISIONAL (G1) — gate-tunable. */
+.map-cord.cord-rail { stroke: var(--warp); stroke-width: calc(2px * var(--map-scale, 1)); opacity: 0.55; }
+.map-cord.cord-knot { stroke: var(--warp); stroke-width: calc(1.6px * var(--map-scale, 1)); opacity: 0.45; }
+.map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
 /* S24 (re-ruled same day — navigation outranks tidiness): every reachable
    route cord keeps full weight; dead cords fade harder, and MapView stops
    drawing them entirely once they fall more than a layer behind the pair. */
@@ -174,10 +176,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 /* S24 route preview: the hovered / pad-focused node lights its onward
    cords — "if we go here, then what". The Thread's gold, one step quieter
    than the live pick (which stays the brightest read on the field). */
-.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
+.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
 .map-cord.cord-dead.cord-hot { opacity: 0.7; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
-.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
+.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
 /* scouting ahead must stay readable; pointer-events pass THROUGH disabled
    nodes so the field's route-preview hit-test still sees the pointer (S24 —
@@ -224,9 +226,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--thread) 55%, transparent)); }
 }
 @media (prefers-reduced-motion: reduce) { .mapnode.here .node-medallion { animation: none; } }
-/* S11.8 → S20.3: strand keying rides the warp hues (You/partner rhyme) */
-.mapnode.strand-truth { border-color: color-mix(in srgb, var(--p1) 40%, var(--line)); }
-.mapnode.strand-power { border-color: color-mix(in srgb, var(--p2) 45%, var(--line)); }
+/* S26 (OQ#83): seat hues key seat marks and NOTHING else — map geometry
+   never wears them. Strand identity is carried by SIDE (fixed since S25)
+   plus node composition; the borders re-key to the one warp material. */
+.mapnode.strand-truth, .mapnode.strand-power { border-color: color-mix(in srgb, var(--warp) 55%, var(--line)); }
 /* S11.6 asymmetric scouting: your seat's face for a node — a whispered
    sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
    you"). Italic + dim: it reads as knowledge, not as the node's name. */
