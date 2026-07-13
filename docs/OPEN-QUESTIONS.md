@@ -1139,3 +1139,84 @@ falls either run. `run-CADFM` = main/pre-S4 build (no gold/ascension fields);
     protocol, 50-run sim completes (the act-2 link-fire band miss
     pre-exists on main: 62.1% there / 61.1% here; n=2000 board pending
     per S21-R1). **RULED + EXECUTED.**
+
+---
+
+## S26 — the five stations (2026-07-12, designer rulings in-session)
+
+82. **S26 — braid map geometry law RULED: the knotwork schematic.**
+    The geometry fork (panel 1, straight strand rails + lens splits +
+    diamond chords at knots, vs. panel 2, the woven rope with rails
+    bending through knots) ruled for panel 1 ("Yeah, I think panel 1 is
+    better") — the rope variant puts the heaviest ink back on the
+    zigzag and implies the default route runs through the elite. The
+    law: every drawn x belongs to one of five stations (truth rail,
+    truth inner, center, power inner, power rail) and every cord is one
+    stroke from the chord alphabet {0, RAIL−INNER, INNER, RAIL}.
+    Constants (RAIL = clamp(96, 0.9·ROW, 150); INNER = 0.55·RAIL; PAD)
+    PROVISIONAL to the S26 screenshot gate (G1). The station map is a
+    monotone remap of the S25 x-order — same embedding, narrower — so
+    s25-planar.test.ts passes untouched and s26-stations.test.ts pins
+    the alphabet (not the pixels). **RULED + EXECUTED.**
+
+83. **S26 — warp overlay retired; the rail IS the strand; one ink
+    pass.** The warp builder (a second geometry over the same rooms,
+    most of the spaghetti: center-pinch at every knot + inner-slot
+    threading at 25–35° in the heaviest ink class) is deleted;
+    within-strand edge segments collectively ARE the continuous rail.
+    Seat hues (--p1/--p2) never key map geometry again — warps AND the
+    .mapnode.strand-* borders re-keyed (the blue-vs-orange threads read
+    as "my path vs. theirs" in a game about walking together; the
+    reservation law lands in STYLE-GUIDE §5). Material RULED D2a
+    (designer 2026-07-12, "I'll take your recommendation for D2a"): ONE
+    undyed warp material for both strands, new token --warp #7d7060 —
+    the warm palette is crowded, and on a fixed-sides planar map,
+    position already answers "which strand am I on." D2b (two material
+    hues: verdigris truth #9db4a4 / worn-copper power #a98262) rejected
+    for the record — the copper's clearance from --enemy-warm and --p2
+    was genuinely tight; if M2 (naming the rails) is ever taken up and
+    wants hue support, D2b's swatches are the starting point. Hex
+    gate-tunable with G1; the SHAPE (one material, not two) is the
+    ruling. **RULED + EXECUTED.**
+
+84. **S26 — severance grammar RULED: ink on the field means your
+    history or your future.** A door stood at and refused leaves a
+    severed stub (14·scale straight stroke along the chord bearing +
+    two fray ticks, --line-soft @ 0.32 — the dead fade carries over,
+    the dash dies); a route that was never the pair's renders NOTHING
+    (the second declutter dividend — those branches used to persist as
+    dashed hairlines). Replaces both .cord-dead and the S24
+    hide->1-layer-behind rule on braid maps. The fray RHYMES with the
+    soul-thread's severed state and shares nothing of its danger
+    register — never --danger here (the soul-thread's wound is live
+    drama; map stubs are cold history). Stub constants PROVISIONAL
+    (G3). Retract animation skipped per spec (static stubs are the
+    spec; the animation was garnish). **RULED + EXECUTED.**
+
+85. **S26 — preview reweights, never adds; one hop.** Hover / pad
+    focus toggles .previewing on the map SVG: the focused node's onward
+    cords take .lit (the cord-hot treatment applied to already-rendered
+    ink — the class renamed with its semantics), everything else dims
+    to 0.45 (PROVISIONAL, G4); .cord-live and .cord-trail NEVER dim
+    (the thread-gold reservation and the live-pick read outrank the
+    preview); severed stubs dim with the field. Kills the "highlight
+    adds an extra line" artifact at the root — the S24 hot-over-warp
+    exception died with the warps. Rider: the full-trace-to-boss
+    deepener stays PARKED — safe under this grammar (zero added ink)
+    but it can still fight the live-pick read; it wants its own ruling
+    with the reweight system in hand. **RULED + EXECUTED.**
+
+86. **S26 — D4 (labels leave the field) HELD.** Gutter labels; bearings
+    demoted to sigil + hover, possibly the Witness rail — strings, so
+    not this sprint. Re-open triggers: the TB_TRACKS Part 2 verdict
+    lands, OR the S26 gate shows label/chord collisions at the narrowed
+    field. Minor collisions are handled inside S26 by widening PAD or
+    clamping label width — never by silently pulling D4 forward.
+    **HELD.**
+
+87. **S26 — the mechanical candidates PARKED.** M1 fixed act glyph
+    (pin widened layers per act, not per seed — engine + golden churn);
+    trigger: seed-varied shapes annoy in human playtest. M2 strand
+    identity made legible (naming the rails — strings); trigger: taken
+    up with D4 post-TB_TRACKS. M3 layer diet / widened-layer removal;
+    trigger: the map still reads busy after the S26 gate. **PARKED.**
