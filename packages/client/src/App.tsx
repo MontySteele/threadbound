@@ -1227,6 +1227,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   // S26 one-thread law (OQ#83): the rail IS the strand — the within-strand
   // edge segments collectively ARE the continuous rail; the warp overlay
   // (a second geometry over the same rooms) is retired
+  const onLoom = (n: MapNode): boolean => visited.has(n.id) || reachable.has(n.id);
   return (
     <div className="center map-center">
       <h2>{ACT_NAME[map.act]}</h2>
@@ -1259,13 +1260,19 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         }}
         onPointerLeave={() => setHoverId(null)}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
-        <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+        <svg className={`map-cords ${hoverId !== null ? 'previewing' : ''}`} width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
           {/* ONE ink pass — the edges (S26/OQ#83). Cords stay taut
               diagonals, rim to rim, full weight for every reachable route
-              (S24, re-ruled: navigation outranks tidiness). Within-strand
-              segments wear the rail material (they collectively ARE the
-              continuous strand); knot chords and the breath converge sit
-              one step under; breath→boss stays the neutral base cord. */}
+              (S24, re-ruled: navigation outranks tidiness). Per-edge:
+              (1) MATERIAL — within-strand segments are the rail (they
+                  collectively ARE the continuous strand); knot chords and
+                  the breath converge sit one step under; breath→boss stays
+                  the neutral base cord;
+              (2) SEVERANCE (S26/OQ#84, braid only) — a door stood at and
+                  refused leaves a severed stub with fray ticks; a route
+                  that was never the pair's renders NOTHING;
+              (3) PREVIEW (S26/OQ#85) — hover / pad focus reweights
+                  existing ink (.lit + the previewing dim), never adds. */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
             // rim trims ride the medallion sizes (+ the word under the icon
@@ -1280,9 +1287,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const trimArr = sz(med(target) / 2 + 16);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
-              const hot = hoverId !== null && n.id === hoverId && !isTrail;
-              const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
-              if (dead && n.layer < hereLayer - 1) return null; // history, gone
+              const lit = hoverId !== null && n.id === hoverId && !isTrail;
               // taut, rim to rim (trims collapse if the cord is too short)
               const dx = to.x - from.x, dy = to.y - from.y;
               const L = Math.hypot(dx, dy) || 1;
@@ -1290,16 +1295,48 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const t1 = L > trimDep + trimArr + 6 ? trimArr : 0;
               const a = { x: from.x + (dx / L) * t0, y: from.y + (dy / L) * t0 };
               const b = { x: to.x - (dx / L) * t1, y: to.y - (dy / L) * t1 };
-              // material: within-strand segments ARE the rail; anything
-              // touching the center stations (knot, breath) is a chord —
-              // except the final breath→boss cord, which stays neutral
-              const material = !braid || dead ? ''
-                : n.strand && n.strand === target.strand ? 'cord-rail'
-                  : target.kind === 'boss' ? ''
-                    : 'cord-knot';
+              if (braid) {
+                // severed: the pair stood at this node and chose otherwise
+                // — foreclosed the moment the pick landed (they departed)
+                const severed = visited.has(n.id) && n.id !== map.position && !isTrail;
+                if (severed) {
+                  const len = 14 * scale;
+                  const e = { x: a.x + (dx / L) * len, y: a.y + (dy / L) * len };
+                  const tick = (deg: number): string => {
+                    const r = (deg * Math.PI) / 180;
+                    const tx = (dx / L) * Math.cos(r) - (dy / L) * Math.sin(r);
+                    const ty = (dx / L) * Math.sin(r) + (dy / L) * Math.cos(r);
+                    return `M ${e.x.toFixed(1)} ${e.y.toFixed(1)} L ${(e.x + tx * 5 * scale).toFixed(1)} ${(e.y + ty * 5 * scale).toFixed(1)}`;
+                  };
+                  return (
+                    <g key={`${n.id}-${toId}`}>
+                      <path className="map-cord cord-severed"
+                        d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${e.x.toFixed(1)} ${e.y.toFixed(1)}`} fill="none" />
+                      <path className="map-cord cord-severed-fray" d={`${tick(25)} ${tick(-25)}`} fill="none" />
+                    </g>
+                  );
+                }
+                // never the pair's route — renders nothing at all
+                if (!isTrail && !(onLoom(n) && onLoom(target))) return null;
+                // material: within-strand segments ARE the rail; anything
+                // touching the center stations (knot, breath) is a chord —
+                // except the final breath→boss cord, which stays neutral
+                const material =
+                  n.strand && n.strand === target.strand ? 'cord-rail'
+                    : target.kind === 'boss' ? ''
+                      : 'cord-knot';
+                return (
+                  <path key={`${n.id}-${toId}`}
+                    className={`map-cord ${material} ${isTrail ? 'cord-trail' : ''} ${live ? 'cord-live' : ''} ${lit ? 'lit' : ''}`}
+                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
+                );
+              }
+              // non-braid maps (finale, act 4): the pre-S26 grammar stands
+              const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
+              if (dead && n.layer < hereLayer - 1) return null; // history, gone
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${material} ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${hot ? 'cord-hot' : ''}`}
+                  className={`map-cord ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${lit ? 'lit' : ''}`}
                   d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
               );
             });

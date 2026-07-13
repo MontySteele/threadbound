@@ -169,15 +169,24 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-cord.cord-rail { stroke: var(--warp); stroke-width: calc(2px * var(--map-scale, 1)); opacity: 0.55; }
 .map-cord.cord-knot { stroke: var(--warp); stroke-width: calc(1.6px * var(--map-scale, 1)); opacity: 0.45; }
 .map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
-/* S24 (re-ruled same day — navigation outranks tidiness): every reachable
-   route cord keeps full weight; dead cords fade harder, and MapView stops
-   drawing them entirely once they fall more than a layer behind the pair. */
+/* dead dashes survive only on NON-braid maps (finale, act 4) — braid maps
+   replaced them with severance (below) in S26 */
 .map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.32; }
-/* S24 route preview: the hovered / pad-focused node lights its onward
-   cords — "if we go here, then what". The Thread's gold, one step quieter
-   than the live pick (which stays the brightest read on the field). */
-.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
-.map-cord.cord-dead.cord-hot { opacity: 0.7; }
+/* S26 severance (OQ#84): a door stood at and refused leaves a severed
+   stub + two fray ticks — cold history, --line-soft, never --danger (the
+   soul-thread's wound owns that register). Constants PROVISIONAL (G3). */
+.map-cord.cord-severed { stroke: var(--line-soft); opacity: 0.32; }
+.map-cord.cord-severed-fray { stroke: var(--line-soft); stroke-width: calc(1.1px * var(--map-scale, 1)); opacity: 0.32; }
+/* S26 preview (OQ#85): hover / pad focus REWEIGHTS existing ink, never
+   adds. The focused node's onward cords go .lit (the S24 cord-hot
+   treatment, applied to already-rendered cords); the rest of the field
+   dims (0.45 PROVISIONAL, G4). Never dims: the live pick and the trail —
+   the thread-gold reservation outranks the preview. Severed stubs dim
+   WITH the field (background history). */
+.map-cord.lit { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
+.map-cord.cord-dead.lit { opacity: 0.7; }
+.previewing .map-cord:not(.lit):not(.cord-live):not(.cord-trail):not(.cord-severed):not(.cord-severed-fray) { opacity: 0.45; }
+.previewing .map-cord.cord-severed, .previewing .map-cord.cord-severed-fray { opacity: 0.15; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
 .map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
@@ -646,6 +655,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .style-screen .mark-group { color: var(--text-dim); font-weight: normal; letter-spacing: 0.04em; margin: 14px 0 4px; }
 .mark-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 .mark-cell { background: var(--ink-2); border: 1px solid var(--line-soft); border-radius: 3px; padding: 7px; display: flex; flex-direction: column; align-items: center; max-width: 132px; }
+/* S26 braid-map ink swatches (/?style): the cords sample on the dark they
+   live in; the classes are the field's own, so a G1/G3/G4 tune shows here */
+.map-ink-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.map-ink-cell { background: var(--dark); border: 1px solid var(--dark-line); border-radius: 3px; padding: 7px; display: flex; flex-direction: column; align-items: center; }
 .mark-cell svg { display: block; }
 .mark-label { font-size: 0.68em; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-top: 5px; text-align: center; line-height: 1.3; }
 .mark-tier { font-size: 0.62em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); }
