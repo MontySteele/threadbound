@@ -77,6 +77,7 @@ Reserved hues — **the reservation laws:**
 | `--enemy-warm` | `#e89a58` | enemy intent/target heat. Deliberately **not** `--p2`. |
 | `--ignite` | `#ff8248` | Resonance and Pulse-forced links own ember. Nothing else ignites. |
 | `--thread` / `--thread-gold` | `#d4af6f` | the Thread, fired links, gold chrome accents, the Witness's Tapestry channel |
+| `--warp` | `#7d7060` | **the braid rails' one undyed material** (S26/OQ#83), both strands — between `--line` and `--text-dim`, deliberately below `--thread` in saturation and lightness so live/lit/trail always pop above the rails. Map geometry only; hex gate-tunable (G1), the shape (one material, not two) is the ruling. |
 | `--witness` | `#b9a8d4` | the Witness's voice and vestment frames only |
 | `--pierce` | `#f0e6da` | bone-bright, outside every faction hue (S15.2A) |
 | tag hues | strike/guard/hex/surge/rite | card tag identity; guard intentionally shares p1's cyan family (audited, accepted) |
@@ -147,6 +148,13 @@ Hooks (display-only, set in App.tsx / StyleScreen.tsx): `--seat-hue` on
 `.pstat` and `.chaincard`; `--bound-hue` on `.enemy`. These custom
 properties are the *only* sanctioned way seat color enters chrome.
 
+**The reservation amendment (S26/OQ#83): seat hues key seat marks and
+nothing else; map geometry never wears them.** The braid's warps and the
+`.mapnode.strand-*` borders used to ride `--p1`/`--p2` — the header said
+"You" in p1-blue while the map showed a blue thread and an orange thread
+wandering separately, reading as "my path vs. theirs" in a game whose
+thesis is that the pair walks together. Both re-keyed to `--warp`.
+
 ## 6. The seam — Chain spec
 
 - The Chain panel is transparent; a **warp line** (`.chain::before`, 2px,
@@ -164,59 +172,102 @@ properties are the *only* sanctioned way seat color enters chrome.
   on screen. State language unchanged (slack greys, severed bleeds,
   ignition flashes ember).
 
-## 7. The braid — map cord grammar
+## 7. The braid — the station grammar
 
-**The planar law (S25/OQ#81, ruled 2026-07-11): no two cords may cross,
-under any circumstance.** This is enforced in GENERATION, not styling —
-map.ts builds an embedding with no crossing edges, and
-s25-planar.test.ts fails any change that reintroduces one. What the law
-ruled into the picture:
+**(S26/OQ#82, ruled 2026-07-12 — third rewrite of this section in four
+sprints; this one is load-bearing. S24's taut-diagonals text is
+superseded wholesale, though its surviving laws are restated below.)**
 
-- **Strand sides are fixed.** The old side-flip at every crossing forced
-  the bypass edges to swap sides mid-air; two paths can only swap sides
-  planarly through a shared point, which the bypass (by definition)
-  skips. The warps now **pinch at each knot** instead of X-ing through
-  it — the knot visibly *binds* the strands. The crossing stays real in
-  the rules: switching strands still requires taking the elite. (The
-  over/under casing retired with the mid-air crossing it sold.)
-- **Only the center-nearest slot enters a knot**, and a knot releases
-  onto each strand's nearest slot — far-slot knot cords would cross the
-  strand's own continuation.
-- **The breath is ONE shared rest** (the strands literally converge; the
-  second identical rest was a fake pick that could only feed the
-  mismatch penalty, and its edges were the map's biggest X). The warps
-  end there — a single plain cord ascends to the boss.
-- **The warp threads through the widened inner slot beside a knot**, so
-  every warp segment coincides with a real edge and edge-planarity
-  covers the warps too.
-- A3's third crossing respaces to layers 1/3/5 (adjacent knots cannot
-  both offer both-strand access planarly); the toll knot stays the
-  deepest (layer 5).
+**The station law: every drawn x-coordinate on a braid map belongs to
+one of five stations, and every cord is one stroke from a four-entry
+alphabet.** The braid map is a KNOTWORK SCHEMATIC, not a graph drawing —
+the eye reads "tidy" when ink comes from a small repeating vocabulary
+of strokes. Stop drawing a graph; draw a textile.
 
-The two warp strands ARE the map's picture; everything else is wiring and
-stays quiet — but **navigation outranks tidiness**: a cord's first job is
-to say where it goes (S20.3 → S24 declutter, re-ruled in-session
-2026-07-10 after the first cut's vertical weave + distance fade killed
-route reading):
+The five stations (x-offsets from center `xC`):
 
-- **Taut diagonals.** Neutral cords are straight lines, rim to rim —
-  every cord points at its destination, a strung loom. No sag, no
-  S-curve: a curve that enters every node vertically makes all arrivals
-  look alike, and the route can't be traced.
-- **Rim ties.** Cords trim at the medallion rims, with extra clearance on
-  the arrival side where the node's word lives; an ink halo on node
-  lettering (`.node-word`, `.map-scout`) covers what still passes behind.
-  Lines never converge under an icon.
-- **Full-weight routes.** Every reachable route cord keeps base weight
-  (34% thread) no matter how far ahead — planning is the map's job.
-  Live picks stay brightest (2.2px + glow). Bypassed cords dash and fade
-  (0.32) and stop rendering entirely once more than a layer behind — the
-  taut trail already tells that story.
-- **Route preview** (`.cord-hot`): the hovered / pad-focused node lights
-  its onward cords in the Thread's gold, one step quieter than the live
-  pick — "if we go here, then what." Display-only (pointer hit-test on
-  the field + a `.gp-focus` observer); picks and reachability untouched.
-- **The trail** stays a straight taut line, rim-tied like everything else.
+| station | x | who sits there |
+|---|---|---|
+| truth rail | `xC − RAIL` | truth primaries (lane 0/2) |
+| truth inner | `xC − INNER` | truth widened slots (lane 1/3) |
+| center | `xC` | knots (elite), the breath, the boss |
+| power inner | `xC + INNER` | power widened slots |
+| power rail | `xC + RAIL` | power primaries |
+
+`RAIL = clamp(96, 0.9·ROW, 150)`, `INNER = 0.55·RAIL`,
+`PAD = max(120, 0.9·RAIL + 40)`, `W = 2·(RAIL + PAD)`; `scale` keys off
+ROW alone. All constants PROVISIONAL (G1) — gate-tunable, ratified by
+the designer's eye at the screenshot gate. The 0.9·ROW target puts
+rail→center knot chords near 45°; INNER keeps inner→knot chords
+steeper (~60°).
+
+The chord alphabet — every edge spans exactly one layer; its |dx| must
+be one of:
+
+| \|dx\| | stroke | which edges |
+|---|---|---|
+| `0` | rail continuation | within-strand primary→primary (incl. the knot-layer bypass) |
+| `RAIL − INNER` | lens bow | primary↔widened-inner (the widened micro-choice: the rail runs STRAIGHT through the primary; one bow deviates inward and rejoins — two strokes, not a symmetric split) |
+| `INNER` | inner chord | widened-inner↔knot, widened-inner→breath |
+| `RAIL` | rail chord | primary↔knot (un-widened entry/release), primary→breath converge |
+
+Plus the single vertical breath→boss cord. Nothing else may be drawn.
+`s26-stations.test.ts` pins the alphabet (not the pixels) across 100
+seeds × both acts × A3 on/off.
+
+**The one-ink-pass law (S26/OQ#83): the rail IS the strand.** There is
+exactly one ink pass — the edges — and hue/weight are properties of an
+edge, never a second geometry layered on top (the warp overlay is
+retired). Edge treatments:
+
+- **within-strand** (rail continuation, lens bow): `--warp` material,
+  2.0px @ 55% — these segments collectively ARE the continuous rail.
+- **knot chord / breath converge**: `--warp`, 1.6px @ 45% — one step
+  under the rail.
+- **breath→boss**: the neutral base cord, unchanged.
+- **trail / live / lit**: thread-gold family, exactly as before — the
+  reservation holds (a strand keeps its color only where the run has
+  been or can still go).
+
+Both strands wear ONE undyed warp material (`--warp` — G2, RULED D2a).
+Strand identity is carried by SIDE (fixed since S25) plus node
+composition. Seat hues never key map geometry (see §5).
+
+**The severance law (S26/OQ#84): ink on the field means your history or
+your future.** Per edge, braid maps only:
+
+- `trail` — walked, the taut gold line.
+- live-renderable — both endpoints visited-or-reachable: normal
+  material.
+- `severed` — the source was stood at and departed, the edge untaken:
+  a straight stub (`14·scale`px along the original chord bearing) with
+  two fray ticks (~±25°), `--line-soft` @ 0.32. Cold history. It rhymes
+  with the soul-thread's severed state but NEVER borrows `--danger` —
+  the soul-thread's wound is a live dramatic register; map stubs are
+  not.
+- everything else (source never visited, target unreachable) —
+  **renders nothing at all.**
+
+This replaces both the dashed dead-cord treatment and the S24
+hide-behind rule on braid maps. Constants PROVISIONAL (G3).
+
+**The preview law (S26/OQ#85): hover and pad focus change the WEIGHT of
+existing ink; they never add geometry.** The focused node's onward
+cords take `.lit` (the old cord-hot treatment, applied to
+already-rendered cords); everything else dims to 0.45 (PROVISIONAL,
+G4). **Never dims:** `.cord-live` and `.cord-trail` — the thread-gold
+reservation and the live-pick read outrank the preview. Severed stubs
+dim with the field. One hop stays one hop (the full-trace deepener
+stays parked, OQ#85 rider). Display-only, as before: pointer hit-test
+on the field + a `.gp-focus` observer; picks and reachability
+untouched.
+
+**Surviving S24/S25 laws, restated:** no two cords may cross, ever
+(planar BY GENERATION — s25-planar.test.ts; the station map is a
+monotone remap of the S25 x-order, so the embedding is the same
+embedding, narrower). Cords are taut diagonals, rim-tied, with the ink
+halo on node lettering; every reachable route cord keeps full weight —
+navigation outranks tidiness.
 
 **The rail's gutter (S20.4 → S24):** on rail-mounting screens the stage
 inset is SYMMETRIC, so map and combat sit on the true center under the

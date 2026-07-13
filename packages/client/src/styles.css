@@ -159,25 +159,36 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .map-cords { position: absolute; inset: 0; }
 /* strokes ride the map's scale knob (--map-scale, set by MapView from the
    viewport) so lines keep their weight when the braid grows */
-/* the warps: the two continuous strands (S20.3 item 1; S25 — they pinch at
-   the knots now, so the over/under casing is retired with the mid-air
-   crossing it sold) */
-.warp { fill: none; stroke-width: calc(3px * var(--map-scale, 1)); opacity: 0.6; stroke-linecap: round; }
-/* edges between strand positions: lighter thread segments; dashing is
-   reserved for the unreachable (S20.3 items 1 & 4) */
+/* S26 one-ink-pass (OQ#83): the rail IS the strand — hue/weight are
+   properties of an EDGE, never a second geometry layered on top. The base
+   .map-cord stays the neutral cord (breath→boss; non-braid maps). */
 .map-cord { stroke: color-mix(in srgb, var(--thread) 34%, transparent); stroke-width: calc(1.4px * var(--map-scale, 1)); }
-.map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
-/* S24 (re-ruled same day — navigation outranks tidiness): every reachable
-   route cord keeps full weight; dead cords fade harder, and MapView stops
-   drawing them entirely once they fall more than a layer behind the pair. */
+/* the rail material: within-strand segments collectively ARE the
+   continuous rail; knot chords + the breath converge sit one step under.
+   Weights PROVISIONAL (G1) — gate-tunable. */
+.map-cord.cord-rail { stroke: var(--warp); stroke-width: calc(2px * var(--map-scale, 1)); opacity: 0.55; }
+.map-cord.cord-knot { stroke: var(--warp); stroke-width: calc(1.6px * var(--map-scale, 1)); opacity: 0.45; }
+.map-cord.cord-live { stroke: var(--thread); stroke-width: calc(2.2px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--thread) 60%, transparent)); }
+/* dead dashes survive only on NON-braid maps (finale, act 4) — braid maps
+   replaced them with severance (below) in S26 */
 .map-cord.cord-dead { stroke: var(--line-soft); stroke-dasharray: 2 6; opacity: 0.32; }
-/* S24 route preview: the hovered / pad-focused node lights its onward
-   cords — "if we go here, then what". The Thread's gold, one step quieter
-   than the live pick (which stays the brightest read on the field). */
-.map-cord.cord-hot { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
-.map-cord.cord-dead.cord-hot { opacity: 0.7; }
+/* S26 severance (OQ#84): a door stood at and refused leaves a severed
+   stub + two fray ticks — cold history, --line-soft, never --danger (the
+   soul-thread's wound owns that register). Constants PROVISIONAL (G3). */
+.map-cord.cord-severed { stroke: var(--line-soft); opacity: 0.32; }
+.map-cord.cord-severed-fray { stroke: var(--line-soft); stroke-width: calc(1.1px * var(--map-scale, 1)); opacity: 0.32; }
+/* S26 preview (OQ#85): hover / pad focus REWEIGHTS existing ink, never
+   adds. The focused node's onward cords go .lit (the S24 cord-hot
+   treatment, applied to already-rendered cords); the rest of the field
+   dims (0.45 PROVISIONAL, G4). Never dims: the live pick and the trail —
+   the thread-gold reservation outranks the preview. Severed stubs dim
+   WITH the field (background history). */
+.map-cord.lit { stroke: color-mix(in srgb, var(--thread) 78%, transparent); stroke-width: calc(1.9px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 40%, transparent)); }
+.map-cord.cord-dead.lit { opacity: 0.7; }
+.previewing .map-cord:not(.lit):not(.cord-live):not(.cord-trail):not(.cord-severed):not(.cord-severed-fray) { opacity: 0.45; }
+.previewing .map-cord.cord-severed, .previewing .map-cord.cord-severed-fray { opacity: 0.15; }
 /* the walked trail pulls taut and brightens — the run leaves a woven line */
-.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
+.map-cord.cord-trail { stroke: color-mix(in srgb, var(--thread) 85%, #fff 6%); stroke-width: calc(2.4px * var(--map-scale, 1)); opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--thread) 50%, transparent)); }
 .mapnode { padding: 7px 12px; position: absolute; transform: translate(-50%, -50%); background: var(--panel); }
 /* scouting ahead must stay readable; pointer-events pass THROUGH disabled
    nodes so the field's route-preview hit-test still sees the pointer (S24 —
@@ -224,9 +235,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
   50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--thread) 55%, transparent)); }
 }
 @media (prefers-reduced-motion: reduce) { .mapnode.here .node-medallion { animation: none; } }
-/* S11.8 → S20.3: strand keying rides the warp hues (You/partner rhyme) */
-.mapnode.strand-truth { border-color: color-mix(in srgb, var(--p1) 40%, var(--line)); }
-.mapnode.strand-power { border-color: color-mix(in srgb, var(--p2) 45%, var(--line)); }
+/* S26 (OQ#83): seat hues key seat marks and NOTHING else — map geometry
+   never wears them. Strand identity is carried by SIDE (fixed since S25)
+   plus node composition; the borders re-key to the one warp material. */
+.mapnode.strand-truth, .mapnode.strand-power { border-color: color-mix(in srgb, var(--warp) 55%, var(--line)); }
 /* S11.6 asymmetric scouting: your seat's face for a node — a whispered
    sub-label ("carries Wedding Knife" / "bears on ..." / "a door meant for
    you"). Italic + dim: it reads as knowledge, not as the node's name. */
@@ -643,6 +655,10 @@ header { display: flex; justify-content: space-between; gap: 12px; border-bottom
 .style-screen .mark-group { color: var(--text-dim); font-weight: normal; letter-spacing: 0.04em; margin: 14px 0 4px; }
 .mark-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 .mark-cell { background: var(--ink-2); border: 1px solid var(--line-soft); border-radius: 3px; padding: 7px; display: flex; flex-direction: column; align-items: center; max-width: 132px; }
+/* S26 braid-map ink swatches (/?style): the cords sample on the dark they
+   live in; the classes are the field's own, so a G1/G3/G4 tune shows here */
+.map-ink-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.map-ink-cell { background: var(--dark); border: 1px solid var(--dark-line); border-radius: 3px; padding: 7px; display: flex; flex-direction: column; align-items: center; }
 .mark-cell svg { display: block; }
 .mark-label { font-size: 0.68em; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-top: 5px; text-align: center; line-height: 1.3; }
 .mark-tier { font-size: 0.62em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); }

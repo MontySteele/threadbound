@@ -1063,46 +1063,16 @@ function nodeLabel(map: ClientState['map'], id: number): string {
   return n ? `${NODE_ICON[n.kind]} ${nodeName(n)}` : '?';
 }
 
-// ---- S20.3: the braid, drawn as a braid (presentation only — map.ts and
-// every edge/pick rule untouched). The two warp strands render as
-// continuous curved paths that CROSS at the knots (one passes over); nodes
-// are medallions from the sigil vocabulary; the walked trail pulls taut and
-// brightens; the unreachable dims and dashes. Legibility outranks
-// decoration everywhere (the S15 knot lesson stands).
+// ---- S20.3 → S26: the braid, drawn as a KNOTWORK SCHEMATIC (presentation
+// only — map.ts and every edge/pick rule untouched). S26 station grammar
+// (OQ#82): every drawn x belongs to one of five stations (truth rail, truth
+// inner, center, power inner, power rail) and every cord is one stroke from
+// a four-entry alphabet {0, RAIL−INNER, INNER, RAIL}. The rail IS the
+// strand (OQ#83 — the warp overlay is retired; one ink pass). Nodes are
+// medallions from the sigil vocabulary; the walked trail pulls taut and
+// brightens. Legibility outranks decoration everywhere.
 
 interface Pt { x: number; y: number }
-
-/** Catmull-Rom → cubic segments (vertical flow; endpoints clamped). */
-function cubicsFrom(pts: Pt[]): { a: Pt; c1: Pt; c2: Pt; b: Pt }[] {
-  const segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? pts[i + 1];
-    segs.push({
-      a: p1,
-      c1: { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 },
-      c2: { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 },
-      b: p2,
-    });
-  }
-  return segs;
-}
-
-/** Path for the segments — optionally only the `live` ones, emitted as
- *  subpath runs (an M restarts wherever a hidden segment breaks the strand). */
-function pathOf(segs: { a: Pt; c1: Pt; c2: Pt; b: Pt }[], live?: boolean[]): string {
-  const f = (n: number) => n.toFixed(1);
-  let d = '';
-  for (let i = 0; i < segs.length; i++) {
-    if (live && !live[i]) continue;
-    const s = segs[i];
-    if (!(i > 0 && (!live || live[i - 1]))) d += `M ${f(s.a.x)} ${f(s.a.y)} `;
-    d += `C ${f(s.c1.x)} ${f(s.c1.y)} ${f(s.c2.x)} ${f(s.c2.y)} ${f(s.b.x)} ${f(s.b.y)} `;
-  }
-  return d.trim();
-}
 
 /** stable per-run key (the Hints.tsx construction): the act map layout is a
  *  pure function of the run seed, which redaction masks — hash it instead */
@@ -1115,12 +1085,6 @@ function mapKeyOf(map: ClientState['map']): number {
   }
   return h >>> 0;
 }
-
-const STRAND_HUE: Record<string, string> = {
-  // the established You/partner hues key the two strands (map header rhyme)
-  truth: 'color-mix(in srgb, var(--p1) 55%, #7d9bd6)',
-  power: 'color-mix(in srgb, var(--p2) 60%, #d69b62)',
-};
 
 /** live window dims — the braid sizes itself to the screen it's given
  *  (designer 2026-07-06: fill the screen, bigger type and icons) */
@@ -1162,41 +1126,47 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
   const railGutter = vw >= 1600 ? Math.max(0, 360 - (vw - 1500) / 2) : vw >= 1100 ? 292 : 0;
   const availW = Math.max(560, Math.min(vw, 1500) - 2 * railGutter - 72);
   const availH = Math.max(540, vh - 250 /* header + title + picks */);
-  const lanes = braid ? 3.4 : Math.max(...laneCounts.values());
-  const COL = Math.round(Math.min(braid ? 330 : 290, Math.max(braid ? 196 : 168, availW / lanes)));
   const ROW = Math.round(Math.min(170, Math.max(96, availH / layerCount)));
+  // ---- S26 station grammar (OQ#82): the five stations. RAIL targets ~45°
+  // rail→center knot chords; INNER keeps inner→knot chords steeper (~60°).
+  // Both PROVISIONAL (G1) — gate-tunable, ratified at the screenshot gate.
+  let RAIL = Math.min(150, Math.max(96, Math.round(0.9 * ROW)));
+  // PAD keeps node labels inside the field at the narrowed width (G1)
+  let PAD = Math.max(120, Math.round(0.9 * RAIL) + 40);
+  if (braid && 2 * (RAIL + PAD) > availW) {
+    // the availW guard: the 390px gate column must still fit
+    const k = availW / (2 * (RAIL + PAD));
+    RAIL = Math.round(RAIL * k);
+    PAD = Math.round(PAD * k);
+  }
+  const INNER = Math.round(0.55 * RAIL);
+  // non-braid maps (finale, act 4) keep the lane grid untouched
+  const lanes = Math.max(...laneCounts.values());
+  const COL = Math.round(Math.min(290, Math.max(168, availW / lanes)));
   // icons and type ride the geometry — one knob, so nothing drifts apart
-  const scale = Math.min(COL / (braid ? 196 : 168), ROW / 96);
+  // (S26: braid re-keys to ROW alone, per the S20.3 discipline)
+  const scale = braid ? ROW / 96 : Math.min(COL / 168, ROW / 96);
   const sz = (n: number): number => Math.round(n * scale);
-  const W = braid ? Math.round(3.4 * COL) : Math.max(...laneCounts.values()) * COL;
+  const W = braid ? 2 * (RAIL + PAD) : lanes * COL;
   const H = layerCount * ROW;
   const xC = W / 2;
-  /** which side a strand runs — S25 (OQ#81, the planar braid): sides are
-   *  FIXED. The old side-flip at every crossing forced the bypass edges to
-   *  swap sides mid-air, and two paths can only swap sides planarly
-   *  THROUGH a shared point — which the bypass, by definition, skips. The
-   *  warps now PINCH at each knot instead of X-ing through it: the knot
-   *  visibly binds the strands. The crossing stays real in the rules
-   *  (switching strands still requires taking the elite). */
-  const sideX = (strand: string): number => (strand === 'truth' ? xC - COL : xC + COL);
   const pos = (n: MapNode): Pt => {
     const y = H - (n.layer + 0.5) * ROW;
     if (!braid) {
-      const offset = ((Math.max(...laneCounts.values()) - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
+      const offset = ((lanes - (laneCounts.get(n.layer) ?? 1)) * COL) / 2;
       return { x: offset + (n.lane + 0.5) * COL, y };
     }
-    if (n.kind === 'boss') return { x: xC, y };
-    if (n.kind === 'elite') return { x: xC, y }; // the knot sits ON the crossing
+    // S26: every x is a station. Sides stay FIXED (S25/OQ#81 — the planar
+    // braid); the station map is a monotone remap of the S25 x-order, so
+    // the drawn embedding is the same embedding, narrower.
+    if (n.kind === 'boss' || n.kind === 'elite') return { x: xC, y }; // the knot sits ON the crossing
     if (n.strand) {
       const primary = n.lane === 0 || n.lane === 2;
-      const x = sideX(n.strand);
-      // widened slot hangs off its strand toward the (crossing-free) center
-      return { x: primary ? x : x + (x < xC ? 0.62 * COL : -0.62 * COL), y };
+      const side = n.strand === 'truth' ? -1 : 1;
+      return { x: xC + side * (primary ? RAIL : INNER), y };
     }
-    // the shared breath: strandless rests, centered as a pair
-    const mates = map.nodes.filter((m) => m.layer === n.layer);
-    const i = mates.findIndex((m) => m.id === n.id);
-    return { x: xC + (i - (mates.length - 1) / 2) * 1.1 * COL, y };
+    // the breath: ONE shared strandless rest since S25 — it sits at center
+    return { x: xC, y };
   };
   const hereLayer = map.nodes.find((n) => n.id === map.position)?.layer ?? -1;
   const byId = new Map(map.nodes.map((n) => [n.id, n]));
@@ -1254,53 +1224,10 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
     }
   }
 
-  // ---- the warps (braid only): one waypoint per layer per strand ----------
-  const warpSegs: Record<string, { a: Pt; c1: Pt; c2: Pt; b: Pt }[]> = {};
-  // designer 2026-07-06: a strand keeps its COLOR only where the run has
-  // been or can still go — braids not taken lose the colored line, and
-  // their edges fall back to the dashed dead cords below
-  const warpLive: Record<string, boolean[]> = {};
+  // S26 one-thread law (OQ#83): the rail IS the strand — the within-strand
+  // edge segments collectively ARE the continuous rail; the warp overlay
+  // (a second geometry over the same rooms) is retired
   const onLoom = (n: MapNode): boolean => visited.has(n.id) || reachable.has(n.id);
-  // edges the warps still draw — a plain cord there would put TWO lines
-  // between the same rooms (designer, 2026-07-06: one thread per strand)
-  const warpCovered = new Set<string>();
-  if (braid) {
-    for (const strand of ['truth', 'power']) {
-      const waypoints: MapNode[] = [];
-      // S25 (the planar braid): the warps end AT the breath — the strands
-      // braid into one, and a single plain cord ascends to the boss (two
-      // warps overlapping on the same final segment read as one strand
-      // winning; neither does)
-      for (let layer = 0; layer < layerCount - 1; layer++) {
-        const knot = map.nodes.find((n) => n.kind === 'elite' && n.layer === layer);
-        if (knot) { waypoints.push(knot); continue; }
-        const own = map.nodes.filter((n) => n.strand === strand && n.layer === layer);
-        if (own.length > 0) {
-          // S25 planar law: beside a knot the thread runs through the slot
-          // the knot's EDGES use — the widened INNER — so every warp
-          // segment coincides with a real edge, and edge-planarity covers
-          // the warp too (a knot→primary chord crosses the bypass's
-          // outer→inner cord). Away from knots it hugs its rail (primary).
-          const nearKnot = map.nodes.some((n) => n.kind === 'elite' && Math.abs(n.layer - layer) === 1);
-          const inner = own.find((n) => n.lane === 1 || n.lane === 3);
-          const primary = own.find((n) => n.lane === 0 || n.lane === 2) ?? own[0];
-          waypoints.push(nearKnot && inner ? inner : primary);
-          continue;
-        }
-        const shared = map.nodes.filter((n) => !n.strand && n.layer === layer);
-        if (shared.length > 0) {
-          waypoints.push(shared[0]); // the breath: both threads tie one knot
-        }
-      }
-      warpSegs[strand] = cubicsFrom(waypoints.map(pos));
-      warpLive[strand] = [];
-      for (let i = 0; i < waypoints.length - 1; i++) {
-        const live = onLoom(waypoints[i]) && onLoom(waypoints[i + 1]);
-        warpLive[strand].push(live);
-        if (live) warpCovered.add(`${waypoints[i].id}-${waypoints[i + 1].id}`);
-      }
-    }
-  }
   return (
     <div className="center map-center">
       <h2>{ACT_NAME[map.act]}</h2>
@@ -1333,33 +1260,19 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
         }}
         onPointerLeave={() => setHoverId(null)}
         style={{ width: W, height: H, fontSize: `${(16 * scale).toFixed(1)}px`, ['--map-scale' as string]: scale.toFixed(3) }}>
-        <svg className="map-cords" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
-          {/* the warps: continuous threads PINCHING at the knots (S25 — the
-              over/under casing retired with the mid-air crossing it sold);
-              drawn only where the run has been or can still go */}
-          {braid && (['truth', 'power'] as const).map((strand) => {
-            const d = pathOf(warpSegs[strand], warpLive[strand]);
-            return d ? (
-              <path key={`warp-${strand}`} className="warp" d={d}
-                style={{ stroke: STRAND_HUE[strand] }} />
-            ) : null;
-          })}
-          {/* the edges: lighter thread segments between strand positions;
-              dashing is reserved for the unreachable.
-              S24 declutter, RE-RULED same day (designer 2026-07-10 — the
-              first cut's vertical weave + distance fade killed route
-              reading; navigation outranks tidiness):
-              (1) cords are TAUT DIAGONALS, rim to rim — every cord points
-                  at its destination, a strung loom, no sag and no S-curve;
-              (2) cords TRIM AT THE RIMS — they no longer converge under the
-                  icons or run through the node lettering (an ink halo on
-                  the labels covers what still passes behind);
-              (3) every reachable route cord keeps FULL weight (the .cord-far
-                  distance fade is retired); bypassed cords more than a
-                  layer behind stop rendering (the trail tells that story),
-                  the rest of the dead stay dashed and faded;
-              (4) ROUTE PREVIEW — the hovered / pad-focused node lights its
-                  onward cords (.cord-hot): "if we go here, then what". */}
+        <svg className={`map-cords ${hoverId !== null ? 'previewing' : ''}`} width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
+          {/* ONE ink pass — the edges (S26/OQ#83). Cords stay taut
+              diagonals, rim to rim, full weight for every reachable route
+              (S24, re-ruled: navigation outranks tidiness). Per-edge:
+              (1) MATERIAL — within-strand segments are the rail (they
+                  collectively ARE the continuous strand); knot chords and
+                  the breath converge sit one step under; breath→boss stays
+                  the neutral base cord;
+              (2) SEVERANCE (S26/OQ#84, braid only) — a door stood at and
+                  refused leaves a severed stub with fray ticks; a route
+                  that was never the pair's renders NOTHING;
+              (3) PREVIEW (S26/OQ#85) — hover / pad focus reweights
+                  existing ink (.lit + the previewing dim), never adds. */}
           {map.nodes.flatMap((n) => {
             const from = pos(n);
             // rim trims ride the medallion sizes (+ the word under the icon
@@ -1374,13 +1287,7 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const trimArr = sz(med(target) / 2 + 16);
               const isTrail = trailEdges.has(`${n.id}-${toId}`);
               const live = (map.position === -1 ? false : n.id === map.position) && pickable.includes(toId);
-              const hot = hoverId !== null && n.id === hoverId && !isTrail;
-              // the warp IS this segment's line — only the stateful reads
-              // (taut trail, live pick, route preview) draw over it; a
-              // neutral cord here would double the braid
-              if (warpCovered.has(`${n.id}-${toId}`) && !isTrail && !live && !hot) return null;
-              const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
-              if (dead && n.layer < hereLayer - 1) return null; // history, gone
+              const lit = hoverId !== null && n.id === hoverId && !isTrail;
               // taut, rim to rim (trims collapse if the cord is too short)
               const dx = to.x - from.x, dy = to.y - from.y;
               const L = Math.hypot(dx, dy) || 1;
@@ -1388,9 +1295,48 @@ function MapView({ state, net }: { state: ClientState; net: Net }): JSX.Element 
               const t1 = L > trimDep + trimArr + 6 ? trimArr : 0;
               const a = { x: from.x + (dx / L) * t0, y: from.y + (dy / L) * t0 };
               const b = { x: to.x - (dx / L) * t1, y: to.y - (dy / L) * t1 };
+              if (braid) {
+                // severed: the pair stood at this node and chose otherwise
+                // — foreclosed the moment the pick landed (they departed)
+                const severed = visited.has(n.id) && n.id !== map.position && !isTrail;
+                if (severed) {
+                  const len = 14 * scale;
+                  const e = { x: a.x + (dx / L) * len, y: a.y + (dy / L) * len };
+                  const tick = (deg: number): string => {
+                    const r = (deg * Math.PI) / 180;
+                    const tx = (dx / L) * Math.cos(r) - (dy / L) * Math.sin(r);
+                    const ty = (dx / L) * Math.sin(r) + (dy / L) * Math.cos(r);
+                    return `M ${e.x.toFixed(1)} ${e.y.toFixed(1)} L ${(e.x + tx * 5 * scale).toFixed(1)} ${(e.y + ty * 5 * scale).toFixed(1)}`;
+                  };
+                  return (
+                    <g key={`${n.id}-${toId}`}>
+                      <path className="map-cord cord-severed"
+                        d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${e.x.toFixed(1)} ${e.y.toFixed(1)}`} fill="none" />
+                      <path className="map-cord cord-severed-fray" d={`${tick(25)} ${tick(-25)}`} fill="none" />
+                    </g>
+                  );
+                }
+                // never the pair's route — renders nothing at all
+                if (!isTrail && !(onLoom(n) && onLoom(target))) return null;
+                // material: within-strand segments ARE the rail; anything
+                // touching the center stations (knot, breath) is a chord —
+                // except the final breath→boss cord, which stays neutral
+                const material =
+                  n.strand && n.strand === target.strand ? 'cord-rail'
+                    : target.kind === 'boss' ? ''
+                      : 'cord-knot';
+                return (
+                  <path key={`${n.id}-${toId}`}
+                    className={`map-cord ${material} ${isTrail ? 'cord-trail' : ''} ${live ? 'cord-live' : ''} ${lit ? 'lit' : ''}`}
+                    d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
+                );
+              }
+              // non-braid maps (finale, act 4): the pre-S26 grammar stands
+              const dead = !isTrail && !live && (!reachable.has(n.id) || n.layer < hereLayer);
+              if (dead && n.layer < hereLayer - 1) return null; // history, gone
               return (
                 <path key={`${n.id}-${toId}`}
-                  className={`map-cord ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${hot ? 'cord-hot' : ''}`}
+                  className={`map-cord ${isTrail ? 'cord-trail' : ''} ${dead ? 'cord-dead' : ''} ${live ? 'cord-live' : ''} ${lit ? 'lit' : ''}`}
                   d={`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`} fill="none" />
               );
             });

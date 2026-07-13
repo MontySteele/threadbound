@@ -176,6 +176,49 @@ export function StyleScreen(): JSX.Element {
         })}
       </div>
 
+      {/* S26 (OQ#82–#85): the braid map's ink, reviewable HERE before the
+          field — one warp material, severance, and the preview reweight.
+          Every constant behind these is gate-tunable (G1/G3/G4). */}
+      <h3>Braid map ink (S26) <span className="muted">(five stations, one pass — hover reweights, never adds)</span></h3>
+      <div className="map-ink-row">
+        <div className="map-ink-cell">
+          <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden>
+            <path className="map-cord cord-rail" d="M 30 6 L 30 84" fill="none" />
+            <path className="map-cord cord-rail" d="M 30 6 L 62 45 L 30 84" fill="none" />
+          </svg>
+          <div className="mark-label">rail + lens bow (--warp)</div>
+        </div>
+        <div className="map-ink-cell">
+          <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden>
+            <path className="map-cord cord-knot" d="M 20 84 L 60 45 L 100 84" fill="none" />
+            <path className="map-cord cord-knot" d="M 20 6 L 60 45 L 100 6" fill="none" />
+          </svg>
+          <div className="mark-label">knot chords</div>
+        </div>
+        <div className="map-ink-cell">
+          <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden>
+            <path className="map-cord cord-severed" d="M 40 30 L 54 44" fill="none" />
+            <path className="map-cord cord-severed-fray" d="M 54 44 L 55.7 48.7 M 54 44 L 58.7 45.7" fill="none" />
+          </svg>
+          <div className="mark-label">severed stub + fray</div>
+        </div>
+        <div className="map-ink-cell">
+          <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden>
+            <path className="map-cord lit" d="M 30 6 L 90 84" fill="none" />
+          </svg>
+          <div className="mark-label">lit (route preview)</div>
+        </div>
+        <div className="map-ink-cell">
+          <svg className="previewing" width="120" height="90" viewBox="0 0 120 90" aria-hidden>
+            <path className="map-cord cord-rail" d="M 20 6 L 20 84" fill="none" />
+            <path className="map-cord cord-knot" d="M 20 6 L 60 45" fill="none" />
+            <path className="map-cord cord-severed" d="M 20 40 L 34 54" fill="none" />
+            <path className="map-cord lit" d="M 60 45 L 100 6" fill="none" />
+          </svg>
+          <div className="mark-label">previewing dim (0.45)</div>
+        </div>
+      </div>
+
       <h3>Thread gauge states</h3>
       <ThreadCord value={8} max={10} mode="normal" left="vess" right="bram" />
       <ThreadCord value={2} max={10} mode="normal" left="vess" right="bram" />
